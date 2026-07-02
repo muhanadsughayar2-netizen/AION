@@ -627,9 +627,15 @@ async function _probeOneVeoModel(apiKey, modelId, timeoutMs, endpoint, treatInva
       console.log(`[SnapToAI] Probe ${modelId}: 429/quota — treating as PREPAID signal`);
       return 'prepaid';
     }
-    // Invalid key signals
-    if (code === 401 || code === 403 || status === 'PERMISSION_DENIED' || status === 'UNAUTHENTICATED' ||
+    // Invalid KEY signals — only flag when the message explicitly says the key is bad.
+    // PERMISSION_DENIED without a key-error message means model restriction (e.g. not
+    // available in region) — that's ambiguous, so return 'retry' instead of 'invalid'.
+    if (code === 401 || status === 'UNAUTHENTICATED' ||
         msg.includes('api key not valid') || msg.includes('api_key_invalid') || msg.includes('api key expired')) {
+      return 'invalid';
+    }
+    if ((code === 403 || status === 'PERMISSION_DENIED') &&
+        (msg.includes('api key') || msg.includes('permission') || msg.includes('forbidden'))) {
       return 'invalid';
     }
     // FREE / billing-required signal — only billing-language responses, never model-availability
@@ -667,8 +673,9 @@ async function detectKeyTierVerbose(apiKey) {
     // veo-2.0: Google checks billing BEFORE format here. INVALID_ARGUMENT = billing OK = prepaid.
     // Free keys get FAILED_PRECONDITION from this model, never INVALID_ARGUMENT.
     { model: MODELS.probeVeo2,      endpoint: 'predictLongRunning',  trustFreeVerdict: true,  treatInvalidAsPrepaid: true  },
-    { model: MODELS.probeImagen4,   endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: false },
-    { model: MODELS.probeImagen3,   endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: false }
+    // Imagen: also billing-gated — INVALID_ARGUMENT means billing passed = prepaid
+    { model: MODELS.probeImagen4,   endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: true  },
+    { model: MODELS.probeImagen3,   endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: true  }
   ];
 
   // Run all probes in PARALLEL (not sequential) so the total wait is bounded by

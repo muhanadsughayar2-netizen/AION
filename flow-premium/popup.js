@@ -3802,14 +3802,27 @@ async function _popupProbeOneVeo(apiKey, modelId, timeoutMs, endpoint, treatInva
     const code = data?.error?.code;
     // PREPAID positive signal — HTTP 200 with an operation name means billing accepted the job
     if (resp.ok && (data?.name || data?.metadata)) return 'prepaid';
-    // For models where Google checks billing BEFORE format (e.g. veo-2.0):
-    // INVALID_ARGUMENT means billing passed and Google got to format validation → key is prepaid.
-    // Free keys never reach format validation on these models — they get FAILED_PRECONDITION first.
+    // For billing-gated models Google checks billing BEFORE format.
+    // INVALID_ARGUMENT means billing passed and Google reached format validation → key is prepaid.
+    // Free keys never reach format validation — they get FAILED_PRECONDITION first.
     if (treatInvalidAsPrepaid && status === 'INVALID_ARGUMENT') return 'prepaid';
-    // Invalid key signals
-    if (code === 401 || code === 403 || status === 'PERMISSION_DENIED' || status === 'UNAUTHENTICATED' ||
+    // 429 / RESOURCE_EXHAUSTED on any billing-gated model is also a prepaid signal.
+    // Free-tier keys get FAILED_PRECONDITION before Google even checks quota, so a
+    // quota-exceeded response means billing IS enabled.
+    if (resp.status === 429 || status === 'RESOURCE_EXHAUSTED' ||
+        msg.includes('exceeded your current quota') || msg.includes('rate limit') ||
+        msg.includes('quota exceeded') || msg.includes('per-minute') || msg.includes('rpm')) {
+      console.log(`[SnapToAI popup] Probe ${modelId}: 429/quota — treating as PREPAID signal`);
+      return 'prepaid';
+    }
+    // Invalid KEY signals — only flag when the message explicitly says the key is bad.
+    // PERMISSION_DENIED without a key-error message means model restriction (e.g. not
+    // available in region) — that's ambiguous, so we return 'retry' instead of 'invalid'.
+    if (code === 401 || status === 'UNAUTHENTICATED' ||
         msg.includes('api key not valid') || msg.includes('api_key_invalid') || msg.includes('api key expired')) return 'invalid';
-    // FREE / billing-required signal — only trust this from billing-language responses
+    if ((code === 403 || status === 'PERMISSION_DENIED') &&
+        (msg.includes('api key') || msg.includes('permission') || msg.includes('forbidden'))) return 'invalid';
+    // FREE / billing-required signal — only billing-language responses count
     if (status === 'FAILED_PRECONDITION' || msg.includes('billing enabled') || msg.includes('gcp billing') ||
         msg.includes('billing is required') || msg.includes('enable billing')) return 'free';
     return 'retry';
@@ -3842,9 +3855,11 @@ async function _popupDetectTier(apiKey, cachedTier) {
     { model: MODELS.probeVeo3Fast,  endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
     { model: MODELS.probeVeo31Fast, endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
     { model: MODELS.probeVeo3,      endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
+    // veo-2.0: billing checked before format — INVALID_ARGUMENT = billing OK = prepaid
     { model: MODELS.probeVeo2,      endpoint: 'predictLongRunning',  trustFree: true,  treatInvalidAsPrepaid: true  },
-    { model: MODELS.probeImagen4,   endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: false },
-    { model: MODELS.probeImagen3,   endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: false }
+    // Imagen: also billing-gated — INVALID_ARGUMENT means billing passed = prepaid
+    { model: MODELS.probeImagen4,   endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: true  },
+    { model: MODELS.probeImagen3,   endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: true  }
   ];
 
   return new Promise((resolve) => {
