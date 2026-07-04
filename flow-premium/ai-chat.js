@@ -8554,6 +8554,96 @@ async function sendToGemini(prompt, imageDataUrls) {
   return text;
 }
 
+// Voice input — lets the user speak their prompt instead of typing it.
+// Especially useful for Autopilot: "click the sign up button" etc.
+function initVoiceInput() {
+  const micBtn = document.getElementById('micBtn');
+  const chatInputEl = document.getElementById('chatInput');
+  if (!micBtn || !chatInputEl) return;
+
+  const SpeechRecognitionCtor = window.SpeechRecognition || window.webkitSpeechRecognition;
+  if (!SpeechRecognitionCtor) {
+    // Not supported in this context (e.g. some embedded extension pages) —
+    // hide the button instead of leaving a dead control.
+    micBtn.style.display = 'none';
+    return;
+  }
+
+  let recognition = null;
+  let listening = false;
+  let baseText = '';
+  let finalTranscript = '';
+
+  function stopListening() {
+    listening = false;
+    micBtn.classList.remove('listening');
+    micBtn.title = 'Speak instead of typing';
+    if (recognition) {
+      try { recognition.stop(); } catch (e) { /* already stopped */ }
+    }
+  }
+
+  function startListening() {
+    baseText = chatInputEl.value ? chatInputEl.value.trim() + ' ' : '';
+    finalTranscript = '';
+
+    recognition = new SpeechRecognitionCtor();
+    recognition.lang = (navigator.language || 'en-US');
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          finalTranscript += transcript + ' ';
+        } else {
+          interim += transcript;
+        }
+      }
+      chatInputEl.value = (baseText + finalTranscript + interim).trim();
+      autoResize(chatInputEl);
+    };
+
+    recognition.onerror = (event) => {
+      if (event.error === 'no-speech' || event.error === 'aborted') return;
+      console.log('[SnapToAI] Voice input error:', event.error);
+      stopListening();
+      if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        addBubble('Microphone access was blocked. Allow microphone permission for this extension to use voice input.', 'error');
+      }
+    };
+
+    recognition.onend = () => {
+      // Chrome sometimes ends recognition on its own after a pause even
+      // while the user is still "listening" — restart seamlessly unless
+      // the user explicitly stopped it.
+      if (listening) {
+        try { recognition.start(); } catch (e) { /* ignore double-start */ }
+      }
+    };
+
+    try {
+      recognition.start();
+      listening = true;
+      micBtn.classList.add('listening');
+      micBtn.title = 'Click to stop listening';
+    } catch (e) {
+      console.log('[SnapToAI] Voice input failed to start:', e.message);
+    }
+  }
+
+  micBtn.addEventListener('click', () => {
+    if (listening) {
+      stopListening();
+      chatInputEl.focus();
+    } else {
+      startListening();
+    }
+  });
+}
+
 // Handle send with streaming
 async function handleSend() {
   const input = document.getElementById('chatInput');
@@ -11416,6 +11506,7 @@ if (sidebarToggle && imagePanel) {
 document.getElementById('closeBtn')?.addEventListener('click', () => window.close());
 document.getElementById('clearStagedBtn')?.addEventListener('click', clearStagedMedia);
 document.getElementById('sendBtn')?.addEventListener('click', handleSend);
+initVoiceInput();
 
 const chatInput = document.getElementById('chatInput');
 chatInput.addEventListener('keydown', (e) => {
