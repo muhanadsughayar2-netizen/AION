@@ -2137,6 +2137,16 @@ async function startVideoGeneration(prompt, thread) {
     }
   }
 
+  // Real Veo "extend" (7s continuation, server-side stitched) only works on
+  // Veo 3.1 / 3.1 Fast, single-clip flow. Record the model/aspect ratio here
+  // so continueClip() can decide whether real extend is eligible later.
+  if (_lastVideoContext && clipCount === 1) {
+    _lastVideoContext.modelUsed = modelName;
+    _lastVideoContext.aspectRatioUsed = selectedAspectRatio;
+    _lastVideoContext.totalDurationSec = selectedVideoDuration;
+    _lastVideoContext.extendCount = 0;
+  }
+
   if (clipCount === 1) {
     await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage, selectedAspectRatio);
   } else {
@@ -2257,7 +2267,9 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
     }
 
     console.log(`[SnapToAI Video] Job started: ${operationName}`);
-    pollVideoStatus(operationName, apiKey, progressBubble, thread);
+    pollVideoStatus(operationName, apiKey, progressBubble, thread, (videoUri, mimeType) => {
+      if (_lastVideoContext) _lastVideoContext.videoRef = { uri: videoUri, mimeType };
+    });
 
   } catch (err) {
     console.log(`[SnapToAI Video] Error:`, err.message);
@@ -4945,7 +4957,7 @@ function showMultiClipFallback(bubble, clipUrls, thread) {
   addBubbleActions(bubble, 'Generated video clips');
 }
 
-async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
+async function pollVideoStatus(operationId, apiKey, progressBubble, thread, onSuccess) {
   // Cancel any prior single-clip poll (timer + in-flight fetch) before starting.
   if (activeVideoPollTimer) { clearTimeout(activeVideoPollTimer); activeVideoPollTimer = null; }
   if (pollVideoStatus._abort) { pollVideoStatus._abort.abort(); }
@@ -5077,6 +5089,11 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
         }
 
         const authedUrl = `${videoUri}${videoUri.includes('?') ? '&' : '?'}key=${apiKey}`;
+        // Capture the RAW file reference (not the download URL) so real Veo
+        // "extend" can send it back to Google as `instances[0].video` later.
+        if (typeof onSuccess === 'function') {
+          try { onSuccess(videoUri, 'video/mp4'); } catch (_) {}
+        }
         showVideoResult(progressBubble, authedUrl, thread);
       }
     } catch (err) {
@@ -5089,7 +5106,103 @@ async function pollVideoStatus(operationId, apiKey, progressBubble, thread) {
 }
 
 // ── Video continuation context ─────────────────────────────────────────────
-let _lastVideoContext = null; // { prompt, style, videoUrl, lastFrameDataUrl }
+let _lastVideoContext = null; // { prompt, style, videoUrl, lastFrameDataUrl, videoRef, modelUsed, aspectRatioUsed, totalDurationSec, extendCount }
+
+// Real Veo "extend" (server-side continuation, single combined output, real
+// audio/motion continuity) only works when ALL of these hold:
+//  - We have the actual Google file reference for the last clip (videoRef)
+//  - The clip was made with Veo 3.1 or Veo 3.1 Fast (Lite/3.0/2.0 don't support extend)
+//  - Under Google's 20-extensions-per-video cap
+//  - Under Google's 141s input-length cap for the video being extended
+function canRealExtend(ctx) {
+  if (!ctx || !ctx.videoRef || !ctx.videoRef.uri) return false;
+  if (ctx.modelUsed !== MODELS.veo31 && ctx.modelUsed !== MODELS.veo31Fast) return false;
+  if ((ctx.extendCount || 0) >= 20) return false;
+  if ((ctx.totalDurationSec || 0) > 141) return false;
+  return true;
+}
+
+// Performs a REAL Veo video extension: sends Google the actual previously-
+// generated video (not a captured frame) so it continues the same continuous
+// audio/motion and returns ONE combined video — no client-side stitching.
+// Returns true if it handled the request (success OR a shown error), false
+// if the caller should fall back to the old frame-capture continuation.
+async function extendVeoVideoReal(prompt, thread) {
+  const ctx = _lastVideoContext;
+  if (!canRealExtend(ctx)) return false;
+
+  const keyData = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = keyData.geminiApiKey;
+  if (!apiKey) return false;
+
+  const modelName = ctx.modelUsed;
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
+  const requestBody = {
+    instances: [{
+      prompt: prompt,
+      video: { uri: ctx.videoRef.uri, mimeType: ctx.videoRef.mimeType || 'video/mp4' }
+    }],
+    parameters: {
+      aspectRatio: ctx.aspectRatioUsed || '16:9',
+      sampleCount: 1,
+      resolution: '720p'
+    }
+  };
+
+  const progressBubble = document.createElement('div');
+  progressBubble.className = 'chat-bubble ai';
+  progressBubble.innerHTML = `
+    <div style="font-size:12px;color:#8899aa;margin-bottom:10px;">🔗 Extending your video (+7s, same continuous audio &amp; motion)...</div>
+    <div class="video-progress-bar" style="width:100%;height:4px;background:rgba(255,165,0,0.1);border-radius:2px;overflow:hidden;">
+      <div class="video-progress-fill" style="width:2%;height:100%;background:linear-gradient(90deg,#63cab7,#8fe3d3);border-radius:2px;transition:width 0.5s ease;"></div>
+    </div>
+    <div class="video-progress-text" style="font-size:10px;color:#667788;margin-top:6px;">Starting extension...</div>
+  `;
+  thread.appendChild(progressBubble);
+  thread.scrollTop = thread.scrollHeight;
+
+  console.log(`[SnapToAI Video] Extend request with ${modelName}, prev totalDur=${ctx.totalDurationSec}s, extendCount=${ctx.extendCount}`);
+
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      const errorMsg = data.error?.message || `API error ${resp.status}`;
+      console.log(`[SnapToAI Video] Extend API error: ${errorMsg}`);
+      if (isBillingError(resp.status, errorMsg)) {
+        progressBubble.innerHTML = buildUnlockCard('video');
+      } else if (resp.status === 429 || /rate|quota|exceeded/i.test(errorMsg)) {
+        progressBubble.innerHTML = buildVeoRateLimitCard('Veo Extend');
+      } else {
+        progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Extend failed: ${errorMsg}</div>`;
+      }
+      return true; // handled — don't fall back after a real attempt was made
+    }
+
+    const operationName = data.name;
+    if (!operationName) {
+      progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> No operation ID returned for extension. Try again.</div>`;
+      return true;
+    }
+
+    ctx.extendCount = (ctx.extendCount || 0) + 1;
+    ctx.totalDurationSec = (ctx.totalDurationSec || 0) + 7;
+
+    pollVideoStatus(operationName, apiKey, progressBubble, thread, (videoUri, mimeType) => {
+      ctx.videoRef = { uri: videoUri, mimeType };
+    });
+    return true;
+  } catch (err) {
+    console.log('[SnapToAI Video] Extend connection error:', err.message);
+    progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Connection failed while extending. Please try again.</div>`;
+    return true;
+  }
+}
 
 // Capture a frame directly from an already-decoded <video> element in the DOM.
 // Much more reliable than re-fetching a Google signed URL that may have expired.
@@ -5177,6 +5290,40 @@ Write the NEXT clip prompt (under 75 words, no explanations, no quotes) that:
 async function continueClip() {
   if (!_lastVideoContext) return;
   const { prompt, style, lastFrameDataUrl } = _lastVideoContext;
+
+  // ── Try the REAL Veo extend first (Veo 3.1 / 3.1 Fast only) ─────────────
+  // This sends Google the actual generated video, not a captured frame, so
+  // the continuation keeps the same continuous audio/motion and comes back
+  // as ONE combined file — no client-side stitching, no music hard-cut.
+  if (canRealExtend(_lastVideoContext)) {
+    const ci = document.getElementById('chatInput');
+    if (ci) { ci.value = '⏳ Writing next scene…'; ci.disabled = true; }
+
+    let contPrompt = null;
+    try {
+      const keyData = await chrome.storage.sync.get(['geminiApiKey']);
+      if (keyData.geminiApiKey && prompt) {
+        contPrompt = await generateSeamlessContinuationPrompt(prompt, keyData.geminiApiKey);
+      }
+    } catch (_) {}
+
+    const fallbackPrompt = prompt
+      ? `Continue seamlessly: ${prompt.slice(0, 90)} — same camera angle, same subjects, music rhythm continues from previous beat without interruption.`
+      : 'Continue from last frame — same mood, same beat, same visual style. Camera continues its motion.';
+    const finalPrompt = contPrompt || fallbackPrompt;
+
+    if (ci) { ci.disabled = false; ci.value = ''; ci.placeholder = 'Extending your video…'; }
+
+    const thread = document.getElementById('chatThread');
+    if (thread) {
+      const handled = await extendVeoVideoReal(finalPrompt, thread);
+      if (handled) return; // real extend attempted (success or shown error) — don't fall back
+    }
+  }
+
+  // ── Fallback: old frame-capture image-to-video continuation ─────────────
+  // Used when the model doesn't support native extend (Lite/3.0/2.0), or we
+  // don't yet have a real video reference for some reason.
 
   // Load last frame as the reference image for the next clip
   if (lastFrameDataUrl) {
@@ -5345,7 +5492,9 @@ function showVideoResult(bubble, videoUrl, thread) {
           if (contBtn) {
             contBtn.style.borderColor = 'rgba(99,202,183,0.7)';
             contBtn.style.background = 'rgba(99,202,183,0.25)';
-            contBtn.title = 'Last frame locked — click to continue from here';
+            contBtn.title = canRealExtend(_lastVideoContext)
+              ? 'Real Veo extend — adds 7s with continuous audio/motion, no stitching'
+              : 'Last frame locked — click to continue from here';
           }
         }
       } catch (e) {
@@ -8210,7 +8359,12 @@ async function handleSend() {
         prompt,
         style: typeof _vsbStylizeStyle !== 'undefined' ? _vsbStylizeStyle : 'pixar',
         videoUrl: null,
-        lastFrameDataUrl: null
+        lastFrameDataUrl: null,
+        videoRef: null,       // { uri, mimeType } — real Google file reference for native "extend"
+        modelUsed: null,      // set once known, in startVideoGeneration
+        aspectRatioUsed: null,
+        totalDurationSec: 0,
+        extendCount: 0
       };
       await startVideoGeneration(prompt, thread);
       conversationHistory.push({ role: 'user', text: prompt });
