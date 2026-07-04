@@ -8220,7 +8220,8 @@ const AGENT_TOOLS = [{
 const AGENT_SYSTEM_PROMPT = `You are an in-browser automation agent controlling the user's ACTIVE browser tab, one small step at a time.
 
 Rules:
-- You can only see a text snapshot of the current page (provided each turn) — not a live view. Judge everything from that text.
+- Each turn you are given BOTH a text snapshot of the page AND a real screenshot image of what it currently looks like. Use the screenshot to visually confirm where you actually are (e.g. did the click really open the product page, are you still on a search results list, did a popup/modal appear) before deciding your next move — don't rely on text alone.
+- If the screenshot and the text disagree, or the screenshot shows you're not where you expected, trust the screenshot and re-orient (e.g. close a popup, scroll, or navigate again) instead of repeating the same action blindly.
 - Call exactly ONE function per turn: click, type, scroll, navigate, or finish.
 - If the task asks you to go to a specific website/URL that is not the current page, use "navigate" with the full address — do NOT try to fake it by typing the URL into a search box or link on the page.
 - After each action you will be told whether it succeeded and shown the page again, so you can decide the next step.
@@ -8259,6 +8260,32 @@ async function getActiveTabPageText(tabId) {
       return '';
     }
   }
+}
+
+async function captureActiveTabScreenshot(tab) {
+  try {
+    if (!tab || !tab.windowId) return null;
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 55 });
+    return dataUrl || null;
+  } catch (_e) {
+    return null;
+  }
+}
+
+// Builds the array actually sent to Gemini for this turn: takes the
+// permanent text-only `contents` history and appends a FRESH screenshot to
+// the last turn, without mutating/growing `contents` itself. If we stored
+// screenshots permanently, every step would re-send every prior screenshot
+// (payload grows step after step and can hang the tab) — instead only the
+// single most-current image is ever in flight, keeping steps fast.
+async function buildRequestContentsWithScreenshot(baseContents, tab) {
+  const screenshot = await captureActiveTabScreenshot(tab);
+  if (!screenshot) return baseContents;
+  const cloned = baseContents.map(c => ({ ...c, parts: c.parts.slice() }));
+  const last = cloned[cloned.length - 1];
+  last.parts.push({ inlineData: { mimeType: 'image/jpeg', data: screenshot.split(',')[1] } });
+  last.parts.push({ text: '(Screenshot of the current page attached above for visual reference.)' });
+  return cloned;
 }
 
 async function runAgentTask(prompt, thread) {
@@ -8316,6 +8343,7 @@ async function runAgentTask(prompt, thread) {
 
     let data;
     try {
+      const requestContents = await buildRequestContentsWithScreenshot(contents, tab);
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
         {
@@ -8323,7 +8351,7 @@ async function runAgentTask(prompt, thread) {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT }] },
-            contents,
+            contents: requestContents,
             tools: AGENT_TOOLS,
             generationConfig: { temperature: 0.2 }
           })
