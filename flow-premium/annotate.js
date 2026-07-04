@@ -225,7 +225,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   if (isSnipMode) {
     // Auto-select crop tool in snip mode
     currentTool = 'crop';
-    document.title = 'Snip Mode - SnapToAI';
+    document.title = 'Snip Mode - Aion AI';
     updateStatus('Draw a rectangle to snip. Click Save Snip when done.');
     
     // Simplify toolbar for snip mode - hide all except scissors, save, exit
@@ -250,7 +250,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       document.body.style.opacity = '0';
       document.title = 'Processing...';
     } else {
-      document.title = 'Full Page Editor - SnapToAI';
+      document.title = 'Full Page Editor - Aion AI';
     }
     setupFullPageMode();
   }
@@ -294,7 +294,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       if (batchUrl) {
         document.getElementById('batchUrl').textContent = decodeURIComponent(batchUrl);
       }
-      document.title = `Batch ${batchCurrent}/${batchTotal} - SnapToAI`;
+      document.title = `Batch ${batchCurrent}/${batchTotal} - Aion AI`;
     }
   }
   
@@ -3222,7 +3222,7 @@ function addInvisibleWatermarkToCanvas(canvas) {
   ctx.font = '12px Arial';
   
   const lines = [
-    'Captured with SnapToAI',
+    'Captured with Aion AI',
     'snaptoai.com',
     'Free Chrome Extension',
     'Batch Screenshots for AI'

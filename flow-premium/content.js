@@ -3919,7 +3919,7 @@
     const icon = document.createElement('span');
     icon.textContent = '🤖';
     banner.appendChild(icon);
-    banner.appendChild(document.createTextNode(' SnapToAI Agent: ' + message));
+    banner.appendChild(document.createTextNode(' Aion AI Agent: ' + message));
     document.body.appendChild(banner);
     setTimeout(() => banner.remove(), 4000);
   }
