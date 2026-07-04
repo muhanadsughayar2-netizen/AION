@@ -1331,6 +1331,11 @@ const LYRIA_MODELS_DISPLAY = [
 // Default: Veo 3.1 Fast @ 720p — cheapest way to extend videos ($0.10/s = $0.70 per 7s clip)
 let selectedVeoModel = MODELS.veo31Fast;
 let selectedVideoDuration = 8;
+// Requested TOTAL video length (base 8s clip + N native extends of +7s each).
+// Native extend always adds exactly 7s per Google's API, so totals land at
+// 8/15/22/29s rather than round numbers like 16/24/32 — the UI labels use "~"
+// to signal that. Auto-chained in showVideoResult() once each clip lands.
+let selectedTotalDuration = 8;
 let selectedClipCount = 1; // locked — single 8s clip only, no stitching
 let userAvailableVeoModels = [];
 let selectedMusicModel = MODELS.musicDefault;
@@ -1387,6 +1392,14 @@ function initVideoSubBar() {
       bar.querySelectorAll('.vsb-dur').forEach(b => b.classList.remove('vsb-active'));
       btn.classList.add('vsb-active');
       selectedVideoDuration = parseInt(btn.dataset.dur);
+    });
+  });
+
+  bar.querySelectorAll('.vsb-total').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bar.querySelectorAll('.vsb-total').forEach(b => b.classList.remove('vsb-active'));
+      btn.classList.add('vsb-active');
+      selectedTotalDuration = parseInt(btn.dataset.total);
     });
   });
 
@@ -5614,6 +5627,29 @@ function showVideoResult(bubble, videoUrl, thread) {
     })();
   }
 
+  // ── Auto-chain to reach the requested total length ──────────────────────
+  // If the user picked a "Total length" > 8s and this clip is native-extend
+  // eligible, automatically fire the next extend once this clip lands —
+  // no manual clicking needed. Stops as soon as the target is reached, an
+  // extend fails (error already shown by extendVeoVideoReal), or the video
+  // hits Google's hard cap. Each native extend adds exactly 7s, so totals
+  // land on 8/15/22/29s rather than the round number the user picked.
+  if (ctx && ctx.targetDurationSec > (ctx.totalDurationSec || 0) && nativeReady && !hardCapped) {
+    const remaining = ctx.targetDurationSec - (ctx.totalDurationSec || 0);
+    const autoNote = document.createElement('div');
+    autoNote.style.cssText = 'margin-top:8px;font-size:11px;color:#63cab7;display:flex;align-items:center;gap:6px;';
+    autoNote.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border:2px solid #63cab7;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></span> Auto-extending to reach your requested length (${remaining}s to go)...`;
+    bubble.querySelector('div')?.appendChild(autoNote);
+
+    setTimeout(() => {
+      // Guard against a race if the user manually clicked Continue/Extend
+      // in the meantime, or started a fresh generation.
+      if (_lastVideoContext === ctx && !document.getElementById('chatInput')?.disabled) {
+        continueClip();
+      }
+    }, 2000);
+  }
+
   // ── Continue Clip button ────────────────────────────────────────
   bubble.querySelector('.video-continue-btn')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
@@ -8484,7 +8520,11 @@ async function handleSend() {
         modelUsed: null,      // set once known, in startVideoGeneration
         aspectRatioUsed: null,
         totalDurationSec: 0,
-        extendCount: 0
+        extendCount: 0,
+        // Requested total length (base clip + auto-chained native extends).
+        // showVideoResult() checks this after every clip lands and, if native
+        // extend is eligible, auto-fires the next extend until we reach it.
+        targetDurationSec: typeof selectedTotalDuration === 'number' ? selectedTotalDuration : 8
       };
       await startVideoGeneration(prompt, thread);
       conversationHistory.push({ role: 'user', text: prompt });
