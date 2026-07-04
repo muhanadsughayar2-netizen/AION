@@ -5141,8 +5141,16 @@ function canRealExtend(ctx) {
 // audio/motion and returns ONE combined video — no client-side stitching.
 // Returns true if it handled the request (success OR a shown error), false
 // if the caller should fall back to the old frame-capture continuation.
-async function extendVeoVideoReal(prompt, thread) {
-  const ctx = _lastVideoContext;
+// `sourceCtx` lets a caller extend from a SPECIFIC past scene (branching)
+// instead of always the global "latest" video. Defaults to _lastVideoContext
+// so existing linear auto-chain callers keep working unchanged. The source
+// snapshot itself is never mutated in place (aside from lightweight bookkeeping
+// like the cooldown timer and the memoized working shape, which are safe to
+// update on the source so retrying that exact scene benefits) — the actual
+// new scene produced by this extend becomes its own object and the new
+// global "head" (_lastVideoContext), so the source bubble stays branchable.
+async function extendVeoVideoReal(prompt, thread, sourceCtx) {
+  const ctx = sourceCtx || _lastVideoContext;
   if (!canRealExtend(ctx)) return false;
 
   // Hard cooldown after any rate-limit hit. Veo's preview extend endpoint has
@@ -5285,10 +5293,13 @@ async function extendVeoVideoReal(prompt, thread) {
       }
     }
 
+    let winningLabel = null;
     if (workingIndex >= 0) {
       // Remember the winning shape's label so future extends on this video
-      // try it first (see label-based lookup above).
-      const winningLabel = shapeCandidates[workingIndex].label;
+      // try it first (see label-based lookup above). Stored on the SOURCE
+      // scene since it's a lookup optimization for that lineage, not a new
+      // scene's own state.
+      winningLabel = shapeCandidates[workingIndex].label;
       ctx._workingShapeLabel = winningLabel;
       console.log(`[SnapToAI Video] Extend succeeded with shape "${winningLabel}"`);
     }
@@ -5299,12 +5310,24 @@ async function extendVeoVideoReal(prompt, thread) {
       return true;
     }
 
-    ctx.extendCount = (ctx.extendCount || 0) + 1;
-    ctx.totalDurationSec = (ctx.totalDurationSec || 0) + 7;
-    ctx.operationName = operationName;
+    // Build the RESULT as its own object rather than mutating the source
+    // scene in place. This is what makes branching possible: the source
+    // bubble's snapshot is untouched, so the user can come back and extend
+    // it again later with a different prompt to create an alternate scene.
+    const resultCtx = Object.assign({}, ctx, {
+      extendCount: (ctx.extendCount || 0) + 1,
+      totalDurationSec: (ctx.totalDurationSec || 0) + 7,
+      operationName,
+      videoRef: null,
+      _workingShapeLabel: winningLabel || ctx._workingShapeLabel
+    });
+    // This branch becomes the new "current" video for the default (no
+    // explicit sourceCtx) UI paths — e.g. the auto-chain "Total length"
+    // feature and any future extend click that doesn't specify a scene.
+    _lastVideoContext = resultCtx;
 
     pollVideoStatus(operationName, apiKey, progressBubble, thread, (videoUri, mimeType2) => {
-      ctx.videoRef = { uri: videoUri, mimeType: mimeType2 };
+      resultCtx.videoRef = { uri: videoUri, mimeType: mimeType2 };
     });
     return true;
   } catch (err) {
@@ -5397,25 +5420,35 @@ Write the NEXT clip prompt (under 75 words, no explanations, no quotes) that:
   }
 }
 
-async function continueClip() {
-  if (!_lastVideoContext) return;
-  const { prompt, style, lastFrameDataUrl } = _lastVideoContext;
+// `customPrompt` lets the user dictate exactly what happens next — "keep
+// the same theme song and dance" or "transition to the bear flying" —
+// instead of always relying on the AI-auto-generated continuation. Leave
+// blank/undefined to keep the old auto-generated behavior.
+// `sourceCtx` picks which scene to extend FROM (branching). Defaults to the
+// current global head so the auto-chain feature keeps working unchanged.
+async function continueClip(customPrompt, sourceCtx) {
+  const ctx = sourceCtx || _lastVideoContext;
+  if (!ctx) return;
+  const { prompt, style, lastFrameDataUrl } = ctx;
 
   // ── Try the REAL Veo extend first (Veo 3.1 / 3.1 Fast only) ─────────────
   // This sends Google the actual generated video, not a captured frame, so
   // the continuation keeps the same continuous audio/motion and comes back
   // as ONE combined file — no client-side stitching, no music hard-cut.
-  if (canRealExtend(_lastVideoContext)) {
+  if (canRealExtend(ctx)) {
     const ci = document.getElementById('chatInput');
-    if (ci) { ci.value = '⏳ Writing next scene…'; ci.disabled = true; }
+    const typedPrompt = customPrompt && customPrompt.trim() ? customPrompt.trim() : null;
 
-    let contPrompt = null;
-    try {
-      const keyData = await chrome.storage.sync.get(['geminiApiKey']);
-      if (keyData.geminiApiKey && prompt) {
-        contPrompt = await generateSeamlessContinuationPrompt(prompt, keyData.geminiApiKey);
-      }
-    } catch (_) {}
+    let contPrompt = typedPrompt;
+    if (!contPrompt) {
+      if (ci) { ci.value = '⏳ Writing next scene…'; ci.disabled = true; }
+      try {
+        const keyData = await chrome.storage.sync.get(['geminiApiKey']);
+        if (keyData.geminiApiKey && prompt) {
+          contPrompt = await generateSeamlessContinuationPrompt(prompt, keyData.geminiApiKey);
+        }
+      } catch (_) {}
+    }
 
     const fallbackPrompt = prompt
       ? `Continue seamlessly: ${prompt.slice(0, 90)} — same camera angle, same subjects, music rhythm continues from previous beat without interruption.`
@@ -5426,7 +5459,7 @@ async function continueClip() {
 
     const thread = document.getElementById('chatThread');
     if (thread) {
-      const handled = await extendVeoVideoReal(finalPrompt, thread);
+      const handled = await extendVeoVideoReal(finalPrompt, thread, ctx);
       if (handled) return; // real extend attempted (success or shown error) — don't fall back
     }
   }
@@ -5505,8 +5538,15 @@ function showVideoResult(bubble, videoUrl, thread) {
   // is already populated by the onSuccess callback that fires right before this
   // (see pollVideoStatus), so canRealExtend() reflects the video we're showing.
   const ctx = _lastVideoContext;
-  const nativeReady = canRealExtend(ctx);
-  const hardCapped = ctx && ((ctx.extendCount || 0) >= 20 || (ctx.totalDurationSec || 0) > 141);
+  // Freeze THIS bubble's own scene as an immutable snapshot. `_lastVideoContext`
+  // keeps moving forward as new clips/branches are made, but this bubble's
+  // Extend button must always operate on the scene it actually shows — that's
+  // what lets the user come back to ANY earlier clip and branch off it later
+  // (e.g. "transition to the bear flying") instead of only ever continuing
+  // whatever is currently the newest video.
+  const sceneSnapshot = ctx ? { ...ctx } : null;
+  const nativeReady = canRealExtend(sceneSnapshot);
+  const hardCapped = sceneSnapshot && ((sceneSnapshot.extendCount || 0) >= 20 || (sceneSnapshot.totalDurationSec || 0) > 141);
   let continueLabel = '▶ Continue Clip';
   let continueTitle = 'Last frame locked — click to continue from here';
   let continueDisabled = '';
@@ -5516,7 +5556,7 @@ function showVideoResult(bubble, videoUrl, thread) {
     continueDisabled = 'disabled style="opacity:0.5;cursor:not-allowed;"';
   } else if (nativeReady) {
     continueLabel = '🔗 Extend (Native)';
-    continueTitle = 'Native Veo extend — continuous audio & motion, no stitching. Extend within 48 hours or this video reference expires on Google\'s side.';
+    continueTitle = 'Native Veo extend — continuous audio & motion, no stitching. Extend within 48 hours or this video reference expires on Google\'s side. Branch from THIS clip, even if you\'ve made newer ones since.';
   }
 
   bubble.innerHTML = `
@@ -5526,6 +5566,8 @@ function showVideoResult(bubble, videoUrl, thread) {
         <span style="font-size:13px;font-weight:600;color:#ffa500;">Video ready!</span>
       </div>
       <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${videoUrl}"></video>
+      ${nativeReady && !hardCapped ? `
+      <input type="text" class="video-custom-prompt-input" placeholder="Leave blank to continue automatically, or type e.g. &quot;transition to the bear flying&quot;" style="width:100%;box-sizing:border-box;margin-top:8px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.15);color:#eee;padding:7px 10px;border-radius:8px;font-size:12px;outline:none;" />` : ''}
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="video-save-btn" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">💾 Save Video</button>
         <button class="video-continue-btn" title="${continueTitle}" ${continueDisabled} style="background:rgba(99,202,183,0.15);border:1px solid rgba(99,202,183,0.4);color:#63cab7;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">${continueLabel}</button>
@@ -5586,8 +5628,8 @@ function showVideoResult(bubble, videoUrl, thread) {
   // Veo URLs are Google CDN (cross-origin). drawImage on a cross-origin
   // <video> throws SecurityError. Fix: fetch the video as a blob, create
   // a local blob URL (same-origin), capture frame from that.
-  if (_lastVideoContext) {
-    _lastVideoContext.videoUrl = videoUrl;
+  if (ctx) {
+    ctx.videoUrl = videoUrl;
     (async () => {
       try {
         const resp = await fetch(videoUrl);
@@ -5614,13 +5656,14 @@ function showVideoResult(bubble, videoUrl, thread) {
           URL.revokeObjectURL(blobUrl);
         }
 
-        if (frameDataUrl && _lastVideoContext) {
-          _lastVideoContext.lastFrameDataUrl = frameDataUrl;
+        if (frameDataUrl && ctx) {
+          ctx.lastFrameDataUrl = frameDataUrl;
+          if (sceneSnapshot) sceneSnapshot.lastFrameDataUrl = frameDataUrl;
           const contBtn = bubble.querySelector('.video-continue-btn');
           if (contBtn) {
             contBtn.style.borderColor = 'rgba(99,202,183,0.7)';
             contBtn.style.background = 'rgba(99,202,183,0.25)';
-            contBtn.title = canRealExtend(_lastVideoContext)
+            contBtn.title = canRealExtend(sceneSnapshot)
               ? 'Real Veo extend — adds 7s with continuous audio/motion, no stitching'
               : 'Last frame locked — click to continue from here';
           }
@@ -5668,27 +5711,31 @@ function showVideoResult(bubble, videoUrl, thread) {
     }
   }
 
-  // ── Continue Clip button ────────────────────────────────────────
+  // ── Continue Clip / Extend button ────────────────────────────────────────
+  // Always operates on THIS bubble's own scene (sceneSnapshot), so clicking
+  // Extend on an older clip branches off of it — even if newer clips exist.
   bubble.querySelector('.video-continue-btn')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
-    if (!_lastVideoContext || btn.disabled) return;
+    if (!sceneSnapshot || btn.disabled) return;
+
+    const customPromptVal = bubble.querySelector('.video-custom-prompt-input')?.value || '';
 
     btn.textContent = '⏳ Preparing continuation…';
     btn.disabled = true;
 
     // Native extend doesn't need a captured frame at all — skip straight to
     // continueClip(), which will pick the real-extend path on its own.
-    if (canRealExtend(_lastVideoContext)) {
+    if (canRealExtend(sceneSnapshot)) {
       btn.disabled = false;
       btn.textContent = '🔗 Extend (Native)';
-      await continueClip();
+      await continueClip(customPromptVal, sceneSnapshot);
       return;
     }
 
     // If background capture still pending, try fetching the blob now
-    if (!_lastVideoContext.lastFrameDataUrl && _lastVideoContext.videoUrl) {
+    if (!sceneSnapshot.lastFrameDataUrl && sceneSnapshot.videoUrl) {
       try {
-        const resp = await fetch(_lastVideoContext.videoUrl);
+        const resp = await fetch(sceneSnapshot.videoUrl);
         if (resp.ok) {
           const blob = await resp.blob();
           const blobUrl = URL.createObjectURL(blob);
@@ -5700,7 +5747,7 @@ function showVideoResult(bubble, videoUrl, thread) {
           captureVid.style.cssText = 'position:fixed;left:-9999px;top:0;width:320px;height:180px;opacity:0.01;pointer-events:none;z-index:-1;';
           document.body.appendChild(captureVid);
           try {
-            _lastVideoContext.lastFrameDataUrl = await captureFrameFromVideoElement(captureVid);
+            sceneSnapshot.lastFrameDataUrl = await captureFrameFromVideoElement(captureVid);
           } finally {
             if (document.body.contains(captureVid)) document.body.removeChild(captureVid);
             URL.revokeObjectURL(blobUrl);
@@ -5711,7 +5758,10 @@ function showVideoResult(bubble, videoUrl, thread) {
 
     btn.disabled = false;
     btn.textContent = '▶ Continue Clip';
-    await continueClip();
+    // Non-native fallback path is inherently tied to the single global chat
+    // pipeline (mode switching, staged image, chat auto-submit) — it always
+    // continues from whatever is the current global scene, not a branch.
+    await continueClip(customPromptVal, _lastVideoContext);
   });
 
   thread.scrollTop = thread.scrollHeight;
