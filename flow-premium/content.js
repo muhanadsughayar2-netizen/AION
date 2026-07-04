@@ -4036,8 +4036,22 @@
         
         await new Promise(r => setTimeout(r, 300));
         
-        // Try native click first, then dispatch events
-        if (typeof element.click === 'function') {
+        // Some sites (Amazon included) still build buttons as old-style
+        // `<a href="javascript:...">` links that rely on a JS click listener
+        // to do the real work, with the href only there as legacy filler.
+        // Calling the native .click() method makes the browser ALSO try to
+        // run that href as real navigation, which modern CSP blocks outright
+        // ("Running the JavaScript URL violates Content Security Policy") —
+        // the click then does nothing even though our step reported success.
+        // Dispatching a synthetic MouseEvent instead still fires the site's
+        // real click listener (that's what actually opens the modal/panel)
+        // but does NOT trigger the browser's own default link-navigation
+        // behavior, so the blocked javascript: URL is never attempted.
+        const href = element.tagName === 'A' ? (element.getAttribute('href') || '') : '';
+        const isJsHrefLink = /^\s*javascript:/i.test(href);
+        if (isJsHrefLink) {
+          element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
+        } else if (typeof element.click === 'function') {
           element.click();
         } else {
           element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
