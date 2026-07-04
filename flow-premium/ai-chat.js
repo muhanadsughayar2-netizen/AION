@@ -5180,6 +5180,12 @@ async function extendVeoVideoReal(prompt, thread) {
       video: { video_resource: { video_name: target } }
     });
   }
+  // Alternate hypothesis: `uri` itself holds a resource name/path rather than
+  // the signed file URL, plus a plain `resourceName` field (Vertex-style).
+  for (const target of snakeCaseTargets) {
+    shapeCandidates.push({ label: `video.uri (resource path: ${target})`, video: { uri: target } });
+    shapeCandidates.push({ label: `video.resourceName (${target})`, video: { resourceName: target } });
+  }
   // If a previous extend on this context already found a working shape, try
   // it first so we don't re-pay the trial-and-error cost every time. Matched
   // by label since dynamic (operation-derived) labels can't map to a fixed index.

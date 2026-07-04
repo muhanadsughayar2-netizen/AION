@@ -1,0 +1,48 @@
+ ensure your "Native Extension" build (v3.0.6) works correctly and remains cost-effective, here is the technical breakdown of the concept and the exact JSON structure required for the REST API.
+
+Summary
+The transition to "Native Extension" in Veo 3.1 Fast moves your app from simple frame-mimicry to temporal continuity. Instead of starting a new video from a static image, the model uses the latent state and motion data of the previous segment to "grow" the video by 7 seconds. This preserves the physics, lighting, and audio key, resulting in a single, seamless .mp4 file.
+
+1. The "Cheap" Pricing Reality
+Based on the official documentation and your provided screenshots, the pricing for Veo 3.1 Fast at 720p (the required resolution for extension) is $0.10 per second.
+
+Cost per Extension: $0.70 (7 seconds × $0.10).
+Total for Max Length (148s): Approximately $14.80.
+Note on $0.15: While some older or specific regional tiers mention $0.15, the "Paid Tier" default for 720p is $0.10 [1][5].
+2. The Correct REST JSON Shape
+You mentioned "gambling" on the JSON structure. In the Gemini API generateVideos method, the video parameter expects a reference to a previously generated video resource. Based on successful implementations and SDK behavior, the most reliable REST shape is:
+
+{
+  "model": "veo-3.1-fast-generate-preview",
+  "prompt": "Your next narrative step here",
+  "video": {
+    "uri": "projects/YOUR_PROJECT/locations/YOUR_LOCATION/operations/YOUR_OPERATION_ID/generatedVideos/0"
+  },
+  "config": {
+    "resolution": "720p"
+  }
+}
+The "URI" is the key: It must be the full resource name or URI returned in the generated_videos[0].video field of the previous operation [3][4].
+Fallback: If uri alone fails, the alternate shape used by Vertex-style endpoints is "video": { "resourceName": "..." }.
+3. Core Concepts of Native Extension
+Temporal Memory: Unlike your old "Frame Capture" method, Native Extension passes the motion vectors and audio frequency to the next generation. This is why the music doesn't cut—the model continues the existing waveform [1][4].
+7-Second Increments: You cannot choose the extension length; the model always adds exactly 7 seconds per call [1].
+The 141-Second Limit: You can only trigger an extension if the current video is 141 seconds or less. Once it hits 142s, the API will reject further extensions to prevent the file from exceeding the 148s hard cap [1][4].
+48-Hour Persistence: Google stores the "extensable" version of the video for 2 days. Every successful extension resets this timer for the new, combined file [1].
+4. Implementation Checklist for v3.0.6
+Requirement	Value	Why?
+Model	veo-3.1-fast-generate-preview	Cheapest model that supports extensions ($0.10/s) [1].
+Resolution	720p	Mandatory. Extensions will fail if set to 1080p or 4K [1].
+Aspect Ratio	16:9 or 9:16	Must match the original "Seed" video exactly [1].
+Input Parameter	video (not source_image)	Tells the API to perform a continuation, not a new generation [3].
+Sources
+[1] Official Veo 3.1 Documentation - Scene Extension
+[2] Google AI Studio - Veo 3.1 Pricing & Specs
+[3] Stack Overflow - Correct JSON Structure for Veo 3.1 Extension
+[4] Google Blog - Enhanced Veo 3.1 Capabilities
+[5] Gemini API Pricing - Video Generation Tiers
+
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
