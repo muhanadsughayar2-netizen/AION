@@ -8337,7 +8337,12 @@ async function runAgentTask(prompt, thread) {
     }
 
     const { name, args } = fnCallPart.functionCall;
-    contents.push({ role: 'model', parts: [{ functionCall: { name, args } }] });
+    // Preserve the full model turn (including thoughtSignature, if the model
+    // returned one) instead of rebuilding a stripped-down functionCall part.
+    // Gemini's thinking models attach a thoughtSignature to function calls so
+    // they can track their own reasoning across steps; dropping it causes
+    // "missing thought_signature" warnings and degraded multi-step behavior.
+    contents.push({ role: 'model', parts: candidateParts });
 
     if (name === 'finish') {
       addAgentStepBubble(thread, args?.summary || 'Task finished.', 'done');
