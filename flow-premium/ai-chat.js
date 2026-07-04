@@ -946,8 +946,8 @@ const AI_MODES = {
   'agent': {
     model: MODELS.chat,
     type: 'gemini-agent',
-    placeholder: 'Tell the agent what to do on this page (e.g. "click the sign up button")...',
-    welcome: '🤖 Agent mode — give it a task on the current tab and it will click, type, and scroll to get it done. Watch the ghost cursor act it out step by step.'
+    placeholder: 'Tell Autopilot what to do on this page (e.g. "click the sign up button")...',
+    welcome: 'Autopilot — give it a task on the current tab and it will click, type, and scroll to get it done. Watch the ghost cursor act it out step by step. It only acts on THIS page, and stops to check with you before anything risky like payments or deletions.'
   }
 };
 
@@ -974,7 +974,7 @@ const MODEL_NAMES = {
   'image': { name: 'Nano', sub: 'Banana', color: '#FBBC05' },
   'music': { name: 'Lyria', sub: '', color: '#34A853' },
   'video': { name: 'Veo', sub: '', color: '#EA4335' },
-  'agent': { name: 'Agent', sub: 'Beta', color: '#A855F7' }
+  'agent': { name: 'Autopilot', sub: 'Beta', color: '#A855F7' }
 };
 
 const MODE_LABEL_META = {
@@ -983,7 +983,7 @@ const MODE_LABEL_META = {
   'music':     { emoji: '🎵', label: 'Music mode',     bg: 'rgba(52,168,83,0.08)',    border: 'rgba(52,168,83,0.22)',    color: 'rgba(52,168,83,0.55)' },
   'video':     { emoji: '🎬', label: 'Video mode',     bg: 'rgba(234,67,53,0.08)',    border: 'rgba(234,67,53,0.22)',    color: 'rgba(234,67,53,0.55)' },
   'broadcast': { emoji: '🎙️', label: 'Broadcast',      bg: 'rgba(45,212,191,0.08)',   border: 'rgba(45,212,191,0.22)',   color: 'rgba(45,212,191,0.55)' },
-  'agent':     { emoji: '🤖', label: 'Agent mode',      bg: 'rgba(168,85,247,0.08)',   border: 'rgba(168,85,247,0.22)',   color: 'rgba(196,150,255,0.55)' },
+  'agent':     { emoji: '🧭', label: 'Autopilot mode',  bg: 'rgba(168,85,247,0.08)',   border: 'rgba(168,85,247,0.22)',   color: 'rgba(196,150,255,0.55)' },
 };
 
 function updateModeLabel(mode) {
@@ -8254,7 +8254,7 @@ async function runAgentTask(prompt, thread) {
 
   agentStopRequested = false;
   const stopBtn = document.createElement('button');
-  stopBtn.textContent = '■ Stop agent';
+  stopBtn.textContent = '■ Stop Autopilot';
   stopBtn.className = 'agent-stop-btn';
   stopBtn.style.cssText = 'display:block;margin:8px auto;padding:6px 14px;font-size:12px;border-radius:20px;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.3);color:#ff8080;cursor:pointer;';
   stopBtn.addEventListener('click', () => { agentStopRequested = true; stopBtn.disabled = true; stopBtn.textContent = 'Stopping…'; });

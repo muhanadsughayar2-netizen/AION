@@ -861,6 +861,13 @@
       font-size: 12px;
       transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     }
+    .mode-btn .mode-icon-img {
+      width: 13px;
+      height: 13px;
+      vertical-align: -2px;
+      object-fit: contain;
+      display: inline-block;
+    }
     .mode-btn.active .mode-emoji { transform: scale(1.2); }
     .mode-btn.switching .mode-emoji {
       animation: modeEmojiBounce 0.5s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1497,7 +1504,7 @@
         <button class="mode-btn" data-mode="music" id="musicModeBtn" title="Create music clips"><span class="mode-emoji">🎵</span> Music</button>
         <button class="mode-btn" data-mode="video" id="videoModeBtn" title="Generate videos from prompts or screenshots"><span class="mode-emoji">🎬</span> Video</button>
         <button class="mode-btn" data-mode="broadcast" id="broadcastModeBtn" title="Multi-voice AI broadcast from any content"><span class="mode-emoji">🎙️</span> Broadcast</button>
-        <button class="mode-btn" data-mode="agent" id="agentModeBtn" title="Give it a task and it clicks/types/scrolls on the page for you"><span class="mode-emoji">🤖</span> Agent</button>
+        <button class="mode-btn" data-mode="agent" id="agentModeBtn" title="Autopilot — give it a task and it clicks/types/scrolls on the page for you"><span class="mode-emoji"><img src="icons/icon48.png" class="mode-icon-img" alt=""></span> Autopilot</button>
         <div style="flex:1;"></div>
         <button class="mode-btn" id="addMagicBtn" title="Create a custom AI agent">✦ Magic Agents</button>
         <button class="mode-btn" id="clearBtn" title="Clear chat" style="color:#778899;">
