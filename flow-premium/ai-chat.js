@@ -2267,6 +2267,7 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
     }
 
     console.log(`[SnapToAI Video] Job started: ${operationName}`);
+    if (_lastVideoContext) _lastVideoContext.operationName = operationName;
     pollVideoStatus(operationName, apiKey, progressBubble, thread, (videoUri, mimeType) => {
       if (_lastVideoContext) _lastVideoContext.videoRef = { uri: videoUri, mimeType };
     });
@@ -5148,6 +5149,17 @@ async function extendVeoVideoReal(prompt, thread) {
   const mimeType = ctx.videoRef.mimeType || 'video/mp4';
   const resourceMatch = uri.match(/(files\/[A-Za-z0-9_-]+)/);
   const resourceName = resourceMatch ? resourceMatch[1] : null;
+  // Vertex-style resource names (projects/.../operations/.../generatedVideos/0)
+  // aren't something we get directly from the Gemini Developer API, but we do
+  // have the LRO operation name — build best-effort guesses from it in case
+  // the backend expects a resource path rather than a raw file URI.
+  const opName = ctx.operationName || null;
+  const opResourceGuesses = [];
+  if (opName) {
+    opResourceGuesses.push(`${opName}/generatedVideos/0`);
+    opResourceGuesses.push(opName);
+  }
+
   const shapeCandidates = [
     { label: 'video.uri',        video: { uri, mimeType } },
     { label: 'video.fileUri',    video: { fileUri: uri, mimeType } },
@@ -5157,11 +5169,26 @@ async function extendVeoVideoReal(prompt, thread) {
     shapeCandidates.push({ label: 'video.videoResource.videoName', video: { videoResource: { videoName: resourceName } } });
     shapeCandidates.push({ label: 'video.name', video: { name: resourceName } });
   }
+  // User-suggested REST fallback shape: snake_case video_resource/video_name,
+  // tried against both the parsed files/xxx resource and the raw operation
+  // name (best-effort guesses since the Developer API doesn't expose a
+  // Vertex-style projects/.../generatedVideos/0 path directly).
+  const snakeCaseTargets = [resourceName, ...opResourceGuesses].filter(Boolean);
+  for (const target of snakeCaseTargets) {
+    shapeCandidates.push({
+      label: `video.video_resource.video_name (${target})`,
+      video: { video_resource: { video_name: target } }
+    });
+  }
   // If a previous extend on this context already found a working shape, try
-  // it first so we don't re-pay the trial-and-error cost every time.
-  if (typeof ctx._workingShapeIndex === 'number' && shapeCandidates[ctx._workingShapeIndex]) {
-    const found = shapeCandidates.splice(ctx._workingShapeIndex, 1)[0];
-    shapeCandidates.unshift(found);
+  // it first so we don't re-pay the trial-and-error cost every time. Matched
+  // by label since dynamic (operation-derived) labels can't map to a fixed index.
+  if (ctx._workingShapeLabel) {
+    const foundIdx = shapeCandidates.findIndex(c => c.label === ctx._workingShapeLabel);
+    if (foundIdx > 0) {
+      const found = shapeCandidates.splice(foundIdx, 1)[0];
+      shapeCandidates.unshift(found);
+    }
   }
 
   const progressBubble = document.createElement('div');
@@ -5227,14 +5254,10 @@ async function extendVeoVideoReal(prompt, thread) {
     }
 
     if (workingIndex >= 0) {
-      // Remember the winning candidate's original index (before we may have
-      // reordered the array) for next time.
+      // Remember the winning shape's label so future extends on this video
+      // try it first (see label-based lookup above).
       const winningLabel = shapeCandidates[workingIndex].label;
-      const originalIndex = [
-        'video.uri', 'video.fileUri', 'file_data.fileUri',
-        'video.videoResource.videoName', 'video.name'
-      ].indexOf(winningLabel);
-      if (originalIndex >= 0) ctx._workingShapeIndex = originalIndex;
+      ctx._workingShapeLabel = winningLabel;
       console.log(`[SnapToAI Video] Extend succeeded with shape "${winningLabel}"`);
     }
 
@@ -5246,6 +5269,7 @@ async function extendVeoVideoReal(prompt, thread) {
 
     ctx.extendCount = (ctx.extendCount || 0) + 1;
     ctx.totalDurationSec = (ctx.totalDurationSec || 0) + 7;
+    ctx.operationName = operationName;
 
     pollVideoStatus(operationName, apiKey, progressBubble, thread, (videoUri, mimeType2) => {
       ctx.videoRef = { uri: videoUri, mimeType: mimeType2 };
