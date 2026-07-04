@@ -760,6 +760,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: false, error: 'No tab ID provided' });
       return;
     }
+    if (executeAction === 'navigate') {
+      // Changing the address bar / loading a new URL can only be done from
+      // the background script via chrome.tabs.update — a content script
+      // running inside the page has no access to browser navigation.
+      (async () => {
+        try {
+          let url = (params && params.url || '').trim();
+          if (!url) { sendResponse({ success: false, error: 'No URL provided' }); return; }
+          if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+          await chrome.tabs.update(tabId, { url });
+          sendResponse({ success: true });
+        } catch (e) {
+          sendResponse({ success: false, error: (e && e.message) || String(e) });
+        }
+      })();
+      return true;
+    }
     chrome.tabs.sendMessage(tabId, {
       action: 'agentExecute',
       executeAction,

@@ -8193,6 +8193,17 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'navigate',
+      description: 'Load a different web address in the current tab (change the page entirely, like typing into the browser address bar). Use this when the task asks to go to a specific website/URL, not for clicking links already on the page.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'The full website address to go to, e.g. "https://www.snaptoai.com"' }
+        },
+        required: ['url']
+      }
+    },
+    {
       name: 'finish',
       description: 'Call this when the task is complete, impossible, or you need to stop and tell the user something.',
       parameters: {
@@ -8210,7 +8221,8 @@ const AGENT_SYSTEM_PROMPT = `You are an in-browser automation agent controlling 
 
 Rules:
 - You can only see a text snapshot of the current page (provided each turn) — not a live view. Judge everything from that text.
-- Call exactly ONE function per turn: click, type, scroll, or finish.
+- Call exactly ONE function per turn: click, type, scroll, navigate, or finish.
+- If the task asks you to go to a specific website/URL that is not the current page, use "navigate" with the full address — do NOT try to fake it by typing the URL into a search box or link on the page.
 - After each action you will be told whether it succeeded and shown the page again, so you can decide the next step.
 - If an action fails, try a different way to find the same element (different text/description) before giving up.
 - Call "finish" as soon as the task is done, or if it cannot be done on this page, or if it requires something risky/irreversible (like sending money, submitting a payment, deleting something, or sending an email) that the user should confirm themselves first — in that case explain what you found and stop instead of doing it.
