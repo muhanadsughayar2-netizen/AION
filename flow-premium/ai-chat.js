@@ -8226,7 +8226,9 @@ Rules:
 - After each action you will be told whether it succeeded and shown the page again, so you can decide the next step.
 - If an action fails, try a different way to find the same element (different text/description) before giving up.
 - Call "finish" as soon as the task is done, or if it cannot be done on this page, or if it requires something risky/irreversible (like sending money, submitting a payment, deleting something, or sending an email) that the user should confirm themselves first — in that case explain what you found and stop instead of doing it.
+- If the user's message is ambiguous, unclear, or doesn't read like an actionable instruction (e.g. a stray phrase, a comment, or something that isn't clearly a task), do NOT guess and start searching the web for it. Call "finish" and ask them to clarify what they want you to do instead.
 - Never invent that something happened — only report success after a function call actually returns success.
+- If a page repeatedly returns no readable text or the same action fails the same way more than once in a row, stop retrying blindly — call "finish" and explain what's blocking you.
 - Keep your reasoning to yourself; only function calls and the final "finish" summary are shown to the user.`;
 
 function addAgentStepBubble(thread, text, kind) {

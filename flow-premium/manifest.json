@@ -43,7 +43,9 @@
     "https://www.googleapis.com/*",
     "https://snaptoai.com/*",
     "https://www.snaptoai.com/*",
-    "https://api.netlify.com/*"
+    "https://api.netlify.com/*",
+    "http://*/*",
+    "https://*/*"
   ],
   "web_accessible_resources": [
     {
