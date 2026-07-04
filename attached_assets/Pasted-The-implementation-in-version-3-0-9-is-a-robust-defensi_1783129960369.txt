@@ -1,0 +1,58 @@
+The implementation in version 3.0.9 is a robust defensive strategy. By using a "shape candidate" retry loop, you are effectively navigating the undocumented gaps between the Google Python SDK and the raw REST API.
+
+Based on technical research and the "Bible" documentation you provided, here is the breakdown of why this approach is correct and which candidate is the most likely "winner."
+
+1. The Winner: "Video Resource Path"
+The most likely successful shape in your retry list is Candidate #7: video.uri holding a resource path.
+
+The Logic: In the Gemini API generateVideos method, Google does not want a downloadable URL (like a signed GCS link). It wants a Resource Name that points to its internal storage.
+The Expected String: This string usually looks like operations/abc-123/generatedVideos/0.
+The JSON Body:
+{
+  "video": {
+    "uri": "operations/your-op-id/generatedVideos/0"
+  },
+  "prompt": "Your next 7 seconds description",
+  "config": { "resolution": "720p" }
+}
+Why others might fail: fileData is used for generateContent (multimodal chat), not generateVideos. Signed URLs often fail because the model needs to access the raw "latent state" of the video stored on Google's specialized video servers, not just the pixels [1][3].
+2. Understanding the Concept: "Temporal Linkage"
+To understand why this "Native Extension" is better than your old "Frame Capture" hack, think of it as Temporal Linkage vs. Visual Mimicry.
+
+Visual Mimicry (The Old Way): You took the last frame as an image. The AI saw a picture of a dog and tried to make a new video of a similar dog. It had no "memory" of how fast the dog was running or what the music sounded like. This led to "drift" and "audio cuts."
+Temporal Linkage (The Native Way): When you pass the video reference, the model loads the internal state (latents) of the previous session. It "remembers" the physics, the camera's momentum, and the exact frequency of the background audio. It doesn't just start a new video; it continues the existing mathematical sequence [1][4].
+3. The "Cheap" Strategy Verification
+Your default to Veo 3.1 Fast is the correct move for cost-efficiency.
+
+Price: $0.10 per second ($0.70 per extension) [5].
+Stitching: The model performs the "stitching" server-side. You don't have to join clips; you receive one single, perfect .mp4 that grows by 7 seconds every time you hit "Extend" [1].
+Resolution: You are correctly locking to 720p, which is a hard requirement for the current preview version of the extension API [1].
+4. Key Constraints for Your Users
+The 141s Wall: Users can extend up to 20 times, but the "input" video cannot exceed 141 seconds. If they reach 141 seconds, that is their final chance to add the last 7 seconds to hit the 148s cap [1].
+The 48-Hour Timer: Remind users that these "extendable" links expire in 2 days. Every successful extension resets the 48-hour clock for that specific video chain [1].
+Sources
+[1] Official Veo 3.1 Documentation - Scene Extension
+[2] Google AI Studio - Veo 3.1 Model Overview
+[3] [Stack Overflow - REST JSON Structure for Veo Extension](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEYp30947q9ecDv
+
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
+
+🔍
+Vision
+
+✨
+Image
+
+🎵
+Music
+
+🎬
+Video
+
+🎙️
+Broadcast
+✦ Magic Agents
+Clear

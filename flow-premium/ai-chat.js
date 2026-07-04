@@ -5160,30 +5160,39 @@ async function extendVeoVideoReal(prompt, thread) {
     opResourceGuesses.push(opName);
   }
 
-  const shapeCandidates = [
+  const snakeCaseTargets = [resourceName, ...opResourceGuesses].filter(Boolean);
+
+  const shapeCandidates = [];
+  // Leading candidate: `uri` holding the operation-derived resource path
+  // (e.g. "operations/xxx/generatedVideos/0") rather than the signed file
+  // URL. Cross-referenced technical analysis flags this as the most likely
+  // correct shape for generateVideos-style extend, so it goes first.
+  for (const target of opResourceGuesses) {
+    shapeCandidates.push({ label: `video.uri (resource path: ${target})`, video: { uri: target } });
+  }
+  if (resourceName) {
+    shapeCandidates.push({ label: `video.uri (resource path: ${resourceName})`, video: { uri: resourceName } });
+  }
+
+  shapeCandidates.push(
     { label: 'video.uri',        video: { uri, mimeType } },
     { label: 'video.fileUri',    video: { fileUri: uri, mimeType } },
     { label: 'file_data.fileUri', video: { fileData: { fileUri: uri, mimeType } } }
-  ];
+  );
   if (resourceName) {
     shapeCandidates.push({ label: 'video.videoResource.videoName', video: { videoResource: { videoName: resourceName } } });
     shapeCandidates.push({ label: 'video.name', video: { name: resourceName } });
   }
-  // User-suggested REST fallback shape: snake_case video_resource/video_name,
-  // tried against both the parsed files/xxx resource and the raw operation
-  // name (best-effort guesses since the Developer API doesn't expose a
-  // Vertex-style projects/.../generatedVideos/0 path directly).
-  const snakeCaseTargets = [resourceName, ...opResourceGuesses].filter(Boolean);
+  // Snake_case fallback: video_resource/video_name, tried against both the
+  // parsed files/xxx resource and the operation-derived guesses.
   for (const target of snakeCaseTargets) {
     shapeCandidates.push({
       label: `video.video_resource.video_name (${target})`,
       video: { video_resource: { video_name: target } }
     });
   }
-  // Alternate hypothesis: `uri` itself holds a resource name/path rather than
-  // the signed file URL, plus a plain `resourceName` field (Vertex-style).
+  // Plain resourceName field (Vertex-style).
   for (const target of snakeCaseTargets) {
-    shapeCandidates.push({ label: `video.uri (resource path: ${target})`, video: { uri: target } });
     shapeCandidates.push({ label: `video.resourceName (${target})`, video: { resourceName: target } });
   }
   // If a previous extend on this context already found a working shape, try
