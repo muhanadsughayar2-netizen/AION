@@ -8692,12 +8692,42 @@ function initVoiceInput() {
     return r;
   }
 
-  function startListening() {
+  function showMicBlockedHelp() {
+    // Autopilot's chat window is a borderless popup window (no address bar),
+    // so the user has no padlock/site-info icon here to reset a blocked
+    // mic permission themselves — they need the exact settings URL instead.
+    addBubble(
+      'Microphone access is blocked for this window, so voice input can\'t start. To fix it: open a new browser tab, go to chrome://settings/content/microphone, find this extension in the "Not allowed" list and switch it to "Allow" (or remove it from the blocked list) — then close and reopen Autopilot and click the mic again.',
+      'error'
+    );
+  }
+
+  async function startListening() {
     baseText = chatInputEl.value ? chatInputEl.value.trim() + ' ' : '';
     finalTranscript = '';
     softRestartCount = 0;
     networkFailCount = 0;
     erroredBubbleShown = false;
+
+    // Ask for the mic explicitly first. SpeechRecognition's own permission
+    // prompt is unreliable inside an extension popup window — this direct
+    // getUserMedia call is what actually surfaces Chrome's permission
+    // prompt (or tells us definitively it's already blocked) before we
+    // bother spinning up recognition at all.
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach(t => t.stop());
+    } catch (permErr) {
+      console.log('[SnapToAI] Mic permission check failed:', permErr.name, permErr.message);
+      if (permErr.name === 'NotAllowedError' || permErr.name === 'SecurityError') {
+        showMicBlockedHelp();
+      } else if (permErr.name === 'NotFoundError') {
+        addBubble('No microphone was found on this device.', 'error');
+      } else {
+        addBubble(`Could not access the microphone: ${permErr.message}`, 'error');
+      }
+      return;
+    }
 
     recognition = createRecognition();
 
