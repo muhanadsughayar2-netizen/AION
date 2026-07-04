@@ -8573,26 +8573,38 @@ function initVoiceInput() {
   let listening = false;
   let baseText = '';
   let finalTranscript = '';
+  let restartTimer = null;
+  let restartAttempts = 0;
+  let hadResultThisSession = false;
+  const MAX_RESTART_ATTEMPTS = 6;
 
   function stopListening() {
     listening = false;
     micBtn.classList.remove('listening');
     micBtn.title = 'Speak instead of typing';
+    if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
+    restartAttempts = 0;
     if (recognition) {
-      try { recognition.stop(); } catch (e) { /* already stopped */ }
+      const r = recognition;
+      recognition = null;
+      // Detach handlers first so the natural onend fired by stop() below
+      // can't race with a stray restart after the user already stopped.
+      r.onend = null;
+      r.onerror = null;
+      r.onresult = null;
+      try { r.stop(); } catch (e) { /* already stopped */ }
     }
   }
 
-  function startListening() {
-    baseText = chatInputEl.value ? chatInputEl.value.trim() + ' ' : '';
-    finalTranscript = '';
+  function createRecognition() {
+    const r = new SpeechRecognitionCtor();
+    r.lang = (navigator.language || 'en-US');
+    r.continuous = true;
+    r.interimResults = true;
 
-    recognition = new SpeechRecognitionCtor();
-    recognition.lang = (navigator.language || 'en-US');
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onresult = (event) => {
+    r.onresult = (event) => {
+      restartAttempts = 0; // real speech is flowing again, reset backoff
+      hadResultThisSession = true;
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
@@ -8606,23 +8618,59 @@ function initVoiceInput() {
       autoResize(chatInputEl);
     };
 
-    recognition.onerror = (event) => {
-      if (event.error === 'no-speech' || event.error === 'aborted') return;
+    r.onerror = (event) => {
+      // 'no-speech' and 'network' are transient — Chrome fires these
+      // constantly during natural pauses in speech and then kills the
+      // session; onend below handles restarting it. Only hard-stop for
+      // permission/setup errors that a restart can't fix.
       console.log('[SnapToAI] Voice input error:', event.error);
-      stopListening();
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+        stopListening();
         addBubble('Microphone access was blocked. Allow microphone permission for this extension to use voice input.', 'error');
       }
     };
 
-    recognition.onend = () => {
-      // Chrome sometimes ends recognition on its own after a pause even
-      // while the user is still "listening" — restart seamlessly unless
-      // the user explicitly stopped it.
-      if (listening) {
-        try { recognition.start(); } catch (e) { /* ignore double-start */ }
+    r.onend = () => {
+      if (!listening || recognition !== r) return; // user stopped, or this is a stale instance
+      restartAttempts++;
+      if (restartAttempts > MAX_RESTART_ATTEMPTS) {
+        stopListening();
+        addBubble('Voice input kept losing connection and was stopped. Please try again.', 'error');
+        return;
       }
+      // Give the browser's speech service a beat to release the mic
+      // before grabbing it again — restarting the SAME instance
+      // synchronously inside onend is what caused it to silently die
+      // after a while (start() throws "already started"/InvalidStateError
+      // and the old code swallowed that error, leaving the button showing
+      // "listening" while nothing was actually listening anymore).
+      restartTimer = setTimeout(() => {
+        if (!listening) return;
+        recognition = createRecognition();
+        try {
+          recognition.start();
+        } catch (e) {
+          console.log('[SnapToAI] Voice input restart failed:', e.message);
+          // Retry once more shortly; if it keeps failing the attempt
+          // counter above will eventually give up cleanly.
+          restartTimer = setTimeout(() => {
+            if (!listening) return;
+            try { recognition.start(); } catch (e2) { stopListening(); }
+          }, 400);
+        }
+      }, 300);
     };
+
+    return r;
+  }
+
+  function startListening() {
+    baseText = chatInputEl.value ? chatInputEl.value.trim() + ' ' : '';
+    finalTranscript = '';
+    restartAttempts = 0;
+    hadResultThisSession = false;
+
+    recognition = createRecognition();
 
     try {
       recognition.start();
