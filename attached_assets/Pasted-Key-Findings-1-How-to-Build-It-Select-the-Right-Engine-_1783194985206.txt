@@ -1,0 +1,31 @@
+Key Findings
+1. How to Build It
+Select the Right Engine: Navigate to the Playground and select Antigravity Preview from the Agents menu (found in the sidebar of your screenshot) [1.3.2, 1.4.1].
+Set the Intelligence Level: In the Run settings (right panel), set the Thinking level to High. This allows the model to spend more "internal thought" cycles on complex reasoning before answering [1.1.6].
+Enable Tools: Turn on Code execution, Grounding with Google Search, and URL context. These give the agent "eyes" on the live web and "hands" to run scripts [1.3.2, 1.4.7].
+2. How to Control It
+System Instructions: Use the System instructions box to define the agent's persona and rules (e.g., "You are a senior DevOps engineer. Always verify files before deleting them") [1.3.2].
+Managed Skills: For advanced control, you can define your agent's behavior using markdown files like AGENTS.md and SKILL.md which act as a permanent instruction manual for the agent [1.2.4, 1.4.7].
+Interactions API: If you want to control it via code, you use the Interactions API, which maintains the state and history of the agent's Linux environment across multiple turns [1.2.2, 1.2.7].
+3. How to Download It
+Environment Snapshot: You cannot "download the AI" itself to run offline, but you can download the Environment Snapshot. In the Environment settings, click the Download button to retrieve all files, code, and data the agent created in its Linux sandbox as a .tar.gz (tarball) file [1.4.1].
+Export Code: Click Get code in the top right to export the agent's configuration and API calls into Python or JavaScript for use in your own applications [1.3.2].
+Let's Build One: The "System Controller" Prompt
+To see the agent in action, use this prompt. It forces the agent to use its Linux environment, web search, and code execution tools simultaneously.
+
+Copy and Paste this Prompt:
+
+"I want you to act as a System Architect. Perform the following autonomous steps:
+
+Search for the current top 3 trending Python web frameworks in 2026.
+Create a directory named 'project_alpha' in your Linux environment.
+Write a script in that directory that benchmarks the performance of a sample API endpoint using the #1 trending framework.
+Run the script, capture the logs, and summarize the results in a PDF file.
+Confirm once the PDF is ready for me to download from the environment."
+Sources
+What's new in Gemini 3.5 Flash - Interactions API [1.1.1]
+Gemini 3 Developer Guide - Interactions API [1.1.6]
+Antigravity Preview | Gemini API | Google AI for Developers [1.2.1]
+Introducing Managed Agents in the Gemini API - Google Blog [1.2.4]
+Agents in AI Studio Playground | Gemini API [1.4.1]
+[Google AI Studio Mobile + Gemini Managed Agents (2026)](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQEQAu92-AY7vqCD-ca9OUjpZzWBhGetuBWv9xsAIaJ37IFC2QVaL8E8MLDn3_GWyuimsTdToRh-t5JNK141pTni2ybTJC3f_eLHnpfNO4JZJ8opG2ZHyoZOwbuuvIgwbm3OUWhLB7yVaq
