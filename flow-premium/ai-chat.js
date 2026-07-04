@@ -8263,7 +8263,18 @@ async function runAgentTask(prompt, thread) {
 
   let tab;
   try {
-    [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    // Autopilot's chat window is its own separate popup window (opened via
+    // chrome.windows.create), so `currentWindow` here means the chat window
+    // itself, NOT the website the user wants to control. We need the active
+    // tab of the user's actual browser window instead.
+    const normalWindows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
+    const candidates = normalWindows
+      .flatMap(w => (w.tabs || []).filter(t => t.active).map(t => ({ ...t, _focused: w.focused })))
+      .sort((a, b) => (b._focused ? 1 : 0) - (a._focused ? 1 : 0) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
+    tab = candidates[0];
+    if (!tab) {
+      [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    }
   } catch (_) {}
   if (!tab || !tab.id) {
     stopBtn.remove();
