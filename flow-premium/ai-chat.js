@@ -5145,6 +5145,21 @@ async function extendVeoVideoReal(prompt, thread) {
   const ctx = _lastVideoContext;
   if (!canRealExtend(ctx)) return false;
 
+  // Hard cooldown after any rate-limit hit. Veo's preview extend endpoint has
+  // a very tight per-minute quota — trying several JSON shapes back-to-back
+  // in one call can burn the whole minute's allowance on guesses alone, then
+  // even the CORRECT shape gets rejected as 429 right behind it. Refuse to
+  // fire at all while cooling down instead of wasting another attempt.
+  if (ctx._extendCooldownUntil && Date.now() < ctx._extendCooldownUntil) {
+    const waitSec = Math.ceil((ctx._extendCooldownUntil - Date.now()) / 1000);
+    const cooldownBubble = document.createElement('div');
+    cooldownBubble.className = 'chat-bubble ai';
+    cooldownBubble.innerHTML = `<div style="color:#ffa500;font-size:13px;"><span style="font-size:16px;">⏱️</span> Still cooling down from the last rate limit — wait ~${waitSec}s before extending again.</div>`;
+    thread.appendChild(cooldownBubble);
+    thread.scrollTop = thread.scrollHeight;
+    return true;
+  }
+
   const keyData = await chrome.storage.sync.get(['geminiApiKey']);
   const apiKey = keyData.geminiApiKey;
   if (!apiKey) return false;
@@ -5219,6 +5234,16 @@ async function extendVeoVideoReal(prompt, thread) {
     }
   }
 
+  // Veo's preview extend endpoint has a very tight per-minute quota (as few
+  // as ~2-3 requests/min). Trying every shape guess in one burst can exhaust
+  // that quota on guesses alone before ever reaching the correct one, then
+  // even a correct shape comes back 429. Cap how many we try per call, and
+  // space them out, so one click can't torch the whole minute's allowance.
+  // Once ctx._workingShapeLabel is known, only that single shape is tried.
+  const MAX_SHAPES_PER_CALL = ctx._workingShapeLabel ? 1 : 3;
+  const candidatesToTry = shapeCandidates.slice(0, MAX_SHAPES_PER_CALL);
+  const SHAPE_RETRY_DELAY_MS = 4000;
+
   const progressBubble = document.createElement('div');
   progressBubble.className = 'chat-bubble ai';
   progressBubble.innerHTML = `
@@ -5244,8 +5269,13 @@ async function extendVeoVideoReal(prompt, thread) {
   try {
     let data = null, resp = null, workingIndex = -1;
 
-    for (let i = 0; i < shapeCandidates.length; i++) {
-      const candidate = shapeCandidates[i];
+    for (let i = 0; i < candidatesToTry.length; i++) {
+      const candidate = candidatesToTry[i];
+
+      // Space out repeated attempts within a single call so we don't burst
+      // multiple requests into the same rate-limit window.
+      if (i > 0) await new Promise(r => setTimeout(r, SHAPE_RETRY_DELAY_MS));
+
       const requestBody = {
         instances: [{ prompt: prompt, video: candidate.video }],
         parameters: {
@@ -5267,12 +5297,19 @@ async function extendVeoVideoReal(prompt, thread) {
       const errorMsg = data.error?.message || `API error ${resp.status}`;
       console.log(`[SnapToAI Video] Extend shape "${candidate.label}" failed: ${errorMsg}`);
 
+      const isRateLimited = resp.status === 429 || /rate|quota|exceeded/i.test(errorMsg);
+      if (isRateLimited) {
+        // A 429 means the quota is gone for this window, full stop — trying
+        // more shapes right now would just rack up more 429s for nothing.
+        ctx._extendCooldownUntil = Date.now() + 65000;
+      }
+
       // Only keep trying other shapes on a schema-looking 400. Billing/quota/
       // safety errors are real and apply regardless of shape — stop immediately.
-      if (!isSchemaError(resp.status, errorMsg) || i === shapeCandidates.length - 1) {
+      if (!isSchemaError(resp.status, errorMsg) || i === candidatesToTry.length - 1) {
         if (isBillingError(resp.status, errorMsg)) {
           progressBubble.innerHTML = buildUnlockCard('video');
-        } else if (resp.status === 429 || /rate|quota|exceeded/i.test(errorMsg)) {
+        } else if (isRateLimited) {
           progressBubble.innerHTML = buildVeoRateLimitCard('Veo Extend');
         } else {
           progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Extend failed: ${errorMsg}</div>`;
@@ -5635,19 +5672,33 @@ function showVideoResult(bubble, videoUrl, thread) {
   // hits Google's hard cap. Each native extend adds exactly 7s, so totals
   // land on 8/15/22/29s rather than the round number the user picked.
   if (ctx && ctx.targetDurationSec > (ctx.totalDurationSec || 0) && nativeReady && !hardCapped) {
-    const remaining = ctx.targetDurationSec - (ctx.totalDurationSec || 0);
-    const autoNote = document.createElement('div');
-    autoNote.style.cssText = 'margin-top:8px;font-size:11px;color:#63cab7;display:flex;align-items:center;gap:6px;';
-    autoNote.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border:2px solid #63cab7;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></span> Auto-extending to reach your requested length (${remaining}s to go)...`;
-    bubble.querySelector('div')?.appendChild(autoNote);
+    // If we're still cooling down from a rate limit, don't silently fire —
+    // that's exactly the burst behavior that exhausted quota last time.
+    // Skip the auto-chain entirely and let the user retry manually once the
+    // cooldown clears (the "Extend" button will show the wait time itself).
+    if (ctx._extendCooldownUntil && Date.now() < ctx._extendCooldownUntil) {
+      const waitSec = Math.ceil((ctx._extendCooldownUntil - Date.now()) / 1000);
+      const cooldownNote = document.createElement('div');
+      cooldownNote.style.cssText = 'margin-top:8px;font-size:11px;color:#ffa500;';
+      cooldownNote.textContent = `⏱️ Auto-extend paused — cooling down from a rate limit (~${waitSec}s). Click "Extend (Native)" once it clears.`;
+      bubble.querySelector('div')?.appendChild(cooldownNote);
+    } else {
+      const remaining = ctx.targetDurationSec - (ctx.totalDurationSec || 0);
+      const autoNote = document.createElement('div');
+      autoNote.style.cssText = 'margin-top:8px;font-size:11px;color:#63cab7;display:flex;align-items:center;gap:6px;';
+      autoNote.innerHTML = `<span style="display:inline-block;width:8px;height:8px;border:2px solid #63cab7;border-top-color:transparent;border-radius:50%;animation:spin 0.8s linear infinite;"></span> Auto-extending to reach your requested length (${remaining}s to go)...`;
+      bubble.querySelector('div')?.appendChild(autoNote);
 
-    setTimeout(() => {
-      // Guard against a race if the user manually clicked Continue/Extend
-      // in the meantime, or started a fresh generation.
-      if (_lastVideoContext === ctx && !document.getElementById('chatInput')?.disabled) {
-        continueClip();
-      }
-    }, 2000);
+      setTimeout(() => {
+        // Guard against a race if the user manually clicked Continue/Extend
+        // in the meantime, started a fresh generation, or a rate limit hit
+        // during the delay (checked again here, not just at schedule time).
+        if (_lastVideoContext === ctx && !document.getElementById('chatInput')?.disabled &&
+            (!ctx._extendCooldownUntil || Date.now() >= ctx._extendCooldownUntil)) {
+          continueClip();
+        }
+      }, 2000);
+    }
   }
 
   // ── Continue Clip button ────────────────────────────────────────
