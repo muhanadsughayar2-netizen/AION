@@ -942,6 +942,12 @@ const AI_MODES = {
     type: 'gemini',
     placeholder: 'Type your show topic here, then click 🎙️ Generate below…',
     welcome: '🎙️ Broadcast Studio — type your topic above, pick a format below, then click Generate.'
+  },
+  'agent': {
+    model: MODELS.chat,
+    type: 'gemini-agent',
+    placeholder: 'Tell the agent what to do on this page (e.g. "click the sign up button")...',
+    welcome: '🤖 Agent mode — give it a task on the current tab and it will click, type, and scroll to get it done. Watch the ghost cursor act it out step by step.'
   }
 };
 
@@ -959,14 +965,16 @@ const MODE_COLORS = {
   'vision': 'rgba(66,133,244,0.04)',
   'image': 'rgba(251,188,5,0.04)',
   'music': 'rgba(52,168,83,0.04)',
-  'video': 'rgba(234,67,53,0.04)'
+  'video': 'rgba(234,67,53,0.04)',
+  'agent': 'rgba(168,85,247,0.04)'
 };
 
 const MODEL_NAMES = {
   'vision': { name: 'Gemini 3', sub: 'Flash (Preview)', color: '#4285F4' },
   'image': { name: 'Nano', sub: 'Banana', color: '#FBBC05' },
   'music': { name: 'Lyria', sub: '', color: '#34A853' },
-  'video': { name: 'Veo', sub: '', color: '#EA4335' }
+  'video': { name: 'Veo', sub: '', color: '#EA4335' },
+  'agent': { name: 'Agent', sub: 'Beta', color: '#A855F7' }
 };
 
 const MODE_LABEL_META = {
@@ -975,6 +983,7 @@ const MODE_LABEL_META = {
   'music':     { emoji: '🎵', label: 'Music mode',     bg: 'rgba(52,168,83,0.08)',    border: 'rgba(52,168,83,0.22)',    color: 'rgba(52,168,83,0.55)' },
   'video':     { emoji: '🎬', label: 'Video mode',     bg: 'rgba(234,67,53,0.08)',    border: 'rgba(234,67,53,0.22)',    color: 'rgba(234,67,53,0.55)' },
   'broadcast': { emoji: '🎙️', label: 'Broadcast',      bg: 'rgba(45,212,191,0.08)',   border: 'rgba(45,212,191,0.22)',   color: 'rgba(45,212,191,0.55)' },
+  'agent':     { emoji: '🤖', label: 'Agent mode',      bg: 'rgba(168,85,247,0.08)',   border: 'rgba(168,85,247,0.22)',   color: 'rgba(196,150,255,0.55)' },
 };
 
 function updateModeLabel(mode) {
@@ -1009,7 +1018,7 @@ function initModeButtons() {
       if (mode === currentAiMode) return;
       if (_modeCheckInFlight) return; // already probing, ignore extra clicks
 
-      if (mode !== 'vision') {
+      if (mode !== 'vision' && mode !== 'agent') {
         // Flash button immediately so click feels responsive
         btn.classList.add('active');
         _modeCheckInFlight = true;
@@ -8135,6 +8144,237 @@ function removeLoading() {
   if (loading) loading.remove();
 }
 
+// ============ AGENT MODE ============
+// Real function-calling loop: Gemini decides one action at a time (click/type/
+// scroll/finish), we execute it for real on the active tab via the existing
+// agentExecute bridge (background.js -> content.js handleAgentAction), tell
+// Gemini what happened, and repeat until it says the task is done or we hit
+// the step cap. This reuses the automation "hands" that already existed in
+// content.js — this function is the missing "brain" that drives them.
+let agentStopRequested = false;
+const AGENT_MAX_STEPS = 10;
+
+const AGENT_TOOLS = [{
+  functionDeclarations: [
+    {
+      name: 'click',
+      description: 'Click a button, link, or element on the current page. Prefer "text" (the visible label) over "selector" unless you are certain of the CSS selector.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Visible text on the element to click, e.g. "Sign up" or "Buy"' },
+          selector: { type: 'string', description: 'CSS selector, only if known precisely' },
+          description: { type: 'string', description: 'Fallback description of the element if text/selector are unknown' }
+        }
+      }
+    },
+    {
+      name: 'type',
+      description: 'Type text into an input field, search box, or textarea on the current page.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'The text to type' },
+          selector: { type: 'string', description: 'CSS selector of the input, if known' },
+          placeholder: { type: 'string', description: 'Placeholder text of the input, if known' },
+          pressEnter: { type: 'boolean', description: 'Whether to press Enter after typing (e.g. to submit a search)' }
+        },
+        required: ['text']
+      }
+    },
+    {
+      name: 'scroll',
+      description: 'Scroll the current page.',
+      parameters: {
+        type: 'object',
+        properties: {
+          direction: { type: 'string', enum: ['up', 'down', 'top', 'bottom'] }
+        }
+      }
+    },
+    {
+      name: 'finish',
+      description: 'Call this when the task is complete, impossible, or you need to stop and tell the user something.',
+      parameters: {
+        type: 'object',
+        properties: {
+          summary: { type: 'string', description: 'A short plain-language summary of what happened, for the user.' }
+        },
+        required: ['summary']
+      }
+    }
+  ]
+}];
+
+const AGENT_SYSTEM_PROMPT = `You are an in-browser automation agent controlling the user's ACTIVE browser tab, one small step at a time.
+
+Rules:
+- You can only see a text snapshot of the current page (provided each turn) — not a live view. Judge everything from that text.
+- Call exactly ONE function per turn: click, type, scroll, or finish.
+- After each action you will be told whether it succeeded and shown the page again, so you can decide the next step.
+- If an action fails, try a different way to find the same element (different text/description) before giving up.
+- Call "finish" as soon as the task is done, or if it cannot be done on this page, or if it requires something risky/irreversible (like sending money, submitting a payment, deleting something, or sending an email) that the user should confirm themselves first — in that case explain what you found and stop instead of doing it.
+- Never invent that something happened — only report success after a function call actually returns success.
+- Keep your reasoning to yourself; only function calls and the final "finish" summary are shown to the user.`;
+
+function addAgentStepBubble(thread, text, kind) {
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble ai agent-step';
+  bubble.style.cssText = 'background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.22);font-size:12.5px;color:rgba(255,255,255,0.85);padding:8px 12px;';
+  const icon = kind === 'error' ? '⚠️' : kind === 'done' ? '✅' : '🤖';
+  bubble.innerHTML = `${icon} ${text}`;
+  thread.appendChild(bubble);
+  thread.scrollTop = thread.scrollHeight;
+  return bubble;
+}
+
+async function getActiveTabPageText(tabId) {
+  const ask = () => chrome.tabs.sendMessage(tabId, { action: 'get_page_text' });
+  try {
+    const res = await ask();
+    return (res && res.text) ? res.text.slice(0, 6000) : '';
+  } catch (_) {
+    // Content script likely isn't injected on this site (it only auto-loads on
+    // a few AI chat domains) — inject it now using the activeTab grant from
+    // the user's send click, then retry once.
+    try {
+      await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+      const res = await ask();
+      return (res && res.text) ? res.text.slice(0, 6000) : '';
+    } catch (_e) {
+      return '';
+    }
+  }
+}
+
+async function runAgentTask(prompt, thread) {
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = keyResult.geminiApiKey;
+  if (!apiKey) { showGeminiModal(); return; }
+
+  agentStopRequested = false;
+  const stopBtn = document.createElement('button');
+  stopBtn.textContent = '■ Stop agent';
+  stopBtn.className = 'agent-stop-btn';
+  stopBtn.style.cssText = 'display:block;margin:8px auto;padding:6px 14px;font-size:12px;border-radius:20px;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.3);color:#ff8080;cursor:pointer;';
+  stopBtn.addEventListener('click', () => { agentStopRequested = true; stopBtn.disabled = true; stopBtn.textContent = 'Stopping…'; });
+  thread.appendChild(stopBtn);
+  thread.scrollTop = thread.scrollHeight;
+
+  let tab;
+  try {
+    [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  } catch (_) {}
+  if (!tab || !tab.id) {
+    stopBtn.remove();
+    addAgentStepBubble(thread, "Couldn't find an active browser tab to control.", 'error');
+    return;
+  }
+  if (/^(chrome|chrome-extension|edge|about):/.test(tab.url || '')) {
+    stopBtn.remove();
+    addAgentStepBubble(thread, "Can't act on a browser system page — open a real website tab first, then try again.", 'error');
+    return;
+  }
+
+  const contents = [];
+  let pageText = await getActiveTabPageText(tab.id);
+  contents.push({
+    role: 'user',
+    parts: [{ text: `TASK: ${prompt}\n\nCURRENT PAGE (${tab.url}):\n${pageText || '(no readable text found)'}` }]
+  });
+
+  for (let step = 0; step < AGENT_MAX_STEPS; step++) {
+    if (agentStopRequested) {
+      addAgentStepBubble(thread, 'Stopped by you.', 'error');
+      break;
+    }
+
+    let data;
+    try {
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT }] },
+            contents,
+            tools: AGENT_TOOLS,
+            generationConfig: { temperature: 0.2 }
+          })
+        }
+      );
+      data = await res.json();
+    } catch (e) {
+      addAgentStepBubble(thread, `Connection error: ${e.message}`, 'error');
+      break;
+    }
+
+    if (data.error) {
+      addAgentStepBubble(thread, data.error.message || 'The AI could not respond — check your Gemini key/quota.', 'error');
+      break;
+    }
+
+    const candidateParts = data.candidates?.[0]?.content?.parts || [];
+    const fnCallPart = candidateParts.find(p => p.functionCall);
+
+    if (!fnCallPart) {
+      // Model replied with plain text instead of a function call — show it and stop.
+      const text = candidateParts.find(p => p.text)?.text || 'No action taken.';
+      addAgentStepBubble(thread, text, 'done');
+      break;
+    }
+
+    const { name, args } = fnCallPart.functionCall;
+    contents.push({ role: 'model', parts: [{ functionCall: { name, args } }] });
+
+    if (name === 'finish') {
+      addAgentStepBubble(thread, args?.summary || 'Task finished.', 'done');
+      break;
+    }
+
+    addAgentStepBubble(thread, `${name}${args?.text ? `: "${args.text}"` : args?.direction ? `: ${args.direction}` : args?.selector || args?.description ? '' : ''}`.trim());
+
+    let execResult;
+    try {
+      execResult = await chrome.runtime.sendMessage({
+        action: 'agentExecute',
+        tabId: tab.id,
+        executeAction: name,
+        params: args || {}
+      });
+    } catch (e) {
+      execResult = { success: false, error: e.message };
+    }
+
+    if (!execResult || execResult.success !== true) {
+      addAgentStepBubble(thread, `Step failed: ${execResult?.error || 'unknown error'} — trying a different approach…`, 'error');
+    }
+
+    await new Promise(r => setTimeout(r, 700)); // let the page settle after the action
+    pageText = await getActiveTabPageText(tab.id);
+
+    contents.push({
+      role: 'user',
+      parts: [{
+        functionResponse: {
+          name,
+          response: execResult && execResult.success
+            ? { success: true, pageNow: pageText.slice(0, 4000) }
+            : { success: false, error: execResult?.error || 'unknown error', pageNow: pageText.slice(0, 4000) }
+        }
+      }]
+    });
+
+    if (step === AGENT_MAX_STEPS - 1) {
+      addAgentStepBubble(thread, `Stopped after ${AGENT_MAX_STEPS} steps to avoid running forever. Tell me to continue if it's not done.`, 'error');
+    }
+  }
+
+  stopBtn.remove();
+  scheduleChatHistorySave();
+}
+
 // Send message to Gemini API (supports multiple images)
 async function sendToGemini(prompt, imageDataUrls) {
   const images = Array.isArray(imageDataUrls) ? imageDataUrls : [imageDataUrls];
@@ -8269,6 +8509,15 @@ async function handleSend() {
 
   // Dismiss any pending "Build it" button from the previous AI turn.
   document.querySelectorAll('.build-it-btn').forEach(b => b.remove());
+
+  // ── Agent mode: acts on the live page instead of just chatting ──────────
+  if (currentAiMode === 'agent') {
+    input.value = '';
+    resetInputSize(input);
+    addBubble(prompt, 'user');
+    await runAgentTask(prompt, thread);
+    return;
+  }
 
   // ── Build Mode: image & video embedding ──────────────────────────────────
   // When media files are attached while patching an existing site, store the

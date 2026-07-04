@@ -839,6 +839,11 @@
       color: #34A853;
       box-shadow: none;
     }
+    .mode-btn[data-mode="agent"]::before { display: none; }
+    .mode-btn[data-mode="agent"].active {
+      background: rgba(168,85,247,0.15);
+      color: #c9a5ff;
+    }
     .mode-btn[data-mode="broadcast"]::before { display: none; }
     .mode-btn[data-mode="broadcast"].active {
       background: rgba(45,212,191,0.12);
@@ -1492,6 +1497,7 @@
         <button class="mode-btn" data-mode="music" id="musicModeBtn" title="Create music clips"><span class="mode-emoji">🎵</span> Music</button>
         <button class="mode-btn" data-mode="video" id="videoModeBtn" title="Generate videos from prompts or screenshots"><span class="mode-emoji">🎬</span> Video</button>
         <button class="mode-btn" data-mode="broadcast" id="broadcastModeBtn" title="Multi-voice AI broadcast from any content"><span class="mode-emoji">🎙️</span> Broadcast</button>
+        <button class="mode-btn" data-mode="agent" id="agentModeBtn" title="Give it a task and it clicks/types/scrolls on the page for you"><span class="mode-emoji">🤖</span> Agent</button>
         <div style="flex:1;"></div>
         <button class="mode-btn" id="addMagicBtn" title="Create a custom AI agent">✦ Magic Agents</button>
         <button class="mode-btn" id="clearBtn" title="Clear chat" style="color:#778899;">
