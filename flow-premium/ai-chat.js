@@ -8574,16 +8574,19 @@ function initVoiceInput() {
   let baseText = '';
   let finalTranscript = '';
   let restartTimer = null;
-  let restartAttempts = 0;
-  let hadResultThisSession = false;
-  const MAX_RESTART_ATTEMPTS = 6;
+  let softRestartCount = 0;   // quick, expected restarts (silence/aborted) — cheap, no backoff
+  let networkFailCount = 0;   // real "network" errors in a row — these get slower each time
+  let erroredBubbleShown = false;
+  const MAX_NETWORK_FAILS = 5;
 
   function stopListening() {
     listening = false;
     micBtn.classList.remove('listening');
     micBtn.title = 'Speak instead of typing';
     if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
-    restartAttempts = 0;
+    softRestartCount = 0;
+    networkFailCount = 0;
+    erroredBubbleShown = false;
     if (recognition) {
       const r = recognition;
       recognition = null;
@@ -8601,10 +8604,14 @@ function initVoiceInput() {
     r.lang = (navigator.language || 'en-US');
     r.continuous = true;
     r.interimResults = true;
+    let lastErrorWasNetwork = false;
 
     r.onresult = (event) => {
-      restartAttempts = 0; // real speech is flowing again, reset backoff
-      hadResultThisSession = true;
+      // Real speech made it through — the connection is healthy again,
+      // so wipe out any accumulated backoff/failure state.
+      softRestartCount = 0;
+      networkFailCount = 0;
+      lastErrorWasNetwork = false;
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
@@ -8619,31 +8626,44 @@ function initVoiceInput() {
     };
 
     r.onerror = (event) => {
-      // 'no-speech' and 'network' are transient — Chrome fires these
-      // constantly during natural pauses in speech and then kills the
-      // session; onend below handles restarting it. Only hard-stop for
-      // permission/setup errors that a restart can't fix.
       console.log('[SnapToAI] Voice input error:', event.error);
+      lastErrorWasNetwork = (event.error === 'network');
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         stopListening();
         addBubble('Microphone access was blocked. Allow microphone permission for this extension to use voice input.', 'error');
       }
+      // 'no-speech' / 'aborted' / 'network' fall through to onend, which
+      // decides how (and how fast) to restart.
     };
 
     r.onend = () => {
       if (!listening || recognition !== r) return; // user stopped, or this is a stale instance
-      restartAttempts++;
-      if (restartAttempts > MAX_RESTART_ATTEMPTS) {
-        stopListening();
-        addBubble('Voice input kept losing connection and was stopped. Please try again.', 'error');
-        return;
+
+      let delay;
+      if (lastErrorWasNetwork) {
+        networkFailCount++;
+        if (networkFailCount > MAX_NETWORK_FAILS) {
+          stopListening();
+          if (!erroredBubbleShown) {
+            erroredBubbleShown = true;
+            addBubble("Voice input can't reach the speech service right now (this is a Chrome/network issue, not something in the extension). Check your internet connection, then click the mic to try again.", 'error');
+          }
+          return;
+        }
+        // Retrying a failing network connection instantly just fails again
+        // immediately (that's what made it seem to "fully stop" — a fast
+        // retry loop against an endpoint that's already refusing us burns
+        // through the attempt budget in under 2 seconds). Back off for
+        // real: 1.5s, 3s, 4.5s, 6s, 7.5s.
+        delay = 1500 * networkFailCount;
+      } else {
+        // Plain silence/pause — Chrome kills these sessions constantly by
+        // design, this is not an error. Restart quickly and don't count it
+        // against the failure budget at all.
+        softRestartCount++;
+        delay = 300;
       }
-      // Give the browser's speech service a beat to release the mic
-      // before grabbing it again — restarting the SAME instance
-      // synchronously inside onend is what caused it to silently die
-      // after a while (start() throws "already started"/InvalidStateError
-      // and the old code swallowed that error, leaving the button showing
-      // "listening" while nothing was actually listening anymore).
+
       restartTimer = setTimeout(() => {
         if (!listening) return;
         recognition = createRecognition();
@@ -8651,14 +8671,22 @@ function initVoiceInput() {
           recognition.start();
         } catch (e) {
           console.log('[SnapToAI] Voice input restart failed:', e.message);
-          // Retry once more shortly; if it keeps failing the attempt
-          // counter above will eventually give up cleanly.
+          // The instance couldn't even start (e.g. mic grabbed by another
+          // app/tab). Give it one more slower try before giving up cleanly.
           restartTimer = setTimeout(() => {
             if (!listening) return;
-            try { recognition.start(); } catch (e2) { stopListening(); }
-          }, 400);
+            try {
+              recognition.start();
+            } catch (e2) {
+              stopListening();
+              if (!erroredBubbleShown) {
+                erroredBubbleShown = true;
+                addBubble('Voice input could not restart — the microphone may be in use by another app or tab. Click the mic to try again.', 'error');
+              }
+            }
+          }, 1500);
         }
-      }, 300);
+      }, delay);
     };
 
     return r;
@@ -8667,8 +8695,9 @@ function initVoiceInput() {
   function startListening() {
     baseText = chatInputEl.value ? chatInputEl.value.trim() + ' ' : '';
     finalTranscript = '';
-    restartAttempts = 0;
-    hadResultThisSession = false;
+    softRestartCount = 0;
+    networkFailCount = 0;
+    erroredBubbleShown = false;
 
     recognition = createRecognition();
 
