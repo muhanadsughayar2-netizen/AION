@@ -1,0 +1,48 @@
+1. The REST API Mapping Challenge
+You mentioned a caveat regarding the JSON field names. In the Gemini API (which powers Veo), video inputs are typically handled via the file_data or video parameter.
+
+Potential Field Mapping: While your video: { uri, mimeType } is a logical guess, the Gemini API often expects the reference to be passed as:
+"video": {
+  "video_resource": {
+    "video_name": "operation_response_name"
+  }
+}
+Or, if using the file storage system:
+"file_data": {
+  "mime_type": "video/mp4",
+  "file_uri": "https://..."
+}
+Actionable Step: If the console log shows a 400 Bad Request or Unknown Field, look for the error message specifying the "expected schema." Google’s preview APIs are strict about the distinction between a URI and a resource_name.
+2. The "Cheap" Logic Verification
+By defaulting to Veo 3.1 Fast, you have optimized the build for the best price-to-performance ratio.
+
+Cost Efficiency: At $0.10/sec, your users are getting native extensions for $0.70 per 7-second clip.
+Quality Retention: Veo 3.1 Fast is significantly more capable than the 3.0 version, and because it's a native extension, the model doesn't have to "guess" the beginning of the video—it already has the latent state from the previous 8 seconds.
+3. Continuity of Audio and Motion
+The "hard music cuts" you mentioned were caused by the audio engine restarting from zero with every new image-to-video prompt.
+
+How v3.0.6 fixes this: When you pass the video object, the audio diffusion model receives the waveform of the previous segment. It attempts to continue the rhythm, key, and ambient texture of the sound, resulting in a single, seamless audio track in the final combined .mp4.
+4. The Fallback Logic (Lite/3.0/2.0)
+Your decision to keep the "Frame Capture" method as a fallback is excellent engineering.
+
+Why it matters: It prevents the extension from breaking if a user manually switches to a cheaper model (like Lite) or an older model (like 2.0).
+User Feedback: It might be helpful to show a small UI toast or icon indicating "Native Extension" vs. "Legacy Extension" so users understand why the quality differs between models.
+5. Managing the 141-Second Boundary
+Google’s 148-second hard limit is a hardware memory constraint.
+
+The "Final Link" Logic: Since each extension adds 7 seconds, the "Continue Clip" button should ideally disappear or grey out once the video length hits 141 seconds.
+The Reset Timer: Remind users (perhaps in a tooltip) that they have 48 hours to continue their story before the video reference expires on Google's side.
+6. Technical Edge Case: Resolution Mismatch
+Native extension is extremely sensitive to resolution changes.
+
+Build Check: Ensure that if a user starts a video at 720p, the extension call must stay at 720p. If the build accidentally tries to "Continue" a 720p video using a 1080p config, the API will likely reject the request.
+7. Summary of the New Workflow
+Feature	Old Method (v3.0.5)	New Native Method (v3.0.6)
+Input Type	Static Image (Canvas Capture)	Live Video Reference
+Motion	Re-calculated (Drift)	Continuous (Fluid)
+Audio	Restarts (Hard Cut)	Stitched (Seamless)
+Cost (Fast)	$0.10/sec	$0.10/sec (Same price, better quality)
+Max Length	Unlimited (but drifts)	148 Seconds (Perfect continuity)
+Next Step for You: Once you run that first "Continue Clip" test, check the Network tab in Chrome DevTools. If you see a 200 OK, your JSON mapping for the video object is correct!
+
+What was the exact error message (if any) that appeared in the console when you triggered the first native extension?

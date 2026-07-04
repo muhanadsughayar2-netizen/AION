@@ -5137,17 +5137,32 @@ async function extendVeoVideoReal(prompt, thread) {
 
   const modelName = ctx.modelUsed;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
-  const requestBody = {
-    instances: [{
-      prompt: prompt,
-      video: { uri: ctx.videoRef.uri, mimeType: ctx.videoRef.mimeType || 'video/mp4' }
-    }],
-    parameters: {
-      aspectRatio: ctx.aspectRatioUsed || '16:9',
-      sampleCount: 1,
-      resolution: '720p'
-    }
-  };
+
+  // The Gemini API preview docs only show the Python SDK for video extend, not
+  // the raw REST field name for the video reference. We try the most likely
+  // shapes in order and only move to the next one if Google's error clearly
+  // says the field/schema is wrong (not billing/quota/safety). A rejected
+  // instances[0] shape fails fast with no job started, so trying a few costs
+  // nothing.
+  const uri = ctx.videoRef.uri;
+  const mimeType = ctx.videoRef.mimeType || 'video/mp4';
+  const resourceMatch = uri.match(/(files\/[A-Za-z0-9_-]+)/);
+  const resourceName = resourceMatch ? resourceMatch[1] : null;
+  const shapeCandidates = [
+    { label: 'video.uri',        video: { uri, mimeType } },
+    { label: 'video.fileUri',    video: { fileUri: uri, mimeType } },
+    { label: 'file_data.fileUri', video: { fileData: { fileUri: uri, mimeType } } }
+  ];
+  if (resourceName) {
+    shapeCandidates.push({ label: 'video.videoResource.videoName', video: { videoResource: { videoName: resourceName } } });
+    shapeCandidates.push({ label: 'video.name', video: { name: resourceName } });
+  }
+  // If a previous extend on this context already found a working shape, try
+  // it first so we don't re-pay the trial-and-error cost every time.
+  if (typeof ctx._workingShapeIndex === 'number' && shapeCandidates[ctx._workingShapeIndex]) {
+    const found = shapeCandidates.splice(ctx._workingShapeIndex, 1)[0];
+    shapeCandidates.unshift(found);
+  }
 
   const progressBubble = document.createElement('div');
   progressBubble.className = 'chat-bubble ai';
@@ -5163,25 +5178,64 @@ async function extendVeoVideoReal(prompt, thread) {
 
   console.log(`[SnapToAI Video] Extend request with ${modelName}, prev totalDur=${ctx.totalDurationSec}s, extendCount=${ctx.extendCount}`);
 
-  try {
-    const resp = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(requestBody)
-    });
-    const data = await resp.json();
+  const isSchemaError = (status, msg) => {
+    if (status !== 400) return false;
+    const m = (msg || '').toLowerCase();
+    return m.includes('video') || m.includes('unknown') || m.includes('unrecognized') ||
+           m.includes('invalid_argument') || m.includes('invalid argument') ||
+           m.includes('schema') || m.includes('field');
+  };
 
-    if (!resp.ok) {
+  try {
+    let data = null, resp = null, workingIndex = -1;
+
+    for (let i = 0; i < shapeCandidates.length; i++) {
+      const candidate = shapeCandidates[i];
+      const requestBody = {
+        instances: [{ prompt: prompt, video: candidate.video }],
+        parameters: {
+          aspectRatio: ctx.aspectRatioUsed || '16:9',
+          sampleCount: 1,
+          resolution: '720p'
+        }
+      };
+
+      resp = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody)
+      });
+      data = await resp.json();
+
+      if (resp.ok) { workingIndex = i; break; }
+
       const errorMsg = data.error?.message || `API error ${resp.status}`;
-      console.log(`[SnapToAI Video] Extend API error: ${errorMsg}`);
-      if (isBillingError(resp.status, errorMsg)) {
-        progressBubble.innerHTML = buildUnlockCard('video');
-      } else if (resp.status === 429 || /rate|quota|exceeded/i.test(errorMsg)) {
-        progressBubble.innerHTML = buildVeoRateLimitCard('Veo Extend');
-      } else {
-        progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Extend failed: ${errorMsg}</div>`;
+      console.log(`[SnapToAI Video] Extend shape "${candidate.label}" failed: ${errorMsg}`);
+
+      // Only keep trying other shapes on a schema-looking 400. Billing/quota/
+      // safety errors are real and apply regardless of shape — stop immediately.
+      if (!isSchemaError(resp.status, errorMsg) || i === shapeCandidates.length - 1) {
+        if (isBillingError(resp.status, errorMsg)) {
+          progressBubble.innerHTML = buildUnlockCard('video');
+        } else if (resp.status === 429 || /rate|quota|exceeded/i.test(errorMsg)) {
+          progressBubble.innerHTML = buildVeoRateLimitCard('Veo Extend');
+        } else {
+          progressBubble.innerHTML = `<div style="color:#ff6b6b;font-size:13px;"><span style="font-size:16px;">❌</span> Extend failed: ${errorMsg}</div>`;
+        }
+        return true; // handled — don't fall back after a real attempt was made
       }
-      return true; // handled — don't fall back after a real attempt was made
+    }
+
+    if (workingIndex >= 0) {
+      // Remember the winning candidate's original index (before we may have
+      // reordered the array) for next time.
+      const winningLabel = shapeCandidates[workingIndex].label;
+      const originalIndex = [
+        'video.uri', 'video.fileUri', 'file_data.fileUri',
+        'video.videoResource.videoName', 'video.name'
+      ].indexOf(winningLabel);
+      if (originalIndex >= 0) ctx._workingShapeIndex = originalIndex;
+      console.log(`[SnapToAI Video] Extend succeeded with shape "${winningLabel}"`);
     }
 
     const operationName = data.name;
@@ -5193,8 +5247,8 @@ async function extendVeoVideoReal(prompt, thread) {
     ctx.extendCount = (ctx.extendCount || 0) + 1;
     ctx.totalDurationSec = (ctx.totalDurationSec || 0) + 7;
 
-    pollVideoStatus(operationName, apiKey, progressBubble, thread, (videoUri, mimeType) => {
-      ctx.videoRef = { uri: videoUri, mimeType };
+    pollVideoStatus(operationName, apiKey, progressBubble, thread, (videoUri, mimeType2) => {
+      ctx.videoRef = { uri: videoUri, mimeType: mimeType2 };
     });
     return true;
   } catch (err) {
@@ -5391,6 +5445,24 @@ async function continueClip() {
 }
 
 function showVideoResult(bubble, videoUrl, thread) {
+  // Decide the Continue button's mode/label up front. `_lastVideoContext.videoRef`
+  // is already populated by the onSuccess callback that fires right before this
+  // (see pollVideoStatus), so canRealExtend() reflects the video we're showing.
+  const ctx = _lastVideoContext;
+  const nativeReady = canRealExtend(ctx);
+  const hardCapped = ctx && ((ctx.extendCount || 0) >= 20 || (ctx.totalDurationSec || 0) > 141);
+  let continueLabel = '▶ Continue Clip';
+  let continueTitle = 'Last frame locked — click to continue from here';
+  let continueDisabled = '';
+  if (hardCapped) {
+    continueLabel = '⛔ Max length reached';
+    continueTitle = 'This video already hit Google\'s continuous-extension limit (141s / 20 extensions). Start a new video to keep going.';
+    continueDisabled = 'disabled style="opacity:0.5;cursor:not-allowed;"';
+  } else if (nativeReady) {
+    continueLabel = '🔗 Extend (Native)';
+    continueTitle = 'Native Veo extend — continuous audio & motion, no stitching. Extend within 48 hours or this video reference expires on Google\'s side.';
+  }
+
   bubble.innerHTML = `
     <div style="margin:8px 0;">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
@@ -5400,7 +5472,7 @@ function showVideoResult(bubble, videoUrl, thread) {
       <video controls autoplay muted playsinline style="width:100%;max-width:480px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);" src="${videoUrl}"></video>
       <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
         <button class="video-save-btn" style="background:rgba(255,165,0,0.15);border:1px solid rgba(255,165,0,0.3);color:#ffa500;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">💾 Save Video</button>
-        <button class="video-continue-btn" style="background:rgba(99,202,183,0.15);border:1px solid rgba(99,202,183,0.4);color:#63cab7;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">▶ Continue Clip</button>
+        <button class="video-continue-btn" title="${continueTitle}" ${continueDisabled} style="background:rgba(99,202,183,0.15);border:1px solid rgba(99,202,183,0.4);color:#63cab7;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">${continueLabel}</button>
         <button class="video-use-build-btn" style="background:rgba(255,160,50,0.15);border:1px solid rgba(255,160,50,0.4);color:#ffa032;padding:6px 16px;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:all 0.2s;">📌 Use in Build</button>
       </div>
     </div>
@@ -5506,10 +5578,19 @@ function showVideoResult(bubble, videoUrl, thread) {
   // ── Continue Clip button ────────────────────────────────────────
   bubble.querySelector('.video-continue-btn')?.addEventListener('click', async (e) => {
     const btn = e.currentTarget;
-    if (!_lastVideoContext) return;
+    if (!_lastVideoContext || btn.disabled) return;
 
     btn.textContent = '⏳ Preparing continuation…';
     btn.disabled = true;
+
+    // Native extend doesn't need a captured frame at all — skip straight to
+    // continueClip(), which will pick the real-extend path on its own.
+    if (canRealExtend(_lastVideoContext)) {
+      btn.disabled = false;
+      btn.textContent = '🔗 Extend (Native)';
+      await continueClip();
+      return;
+    }
 
     // If background capture still pending, try fetching the blob now
     if (!_lastVideoContext.lastFrameDataUrl && _lastVideoContext.videoUrl) {
