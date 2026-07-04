@@ -5167,65 +5167,35 @@ async function extendVeoVideoReal(prompt, thread) {
   const modelName = ctx.modelUsed;
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
 
-  // The Gemini API preview docs only show the Python SDK for video extend, not
-  // the raw REST field name for the video reference. We try the most likely
-  // shapes in order and only move to the next one if Google's error clearly
-  // says the field/schema is wrong (not billing/quota/safety). A rejected
-  // instances[0] shape fails fast with no job started, so trying a few costs
-  // nothing.
+  // Google's official Gemini API docs for "Extending Veo videos" show the
+  // real shape (Python SDK, which maps 1:1 onto the REST JSON body):
+  //   operation = client.models.generate_videos(
+  //     model="veo-3.1-generate-preview",
+  //     video=operation.response.generated_videos[0].video,  # <-- pass the
+  //                                                           #     Video object AS-IS
+  //     prompt=prompt, ...
+  //   )
+  // `operation.response.generated_videos[0].video` is exactly the object we
+  // already capture into ctx.videoRef ({ uri, mimeType }) when polling the
+  // ORIGINAL generation completes (see pollVideoStatus's onSuccess callback,
+  // sourced from REST's response.generateVideoResponse.generatedSamples[0].video).
+  // So the correct request body is simply `video: ctx.videoRef` — no
+  // resource-path construction, no snake_case guessing needed. Earlier
+  // builds prioritized speculative "resource path" guesses (unverified
+  // secondhand analysis) ahead of this confirmed shape, which both burned
+  // quota on wrong guesses AND meant the real shape was rarely even reached
+  // within the per-call attempt cap. Fixed here: try the documented shape
+  // first, with only one lightweight fallback (uri without mimeType, in
+  // case the API is strict about extra fields on the Video object).
   const uri = ctx.videoRef.uri;
   const mimeType = ctx.videoRef.mimeType || 'video/mp4';
-  const resourceMatch = uri.match(/(files\/[A-Za-z0-9_-]+)/);
-  const resourceName = resourceMatch ? resourceMatch[1] : null;
-  // Vertex-style resource names (projects/.../operations/.../generatedVideos/0)
-  // aren't something we get directly from the Gemini Developer API, but we do
-  // have the LRO operation name — build best-effort guesses from it in case
-  // the backend expects a resource path rather than a raw file URI.
-  const opName = ctx.operationName || null;
-  const opResourceGuesses = [];
-  if (opName) {
-    opResourceGuesses.push(`${opName}/generatedVideos/0`);
-    opResourceGuesses.push(opName);
-  }
 
-  const snakeCaseTargets = [resourceName, ...opResourceGuesses].filter(Boolean);
-
-  const shapeCandidates = [];
-  // Leading candidate: `uri` holding the operation-derived resource path
-  // (e.g. "operations/xxx/generatedVideos/0") rather than the signed file
-  // URL. Cross-referenced technical analysis flags this as the most likely
-  // correct shape for generateVideos-style extend, so it goes first.
-  for (const target of opResourceGuesses) {
-    shapeCandidates.push({ label: `video.uri (resource path: ${target})`, video: { uri: target } });
-  }
-  if (resourceName) {
-    shapeCandidates.push({ label: `video.uri (resource path: ${resourceName})`, video: { uri: resourceName } });
-  }
-
-  shapeCandidates.push(
-    { label: 'video.uri',        video: { uri, mimeType } },
-    { label: 'video.fileUri',    video: { fileUri: uri, mimeType } },
-    { label: 'file_data.fileUri', video: { fileData: { fileUri: uri, mimeType } } }
-  );
-  if (resourceName) {
-    shapeCandidates.push({ label: 'video.videoResource.videoName', video: { videoResource: { videoName: resourceName } } });
-    shapeCandidates.push({ label: 'video.name', video: { name: resourceName } });
-  }
-  // Snake_case fallback: video_resource/video_name, tried against both the
-  // parsed files/xxx resource and the operation-derived guesses.
-  for (const target of snakeCaseTargets) {
-    shapeCandidates.push({
-      label: `video.video_resource.video_name (${target})`,
-      video: { video_resource: { video_name: target } }
-    });
-  }
-  // Plain resourceName field (Vertex-style).
-  for (const target of snakeCaseTargets) {
-    shapeCandidates.push({ label: `video.resourceName (${target})`, video: { resourceName: target } });
-  }
+  const shapeCandidates = [
+    { label: 'video.uri+mimeType (docs: video object as-is)', video: { uri, mimeType } },
+    { label: 'video.uri (no mimeType)',                        video: { uri } }
+  ];
   // If a previous extend on this context already found a working shape, try
-  // it first so we don't re-pay the trial-and-error cost every time. Matched
-  // by label since dynamic (operation-derived) labels can't map to a fixed index.
+  // it first so we don't re-pay the trial-and-error cost every time.
   if (ctx._workingShapeLabel) {
     const foundIdx = shapeCandidates.findIndex(c => c.label === ctx._workingShapeLabel);
     if (foundIdx > 0) {
@@ -5235,13 +5205,10 @@ async function extendVeoVideoReal(prompt, thread) {
   }
 
   // Veo's preview extend endpoint has a very tight per-minute quota (as few
-  // as ~2-3 requests/min). Trying every shape guess in one burst can exhaust
-  // that quota on guesses alone before ever reaching the correct one, then
-  // even a correct shape comes back 429. Cap how many we try per call, and
-  // space them out, so one click can't torch the whole minute's allowance.
+  // as ~2-3 requests/min). Even with just 2 candidates, space them out so a
+  // single call can't burst two requests into the same rate-limit window.
   // Once ctx._workingShapeLabel is known, only that single shape is tried.
-  const MAX_SHAPES_PER_CALL = ctx._workingShapeLabel ? 1 : 3;
-  const candidatesToTry = shapeCandidates.slice(0, MAX_SHAPES_PER_CALL);
+  const candidatesToTry = ctx._workingShapeLabel ? shapeCandidates.slice(0, 1) : shapeCandidates;
   const SHAPE_RETRY_DELAY_MS = 4000;
 
   const progressBubble = document.createElement('div');
