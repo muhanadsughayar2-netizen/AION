@@ -1,0 +1,45 @@
+s, it is entirely possible to build an agent that controls your app using your current structure, but you need to add a "Control Bridge" to move from a text-generator to an active agent.
+
+Your current "Build Mode" is a stateless text pipeline: it takes a prompt and outputs a string of code. To build an agent that "controls things," you must transition to the Interactions API and implement Function Calling or MCP (Model Context Protocol) [1.5.2, 2.5.1].
+
+Summary: The "Something Else" You Need
+To turn your extension into a "System Controller," you need to replace your standard generateContent calls with the Interactions API. This allows the agent to maintain a server-side state (memory of what it just did) and use "Tools" to send commands back to your extension’s functions [2.3.1, 2.3.6].
+
+1. How to Control Your App (The Technical Bridge)
+In a Manifest V3 extension, you cannot let an AI run arbitrary code directly due to security rules (no eval()). Instead, you use Function Calling as a secure remote control [1.3.4, 2.5.3].
+
+Define Your "Hands": You give the Gemini API a list of "tools" (functions your extension can actually do).
+Example: toggleDarkMode(), navigateToTab(id), updateStorage(key, val).
+The Agent Decides: When you prompt the agent to "organize my workspace," it doesn't just write text. It returns a Function Call object [1.3.9, 2.5.1].
+Your App Executes: Your extension's background script receives that object, runs the real local code, and sends the result back to the agent to confirm it’s done [1.3.3, 1.3.4].
+2. Using the "Antigravity" Advantage
+Since you are interested in the "smart" behavior of Antigravity, you can now use the Antigravity SDK or the Chrome DevTools MCP to let the agent "see" and "touch" your app's live environment [2.1.1, 2.2.8].
+
+Chrome DevTools MCP: This is a specific tool from Google that lets an AI agent inspect your extension's DOM, console logs, and network requests in real-time to debug or interact with elements [2.2.4, 2.2.8].
+Stateful Sessions: Unlike your current conversationHistory array, the Interactions API uses a previous_interaction_id. This keeps the "Linux sandbox" (environment) alive across multiple turns, so the agent remembers the files it created in Step 1 when it gets to Step 10 [1.5.2, 2.3.1].
+3. The "Agent Controller" Prompt
+To see how this works, use a prompt that explicitly treats the AI as a Controller with access to your system's functions.
+
+Paste this into your system prompt or current build tool:
+
+"You are now an Autonomous App Controller. You have access to my extension's internal API. Your Task: Analyze the current active tab's HTML and perform a 'cleanup.'
+
+Identify all elements that look like ads or distractions.
+Call the hideElement(selector) tool for each one.
+Search for a better CSS theme for this specific site's content.
+Call the applyCustomCSS(css) tool to inject it.
+Report your reasoning and a summary of actions taken."
+Next Steps for Your Build
+Upgrade to Interactions API: Switch your API endpoint from v1beta/models/...:generateContent to v1/interactions [1.5.6].
+Add a Tool Definition: In your API call, add a tools block that describes the functions your Chrome extension can perform (e.g., chrome.tabs.sendMessage) [1.3.4, 1.3.9].
+Local "Agent Loop": Wrap your build logic in a loop that checks if the model returned a functionCall. If it did, execute it locally and send the result back to the model immediately [1.1.7, 1.3.3].
+Sources
+Interactions API | Gemini API - Google AI for Developers [1.5.2, 2.3.1]
+Function calling with the Gemini API | Google AI [1.3.3, 2.5.1]
+Antigravity SDK - Google Documentation [2.1.1]
+Chrome DevTools MCP for AI Agents [2.2.8]
+Building Agents with the Gemini Interactions API [1.1.7]
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
