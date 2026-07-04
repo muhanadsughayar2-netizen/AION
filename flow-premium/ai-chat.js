@@ -1284,7 +1284,7 @@ let activeVideoPollTimer = null;
 
 const VEO_MODELS = [
   { id: MODELS.veo31,      label: '3.1',      desc: 'Best quality',          tier: 'top'   },
-  { id: MODELS.veo31Fast,  label: '3.1 Fast', desc: 'Fast + great quality',  tier: 'mid'   },
+  { id: MODELS.veo31Fast,  label: '3.1 Fast', desc: 'Cheapest way to extend (720p)', tier: 'mid'   },
   { id: MODELS.veo31Lite,  label: '3.1 Lite', desc: 'Quick drafts',          tier: 'lite'  },
   { id: MODELS.veoDefault, label: '3.0',      desc: 'High quality',          tier: 'mid'   },
   { id: MODELS.veo3Fast,   label: '3.0 Fast', desc: 'Fast + good',           tier: 'lite'  },
@@ -1295,7 +1295,7 @@ const VEO_MODELS = [
 // Source: https://ai.google.dev/gemini-api/docs/pricing  &  https://cloud.google.com/vertex-ai/generative-ai/pricing
 const VEO_PRICING = {
   [MODELS.veo31]:      0.40,  // Veo 3.1 (with audio)
-  [MODELS.veo31Fast]:  0.15,  // Veo 3.1 Fast
+  [MODELS.veo31Fast]:  0.10,  // Veo 3.1 Fast @ 720p — default model, cheapest way to extend ($0.70 / 7s clip)
   [MODELS.veo31Lite]:  0.10,  // Veo 3.1 Lite
   [MODELS.veoDefault]: 0.75,  // Veo 3 (with audio)
   [MODELS.veo3Fast]:   0.40,  // Veo 3 Fast (with audio)
@@ -1328,7 +1328,8 @@ const LYRIA_MODELS_DISPLAY = [
   { id: MODELS.ttsPrimary,   label: 'Gemini TTS', desc: 'Voice fallback (not music)' }
 ];
 
-let selectedVeoModel = MODELS.veoLite;
+// Default: Veo 3.1 Fast @ 720p — cheapest way to extend videos ($0.10/s = $0.70 per 7s clip)
+let selectedVeoModel = MODELS.veo31Fast;
 let selectedVideoDuration = 8;
 let selectedClipCount = 1; // locked — single 8s clip only, no stitching
 let userAvailableVeoModels = [];
@@ -2153,6 +2154,7 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
         aspectRatio: aspectRatio || '16:9',
         sampleCount: 1,
         durationSeconds: selectedVideoDuration,
+        resolution: '720p',
         // negativePrompt removed — current Veo models reject it
         enhancePrompt: false
       }
@@ -2374,6 +2376,7 @@ async function generateOneVeoClip(clipIdx, ctx) {
             aspectRatio: ctx.aspectRatio || '16:9',
             sampleCount: 1,
             durationSeconds: durationSeconds,
+            resolution: '720p',
             // negativePrompt removed — current Veo models reject it
             enhancePrompt: false
           }
