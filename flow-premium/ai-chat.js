@@ -940,8 +940,8 @@ const AI_MODES = {
   'broadcast': {
     model: MODELS.chat,
     type: 'gemini',
-    placeholder: 'Type your show topic here, then click 🎙️ Generate below…',
-    welcome: '🎙️ Broadcast Studio — type your topic above, pick a format below, then click Generate.'
+    placeholder: 'Type your topic here (or use your attached screenshot below), then press Generate Podcast…',
+    welcome: '🎙️ Broadcast Studio — type a topic, or use your attached screenshot as the source. Pick a format below, then press "Generate Podcast".'
   },
   'agent': {
     model: MODELS.chat,
@@ -1144,6 +1144,7 @@ function initModeButtons() {
       // Show agent tools only for vision on initial load
       const toolBtnGroupInit = document.querySelector('.tool-btn-group');
       if (toolBtnGroupInit) toolBtnGroupInit.style.display = mode === 'vision' ? 'flex' : 'none';
+      showModeSubBar(mode);
     }
   }).catch(() => {});
 }
@@ -1467,8 +1468,32 @@ function initBroadcastSubBar() {
         if (b64) _bsbAttachments.push({ type: 'image', name: `Snap ${i+1}`, mimeType: mime, data: b64, snapId: `snap_${i}` });
       });
       if (_bsbAttachments.length) bsbRenderAttachList();
+      updateSourceBanner();
     } catch (_) {}
   })();
+
+  // Makes it obvious whether Generate will use the attached screenshot(s) or
+  // whatever text is typed above — the #1 confusing part users reported.
+  function updateSourceBanner() {
+    const banner = document.getElementById('bsbSourceBanner');
+    const bannerText = document.getElementById('bsbSourceBannerText');
+    if (!banner || !bannerText) return;
+    const snapCount = _bsbAttachments.filter(a => a.snapId).length;
+    if (snapCount > 0) {
+      bannerText.textContent = `📸 Using ${snapCount === 1 ? 'your attached screenshot' : `your ${snapCount} attached screenshots`} as the source`;
+      banner.style.display = 'flex';
+    } else {
+      banner.style.display = 'none';
+    }
+  }
+
+  document.getElementById('bsbSourceBannerClear')?.addEventListener('click', () => {
+    _bsbAttachments = _bsbAttachments.filter(a => !a.snapId);
+    bsbRenderAttachList();
+    updateSourceBanner();
+    const ci = document.getElementById('chatInput');
+    if (ci) ci.focus();
+  });
 
   function bsbRenderAttachList() {
     const list = bar.querySelector('.bsb-attach-list');
@@ -1481,7 +1506,7 @@ function initBroadcastSubBar() {
       const chip = Object.assign(document.createElement('div'), { textContent: `📷 ${imgs.length}` });
       chip.style.cssText = 'padding:3px 8px;border-radius:12px;background:rgba(45,212,191,0.1);border:1px solid rgba(45,212,191,0.25);font-size:10px;color:#2dd4bf;cursor:pointer;white-space:nowrap;';
       chip.title = 'Click to remove images';
-      chip.onclick = () => { _bsbAttachments = _bsbAttachments.filter(a => a.type !== 'image'); bsbRenderAttachList(); };
+      chip.onclick = () => { _bsbAttachments = _bsbAttachments.filter(a => a.type !== 'image'); bsbRenderAttachList(); updateSourceBanner(); };
       list.appendChild(chip);
     }
     vids.forEach(vf => {
@@ -1665,6 +1690,17 @@ function showModeSubBar(mode) {
     broadcastBar.style.display = mode === 'broadcast' ? 'flex' : 'none';
     if (mode === 'broadcast') initBroadcastSubBar();
   }
+
+  // Broadcast has its own dedicated "Generate Podcast" button and its own
+  // attach buttons (Photos/Video/File) below — showing the generic top
+  // Send button and paperclip attach at the same time made it look like
+  // there were two separate ways to do the same thing, and pressing the
+  // top Send button did nothing (it just chatted instead of generating).
+  // Hide the generic ones here so there is exactly one clear action.
+  const sendBtn = document.getElementById('sendBtn');
+  const uploadBtn = document.querySelector('label.upload-btn');
+  if (sendBtn) sendBtn.style.display = mode === 'broadcast' ? 'none' : '';
+  if (uploadBtn) uploadBtn.style.display = mode === 'broadcast' ? 'none' : '';
 }
 
 function showVideoStudio(thread) {
@@ -11582,7 +11618,11 @@ const chatInput = document.getElementById('chatInput');
 chatInput.addEventListener('keydown', (e) => {
   if (e.key === 'Enter' && !e.shiftKey) {
     e.preventDefault();
-    handleSend();
+    if (currentAiMode === 'broadcast') {
+      document.getElementById('bsbGenBtn')?.click();
+    } else {
+      handleSend();
+    }
   }
 });
 chatInput.addEventListener('input', () => autoResize(chatInput));

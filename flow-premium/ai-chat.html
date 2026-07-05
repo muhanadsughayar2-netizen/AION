@@ -1661,16 +1661,23 @@
             <button class="vsb-pill bsb-trk" data-trk="news">📰 News</button>
             <button class="vsb-pill bsb-trk" data-trk="upbeat">🎸 Upbeat</button>
           </div>
+          <div id="bsbSourceBanner" style="display:none; align-items:center; gap:6px; background:rgba(45,212,191,0.08); border:1px solid rgba(45,212,191,0.25); border-radius:8px; padding:5px 10px; font-size:10.5px; color:#2dd4bf;">
+            <span id="bsbSourceBannerText" style="flex:1;"></span>
+            <button id="bsbSourceBannerClear" style="background:none;border:none;color:rgba(45,212,191,0.7);cursor:pointer;font-size:10px;text-decoration:underline;white-space:nowrap;padding:0;">Remove, I'll type my own topic</button>
+          </div>
+          <div style="display:flex; align-items:center; gap:3px; flex-wrap:wrap;">
+            <span style="font-size:10px; color:rgba(255,255,255,0.28); white-space:nowrap; flex-shrink:0;">Add:</span>
+            <button class="vsb-pill bsb-attach-img" title="Add photos to use as source material">📷 Photos</button>
+            <button class="vsb-pill bsb-attach-vid" title="Add a video to use as source material">🎬 Video</button>
+            <button class="vsb-pill bsb-attach-file" title="Add a text/PDF file to use as source material">📄 File</button>
+          </div>
           <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap;">
-            <button class="vsb-pill bsb-attach-img" title="Attach images">📷</button>
-            <button class="vsb-pill bsb-attach-vid" title="Attach video">🎬</button>
-            <button class="vsb-pill bsb-attach-file" title="Attach text file">📄</button>
             <input type="file" class="bsb-img-input" accept="image/*" multiple style="display:none;">
             <input type="file" class="bsb-vid-input" accept="video/*" style="display:none;">
             <input type="file" class="bsb-file-input" accept=".txt,.md,.csv,.json,.pdf" style="display:none;">
             <div class="bsb-attach-list" style="display:flex; flex-wrap:wrap; gap:4px; align-items:center;"></div>
             <div style="flex:1;"></div>
-            <button id="bsbGenBtn" style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#2dd4bf,#7c3aed);border:none;color:#fff;border-radius:20px;padding:5px 13px;font-size:11px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">🎙️ Generate</button>
+            <button id="bsbGenBtn" style="display:inline-flex;align-items:center;gap:5px;background:linear-gradient(135deg,#2dd4bf,#7c3aed);border:none;color:#fff;border-radius:20px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;">🎙️ Generate Podcast</button>
           </div>
         </div>
         <style>
