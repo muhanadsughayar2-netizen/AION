@@ -66,27 +66,28 @@
       justify-content: center;
     }
 
-    /* ── Magic spinning ring around the logo ── */
+    /* ── Magic spinning ring around the logo (Google 4-color) ── */
     .logo-ring {
       position: absolute;
       width: 96px;
       height: 96px;
       border-radius: 50%;
-      background: conic-gradient(from 0deg, transparent 0%, #2dd4bf 12%, transparent 26%, transparent 100%);
+      background: conic-gradient(from 0deg, #4285F4 0%, #EA4335 25%, #FBBC05 50%, #34A853 75%, #4285F4 100%);
       -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
       mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-      animation: orbitSpin 3.5s linear infinite;
+      animation: orbitSpin 4s linear infinite;
+      opacity: 0.9;
     }
 
     .logo-ring-2 {
       position: absolute;
-      width: 78px;
-      height: 78px;
+      width: 80px;
+      height: 80px;
       border-radius: 50%;
-      background: conic-gradient(from 90deg, transparent 0%, #a78bfa 16%, transparent 32%, transparent 100%);
+      background: conic-gradient(from 180deg, transparent 0%, #4285F4 10%, transparent 22%, transparent 50%, #EA4335 60%, transparent 72%, transparent 100%);
       -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
       mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
-      animation: orbitSpin2 5s linear infinite;
+      animation: orbitSpin2 6s linear infinite;
     }
 
     @keyframes orbitSpin {
@@ -99,19 +100,26 @@
       to   { transform: rotate(-360deg); }
     }
 
-    /* ── Logo image pulse ── */
-    .logo-img {
+    /* ── Logo image, masked to a clean circle with pulsing glow ── */
+    .logo-img-mask {
       position: relative;
-      width: 60px;
-      height: 60px;
+      width: 72px;
+      height: 72px;
       border-radius: 50%;
-      display: block;
+      overflow: hidden;
       animation: camPulse 3s ease-in-out infinite;
     }
 
+    .logo-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
     @keyframes camPulse {
-      0%, 100% { filter: drop-shadow(0 0 6px rgba(45,212,191,0.5)); }
-      50%       { filter: drop-shadow(0 0 14px rgba(45,212,191,0.85)); }
+      0%, 100% { box-shadow: 0 0 10px 1px rgba(66,133,244,0.35); }
+      50%       { box-shadow: 0 0 20px 3px rgba(66,133,244,0.6); }
     }
 
     /* ── Floating particles ── */
@@ -256,13 +264,13 @@
     }
 
     .pin-step-icon {
-      width: 48px;
-      height: 48px;
+      width: 64px;
+      height: 64px;
       display: flex;
       align-items: center;
       justify-content: center;
-      border-radius: 12px;
-      font-size: 20px;
+      border-radius: 16px;
+      font-size: 24px;
       position: relative;
       background: rgba(255,255,255,0.04);
       border: 1px solid rgba(255,255,255,0.1);
@@ -274,19 +282,26 @@
     }
 
     .pin-step-icon.ext {
-      font-size: 10px;
-      font-weight: 700;
-      color: #4285F4;
+      flex-direction: column;
+      gap: 2px;
       border-color: rgba(66,133,244,0.25);
       animation: stepPulse2 5s ease-in-out infinite;
-      padding: 0 6px;
+    }
+
+    .pin-icon-emoji { font-size: 20px; line-height: 1; }
+    .pin-icon-name {
+      font-size: 11px;
+      font-weight: 800;
+      font-style: italic;
+      color: #ffffff;
+      line-height: 1;
     }
 
     .pin-step-icon.check {
       background: rgba(52,168,83,0.1);
       border-color: rgba(52,168,83,0.35);
       color: #34A853;
-      font-size: 22px;
+      font-size: 28px;
       animation: stepPulse3 5s ease-in-out infinite;
     }
 
@@ -430,7 +445,9 @@
         <div class="logo-svg-wrap">
           <div class="logo-ring"></div>
           <div class="logo-ring-2"></div>
-          <img src="icons/icon128.png" alt="Aion AI" class="logo-img">
+          <div class="logo-img-mask">
+            <img src="icons/welcome-logo.png" alt="Aion" class="logo-img">
+          </div>
         </div>
       </div>
       <h1>Aion</h1>
@@ -453,7 +470,9 @@
       <div class="pin-steps">
         <div class="pin-step">
           <div class="pin-step-icon puzzle">
-            🧩
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#8ab4f8" stroke-width="1.6" stroke-linejoin="round">
+              <path d="M7 3h4a1 1 0 0 1 1 1v1.2a1.6 1.6 0 0 0 2.9 1 1.6 1.6 0 0 1 2.9 1V9a1 1 0 0 1-1 1h-1.2a1.6 1.6 0 0 0 0 3.2H17a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1h-4a1 1 0 0 1-1-1v-1.2a1.6 1.6 0 0 0-3.2 0V17a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h1.2a1.6 1.6 0 0 0 0-3.2H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h3z"/>
+            </svg>
             <div class="pin-cursor">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
             </div>
@@ -464,7 +483,8 @@
         <span class="pin-arrow a1">→</span>
         <div class="pin-step">
           <div class="pin-step-icon ext">
-            📸 Aion AI 📌
+            <span class="pin-icon-emoji">📌</span>
+            <span class="pin-icon-name">Aion</span>
             <div class="pin-cursor-2">
               <svg width="12" height="12" viewBox="0 0 24 24" fill="#fff"><path d="M5 3l14 9-6 1.5L10 20z"/></svg>
             </div>
