@@ -777,6 +777,81 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       })();
       return true;
     }
+    if (executeAction === 'doubleClick') {
+      // Content-script click/dblclick events are ALWAYS isTrusted:false — no
+      // amount of synthetic dispatchEvent() can change that. Security-sensitive
+      // actions like opening a file in Google Drive check isTrusted and simply
+      // ignore fake events, so the old approach silently did nothing. The only
+      // way to fire a click the page can't tell apart from a real one is the
+      // Chrome DevTools Protocol (Input.dispatchMouseEvent), attached briefly
+      // via chrome.debugger. If that's unavailable for any reason, we fall
+      // straight back to the old synthetic-event double-click so nothing else
+      // in the existing flow breaks.
+      (async () => {
+        const fallbackToSyntheticDoubleClick = () => {
+          chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, (response) => {
+            if (chrome.runtime.lastError) {
+              chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] })
+                .then(() => {
+                  chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, sendResponse);
+                })
+                .catch(err => sendResponse({ success: false, error: err.message }));
+            } else {
+              sendResponse(response);
+            }
+          });
+        };
+
+        try {
+          // Ask the content script WHERE to click (element search only, no
+          // click dispatched), injecting it first if it isn't loaded yet.
+          const locate = async () => new Promise((resolve, reject) => {
+            chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction: 'locateForClick', params }, (response) => {
+              if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+              else resolve(response);
+            });
+          });
+
+          let loc;
+          try {
+            loc = await locate();
+          } catch (_e) {
+            await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
+            loc = await locate();
+          }
+
+          if (!loc || !loc.success || typeof loc.x !== 'number' || typeof loc.y !== 'number') {
+            fallbackToSyntheticDoubleClick();
+            return;
+          }
+
+          const { x, y } = loc;
+          const debuggee = { tabId };
+          await chrome.debugger.attach(debuggee, '1.3');
+          try {
+            const send = (params2) => new Promise((resolve, reject) => {
+              chrome.debugger.sendCommand(debuggee, 'Input.dispatchMouseEvent', params2, () => {
+                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+                else resolve();
+              });
+            });
+            const base = { x, y, button: 'left', buttons: 1 };
+            await send({ ...base, type: 'mousePressed', clickCount: 1 });
+            await send({ ...base, type: 'mouseReleased', clickCount: 1 });
+            await new Promise(r => setTimeout(r, 60));
+            await send({ ...base, type: 'mousePressed', clickCount: 2 });
+            await send({ ...base, type: 'mouseReleased', clickCount: 2 });
+            sendResponse({ success: true });
+          } finally {
+            chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          }
+        } catch (e) {
+          console.warn('[SnapToAI Agent] Trusted double-click failed, falling back:', e && e.message);
+          fallbackToSyntheticDoubleClick();
+        }
+      })();
+      return true;
+    }
     chrome.tabs.sendMessage(tabId, {
       action: 'agentExecute',
       executeAction,

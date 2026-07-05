@@ -15,7 +15,8 @@
     "downloads",
     "identity",
     "contextMenus",
-    "sidePanel"
+    "sidePanel",
+    "debugger"
   ],
   "side_panel": {
     "default_path": "sidebar.html"

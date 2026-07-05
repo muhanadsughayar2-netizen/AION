@@ -3948,6 +3948,7 @@
     createGhostCursor();
     
     switch (action) {
+      case 'locateForClick':
       case 'click':
       case 'doubleClick': {
         // SMART SEARCH: Find element by multiple strategies
@@ -4029,6 +4030,15 @@
         const center = getElementCenter(element);
         moveGhostCursor(center.x, center.y);
         await new Promise(r => setTimeout(r, 500));
+
+        if (action === 'locateForClick') {
+          // Just used to find WHERE to click — the real click is dispatched
+          // via chrome.debugger (a genuinely trusted click) by background.js,
+          // because sites like Google Drive ignore synthetic (isTrusted:false)
+          // double-clicks on security-sensitive actions like opening a file.
+          highlightElement(element);
+          return { success: true, x: center.x, y: center.y };
+        }
         
         // Show click effect
         clickGhostCursor(center.x, center.y);
