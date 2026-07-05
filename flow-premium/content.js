@@ -4069,7 +4069,15 @@
         // real click listener (that's what actually opens the modal/panel)
         // but does NOT trigger the browser's own default link-navigation
         // behavior, so the blocked javascript: URL is never attempted.
-        const href = element.tagName === 'A' ? (element.getAttribute('href') || '') : '';
+        //
+        // IMPORTANT: the element our matcher finds is often a nested child
+        // (e.g. a <span> label) INSIDE the real <a href="javascript:...">,
+        // not the anchor itself. A native .click() on that child still
+        // bubbles up and triggers the ancestor anchor's default navigation,
+        // so we must check the closest anchor ancestor, not just the
+        // clicked element's own tag/href.
+        const anchorEl = typeof element.closest === 'function' ? element.closest('a[href]') : null;
+        const href = anchorEl ? (anchorEl.getAttribute('href') || '') : '';
         const isJsHrefLink = /^\s*javascript:/i.test(href);
 
         if (action === 'doubleClick') {
