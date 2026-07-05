@@ -8152,7 +8152,12 @@ function removeLoading() {
 // the step cap. This reuses the automation "hands" that already existed in
 // content.js — this function is the missing "brain" that drives them.
 let agentStopRequested = false;
-const AGENT_MAX_STEPS = 10;
+// Multi-step tasks ("go find a channel, open its analytics, read the numbers,
+// gather the data") take more than a handful of clicks once you count
+// searching, waiting for pages to load, and scrolling to find things. 10 was
+// too tight and cut sequences off before they finished — 25 gives real
+// multi-stage tasks room to complete while still capping runaway loops.
+const AGENT_MAX_STEPS = 25;
 
 const AGENT_TOOLS = [{
   functionDeclarations: [
@@ -8226,7 +8231,9 @@ Rules:
 - If the task asks you to go to a specific website/URL that is not the current page, use "navigate" with the full address — do NOT try to fake it by typing the URL into a search box or link on the page.
 - After each action you will be told whether it succeeded and shown the page again, so you can decide the next step.
 - If an action fails, try a different way to find the same element (different text/description) before giving up.
-- Call "finish" as soon as the task is done, or if it cannot be done on this page, or if it requires something risky/irreversible (like sending money, submitting a payment, deleting something, or sending an email) that the user should confirm themselves first — in that case explain what you found and stop instead of doing it.
+- MULTI-STEP TASKS: many instructions are really a sequence written in one sentence (e.g. "find a channel, then open its analytics, then read the numbers, then summarize them"). Treat each part, in the order given, as its own milestone. Before acting, silently work out which milestone you're currently on based on the screenshot/page text, complete it fully (including any waiting/scrolling needed to confirm it worked), and only then move to the next one — do not skip ahead, do not jump back to an earlier milestone unless the screenshot shows you actually left the intended path, and do not stop early just because an earlier milestone technically "looks done" if the sentence clearly continues past it.
+- GATHERING/READING DATA: if the task asks you to "get", "read", "check", or "gather" information (numbers, stats, text, a list, etc.) rather than to perform an action, your job is DONE once you can see that information in the current screenshot/page text — call "finish" with a summary that actually includes the data you found (the real numbers/values/text visible), not just "task completed."
+- Call "finish" as soon as the full sequence is done, or if it cannot be done on this page, or if it requires something risky/irreversible (like sending money, submitting a payment, deleting something, or sending an email) that the user should confirm themselves first — in that case explain what you found and stop instead of doing it.
 - If the user's message is ambiguous, unclear, or doesn't read like an actionable instruction (e.g. a stray phrase, a comment, or something that isn't clearly a task), do NOT guess and start searching the web for it. Call "finish" and ask them to clarify what they want you to do instead.
 - Never invent that something happened — only report success after a function call actually returns success.
 - If a page repeatedly returns no readable text or the same action fails the same way more than once in a row, stop retrying blindly — call "finish" and explain what's blocking you.
