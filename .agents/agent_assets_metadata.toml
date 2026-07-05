@@ -89,3 +89,9 @@ id = "FT80bGJ3fE3DICvdb39MF"
 uri = "file://snaptoai-designs.zip"
 type = "unspecified"
 title = "SnapToAI — All Design Files"
+
+[[outputs]]
+id = "R8nGUC9f3cPwaYBtF6cUt"
+uri = "file://attached_assets/autopilot_sheets_docs_typing_issue.md"
+type = "text"
+title = "Autopilot Sheets/Docs Typing Issue — Full Writeup"
