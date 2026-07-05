@@ -1928,9 +1928,9 @@ html[dir="rtl"] .logo-highlight {
 .gemini-modal-content {
   background: #1e1e1e;
   border-radius: 10px;
-  padding: 16px;
+  padding: 14px;
   width: 90%;
-  max-width: 320px;
+  max-width: 280px;
   max-height: 90vh;
   overflow-y: auto;
   border: 1px solid rgba(66, 133, 244, 0.3);
@@ -2109,6 +2109,15 @@ html[dir="rtl"] .logo-highlight {
   flex-direction: column;
   gap: 6px;
   margin-bottom: 8px;
+}
+
+.gemini-steps-simple .gemini-step .step-text {
+  font-size: 12.5px;
+  line-height: 1.35;
+}
+
+.gemini-steps-simple .gemini-return-hint {
+  margin: 2px 0 8px;
 }
 
 .gemini-step {
@@ -2317,6 +2326,25 @@ html[dir="rtl"] .logo-highlight {
   border: 1px solid rgba(255, 255, 255, 0.10);
   border-radius: 12px;
   padding: 12px 14px;
+}
+
+.ai-tier-panel-simple {
+  margin: 8px 0 4px;
+  padding: 8px 10px;
+  font-size: 11px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+}
+
+.ai-tier-panel-simple .ai-tier-badge {
+  display: inline-block;
+  margin-right: 3px;
+}
+
+.ai-tier-panel-simple .ai-tier-link {
+  display: block;
+  margin-top: 4px;
 }
 
 .ai-tier-title {

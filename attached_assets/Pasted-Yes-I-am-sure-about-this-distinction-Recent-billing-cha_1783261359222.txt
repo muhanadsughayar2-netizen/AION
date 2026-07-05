@@ -1,0 +1,52 @@
+Yes, I am sure about this distinction. Recent billing changes (effective as of early 2026) have strictly separated Google AI Studio billing from Google Cloud Promotional Credits [1.1.7, 1.2.8].
+
+If your app is built to use the Gemini API and you want to use that $300 credit, here is the breakdown of why it isn't working in AI Studio and how you can fix it:
+
+1. Why AI Studio won't use the $300 credit
+Google AI Studio is explicitly exempt from the Google Cloud Free Trial [1.2.8].
+
+Prepay Requirement: To move beyond the Free Tier in AI Studio, Google now requires a Prepay system where you must manually add a minimum of $10 to your account [1.4.1, 1.4.6].
+Credit Type: The $300 "Welcome Credit" is a promotional credit for Google Cloud Services. AI Studio's billing system does not "see" or "pull" from this promotional balance; it only pulls from your actual paid prepay balance [1.1.1, 1.2.7].
+2. The Solution: Use Vertex AI for your App
+If your app is already built, you can still use the $300 credit by switching your API calls to the Vertex AI endpoint instead of the Google AI Studio (Gemini API) endpoint.
+
+Same Models: You can access the exact same models (Gemini 1.5 Pro, Flash, etc.) through Vertex AI [1.3.7].
+Credit Compatibility: Vertex AI usage does count against your $300 Google Cloud credit [1.1.2, 1.2.8].
+Authentication Change: You will need to switch from using a simple API_KEY to using Service Account credentials or OAuth2 tokens, as Vertex AI does not support standard AI Studio API keys for security reasons [1.2.8].
+3. The "Starter Tier" Exception
+If your app is "built for this use" in the sense that you are deploying it directly from AI Studio to the web:
+
+Google recently introduced a Starter Tier that lets you deploy up to 2 full-stack applications to Google Cloud for free without a credit card [1.4.8, 1.4.9].
+However, this covers the hosting costs (like Cloud Run), not the high-volume API costs if you exceed the Gemini Free Tier limits [1.4.8].
+Summary Table for your App
+Goal	Use Google AI Studio	Use Vertex AI (Google Cloud)
+Use $300 Credit?	No (Requires $10+ Prepay)	Yes (Deducts from $300)
+Auth Method	Simple API Key	Service Account / OAuth2
+Data Privacy	Included in Paid Tier	Included by default
+Best For	Fast prototyping / Vibe coding	Production apps using credits
+Sources:
+
+[1.1.1] Official Google Cloud Free Trial Policy (June 2026 update)
+[1.2.8] "How to Access Gemini API Using Google Cloud Free Trial" - GCP Study Hub
+[1.4.1] Gemini API Billing Documentation - Prepay Requirements
+[1.4.8] Google Cloud Starter Tier Overview (June 2026)
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
+
+🔍
+Vision
+
+✨
+Image
+
+🎵
+Music
+
+🎬
+Video
+
+🎙️
+Broadcast
+
