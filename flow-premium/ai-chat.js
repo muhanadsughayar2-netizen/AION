@@ -1640,8 +1640,21 @@ function initBroadcastSubBar() {
       };
       reader.readAsText(file);
     } else {
-      _bsbAttachments.push({ type: 'file', name: file.name, mimeType: file.type, data: null });
-      bsbRenderAttachList();
+      // Non-text files (e.g. PDF) previously stored with data:null, which meant
+      // they were silently dropped from the actual generation request — the
+      // attachment chip showed up but had no effect at all. Read the real file
+      // bytes as base64 so Gemini can actually see the PDF/content.
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const b64 = (ev.target.result || '').split(',')[1] || null;
+        _bsbAttachments.push({ type: 'file', name: file.name, mimeType: file.type || 'application/pdf', data: b64 });
+        bsbRenderAttachList();
+        updateSourceBanner();
+      };
+      reader.onerror = () => {
+        addBubble?.(`Couldn't read "${file.name}" — try a .txt, .md, or .pdf file.`, 'error');
+      };
+      reader.readAsDataURL(file);
     }
     fileInput.value = '';
   });
@@ -6339,9 +6352,9 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
         <button class="bc-pill bc-fmt" data-fmt="tutorial">📚 Tutorial</button>
         <button class="bc-pill bc-fmt bc-fmt-solo" data-fmt="solotutorial" style="border-color:rgba(45,212,191,0.35);color:#2dd4bf;background:rgba(45,212,191,0.06);">📱 Solo Tutorial</button>
         <button class="bc-pill bc-fmt" data-fmt="appdemo">🚀 App Demo</button>
-        <button class="bc-pill bc-fmt" data-fmt="presentation">📊 Presentation</button>
-        <button class="bc-pill bc-fmt" data-fmt="narrator">🎬 Narrator</button>
-        <button class="bc-pill bc-fmt bc-fmt-trailer" data-fmt="trailer" style="border-color:rgba(234,179,8,0.35);color:#eab308;background:rgba(234,179,8,0.06);">🎥 Trailer</button>
+        <button class="bc-pill bc-fmt" data-fmt="presentation" style="display:none;">📊 Presentation</button>
+        <button class="bc-pill bc-fmt" data-fmt="narrator" style="display:none;">🎬 Narrator</button>
+        <button class="bc-pill bc-fmt bc-fmt-trailer" data-fmt="trailer" style="display:none;border-color:rgba(234,179,8,0.35);color:#eab308;background:rgba(234,179,8,0.06);">🎥 Trailer</button>
       </div>
     </div>
 
@@ -6725,9 +6738,19 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       };
       reader.readAsText(file);
     } else {
-      srcEl.value += (srcEl.value ? '\n\n' : '') + `[From: ${file.name} — paste the text content here]`;
-      attachments.push({ type: 'file', name: file.name, mimeType: file.type, data: null });
-      bcRenderAttachments();
+      // Non-text files (e.g. PDF) previously stored with data:null, which meant
+      // they were silently dropped from the actual generation request. Read
+      // the real bytes as base64 so the attachment actually does something.
+      const binReader = new FileReader();
+      binReader.onload = ev => {
+        const b64 = (ev.target.result || '').split(',')[1] || null;
+        attachments.push({ type: 'file', name: file.name, mimeType: file.type || 'application/pdf', data: b64 });
+        bcRenderAttachments();
+      };
+      binReader.onerror = () => {
+        addBubble?.(`Couldn't read "${file.name}" — try a .txt, .md, or .pdf file.`, 'error');
+      };
+      binReader.readAsDataURL(file);
     }
     fileInput.value = '';
   });
@@ -6817,12 +6840,15 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     try {
       const videoFileNames = [...new Set(attachments.filter(a => a.videoFile).map(a => a.videoFile))];
       const hasImages      = attachments.some(a => a.type === 'image');
+      const fileAttachments = attachments.filter(a => a.type === 'file' && a.data);
       const fmtLabel       = FORMATS.find(f => f.key === selFormat)?.label || selFormat;
 
       // Augment system prompt with media context so Gemini understands what it's seeing
       let mediaCtx = '';
       if (videoFileNames.length) {
         mediaCtx = `\n\nIMPORTANT: The user has attached frames captured from a video file named "${videoFileNames[0]}". You are seeing multiple frames that show what happens throughout the video. Analyze the video content from these frames and write the ${fmtLabel} script ABOUT this video — describe what's shown, explain the concepts, walk through what's happening step by step as appropriate for the format.`;
+      } else if (fileAttachments.length) {
+        mediaCtx = `\n\nIMPORTANT: The user has attached ${fileAttachments.length > 1 ? 'files' : 'a file'} (${fileAttachments.map(f => f.name).join(', ')}). Read its actual contents and write the ${fmtLabel} script ABOUT what is in it.`;
       } else if (hasImages) {
         mediaCtx = `\n\nIMPORTANT: The user has attached images. Analyze the image content and write the script ABOUT what is shown in these images.`;
       }
