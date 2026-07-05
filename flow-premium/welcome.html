@@ -59,16 +59,34 @@
 
     .logo-svg-wrap {
       position: relative;
-      width: 88px;
-      height: 88px;
+      width: 96px;
+      height: 96px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .logo-svg-wrap svg { display: block; }
+    /* ── Magic spinning ring around the logo ── */
+    .logo-ring {
+      position: absolute;
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, transparent 0%, #2dd4bf 12%, transparent 26%, transparent 100%);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
+      animation: orbitSpin 3.5s linear infinite;
+    }
 
-    /* ── Orbital ring ── */
-    .orbit-ring {
-      animation: orbitSpin 6s linear infinite;
-      transform-origin: 44px 44px;
+    .logo-ring-2 {
+      position: absolute;
+      width: 78px;
+      height: 78px;
+      border-radius: 50%;
+      background: conic-gradient(from 90deg, transparent 0%, #a78bfa 16%, transparent 32%, transparent 100%);
+      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+      mask: radial-gradient(farthest-side, transparent calc(100% - 2px), #000 calc(100% - 2px));
+      animation: orbitSpin2 5s linear infinite;
     }
 
     @keyframes orbitSpin {
@@ -76,36 +94,24 @@
       to   { transform: rotate(360deg); }
     }
 
-    /* ── Counter-spin ring ── */
-    .orbit-ring-2 {
-      animation: orbitSpin2 9s linear infinite;
-      transform-origin: 44px 44px;
-    }
-
     @keyframes orbitSpin2 {
       from { transform: rotate(0deg); }
       to   { transform: rotate(-360deg); }
     }
 
-    /* ── Camera body pulse ── */
-    .cam-body {
+    /* ── Logo image pulse ── */
+    .logo-img {
+      position: relative;
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      display: block;
       animation: camPulse 3s ease-in-out infinite;
-      transform-origin: 44px 44px;
     }
 
     @keyframes camPulse {
       0%, 100% { filter: drop-shadow(0 0 6px rgba(45,212,191,0.5)); }
       50%       { filter: drop-shadow(0 0 14px rgba(45,212,191,0.85)); }
-    }
-
-    /* ── Lens shimmer ── */
-    .lens-shine {
-      animation: lensShine 2.8s ease-in-out infinite;
-    }
-
-    @keyframes lensShine {
-      0%, 100% { opacity: 0.15; }
-      50%       { opacity: 0.5; }
     }
 
     /* ── Floating particles ── */
@@ -422,141 +428,23 @@
       <div class="logo-wrap">
         <div class="logo-glow-bg"></div>
         <div class="logo-svg-wrap">
-          <svg width="88" height="88" viewBox="0 0 88 88" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <!-- Teal gradient for camera body -->
-              <linearGradient id="camGrad" x1="0" y1="0" x2="88" y2="88" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#2dd4bf"/>
-                <stop offset="100%" stop-color="#7c3aed"/>
-              </linearGradient>
-              <!-- Orbit dash gradient -->
-              <linearGradient id="orbitGrad" x1="0" y1="0" x2="88" y2="88" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#2dd4bf" stop-opacity="0"/>
-                <stop offset="40%" stop-color="#2dd4bf"/>
-                <stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/>
-              </linearGradient>
-              <linearGradient id="orbitGrad2" x1="88" y1="0" x2="0" y2="88" gradientUnits="userSpaceOnUse">
-                <stop offset="0%" stop-color="#a78bfa" stop-opacity="0"/>
-                <stop offset="50%" stop-color="#6ee7b7"/>
-                <stop offset="100%" stop-color="#a78bfa" stop-opacity="0"/>
-              </linearGradient>
-              <!-- Lens glass gradient -->
-              <radialGradient id="lensGrad" cx="42%" cy="38%" r="58%">
-                <stop offset="0%" stop-color="#7efff5" stop-opacity="0.55"/>
-                <stop offset="60%" stop-color="#2dd4bf" stop-opacity="0.25"/>
-                <stop offset="100%" stop-color="#0f172a" stop-opacity="0.7"/>
-              </radialGradient>
-              <!-- Lens shine -->
-              <radialGradient id="shineGrad" cx="30%" cy="25%" r="45%">
-                <stop offset="0%" stop-color="#ffffff" stop-opacity="0.85"/>
-                <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
-              </radialGradient>
-              <!-- Drop shadow filter -->
-              <filter id="camGlow" x="-30%" y="-30%" width="160%" height="160%">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
-                <feColorMatrix in="blur" type="matrix" values="0 0 0 0 0.18  0 0 0 0 0.83  0 0 0 0 0.75  0 0 0 1 0" result="glow"/>
-                <feMerge><feMergeNode in="glow"/><feMergeNode in="SourceGraphic"/></feMerge>
-              </filter>
-            </defs>
-
-            <!-- ── Outer orbit ring 1 (clockwise, teal sweep) ── -->
-            <g class="orbit-ring">
-              <circle cx="44" cy="44" r="40" stroke="url(#orbitGrad)" stroke-width="1.5"
-                      stroke-dasharray="60 192" stroke-linecap="round" fill="none"/>
-              <!-- dot on ring -->
-              <circle cx="84" cy="44" r="3" fill="#2dd4bf" opacity="0.9"/>
-            </g>
-
-            <!-- ── Outer orbit ring 2 (counter, violet sweep) ── -->
-            <g class="orbit-ring-2">
-              <circle cx="44" cy="44" r="34" stroke="url(#orbitGrad2)" stroke-width="1"
-                      stroke-dasharray="40 173" stroke-linecap="round" fill="none"/>
-              <circle cx="44" cy="10" r="2.2" fill="#a78bfa" opacity="0.85"/>
-            </g>
-
-            <!-- ── Camera body ── -->
-            <g class="cam-body" filter="url(#camGlow)">
-              <!-- Body rectangle with gradient fill -->
-              <rect x="18" y="30" width="52" height="36" rx="9" fill="url(#camGrad)" opacity="0.15"/>
-              <rect x="18" y="30" width="52" height="36" rx="9" stroke="url(#camGrad)" stroke-width="2" fill="none"/>
-
-              <!-- Viewfinder notch -->
-              <path d="M34 30 L38 24 L50 24 L54 30 Z" fill="url(#camGrad)" opacity="0.85"/>
-              <path d="M34 30 L38 24 L50 24 L54 30 Z" stroke="url(#camGrad)" stroke-width="1" fill="none"/>
-
-              <!-- Lens ring outer -->
-              <circle cx="44" cy="48" r="13" stroke="#2dd4bf" stroke-width="1.5" fill="none" opacity="0.6"/>
-              <!-- Lens ring inner -->
-              <circle cx="44" cy="48" r="9" fill="url(#lensGrad)"/>
-              <!-- Lens shine highlight -->
-              <circle cx="44" cy="48" r="9" fill="url(#shineGrad)" class="lens-shine"/>
-              <!-- Pupil dot -->
-              <circle cx="44" cy="48" r="3.5" fill="#0f172a" opacity="0.7"/>
-              <circle cx="44" cy="48" r="1.5" fill="#2dd4bf" opacity="0.9"/>
-
-              <!-- Flash LED dot -->
-              <circle cx="62" cy="37" r="2.5" fill="#2dd4bf" opacity="0.7"/>
-            </g>
-
-            <!-- ── Floating star particles ── -->
-            <g class="particle p1" style="--px:-14px;--py:-12px">
-              <circle cx="20" cy="22" r="1.8" fill="#2dd4bf"/>
-            </g>
-            <g class="particle p2" style="--px:12px;--py:-10px">
-              <circle cx="68" cy="18" r="1.4" fill="#a78bfa"/>
-            </g>
-            <g class="particle p3" style="--px:-10px;--py:10px">
-              <circle cx="15" cy="65" r="1.6" fill="#6ee7b7"/>
-            </g>
-            <g class="particle p4" style="--px:10px;--py:8px">
-              <circle cx="72" cy="68" r="1.2" fill="#2dd4bf"/>
-            </g>
-          </svg>
+          <div class="logo-ring"></div>
+          <div class="logo-ring-2"></div>
+          <img src="icons/icon128.png" alt="Aion AI" class="logo-img">
         </div>
       </div>
       <h1>Aion AI</h1>
-      <p class="tagline">Snap any screen. Chat with AI, build full apps,<br>create images, music &amp; videos — powered by Google AI.</p>
+      <p class="tagline">Powered by Google AI Studio</p>
 
       <div class="features">
         <span class="feature-pill vision">🔍 Vision</span>
         <span class="feature-pill image">✨ Image</span>
         <span class="feature-pill music">🎵 Music</span>
         <span class="feature-pill video">🎬 Video</span>
+        <span class="feature-pill" style="border-color:rgba(244,114,182,0.35);color:#f472b6;">🎙️ Broadcast</span>
+        <span class="feature-pill" style="border-color:rgba(96,165,250,0.35);color:#60a5fa;">🧭 Autopilot</span>
+        <span class="feature-pill" style="border-color:rgba(167,139,250,0.35);color:#a78bfa;">✦ Custom Prompts</span>
         <span class="feature-pill build">🏗️ Build</span>
-      </div>
-
-      <hr class="divider">
-
-      <!-- ── What's inside ── -->
-      <div class="features-list">
-        <div class="feat-row">
-          <div class="feat-icon" style="background:rgba(45,212,191,0.12);border-color:rgba(45,212,191,0.3);">🏗️</div>
-          <div class="feat-text">
-            <div class="feat-title">AI App Builder</div>
-            <div class="feat-desc">Type what you want — Aion AI builds a full working app live in seconds.</div>
-          </div>
-        </div>
-        <div class="feat-row">
-          <div class="feat-icon" style="background:rgba(66,133,244,0.10);border-color:rgba(66,133,244,0.3);">🔍</div>
-          <div class="feat-text">
-            <div class="feat-title">Vision Chat</div>
-            <div class="feat-desc">Snap your screen and ask AI anything about what you see.</div>
-          </div>
-        </div>
-        <div class="feat-row">
-          <div class="feat-icon" style="background:rgba(251,188,5,0.10);border-color:rgba(251,188,5,0.3);">✨</div>
-          <div class="feat-text">
-            <div class="feat-title">Image &amp; Music &amp; Video Studio</div>
-            <div class="feat-desc">Generate images, compose songs, and create AI videos from prompts.</div>
-          </div>
-        </div>
-        <div class="feat-row">
-          <div class="feat-icon" style="background:rgba(167,139,250,0.10);border-color:rgba(167,139,250,0.3);">📸</div>
-          <div class="feat-text">
-            <div class="feat-title">Snap, Snip &amp; Send</div>
-            <div class="feat-desc">Capture full pages, regions or viewports and upload to any AI chat instantly.</div>
-          </div>
-        </div>
       </div>
 
       <hr class="divider">
