@@ -1,3 +1,4 @@
 - [Gemini image generation models](gemini-image-models.md) — correct "Nano Banana" model IDs; gemini-2.0-flash image models are dead (shut down June 2026).
 - [Gemini TTS chunking](gemini-tts-chunking.md) — generateContent TTS cannot stream; chunk text + queue playback for ~2s start while keeping natural voices.
 - [Veo native video extend](veo-video-extend.md) — real "extend" (Veo 3.1/3.1 Fast, pass back the actual video ref) keeps audio continuous; frame-capture continuation causes music hard-cuts.
+- [Autopilot synthetic drag/scroll/dblclick](autopilot-synthetic-interactions.md) — content-script automation needs manual event dispatch for dblclick and drag; scroll must target the real scrollable container, not window.
