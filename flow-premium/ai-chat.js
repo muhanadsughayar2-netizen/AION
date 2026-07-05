@@ -8286,12 +8286,12 @@ const AGENT_TOOLS = [{
     },
     {
       name: 'type',
-      description: 'Type text into an input field, search box, or textarea on the current page. On a Google Sheets tab, this writes the value directly into the spreadsheet via Google\'s API (not by clicking) — put a cell address like "A1" or "B3" in "selector" to target a specific cell, or omit it to auto-fill the next empty row in column A. On a Google Docs tab, this appends the text to the end of the document via Google\'s API.',
+      description: 'Type text into an input field, search box, or textarea on the current page.',
       parameters: {
         type: 'object',
         properties: {
           text: { type: 'string', description: 'The text to type' },
-          selector: { type: 'string', description: 'CSS selector of the input, if known. On Google Sheets, may instead be a cell address like "A1".' },
+          selector: { type: 'string', description: 'CSS selector of the input, if known' },
           placeholder: { type: 'string', description: 'Placeholder text of the input, if known' },
           pressEnter: { type: 'boolean', description: 'Whether to press Enter after typing (e.g. to submit a search)' }
         },
