@@ -13118,16 +13118,34 @@ function editMagicButton(index) {
   editingMagicIndex = index;
   document.getElementById('magicName').value = btn.name;
   document.getElementById('magicPrompt').value = btn.prompt;
-  document.getElementById('magicHint').value = btn.hint || '';
   document.getElementById('selectedEmoji').value = btn.emoji;
   document.getElementById('promptCount').textContent = countWords(btn.prompt);
   
-  document.querySelectorAll('.emoji-option').forEach(el => {
-    el.classList.toggle('selected', el.dataset.emoji === btn.emoji);
-  });
-  
-  document.getElementById('saveMagicBtn').textContent = '⚡ Update';
+  document.getElementById('saveMagicBtn').textContent = 'Update';
   document.getElementById('magicModal').classList.add('open');
+}
+
+// Auto-assigned icons for custom prompt buttons — no manual picker needed.
+const AUTO_MAGIC_EMOJIS = ['🔍','💰','📊','📈','💡','⚡','🎯','🛒','✨','🚀','🧭','🎨','📝','🔥','🌟'];
+function pickAutoMagicEmoji(text) {
+  const t = (text || '').toLowerCase();
+  const keywordMap = [
+    [/price|cost|deal|discount|money|buy/, '💰'],
+    [/chart|data|stat|report|analy/, '📊'],
+    [/trend|growth|market|forecast/, '📈'],
+    [/idea|brainstorm|creative/, '💡'],
+    [/fast|quick|speed/, '⚡'],
+    [/goal|target|focus/, '🎯'],
+    [/shop|cart|product/, '🛒'],
+    [/search|find|look/, '🔍'],
+    [/write|draft|text|copy/, '📝'],
+    [/design|art|image|photo/, '🎨'],
+    [/build|app|code/, '🚀'],
+  ];
+  for (const [re, emoji] of keywordMap) {
+    if (re.test(t)) return emoji;
+  }
+  return AUTO_MAGIC_EMOJIS[Math.floor(Math.random() * AUTO_MAGIC_EMOJIS.length)];
 }
 
 async function executeMagicButton(index) {
@@ -13159,32 +13177,22 @@ document.querySelectorAll('.template-cat').forEach(cat => {
 });
 
 document.getElementById('addMagicBtn')?.addEventListener('click', () => {
+  editingMagicIndex = null;
   document.getElementById('magicModal').classList.add('open');
   document.getElementById('magicName').value = '';
   document.getElementById('magicPrompt').value = '';
   document.getElementById('promptCount').textContent = '0';
-  document.querySelectorAll('.emoji-option').forEach(e => e.classList.remove('selected'));
-  document.querySelector('.emoji-option')?.classList.add('selected');
-  document.getElementById('selectedEmoji').value = '🎯';
-  // Show first category by default
-  showTemplateCategory('money');
+  document.getElementById('selectedEmoji').value = '';
+  document.getElementById('saveMagicBtn').textContent = 'Create';
 });
 
 document.getElementById('closeMagicModal')?.addEventListener('click', () => {
   editingMagicIndex = null;
-  document.getElementById('saveMagicBtn').textContent = '⚡ Create';
+  document.getElementById('saveMagicBtn').textContent = 'Create';
   document.getElementById('magicName').value = '';
   document.getElementById('magicPrompt').value = '';
   document.getElementById('promptCount').textContent = '0';
   document.getElementById('magicModal').classList.remove('open');
-});
-
-document.getElementById('emojiPicker')?.addEventListener('click', (e) => {
-  if (e.target.classList.contains('emoji-option')) {
-    document.querySelectorAll('.emoji-option').forEach(el => el.classList.remove('selected'));
-    e.target.classList.add('selected');
-    document.getElementById('selectedEmoji').value = e.target.dataset.emoji;
-  }
 });
 
 function countWords(str) {
@@ -13249,33 +13257,32 @@ function showTemplateDetail(templateName, emoji) {
 
 document.getElementById('saveMagicBtn')?.addEventListener('click', async () => {
   const name = document.getElementById('magicName').value.trim();
-  const emoji = document.getElementById('selectedEmoji').value;
   const prompt = document.getElementById('magicPrompt').value.trim();
-  const hint = document.getElementById('magicHint').value.trim();
   
   if (!name) { alert('Please enter a button name'); return; }
   if (!prompt) { alert('Please enter instructions for the AI'); return; }
   
   if (editingMagicIndex !== null) {
+    const emoji = magicButtons[editingMagicIndex].emoji || pickAutoMagicEmoji(name + ' ' + prompt);
     magicButtons[editingMagicIndex] = { 
       ...magicButtons[editingMagicIndex], 
-      name, emoji, prompt, hint 
+      name, emoji, prompt 
     };
     editingMagicIndex = null;
-    document.getElementById('saveMagicBtn').textContent = '⚡ Create';
-    addBubble(`✨ Magic button "${emoji} ${name}" updated!`, 'ai');
+    document.getElementById('saveMagicBtn').textContent = 'Create';
+    addBubble(`Custom prompt "${name}" updated!`, 'ai');
   } else {
-    if (magicButtons.length >= 15) { alert('Maximum 15 magic buttons allowed'); return; }
+    if (magicButtons.length >= 15) { alert('Maximum 15 custom prompts allowed'); return; }
+    const emoji = pickAutoMagicEmoji(name + ' ' + prompt);
     const colorIndex = Math.floor(Math.random() * 8);
-    magicButtons.push({ name, emoji, prompt, hint, colorIndex });
-    addBubble(`✨ Magic button "${emoji} ${name}" created! Click it anytime to use.`, 'ai');
+    magicButtons.push({ name, emoji, prompt, colorIndex });
+    addBubble(`Custom prompt "${name}" created! Click it anytime to use.`, 'ai');
   }
   
   await saveMagicButtons();
   document.getElementById('magicModal').classList.remove('open');
   document.getElementById('magicName').value = '';
   document.getElementById('magicPrompt').value = '';
-  document.getElementById('magicHint').value = '';
   document.getElementById('promptCount').textContent = '0';
   
   if (navigator.vibrate) navigator.vibrate([50, 30, 50]);
