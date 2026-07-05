@@ -3939,167 +3939,6 @@
     };
   }
 
-  // Shared "find the element the AI is describing" logic, used by click,
-  // doubleClick and drag so they all resolve elements the same way.
-  function findClickableElement(spec, attemptedMethods) {
-    let element = null;
-
-    if (spec.selector) {
-      attemptedMethods.push(`selector: ${spec.selector}`);
-      element = document.querySelector(spec.selector);
-    }
-
-    if (!element && spec.text) {
-      attemptedMethods.push(`exact text: "${spec.text}"`);
-      const allClickable = document.querySelectorAll('button, a, span, div[role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"], [data-square], li, tr, [role="gridcell"], [role="row"]');
-      for (const el of allClickable) {
-        const elText = el.innerText?.trim().toLowerCase() || el.textContent?.trim().toLowerCase();
-        if (elText === spec.text.toLowerCase()) {
-          element = el;
-          break;
-        }
-      }
-    }
-
-    if (!element && spec.text) {
-      attemptedMethods.push(`partial text: "${spec.text}"`);
-      const allClickable = document.querySelectorAll('button, a, span, div[role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"], [data-square], li, tr, [role="gridcell"], [role="row"]');
-      for (const el of allClickable) {
-        if (el.textContent.trim().toLowerCase().includes(spec.text.toLowerCase())) {
-          element = el;
-          break;
-        }
-      }
-    }
-
-    if (!element && spec.text) {
-      attemptedMethods.push('xpath search');
-      const xpath = `//*[contains(text(), '${spec.text}')]`;
-      const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-      element = result.singleNodeValue;
-    }
-
-    if (!element && spec.description) {
-      attemptedMethods.push('description text');
-      const descWords = spec.description.match(/["']([^"']+)["']|(\b\d+[ymdw]\b)|(\bMax\b|\bMin\b)/gi);
-      if (descWords) {
-        for (const word of descWords) {
-          const cleanWord = word.replace(/["']/g, '').trim();
-          const allClickable = document.querySelectorAll('button, a, span, div[role="button"]');
-          for (const el of allClickable) {
-            if (el.innerText?.trim().toLowerCase() === cleanWord.toLowerCase()) {
-              element = el;
-              break;
-            }
-          }
-          if (element) break;
-        }
-      }
-    }
-
-    return element;
-  }
-
-  // Finds the actual scrollable region under the middle of the screen
-  // instead of assuming the whole page scrolls with the window. Many
-  // real sites (Google Docs' editor, Drive's file/folder panes, chat
-  // apps, etc.) put the real content inside an inner div/iframe with its
-  // own overflow:auto, while the outer page itself doesn't move at all —
-  // window.scrollBy does nothing there, which looked like "can't scroll
-  // into the document."
-  function findScrollableContainer() {
-    const isScrollableEl = (el) => {
-      if (!el || el === document.documentElement) return false;
-      const style = getComputedStyle(el);
-      const canScrollY = /(auto|scroll|overlay)/.test(style.overflowY);
-      return canScrollY && el.scrollHeight > el.clientHeight + 10 && el.clientHeight > 80;
-    };
-
-    // Walk up from the middle of the viewport first — this is usually
-    // exactly where the real content panel is.
-    const cx = window.innerWidth / 2;
-    const cy = window.innerHeight / 2;
-    let el = document.elementFromPoint(cx, cy);
-    while (el && el !== document.body) {
-      if (isScrollableEl(el)) return el;
-      el = el.parentElement;
-    }
-
-    // Fallback: scan the whole page for the largest scrollable panel
-    // (handles cases where the center point lands on a toolbar/sidebar).
-    const candidates = Array.from(document.querySelectorAll('*')).filter(isScrollableEl);
-    if (candidates.length) {
-      candidates.sort((a, b) => (b.clientWidth * b.clientHeight) - (a.clientWidth * a.clientHeight));
-      return candidates[0];
-    }
-
-    return null;
-  }
-
-  function sleep(ms) {
-    return new Promise(r => setTimeout(r, ms));
-  }
-
-  // Simulates a real click-and-drag: mousedown at the source, a series of
-  // mousemove steps toward the destination, then mouseup — plus the
-  // matching Pointer Events and native HTML5 Drag Events, since different
-  // sites listen for different event families (chess boards / sortable
-  // lists usually use mouse or pointer events; native <div draggable> UI
-  // needs the dragstart/dragover/drop sequence instead).
-  async function performDrag(fromEl, toEl) {
-    fromEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    await sleep(350);
-
-    const start = getElementCenter(fromEl);
-    let end = getElementCenter(toEl);
-    moveGhostCursor(start.x, start.y);
-    highlightElement(fromEl);
-    await sleep(400);
-
-    let dataTransfer = null;
-    try { dataTransfer = new DataTransfer(); } catch (e) { /* not available in this context */ }
-    const isNativeDraggable = fromEl.draggable || fromEl.closest('[draggable="true"]');
-
-    const fire = (target, type, Ctor, opts) => {
-      try { target.dispatchEvent(new Ctor(type, opts)); } catch (e) { /* unsupported event type on this target */ }
-    };
-
-    fire(fromEl, 'pointerdown', PointerEvent, { bubbles: true, cancelable: true, view: window, clientX: start.x, clientY: start.y, pointerId: 1, pointerType: 'mouse', buttons: 1 });
-    fire(fromEl, 'mousedown', MouseEvent, { bubbles: true, cancelable: true, view: window, clientX: start.x, clientY: start.y, buttons: 1 });
-    if (isNativeDraggable) {
-      fire(fromEl, 'dragstart', DragEvent, { bubbles: true, cancelable: true, clientX: start.x, clientY: start.y, dataTransfer });
-    }
-
-    const steps = 14;
-    for (let i = 1; i <= steps; i++) {
-      const x = start.x + (end.x - start.x) * (i / steps);
-      const y = start.y + (end.y - start.y) * (i / steps);
-      moveGhostCursor(x, y);
-      const moveTarget = document.elementFromPoint(x, y) || fromEl;
-      fire(moveTarget, 'pointermove', PointerEvent, { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y, pointerId: 1, pointerType: 'mouse', buttons: 1 });
-      fire(moveTarget, 'mousemove', MouseEvent, { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y, buttons: 1 });
-      if (isNativeDraggable) {
-        fire(moveTarget, 'dragover', DragEvent, { bubbles: true, cancelable: true, clientX: x, clientY: y, dataTransfer });
-      }
-      await sleep(25);
-    }
-
-    // Re-resolve the drop point/element in case the destination shifted
-    // during the drag (common with reflowing lists/boards).
-    end = getElementCenter(toEl);
-    clickGhostCursor(end.x, end.y);
-    const dropTarget = document.elementFromPoint(end.x, end.y) || toEl;
-
-    if (isNativeDraggable) {
-      fire(dropTarget, 'dragenter', DragEvent, { bubbles: true, cancelable: true, clientX: end.x, clientY: end.y, dataTransfer });
-      fire(dropTarget, 'drop', DragEvent, { bubbles: true, cancelable: true, clientX: end.x, clientY: end.y, dataTransfer });
-      fire(fromEl, 'dragend', DragEvent, { bubbles: true, cancelable: true, clientX: end.x, clientY: end.y, dataTransfer });
-    }
-    fire(dropTarget, 'pointerup', PointerEvent, { bubbles: true, cancelable: true, view: window, clientX: end.x, clientY: end.y, pointerId: 1, pointerType: 'mouse', buttons: 0 });
-    fire(dropTarget, 'mouseup', MouseEvent, { bubbles: true, cancelable: true, view: window, clientX: end.x, clientY: end.y, buttons: 0 });
-    fire(dropTarget, 'click', MouseEvent, { bubbles: true, cancelable: true, view: window, clientX: end.x, clientY: end.y });
-  }
-
   // === AGENT AUTOMATION HANDLER ===
   // Handles click, type, scroll, checkElement actions from agent-chat.js
   async function handleAgentAction(action, params) {
@@ -4109,19 +3948,78 @@
     createGhostCursor();
     
     switch (action) {
-      case 'click':
-      case 'doubleClick': {
-        // SMART SEARCH: Find element by multiple strategies (shared helper)
+      case 'click': {
+        // SMART SEARCH: Find element by multiple strategies
+        let element = null;
         const attemptedMethods = [];
-        const element = findClickableElement(params, attemptedMethods);
-
+        
+        // Plan A: Try the precise CSS Selector
+        if (params.selector) {
+          attemptedMethods.push(`selector: ${params.selector}`);
+          element = document.querySelector(params.selector);
+        }
+        
+        // Plan B: Find by EXACT text match (for buttons like "1y", "Max", "Buy")
+        if (!element && params.text) {
+          attemptedMethods.push(`exact text: "${params.text}"`);
+          const allClickable = document.querySelectorAll('button, a, span, div[role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"]');
+          for (const el of allClickable) {
+            const elText = el.innerText?.trim().toLowerCase() || el.textContent?.trim().toLowerCase();
+            if (elText === params.text.toLowerCase()) {
+              element = el;
+              showAgentBanner(`Found by exact text: "${params.text}"`);
+              break;
+            }
+          }
+        }
+        
+        // Plan C: Find by partial text content (broader search)
+        if (!element && params.text) {
+          attemptedMethods.push(`partial text: "${params.text}"`);
+          const allClickable = document.querySelectorAll('button, a, span, div[role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"]');
+          for (const el of allClickable) {
+            if (el.textContent.trim().toLowerCase().includes(params.text.toLowerCase())) {
+              element = el;
+              showAgentBanner(`Found by partial text: "${params.text}"`);
+              break;
+            }
+          }
+        }
+        
+        // Plan D: XPath fallback for deeply nested text
+        if (!element && params.text) {
+          attemptedMethods.push('xpath search');
+          const xpath = `//*[contains(text(), '${params.text}')]`;
+          const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+          element = result.singleNodeValue;
+          if (element) showAgentBanner(`Found by xpath: "${params.text}"`);
+        }
+        
+        // Plan E: Try using description text as button label
+        if (!element && params.description) {
+          attemptedMethods.push(`description text`);
+          // Extract potential button text from description (e.g., "Click the 1y button" -> "1y")
+          const descWords = params.description.match(/["']([^"']+)["']|(\b\d+[ymdw]\b)|(\bMax\b|\bMin\b)/gi);
+          if (descWords) {
+            for (const word of descWords) {
+              const cleanWord = word.replace(/["']/g, '').trim();
+              const allClickable = document.querySelectorAll('button, a, span, div[role="button"]');
+              for (const el of allClickable) {
+                if (el.innerText?.trim().toLowerCase() === cleanWord.toLowerCase()) {
+                  element = el;
+                  showAgentBanner(`Found "${cleanWord}" from description`);
+                  break;
+                }
+              }
+              if (element) break;
+            }
+          }
+        }
+        
         if (!element) {
           throw new Error(`Element not found. Tried: ${attemptedMethods.join(', ')}. Try describing the button text exactly.`);
         }
-        if (attemptedMethods.length) {
-          showAgentBanner(`Found: ${params.text || params.selector || params.description}`);
-        }
-
+        
         // Scroll into view first
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         await new Promise(r => setTimeout(r, 400));
@@ -4134,7 +4032,7 @@
         // Show click effect
         clickGhostCursor(center.x, center.y);
         highlightElement(element);
-        showAgentBanner(`${action === 'doubleClick' ? 'Double-clicking' : 'Clicking'}: ${params.text || params.selector}`);
+        showAgentBanner(`Clicking: ${params.text || params.selector}`);
         
         await new Promise(r => setTimeout(r, 300));
         
@@ -4158,42 +4056,7 @@
         } else {
           element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
         }
-
-        if (action === 'doubleClick') {
-          // Browsers only ever generate a native 'dblclick' event from two
-          // REAL trusted clicks in quick succession — calling element.click()
-          // twice never fires one. Many "open this" handlers (Drive's file
-          // grid, file managers, etc.) listen specifically for 'dblclick',
-          // so we dispatch a second click plus an explicit dblclick event.
-          await new Promise(r => setTimeout(r, 120));
-          clickGhostCursor(center.x, center.y);
-          element.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window, clientX: center.x, clientY: center.y, detail: 2 }));
-          element.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window, clientX: center.x, clientY: center.y, detail: 2 }));
-          element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window, clientX: center.x, clientY: center.y, detail: 2 }));
-          element.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true, view: window, clientX: center.x, clientY: center.y, detail: 2 }));
-        }
         
-        return { success: true };
-      }
-
-      case 'drag': {
-        const fromMethods = [];
-        const toMethods = [];
-        const fromSpec = params.from || { selector: params.fromSelector, text: params.fromText, description: params.fromDescription };
-        const toSpec = params.to || { selector: params.toSelector, text: params.toText, description: params.toDescription };
-
-        const fromEl = findClickableElement(fromSpec, fromMethods);
-        if (!fromEl) {
-          throw new Error(`Drag source not found. Tried: ${fromMethods.join(', ')}.`);
-        }
-        const toEl = findClickableElement(toSpec, toMethods);
-        if (!toEl) {
-          throw new Error(`Drag destination not found. Tried: ${toMethods.join(', ')}.`);
-        }
-
-        showAgentBanner(`Dragging ${fromSpec.text || fromSpec.selector || 'item'} to ${toSpec.text || toSpec.selector || 'target'}...`);
-        await performDrag(fromEl, toEl);
-
         return { success: true };
       }
       
@@ -4304,7 +4167,7 @@
       
       case 'scroll': {
         showAgentBanner(`Scrolling ${params.direction || 'to element'}...`);
-
+        
         if (params.selector) {
           const el = document.querySelector(params.selector);
           if (el) {
@@ -4312,55 +4175,19 @@
             const center = getElementCenter(el);
             moveGhostCursor(center.x, center.y);
           }
-          return { success: true };
-        }
-
-        // Many real pages (Google Docs' editor, Drive's file/folder pane,
-        // chat threads, etc.) render their real content inside an inner
-        // div with its own overflow:auto — the outer window itself never
-        // moves, so window.scrollBy/scrollTo silently does nothing there.
-        // Find the actual scrollable panel under the cursor and scroll
-        // that instead, falling back to the window if none is found.
-        const container = findScrollableContainer();
-        const target = container || document.scrollingElement || document.documentElement;
-        const isWindowTarget = target === document.scrollingElement || target === document.documentElement;
-        const step = (target.clientHeight || window.innerHeight) * 0.8;
-        const cursorX = container ? getElementCenter(container).x : window.innerWidth / 2;
-        const cursorY = container ? getElementCenter(container).y : window.innerHeight / 2;
-
-        const scrollTargetTo = (top) => {
-          if (isWindowTarget) {
-            window.scrollTo({ top, behavior: 'smooth' });
-          } else {
-            target.scrollTo({ top, behavior: 'smooth' });
-            // Fallback for containers that ignore smooth scrollTo (some
-            // custom editors only respond to a direct scrollTop write, and
-            // fire their own wheel handlers off scroll position changes).
-            target.scrollTop = top;
-          }
-        };
-        const scrollTargetBy = (delta) => {
-          if (isWindowTarget) {
-            window.scrollBy({ top: delta, behavior: 'smooth' });
-          } else {
-            target.scrollBy({ top: delta, behavior: 'smooth' });
-            target.scrollTop += delta;
-            // Some virtualized/canvas-based viewers (map-like doc renderers)
-            // only react to real wheel events rather than scrollTop writes.
-            target.dispatchEvent(new WheelEvent('wheel', { bubbles: true, cancelable: true, deltaY: delta, clientX: cursorX, clientY: cursorY }));
-          }
-        };
-
-        if (params.direction === 'down') {
-          scrollTargetBy(step);
+        } else if (params.direction === 'down') {
+          window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
+          moveGhostCursor(window.innerWidth / 2, window.innerHeight / 2);
         } else if (params.direction === 'up') {
-          scrollTargetBy(-step);
+          window.scrollBy({ top: -window.innerHeight * 0.8, behavior: 'smooth' });
+          moveGhostCursor(window.innerWidth / 2, window.innerHeight / 2);
         } else if (params.direction === 'top') {
-          scrollTargetTo(0);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          moveGhostCursor(window.innerWidth / 2, 100);
         } else if (params.direction === 'bottom') {
-          scrollTargetTo(target.scrollHeight);
+          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          moveGhostCursor(window.innerWidth / 2, window.innerHeight - 100);
         }
-        moveGhostCursor(cursorX, cursorY);
         return { success: true };
       }
       

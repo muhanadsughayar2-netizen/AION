@@ -8189,52 +8189,12 @@ const AGENT_TOOLS = [{
     },
     {
       name: 'scroll',
-      description: 'Scroll the current page, or the actual scrollable panel/document under the content (e.g. a Google Docs editor, a Drive file preview, a long list) if the page itself does not move.',
+      description: 'Scroll the current page.',
       parameters: {
         type: 'object',
         properties: {
           direction: { type: 'string', enum: ['up', 'down', 'top', 'bottom'] }
         }
-      }
-    },
-    {
-      name: 'doubleClick',
-      description: 'Double-click an element. Use this instead of "click" when a single click only selects/highlights something instead of activating it — for example opening a file or folder in a Google Drive grid/list view, or opening an item in a file manager.',
-      parameters: {
-        type: 'object',
-        properties: {
-          text: { type: 'string', description: 'Visible text/name on the element to double-click, e.g. a file name' },
-          selector: { type: 'string', description: 'CSS selector, only if known precisely' },
-          description: { type: 'string', description: 'Fallback description of the element if text/selector are unknown' }
-        }
-      }
-    },
-    {
-      name: 'drag',
-      description: 'Click-and-drag an item from one place to another on the page — for example moving a chess piece from one square to another, dragging a card between list columns, or reordering an item. Describe both the item being dragged ("from") and where it should land ("to") the same way you would describe a click target.',
-      parameters: {
-        type: 'object',
-        properties: {
-          from: {
-            type: 'object',
-            description: 'The item to pick up and drag',
-            properties: {
-              text: { type: 'string', description: 'Visible text/label of the item to drag, e.g. a piece\'s square like "e2"' },
-              selector: { type: 'string', description: 'CSS selector, only if known precisely' },
-              description: { type: 'string', description: 'Fallback description if text/selector are unknown' }
-            }
-          },
-          to: {
-            type: 'object',
-            description: 'Where the item should be dropped',
-            properties: {
-              text: { type: 'string', description: 'Visible text/label of the drop target, e.g. destination square like "e4"' },
-              selector: { type: 'string', description: 'CSS selector, only if known precisely' },
-              description: { type: 'string', description: 'Fallback description if text/selector are unknown' }
-            }
-          }
-        },
-        required: ['from', 'to']
       }
     },
     {
@@ -8267,13 +8227,10 @@ const AGENT_SYSTEM_PROMPT = `You are an in-browser automation agent controlling 
 Rules:
 - Each turn you are given BOTH a text snapshot of the page AND a real screenshot image of what it currently looks like. Use the screenshot to visually confirm where you actually are (e.g. did the click really open the product page, are you still on a search results list, did a popup/modal appear) before deciding your next move — don't rely on text alone.
 - If the screenshot and the text disagree, or the screenshot shows you're not where you expected, trust the screenshot and re-orient (e.g. close a popup, scroll, or navigate again) instead of repeating the same action blindly.
-- Call exactly ONE function per turn: click, doubleClick, drag, type, scroll, navigate, or finish.
+- Call exactly ONE function per turn: click, type, scroll, navigate, or finish.
 - If the task asks you to go to a specific website/URL that is not the current page, use "navigate" with the full address — do NOT try to fake it by typing the URL into a search box or link on the page.
 - After each action you will be told whether it succeeded and shown the page again, so you can decide the next step.
 - If an action fails, try a different way to find the same element (different text/description) before giving up.
-- OPENING FILES/FOLDERS IN GRID OR LIST VIEWS: a single "click" on a file/folder tile (e.g. in Google Drive) usually just selects/highlights it rather than opening it. If a click doesn't visibly open the item, use "doubleClick" on the same item next.
-- MOVING/DRAGGING THINGS: if the task requires physically moving an item from one spot to another (a chess piece from one square to another, a card between columns, reordering a list item) rather than just clicking, use "drag" with "from" describing the item and "to" describing the destination — do not try to do this with two separate "click" calls, a single click will not pick anything up.
-- SCROLLING INSIDE DOCUMENTS/EMBEDDED VIEWS: if scrolling doesn't seem to move the content you're looking at (e.g. inside a Google Docs editor or a file preview panel), the scroll action already looks for the real scrollable panel automatically — just call "scroll" again with the same direction; if it still doesn't move after 2 tries, the content may be in a separate frame that isn't reachable, so explain that in "finish" instead of retrying endlessly.
 - MULTI-STEP TASKS: many instructions are really a sequence written in one sentence (e.g. "find a channel, then open its analytics, then read the numbers, then summarize them"). Treat each part, in the order given, as its own milestone. Before acting, silently work out which milestone you're currently on based on the screenshot/page text, complete it fully (including any waiting/scrolling needed to confirm it worked), and only then move to the next one — do not skip ahead, do not jump back to an earlier milestone unless the screenshot shows you actually left the intended path, and do not stop early just because an earlier milestone technically "looks done" if the sentence clearly continues past it.
 - GATHERING/READING DATA: if the task asks you to "get", "read", "check", or "gather" information (numbers, stats, text, a list, etc.) rather than to perform an action, your job is DONE once you can see that information in the current screenshot/page text — call "finish" with a summary that actually includes the data you found (the real numbers/values/text visible), not just "task completed."
 - Call "finish" as soon as the full sequence is done, or if it cannot be done on this page, or if it requires something risky/irreversible (like sending money, submitting a payment, deleting something, or sending an email) that the user should confirm themselves first — in that case explain what you found and stop instead of doing it.
@@ -8441,10 +8398,7 @@ async function runAgentTask(prompt, thread) {
       break;
     }
 
-    const stepLabel = name === 'drag'
-      ? `drag: ${args?.from?.text || args?.from?.description || args?.from?.selector || 'item'} → ${args?.to?.text || args?.to?.description || args?.to?.selector || 'target'}`
-      : `${name}${args?.text ? `: "${args.text}"` : args?.direction ? `: ${args.direction}` : args?.selector || args?.description ? '' : ''}`.trim();
-    addAgentStepBubble(thread, stepLabel);
+    addAgentStepBubble(thread, `${name}${args?.text ? `: "${args.text}"` : args?.direction ? `: ${args.direction}` : args?.selector || args?.description ? '' : ''}`.trim());
 
     let execResult;
     try {
