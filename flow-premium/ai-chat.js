@@ -8410,6 +8410,27 @@ async function runAgentTask(prompt, thread) {
     }
 
     await new Promise(r => setTimeout(r, 700)); // let the page settle after the action
+
+    // Some links/buttons open a NEW tab instead of navigating the current
+    // one (very common on channel/video pages, search results, etc). If we
+    // kept driving the old tab it would just sit there doing nothing while
+    // the real content loaded elsewhere. Re-detect which tab is actually
+    // active/focused now and follow it, so Autopilot moves with the user
+    // through new tabs instead of getting stuck on the original page.
+    try {
+      const followWindows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
+      const followCandidates = followWindows
+        .flatMap(w => (w.tabs || []).filter(t => t.active).map(t => ({ ...t, _focused: w.focused })))
+        .sort((a, b) => (b._focused ? 1 : 0) - (a._focused ? 1 : 0) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
+      const freshTab = followCandidates[0];
+      if (freshTab && freshTab.id && !/^(chrome|chrome-extension|edge|about):/.test(freshTab.url || '')) {
+        if (freshTab.id !== tab.id) {
+          addAgentStepBubble(thread, `Followed into new tab: ${freshTab.title || freshTab.url}`);
+        }
+        tab = freshTab;
+      }
+    } catch (_) { /* keep driving the previous tab if this lookup fails */ }
+
     pageText = await getActiveTabPageText(tab.id);
 
     contents.push({
