@@ -1599,7 +1599,7 @@
         <button class="mode-btn" data-mode="broadcast" id="broadcastModeBtn" title="Multi-voice AI broadcast from any content"><span class="mode-emoji">🎙️</span> Broadcast</button>
         <button class="mode-btn" data-mode="agent" id="agentModeBtn" title="Autopilot — give it a task and it clicks/types/scrolls on the page for you"><span class="mode-emoji"><img src="icons/icon48.png" class="mode-icon-img" alt=""></span> Autopilot</button>
         <div style="flex:1;"></div>
-        <button class="mode-btn" id="addMagicBtn" title="Create a custom AI agent">✦ Magic Agents</button>
+        <button class="mode-btn" id="addMagicBtn" title="Create a custom prompt button">✦ Custom Prompts</button>
         <button class="mode-btn" id="clearBtn" title="Clear chat" style="color:#778899;">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></svg>Clear
         </button>
@@ -1905,41 +1905,43 @@
     }
   </style>
 
-  <!-- Magic Button Creator Modal - Simple Version -->
+  <!-- Custom Prompt Button Creator Modal - Simple Version -->
   <div id="magicModal" class="magic-modal">
-    <div class="magic-modal-content" style="max-width: 360px; max-height: none;">
+    <div class="magic-modal-content" style="max-width: 380px; max-height: none;">
       <div class="magic-modal-header">
-        <span style="-webkit-text-fill-color: #fff;">⚡ Create Magic Agent</span>
+        <span style="-webkit-text-fill-color: #fff;">⚡ Create Custom Prompt</span>
         <button class="magic-close" id="closeMagicModal" aria-label="Close modal">✕</button>
       </div>
       <div class="magic-modal-body" style="max-height: none; overflow: visible;">
         <div class="magic-field">
-          <label>Name</label>
-          <input type="text" id="magicName" placeholder="e.g., Price Check" maxlength="12">
+          <label>Your instructions</label>
+          <textarea id="magicPrompt" placeholder="Paste or write your full instructions here — as long as you need. This is exactly what the AI will follow every time you click this button." rows="10" maxlength="20000"></textarea>
+          <span class="char-count"><span id="promptCount">0</span>/3000 words</span>
         </div>
-        <div class="magic-field">
-          <label>Icon</label>
-          <div class="emoji-picker" id="emojiPicker">
-            <span class="emoji-option" data-emoji="🔍">🔍</span>
-            <span class="emoji-option" data-emoji="💰">💰</span>
-            <span class="emoji-option" data-emoji="📊">📊</span>
-            <span class="emoji-option" data-emoji="📈">📈</span>
-            <span class="emoji-option" data-emoji="💡">💡</span>
-            <span class="emoji-option" data-emoji="⚡">⚡</span>
-            <span class="emoji-option" data-emoji="🎯">🎯</span>
-            <span class="emoji-option" data-emoji="🛒">🛒</span>
-            <span class="emoji-option selected" data-emoji="✨">✨</span>
-            <span class="emoji-option" data-emoji="🚀">🚀</span>
+        <div class="magic-field" style="display:flex; gap:10px; align-items:flex-start;">
+          <div style="flex:0 0 auto;">
+            <label>Icon</label>
+            <div class="emoji-picker" id="emojiPicker" style="max-width:120px;">
+              <span class="emoji-option" data-emoji="🔍">🔍</span>
+              <span class="emoji-option" data-emoji="💰">💰</span>
+              <span class="emoji-option" data-emoji="📊">📊</span>
+              <span class="emoji-option" data-emoji="📈">📈</span>
+              <span class="emoji-option" data-emoji="💡">💡</span>
+              <span class="emoji-option" data-emoji="⚡">⚡</span>
+              <span class="emoji-option" data-emoji="🎯">🎯</span>
+              <span class="emoji-option" data-emoji="🛒">🛒</span>
+              <span class="emoji-option selected" data-emoji="✨">✨</span>
+              <span class="emoji-option" data-emoji="🚀">🚀</span>
+            </div>
+            <input type="hidden" id="selectedEmoji" value="✨">
           </div>
-          <input type="hidden" id="selectedEmoji" value="✨">
+          <div style="flex:1;">
+            <label>Button name</label>
+            <input type="text" id="magicName" placeholder="e.g., Price Check" maxlength="12">
+          </div>
         </div>
         <div class="magic-field">
-          <label>What should this do?</label>
-          <textarea id="magicPrompt" placeholder="Tell the AI what to analyze. Be specific about what you want it to look for and how to respond..." rows="6" maxlength="3000"></textarea>
-          <span class="char-count"><span id="promptCount">0</span>/3000</span>
-        </div>
-        <div class="magic-field">
-          <label>When clicked, box says (Hint)</label>
+          <label>Button hint (optional)</label>
           <input type="text" id="magicHint" placeholder="e.g., Snap anything to understand it..." maxlength="60">
         </div>
       </div>

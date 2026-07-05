@@ -13120,7 +13120,7 @@ function editMagicButton(index) {
   document.getElementById('magicPrompt').value = btn.prompt;
   document.getElementById('magicHint').value = btn.hint || '';
   document.getElementById('selectedEmoji').value = btn.emoji;
-  document.getElementById('promptCount').textContent = btn.prompt.length;
+  document.getElementById('promptCount').textContent = countWords(btn.prompt);
   
   document.querySelectorAll('.emoji-option').forEach(el => {
     el.classList.toggle('selected', el.dataset.emoji === btn.emoji);
@@ -13187,8 +13187,19 @@ document.getElementById('emojiPicker')?.addEventListener('click', (e) => {
   }
 });
 
+function countWords(str) {
+  const t = str.trim();
+  return t ? t.split(/\s+/).length : 0;
+}
+
 document.getElementById('magicPrompt')?.addEventListener('input', (e) => {
-  document.getElementById('promptCount').textContent = e.target.value.length;
+  let words = countWords(e.target.value);
+  if (words > 3000) {
+    // Trim back down to 3000 words if the user pastes something longer
+    e.target.value = e.target.value.trim().split(/\s+/).slice(0, 3000).join(' ');
+    words = 3000;
+  }
+  document.getElementById('promptCount').textContent = words;
 });
 
 document.querySelectorAll('.template-btn').forEach(btn => {
@@ -13199,7 +13210,7 @@ document.querySelectorAll('.template-btn').forEach(btn => {
     const name = buttonText.substring(emoji.length).trim();
     
     document.getElementById('magicPrompt').value = template;
-    document.getElementById('promptCount').textContent = template.length;
+    document.getElementById('promptCount').textContent = countWords(template);
     
     document.querySelectorAll('.template-btn').forEach(b => b.classList.remove('selected'));
     btn.classList.add('selected');
