@@ -42,15 +42,6 @@
       margin-bottom: 18px;
     }
 
-    .logo-glow-bg {
-      position: absolute;
-      width: 108px;
-      height: 108px;
-      border-radius: 50%;
-      background: #26272a;
-      pointer-events: none;
-    }
-
     .logo-svg-wrap {
       position: relative;
       width: 96px;
@@ -60,28 +51,11 @@
       justify-content: center;
     }
 
-    /* ── Single smooth spinning ring around the logo (Google 4-color) ── */
-    .logo-ring {
-      position: absolute;
-      width: 96px;
-      height: 96px;
-      border-radius: 50%;
-      background: conic-gradient(from 0deg, #4285F4 0%, #EA4335 25%, #FBBC05 50%, #34A853 75%, #4285F4 100%);
-      -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-      mask: radial-gradient(farthest-side, transparent calc(100% - 3px), #000 calc(100% - 3px));
-      animation: orbitSpin 5s linear infinite;
-    }
-
-    @keyframes orbitSpin {
-      from { transform: rotate(0deg); }
-      to   { transform: rotate(360deg); }
-    }
-
     /* ── Logo image, masked to a clean circle ── */
     .logo-img-mask {
       position: relative;
-      width: 72px;
-      height: 72px;
+      width: 96px;
+      height: 96px;
       border-radius: 50%;
       overflow: hidden;
     }
@@ -412,9 +386,7 @@
   <div class="container">
     <div class="card">
       <div class="logo-wrap">
-        <div class="logo-glow-bg"></div>
         <div class="logo-svg-wrap">
-          <div class="logo-ring"></div>
           <div class="logo-img-mask">
             <img src="icons/welcome-logo.png" alt="Aion" class="logo-img">
           </div>
