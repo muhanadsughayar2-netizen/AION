@@ -3948,7 +3948,8 @@
     createGhostCursor();
     
     switch (action) {
-      case 'click': {
+      case 'click':
+      case 'doubleClick': {
         // SMART SEARCH: Find element by multiple strategies
         let element = null;
         const attemptedMethods = [];
@@ -4032,7 +4033,7 @@
         // Show click effect
         clickGhostCursor(center.x, center.y);
         highlightElement(element);
-        showAgentBanner(`Clicking: ${params.text || params.selector}`);
+        showAgentBanner(action === 'doubleClick' ? `Double-clicking: ${params.text || params.selector}` : `Clicking: ${params.text || params.selector}`);
         
         await new Promise(r => setTimeout(r, 300));
         
@@ -4049,7 +4050,22 @@
         // behavior, so the blocked javascript: URL is never attempted.
         const href = element.tagName === 'A' ? (element.getAttribute('href') || '') : '';
         const isJsHrefLink = /^\s*javascript:/i.test(href);
-        if (isJsHrefLink) {
+
+        if (action === 'doubleClick') {
+          // Real double-clicks (e.g. opening a file in Google Drive) need the
+          // full native event sequence — a plain dblclick event alone is
+          // ignored by many apps that listen for the raw mousedown/up pairs
+          // and count the clicks themselves.
+          const opts = { bubbles: true, cancelable: true, view: window, clientX: center.x, clientY: center.y };
+          element.dispatchEvent(new MouseEvent('mousedown', opts));
+          element.dispatchEvent(new MouseEvent('mouseup', opts));
+          element.dispatchEvent(new MouseEvent('click', opts));
+          await new Promise(r => setTimeout(r, 80));
+          element.dispatchEvent(new MouseEvent('mousedown', opts));
+          element.dispatchEvent(new MouseEvent('mouseup', opts));
+          element.dispatchEvent(new MouseEvent('click', opts));
+          element.dispatchEvent(new MouseEvent('dblclick', { ...opts, detail: 2 }));
+        } else if (isJsHrefLink) {
           element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
         } else if (typeof element.click === 'function') {
           element.click();
@@ -4057,6 +4073,97 @@
           element.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, view: window }));
         }
         
+        return { success: true };
+      }
+
+      case 'drag': {
+        // Simulate a real click-and-hold drag (chess pieces, sliders, sortable
+        // lists, drag-and-drop uploads, etc). Most drag implementations listen
+        // to raw mouse events rather than the native HTML5 drag API, so we
+        // fire a realistic mousedown -> several mousemove steps -> mouseup
+        // sequence rather than a single instantaneous jump, since some
+        // libraries only "pick up" the dragged item once real movement is
+        // detected.
+        const findByTextOrSelector = (selector, text) => {
+          if (selector) {
+            const el = document.querySelector(selector);
+            if (el) return el;
+          }
+          if (text) {
+            const all = document.querySelectorAll('*');
+            for (const el of all) {
+              if (el.children.length === 0 && el.textContent?.trim().toLowerCase() === text.toLowerCase()) {
+                return el;
+              }
+            }
+          }
+          return null;
+        };
+
+        let fromEl = findByTextOrSelector(params.fromSelector, params.fromText);
+        let fromPoint = null;
+        if (!fromEl && typeof params.fromX === 'number' && typeof params.fromY === 'number') {
+          fromPoint = { x: params.fromX, y: params.fromY };
+        }
+        if (!fromEl && !fromPoint) {
+          throw new Error('Could not find the drag start point. Provide fromSelector, fromText, or fromX/fromY.');
+        }
+
+        let toEl = findByTextOrSelector(params.toSelector, params.toText);
+        let toPoint = null;
+        if (!toEl && typeof params.toX === 'number' && typeof params.toY === 'number') {
+          toPoint = { x: params.toX, y: params.toY };
+        }
+        if (!toEl && !toPoint) {
+          throw new Error('Could not find the drag end point. Provide toSelector, toText, or toX/toY.');
+        }
+
+        const start = fromEl ? getElementCenter(fromEl) : fromPoint;
+        const end = toEl ? getElementCenter(toEl) : toPoint;
+
+        if (fromEl) { fromEl.scrollIntoView({ behavior: 'smooth', block: 'center' }); await new Promise(r => setTimeout(r, 300)); }
+        moveGhostCursor(start.x, start.y);
+        await new Promise(r => setTimeout(r, 300));
+        showAgentBanner(`Dragging from (${Math.round(start.x)},${Math.round(start.y)}) to (${Math.round(end.x)},${Math.round(end.y)})...`);
+
+        const dispatchAt = (type, x, y, target) => {
+          const el = target || document.elementFromPoint(x, y) || document.body;
+          const opts = { bubbles: true, cancelable: true, view: window, clientX: x, clientY: y, button: 0, buttons: type === 'mouseup' ? 0 : 1 };
+          el.dispatchEvent(new MouseEvent(type, opts));
+          return el;
+        };
+
+        const dragTarget = fromEl || document.elementFromPoint(start.x, start.y);
+        dispatchAt('mousedown', start.x, start.y, dragTarget);
+        highlightElement(dragTarget || document.body);
+
+        const steps = 12;
+        for (let i = 1; i <= steps; i++) {
+          const x = start.x + (end.x - start.x) * (i / steps);
+          const y = start.y + (end.y - start.y) * (i / steps);
+          moveGhostCursor(x, y);
+          dispatchAt('mousemove', x, y);
+          await new Promise(r => setTimeout(r, 40));
+        }
+
+        await new Promise(r => setTimeout(r, 150));
+        const dropTarget = toEl || document.elementFromPoint(end.x, end.y);
+        dispatchAt('mousemove', end.x, end.y, dropTarget);
+        dispatchAt('mouseup', end.x, end.y, dropTarget);
+
+        // Some drag-and-drop libraries (HTML5 native DnD, e.g. Trello-style
+        // boards) listen for dragstart/dragover/drop instead of raw mouse
+        // events — fire those too so both implementations have a chance to
+        // pick it up.
+        try {
+          const dt = new DataTransfer();
+          dragTarget?.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt, clientX: start.x, clientY: start.y }));
+          dropTarget?.dispatchEvent(new DragEvent('dragenter', { bubbles: true, cancelable: true, dataTransfer: dt, clientX: end.x, clientY: end.y }));
+          dropTarget?.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt, clientX: end.x, clientY: end.y }));
+          dropTarget?.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt, clientX: end.x, clientY: end.y }));
+          dragTarget?.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt, clientX: end.x, clientY: end.y }));
+        } catch (_) { /* DataTransfer/DragEvent construction can fail on some pages; raw mouse events above already covered it */ }
+
         return { success: true };
       }
       
@@ -4167,7 +4274,7 @@
       
       case 'scroll': {
         showAgentBanner(`Scrolling ${params.direction || 'to element'}...`);
-        
+
         if (params.selector) {
           const el = document.querySelector(params.selector);
           if (el) {
@@ -4175,19 +4282,70 @@
             const center = getElementCenter(el);
             moveGhostCursor(center.x, center.y);
           }
-        } else if (params.direction === 'down') {
-          window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
-          moveGhostCursor(window.innerWidth / 2, window.innerHeight / 2);
-        } else if (params.direction === 'up') {
-          window.scrollBy({ top: -window.innerHeight * 0.8, behavior: 'smooth' });
-          moveGhostCursor(window.innerWidth / 2, window.innerHeight / 2);
-        } else if (params.direction === 'top') {
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-          moveGhostCursor(window.innerWidth / 2, 100);
-        } else if (params.direction === 'bottom') {
-          window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
-          moveGhostCursor(window.innerWidth / 2, window.innerHeight - 100);
+          return { success: true };
         }
+
+        // Many apps (Google Docs/Drive preview, PDF viewers, chat panes) render
+        // their real content inside an inner scrollable <div>, not the page
+        // body — scrolling window.scrollBy does nothing visible there. Find
+        // the largest/most-central scrollable element on screen and scroll
+        // that instead, falling back to window if nothing else qualifies.
+        const isScrollable = (el) => {
+          if (!el || el === document.documentElement || el === document.body) return false;
+          const style = getComputedStyle(el);
+          const overflowY = style.overflowY;
+          const canScroll = (overflowY === 'auto' || overflowY === 'scroll' || overflowY === 'overlay');
+          return canScroll && el.scrollHeight > el.clientHeight + 20;
+        };
+        const findScrollTarget = () => {
+          // Prefer whatever scrollable container sits directly under the
+          // center of the viewport (where the "document" content usually is).
+          const centerEl = document.elementFromPoint(window.innerWidth / 2, window.innerHeight / 2);
+          let node = centerEl;
+          while (node) {
+            if (isScrollable(node)) return node;
+            node = node.parentElement;
+          }
+          // Fallback: pick the largest scrollable container anywhere on the page.
+          const all = document.querySelectorAll('*');
+          let best = null, bestArea = 0;
+          for (const el of all) {
+            if (!isScrollable(el)) continue;
+            const rect = el.getBoundingClientRect();
+            const area = rect.width * rect.height;
+            if (area > bestArea) { best = el; bestArea = area; }
+          }
+          return best;
+        };
+
+        const target = findScrollTarget();
+        const scrollerHeight = target ? target.clientHeight : window.innerHeight;
+
+        if (params.direction === 'down') {
+          if (target) target.scrollBy({ top: scrollerHeight * 0.8, behavior: 'smooth' });
+          else window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
+        } else if (params.direction === 'up') {
+          if (target) target.scrollBy({ top: -scrollerHeight * 0.8, behavior: 'smooth' });
+          else window.scrollBy({ top: -window.innerHeight * 0.8, behavior: 'smooth' });
+        } else if (params.direction === 'top') {
+          if (target) target.scrollTo({ top: 0, behavior: 'smooth' });
+          else window.scrollTo({ top: 0, behavior: 'smooth' });
+        } else if (params.direction === 'bottom') {
+          if (target) target.scrollTo({ top: target.scrollHeight, behavior: 'smooth' });
+          else window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        } else {
+          // No direction given — default to scrolling down, same as before.
+          if (target) target.scrollBy({ top: scrollerHeight * 0.8, behavior: 'smooth' });
+          else window.scrollBy({ top: window.innerHeight * 0.8, behavior: 'smooth' });
+        }
+
+        if (target) {
+          const rect = target.getBoundingClientRect();
+          moveGhostCursor(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        } else {
+          moveGhostCursor(window.innerWidth / 2, window.innerHeight / 2);
+        }
+
         return { success: true };
       }
       

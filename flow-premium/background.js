@@ -783,9 +783,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       params
     }, (response) => {
       if (chrome.runtime.lastError) {
-        // Try injecting content script first, then retry
+        // Try injecting content script first, then retry. allFrames:true also
+        // reaches embedded iframes (e.g. a Google Docs/Drive preview pane) so
+        // clicks/drags/scrolls can target content that lives inside them.
         chrome.scripting.executeScript({
-          target: { tabId },
+          target: { tabId, allFrames: true },
           files: ['content.js']
         }).then(() => {
           chrome.tabs.sendMessage(tabId, {

@@ -8174,6 +8174,35 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'doubleClick',
+      description: 'Double-click an element on the current page. Use this instead of "click" when a single click only selects/highlights something and it actually needs to be OPENED (e.g. opening a file in Google Drive, opening a folder, launching an item from a list).',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Visible text/label on the element to double-click, e.g. a file name' },
+          selector: { type: 'string', description: 'CSS selector, only if known precisely' },
+          description: { type: 'string', description: 'Fallback description of the element if text/selector are unknown' }
+        }
+      }
+    },
+    {
+      name: 'drag',
+      description: 'Click-and-hold on one spot, drag to another spot, then release — for moving a chess piece, dragging a slider/handle, reordering a list, or any drag-and-drop interaction. Identify the start ("from") and end ("to") either by visible text/selector of the element, or by pixel coordinates on the current screenshot.',
+      parameters: {
+        type: 'object',
+        properties: {
+          fromText: { type: 'string', description: 'Visible text/label of the element to pick up (e.g. the piece)' },
+          fromSelector: { type: 'string', description: 'CSS selector of the element to pick up, if known' },
+          fromX: { type: 'number', description: 'X pixel coordinate to start the drag from, if no text/selector applies' },
+          fromY: { type: 'number', description: 'Y pixel coordinate to start the drag from, if no text/selector applies' },
+          toText: { type: 'string', description: 'Visible text/label of the drop target' },
+          toSelector: { type: 'string', description: 'CSS selector of the drop target, if known' },
+          toX: { type: 'number', description: 'X pixel coordinate to drop at, if no text/selector applies' },
+          toY: { type: 'number', description: 'Y pixel coordinate to drop at, if no text/selector applies' }
+        }
+      }
+    },
+    {
       name: 'type',
       description: 'Type text into an input field, search box, or textarea on the current page.',
       parameters: {
@@ -8227,8 +8256,11 @@ const AGENT_SYSTEM_PROMPT = `You are an in-browser automation agent controlling 
 Rules:
 - Each turn you are given BOTH a text snapshot of the page AND a real screenshot image of what it currently looks like. Use the screenshot to visually confirm where you actually are (e.g. did the click really open the product page, are you still on a search results list, did a popup/modal appear) before deciding your next move — don't rely on text alone.
 - If the screenshot and the text disagree, or the screenshot shows you're not where you expected, trust the screenshot and re-orient (e.g. close a popup, scroll, or navigate again) instead of repeating the same action blindly.
-- Call exactly ONE function per turn: click, type, scroll, navigate, or finish.
+- Call exactly ONE function per turn: click, doubleClick, drag, type, scroll, navigate, or finish.
 - If the task asks you to go to a specific website/URL that is not the current page, use "navigate" with the full address — do NOT try to fake it by typing the URL into a search box or link on the page.
+- Use "doubleClick" (not "click") when a single click would only select/highlight an item and it actually needs to be OPENED — e.g. opening a file or folder in Google Drive, launching an item from a file list.
+- Use "drag" for anything that requires picking something up and moving it — e.g. moving a chess/game piece from one square to another, dragging a slider, or reordering a list. A plain "click" cannot do this.
+- If a page seems to contain content inside an embedded viewer/frame (a document preview, PDF viewer, etc.) and "scroll" doesn't seem to move it, try clicking directly inside that content area first, then scroll again.
 - After each action you will be told whether it succeeded and shown the page again, so you can decide the next step.
 - If an action fails, try a different way to find the same element (different text/description) before giving up.
 - MULTI-STEP TASKS: many instructions are really a sequence written in one sentence (e.g. "find a channel, then open its analytics, then read the numbers, then summarize them"). Treat each part, in the order given, as its own milestone. Before acting, silently work out which milestone you're currently on based on the screenshot/page text, complete it fully (including any waiting/scrolling needed to confirm it worked), and only then move to the next one — do not skip ahead, do not jump back to an earlier milestone unless the screenshot shows you actually left the intended path, and do not stop early just because an earlier milestone technically "looks done" if the sentence clearly continues past it.
@@ -8260,7 +8292,11 @@ async function getActiveTabPageText(tabId) {
     // a few AI chat domains) — inject it now using the activeTab grant from
     // the user's send click, then retry once.
     try {
-      await chrome.scripting.executeScript({ target: { tabId }, files: ['content.js'] });
+      // allFrames:true also injects into embedded iframes (e.g. a Google
+      // Docs/Drive preview pane rendered inside another site's page), so
+      // Autopilot can read text that lives inside them, not just the
+      // top-level document.
+      await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
       const res = await ask();
       return (res && res.text) ? res.text.slice(0, 6000) : '';
     } catch (_e) {
@@ -8329,17 +8365,23 @@ async function runAgentTask(prompt, thread) {
     addAgentStepBubble(thread, "Couldn't find an active browser tab to control.", 'error');
     return;
   }
-  if (/^(chrome|chrome-extension|edge|about):/.test(tab.url || '')) {
-    stopBtn.remove();
-    addAgentStepBubble(thread, "Can't act on a browser system page — open a real website tab first, then try again.", 'error');
-    return;
-  }
+  const onSystemPage = /^(chrome|chrome-extension|edge|about):/.test(tab.url || '');
 
   const contents = [];
-  let pageText = await getActiveTabPageText(tab.id);
+  // A system page (new tab, chrome://extensions, etc.) has no readable
+  // content and no content script can be injected into it — but the task
+  // may simply START with a "navigate" action (e.g. "go to YouTube"),
+  // which works fine from any tab via chrome.tabs.update. So instead of
+  // hard-blocking here, just skip the page-text read and tell the model
+  // it needs to navigate first before it can click/type/scroll anything.
+  let pageText = onSystemPage ? '' : await getActiveTabPageText(tab.id);
   contents.push({
     role: 'user',
-    parts: [{ text: `TASK: ${prompt}\n\nCURRENT PAGE (${tab.url}):\n${pageText || '(no readable text found)'}` }]
+    parts: [{
+      text: onSystemPage
+        ? `TASK: ${prompt}\n\nCURRENT PAGE (${tab.url}):\nThis is a browser system page with no content — you must call the "navigate" action first to go to a real website before doing anything else.`
+        : `TASK: ${prompt}\n\nCURRENT PAGE (${tab.url}):\n${pageText || '(no readable text found)'}`
+    }]
   });
 
   for (let step = 0; step < AGENT_MAX_STEPS; step++) {
