@@ -1,4 +1,4 @@
 - [Gemini image generation models](gemini-image-models.md) — correct "Nano Banana" model IDs; gemini-2.0-flash image models are dead (shut down June 2026).
 - [Gemini TTS chunking](gemini-tts-chunking.md) — generateContent TTS cannot stream; chunk text + queue playback for ~2s start while keeping natural voices.
 - [Veo native video extend](veo-video-extend.md) — real "extend" (Veo 3.1/3.1 Fast, pass back the actual video ref) keeps audio continuous; frame-capture continuation causes music hard-cuts.
-- [Autopilot browser automation gotchas](autopilot-browser-automation-gotchas.md) — system-page hard-blocks, iframe scrolling, and native double-click/drag need special handling in MV3 content-script automation.
+- [Autopilot browser automation gotchas](autopilot-browser-automation-gotchas.md) — system-page hard-blocks, iframe scrolling, native double-click/drag, and canvas apps (Sheets/Docs) needing the real API instead of DOM/pixel guessing.

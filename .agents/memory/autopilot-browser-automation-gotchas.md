@@ -49,6 +49,29 @@ separate surfaces living in different documents.
 window via `chrome.windows.update`; to change on-page automation visuals
 (cursor, banners), edit the content-script-injected styles instead.
 
+## Canvas-rendered apps (Sheets/Docs) can't be automated via click+DOM guessing — use the real API
+Google Sheets renders its grid on `<canvas>` (no DOM cells exist to query or
+click); Google Docs' visible body is also non-standard and only a hidden,
+undocumented iframe (`docs-texteventtarget-iframe`) actually captures
+keystrokes. CSS selectors and pixel-coordinate clicks into these apps are
+guessing at Google's private, frequently-changing internals and will
+periodically break/land in the wrong place (e.g. typing into the filename box
+instead of the grid) — including with the `chrome.debugger` trusted-input
+CDP technique otherwise used elsewhere in this Autopilot.
+
+**Why:** two rounds of selector/heuristic fixes (broader selector lists,
+retry loops, viewport-center fallback) all failed in practice because the
+underlying approach was inherently a guess with no verification.
+
+**How to apply:** for Sheets/Docs specifically, skip DOM/pixel automation
+entirely and call Google's official REST APIs instead
+(`sheets.googleapis.com/v4/spreadsheets/{id}/values/{range}` PUT,
+`docs.googleapis.com/v1/documents/{id}:batchUpdate` insertText) using an
+OAuth token with `.../auth/spreadsheets` + `.../auth/documents` scopes
+obtained via the extension's existing `chrome.identity.launchWebAuthFlow`
+sign-in pattern. This is deterministic and immune to Google's UI/DOM churn;
+reserve click/type DOM automation for normal (non-canvas) websites.
+
 ## Cross-origin iframe content needs `allFrames: true`
 If `chrome.scripting.executeScript` injects only into the top frame,
 Autopilot can't read or act on content rendered inside a same-tab iframe

@@ -69,6 +69,107 @@ function loadAndApplyUiMode() {
 
 // Open welcome page on first install and initialize subscription
 // ============================================
+// GOOGLE SHEETS / DOCS "GOLDEN PATH" — write directly via Google's own
+// REST APIs instead of guessing pixel coordinates on a canvas-rendered page.
+// This is 100% reliable regardless of banners, dialogs, or Google changing
+// its internal CSS class names, because it never touches the page's UI at
+// all — it writes straight to the underlying spreadsheet/document data.
+// Requires the user to grant the extra Sheets/Docs scopes below (separate,
+// one-time consent prompt) on top of the existing sign-in.
+// ============================================
+const GOOGLE_API_SCOPES = 'openid email profile https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/documents';
+
+function extractGoogleFileId(url) {
+  const m = (url || '').match(/\/d\/([a-zA-Z0-9-_]+)/);
+  return m ? m[1] : null;
+}
+
+async function getGoogleApiToken(forceReauth) {
+  const stored = await chrome.storage.local.get(['snaptoai_google_api_token']);
+  const tok = stored.snaptoai_google_api_token;
+  // Implicit-flow tokens are typically valid ~1hr; treat as stale after 55m.
+  const isFresh = tok && tok.accessToken && tok.obtainedAt && (Date.now() - tok.obtainedAt) < 55 * 60 * 1000;
+  if (isFresh && !forceReauth) return tok.accessToken;
+
+  const manifest = chrome.runtime.getManifest();
+  const clientId = manifest && manifest.oauth2 && manifest.oauth2.client_id;
+  if (!clientId) throw new Error('OAuth client_id missing in manifest');
+  const redirectUrl = chrome.identity.getRedirectURL();
+  const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
+    '?client_id=' + encodeURIComponent(clientId) +
+    '&response_type=token' +
+    '&redirect_uri=' + encodeURIComponent(redirectUrl) +
+    '&scope=' + encodeURIComponent(GOOGLE_API_SCOPES) +
+    '&prompt=consent';
+
+  const responseUrl = await new Promise((resolve, reject) => {
+    chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, (url) => {
+      if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
+      if (!url) return reject(new Error('No response from Google — permission may have been declined'));
+      resolve(url);
+    });
+  });
+  const m = responseUrl.match(/access_token=([^&]+)/);
+  if (!m) throw new Error('No access token returned — permission may have been declined');
+  const accessToken = decodeURIComponent(m[1]);
+  await chrome.storage.local.set({ snaptoai_google_api_token: { accessToken, obtainedAt: Date.now() } });
+  return accessToken;
+}
+
+async function sheetsApiWriteCell(spreadsheetId, cell, text, token) {
+  const resp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${encodeURIComponent(cell)}?valueInputOption=USER_ENTERED`, {
+    method: 'PUT',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ range: cell, majorDimension: 'ROWS', values: [[text]] })
+  });
+  if (!resp.ok) throw new Error(`${resp.status} ${await resp.text().catch(() => resp.statusText)}`);
+}
+
+async function sheetsApiWriteNextRow(spreadsheetId, text, token) {
+  // Find the first empty row in column A so repeated "type" calls fill down
+  // the sheet like a person entering rows one at a time, instead of always
+  // overwriting A1.
+  const getResp = await fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/A:A`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!getResp.ok) throw new Error(`${getResp.status} ${await getResp.text().catch(() => getResp.statusText)}`);
+  const data = await getResp.json();
+  const nextRow = (data.values || []).length + 1;
+  await sheetsApiWriteCell(spreadsheetId, `A${nextRow}`, text, token);
+  return `A${nextRow}`;
+}
+
+async function docsApiAppendText(documentId, text, token) {
+  const getResp = await fetch(`https://docs.googleapis.com/v1/documents/${documentId}`, {
+    headers: { Authorization: `Bearer ${token}` }
+  });
+  if (!getResp.ok) throw new Error(`${getResp.status} ${await getResp.text().catch(() => getResp.statusText)}`);
+  const doc = await getResp.json();
+  const content = doc.body && doc.body.content;
+  const last = content && content[content.length - 1];
+  const endIndex = last && typeof last.endIndex === 'number' ? Math.max(1, last.endIndex - 1) : 1;
+
+  const batchResp = await fetch(`https://docs.googleapis.com/v1/documents/${documentId}:batchUpdate`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ requests: [{ insertText: { location: { index: endIndex }, text } }] })
+  });
+  if (!batchResp.ok) throw new Error(`${batchResp.status} ${await batchResp.text().catch(() => batchResp.statusText)}`);
+}
+
+async function writeToSheetsOrDocsApi({ isSheets, fileId, params, forceReauth }) {
+  const token = await getGoogleApiToken(!!forceReauth);
+  const text = String(params.text ?? '');
+  if (isSheets) {
+    const cellMatch = (params.selector || params.placeholder || '').trim().match(/^[A-Za-z]{1,3}[0-9]+$/);
+    if (cellMatch) await sheetsApiWriteCell(fileId, cellMatch[0].toUpperCase(), text, token);
+    else await sheetsApiWriteNextRow(fileId, text, token);
+  } else {
+    await docsApiAppendText(fileId, text, token);
+  }
+}
+
+// ============================================
 // GOOGLE SIGN-IN (callable from popup OR sidebar)
 // ============================================
 async function backgroundGoogleSignIn() {
@@ -778,17 +879,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
     if (executeAction === 'type') {
-      // Google Sheets/Docs draw their real content on <canvas>, so they
-      // don't have a normal input to set .value on — the plain content-script
-      // "type" path used for regular websites ends up grabbing whichever
-      // stray text box it can find (the filename/title field at the very
-      // top), which is why typing landed "at the top" of the sheet/doc
-      // instead of inside it. Canvas apps like Sheets also flatly ignore
-      // synthetic (isTrusted:false) keyboard events, so once we know we're
-      // on a Sheets/Docs page we click + type using the real Chrome
-      // DevTools Protocol keyboard (chrome.debugger) instead — indistinguishable
-      // from someone physically typing. Every other site keeps using the
-      // existing content-script type path untouched below.
+      // Google Sheets/Docs draw their real content on <canvas> — there is no
+      // normal input element to click into or set .value on, which is why
+      // pixel-coordinate clicking + guessed CSS selectors kept typing "at the
+      // top" of the sheet/doc instead of inside it. Instead of simulating a
+      // human clicking around, we write directly to the underlying data via
+      // Google's own official Sheets/Docs REST APIs — this is unaffected by
+      // banners, dialogs, scroll position, or Google changing its internal
+      // HTML/CSS, because it never touches the page's UI at all. Every other
+      // site (including Gmail, which uses a real contenteditable box) keeps
+      // using the existing content-script type path untouched below.
       (async () => {
         const runFallbackType = () => {
           chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, (response) => {
@@ -809,91 +909,47 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           // an intermediate/redirecting URL (e.g. sheets.new before it lands
           // on the real /spreadsheets/d/.../edit URL) — retry a few times
           // before concluding this isn't a Sheets/Docs page.
-          let isDocsHost = false;
+          let isSheets = false, isDocs = false, fileId = null;
           for (let i = 0; i < 5; i++) {
             const tab = await chrome.tabs.get(tabId);
             const url = tab && tab.url ? new URL(tab.url) : null;
-            isDocsHost = !!url && url.hostname.includes('docs.google.com') &&
-              (url.pathname.includes('/spreadsheets/') || url.pathname.includes('/document/'));
-            if (isDocsHost) break;
+            isSheets = !!url && url.hostname.includes('docs.google.com') && url.pathname.includes('/spreadsheets/');
+            isDocs = !!url && url.hostname.includes('docs.google.com') && url.pathname.includes('/document/');
+            if (isSheets || isDocs) { fileId = extractGoogleFileId(tab.url); break; }
             await new Promise(r => setTimeout(r, 300));
           }
 
-          if (!isDocsHost) {
+          if (!isSheets && !isDocs) {
             runFallbackType();
             return;
           }
-
-          const locate = async () => new Promise((resolve, reject) => {
-            chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction: 'locateForType', params }, (response) => {
-              if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-              else resolve(response);
-            });
-          });
-
-          let loc;
-          try {
-            loc = await locate();
-          } catch (_e) {
-            await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
-            loc = await locate();
-          }
-
-          if (!loc || !loc.success || typeof loc.x !== 'number' || typeof loc.y !== 'number') {
-            runFallbackType();
+          if (!fileId) {
+            sendResponse({ success: false, error: `Could not read the ${isSheets ? 'spreadsheet' : 'document'} ID from the tab's address bar.` });
             return;
           }
 
-          const { x, y, mode } = loc;
-          const debuggee = { tabId };
-          await chrome.debugger.attach(debuggee, '1.3');
           try {
-            const send = (method, params2) => new Promise((resolve, reject) => {
-              chrome.debugger.sendCommand(debuggee, method, params2, () => {
-                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-                else resolve();
-              });
-            });
-
-            // Click to focus the real grid/page content (not the title box).
-            await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
-            await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
-            await new Promise(r => setTimeout(r, 200));
-
-            const specialKeys = {
-              '\n': { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 },
-              '\t': { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }
-            };
-
-            const text = String(params.text ?? '');
-            for (const ch of text) {
-              if (specialKeys[ch]) {
-                const k = specialKeys[ch];
-                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: k.key, code: k.code, windowsVirtualKeyCode: k.windowsVirtualKeyCode });
-                await send('Input.dispatchKeyEvent', { type: 'keyUp', key: k.key, code: k.code, windowsVirtualKeyCode: k.windowsVirtualKeyCode });
-              } else {
-                await send('Input.dispatchKeyEvent', { type: 'keyDown', text: ch, unmodifiedText: ch, key: ch });
-                await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
-                await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ch });
+            await writeToSheetsOrDocsApi({ isSheets, fileId, params, forceReauth: false });
+            sendResponse({ success: true, via: 'google-api' });
+          } catch (apiErr) {
+            const msg = (apiErr && apiErr.message) || String(apiErr);
+            // A 401/403 usually means the cached token expired or was
+            // revoked mid-session — get a fresh one (may show a one-time
+            // Google permission prompt) and retry once before giving up.
+            if (/^40[13]/.test(msg)) {
+              try {
+                await writeToSheetsOrDocsApi({ isSheets, fileId, params, forceReauth: true });
+                sendResponse({ success: true, via: 'google-api' });
+                return;
+              } catch (retryErr) {
+                sendResponse({ success: false, error: `Couldn't write to your ${isSheets ? 'sheet' : 'document'} via Google's API: ${(retryErr && retryErr.message) || retryErr}` });
+                return;
               }
             }
-
-            // For spreadsheet cells, an untyped Enter leaves the cell stuck
-            // in edit mode with the value never actually saved — commit it
-            // unless the caller explicitly asked us not to.
-            if (mode === 'sheets' && params.pressEnter !== false) {
-              await new Promise(r => setTimeout(r, 100));
-              await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-              await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-            }
-
-            sendResponse({ success: true });
-          } finally {
-            chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+            sendResponse({ success: false, error: `Couldn't write to your ${isSheets ? 'sheet' : 'document'} via Google's API: ${msg}` });
           }
         } catch (e) {
-          console.warn('[SnapToAI Agent] Trusted type failed, falling back:', e && e.message);
-          runFallbackType();
+          sendResponse({ success: false, error: (e && e.message) || String(e) });
         }
       })();
       return true;
