@@ -8573,45 +8573,26 @@ function initVoiceInput() {
   let listening = false;
   let baseText = '';
   let finalTranscript = '';
-  let restartTimer = null;
-  let softRestartCount = 0;   // quick, expected restarts (silence/aborted) — cheap, no backoff
-  let networkFailCount = 0;   // real "network" errors in a row — these get slower each time
-  let erroredBubbleShown = false;
-  const MAX_NETWORK_FAILS = 5;
 
   function stopListening() {
     listening = false;
     micBtn.classList.remove('listening');
     micBtn.title = 'Speak instead of typing';
-    if (restartTimer) { clearTimeout(restartTimer); restartTimer = null; }
-    softRestartCount = 0;
-    networkFailCount = 0;
-    erroredBubbleShown = false;
     if (recognition) {
-      const r = recognition;
-      recognition = null;
-      // Detach handlers first so the natural onend fired by stop() below
-      // can't race with a stray restart after the user already stopped.
-      r.onend = null;
-      r.onerror = null;
-      r.onresult = null;
-      try { r.stop(); } catch (e) { /* already stopped */ }
+      try { recognition.stop(); } catch (e) { /* already stopped */ }
     }
   }
 
-  function createRecognition() {
-    const r = new SpeechRecognitionCtor();
-    r.lang = (navigator.language || 'en-US');
-    r.continuous = true;
-    r.interimResults = true;
-    let lastErrorWasNetwork = false;
+  function startListening() {
+    baseText = chatInputEl.value ? chatInputEl.value.trim() + ' ' : '';
+    finalTranscript = '';
 
-    r.onresult = (event) => {
-      // Real speech made it through — the connection is healthy again,
-      // so wipe out any accumulated backoff/failure state.
-      softRestartCount = 0;
-      networkFailCount = 0;
-      lastErrorWasNetwork = false;
+    recognition = new SpeechRecognitionCtor();
+    recognition.lang = (navigator.language || 'en-US');
+    recognition.continuous = true;
+    recognition.interimResults = true;
+
+    recognition.onresult = (event) => {
       let interim = '';
       for (let i = event.resultIndex; i < event.results.length; i++) {
         const transcript = event.results[i][0].transcript;
@@ -8625,111 +8606,23 @@ function initVoiceInput() {
       autoResize(chatInputEl);
     };
 
-    r.onerror = (event) => {
+    recognition.onerror = (event) => {
+      if (event.error === 'no-speech' || event.error === 'aborted') return;
       console.log('[SnapToAI] Voice input error:', event.error);
-      lastErrorWasNetwork = (event.error === 'network');
+      stopListening();
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
-        stopListening();
         addBubble('Microphone access was blocked. Allow microphone permission for this extension to use voice input.', 'error');
       }
-      // 'no-speech' / 'aborted' / 'network' fall through to onend, which
-      // decides how (and how fast) to restart.
     };
 
-    r.onend = () => {
-      if (!listening || recognition !== r) return; // user stopped, or this is a stale instance
-
-      let delay;
-      if (lastErrorWasNetwork) {
-        networkFailCount++;
-        if (networkFailCount > MAX_NETWORK_FAILS) {
-          stopListening();
-          if (!erroredBubbleShown) {
-            erroredBubbleShown = true;
-            addBubble("Voice input can't reach the speech service right now (this is a Chrome/network issue, not something in the extension). Check your internet connection, then click the mic to try again.", 'error');
-          }
-          return;
-        }
-        // Retrying a failing network connection instantly just fails again
-        // immediately (that's what made it seem to "fully stop" — a fast
-        // retry loop against an endpoint that's already refusing us burns
-        // through the attempt budget in under 2 seconds). Back off for
-        // real: 1.5s, 3s, 4.5s, 6s, 7.5s.
-        delay = 1500 * networkFailCount;
-      } else {
-        // Plain silence/pause — Chrome kills these sessions constantly by
-        // design, this is not an error. Restart quickly and don't count it
-        // against the failure budget at all.
-        softRestartCount++;
-        delay = 300;
+    recognition.onend = () => {
+      // Chrome sometimes ends recognition on its own after a pause even
+      // while the user is still "listening" — restart seamlessly unless
+      // the user explicitly stopped it.
+      if (listening) {
+        try { recognition.start(); } catch (e) { /* ignore double-start */ }
       }
-
-      restartTimer = setTimeout(() => {
-        if (!listening) return;
-        recognition = createRecognition();
-        try {
-          recognition.start();
-        } catch (e) {
-          console.log('[SnapToAI] Voice input restart failed:', e.message);
-          // The instance couldn't even start (e.g. mic grabbed by another
-          // app/tab). Give it one more slower try before giving up cleanly.
-          restartTimer = setTimeout(() => {
-            if (!listening) return;
-            try {
-              recognition.start();
-            } catch (e2) {
-              stopListening();
-              if (!erroredBubbleShown) {
-                erroredBubbleShown = true;
-                addBubble('Voice input could not restart — the microphone may be in use by another app or tab. Click the mic to try again.', 'error');
-              }
-            }
-          }, 1500);
-        }
-      }, delay);
     };
-
-    return r;
-  }
-
-  function showMicBlockedHelp() {
-    // Autopilot's chat window is a borderless popup window (no address bar),
-    // so the user has no padlock/site-info icon here to reset a blocked
-    // mic permission themselves — they need the exact settings URL instead.
-    addBubble(
-      'Microphone access is blocked for this window, so voice input can\'t start. To fix it: open a new browser tab, go to chrome://settings/content/microphone, find this extension in the "Not allowed" list and switch it to "Allow" (or remove it from the blocked list) — then close and reopen Autopilot and click the mic again.',
-      'error'
-    );
-  }
-
-  async function startListening() {
-    baseText = chatInputEl.value ? chatInputEl.value.trim() + ' ' : '';
-    finalTranscript = '';
-    softRestartCount = 0;
-    networkFailCount = 0;
-    erroredBubbleShown = false;
-
-    // Ask for the mic explicitly first. SpeechRecognition's own permission
-    // prompt is unreliable inside an extension popup window — this direct
-    // getUserMedia call is what actually surfaces Chrome's permission
-    // prompt (or tells us definitively it's already blocked) before we
-    // bother spinning up recognition at all.
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach(t => t.stop());
-    } catch (permErr) {
-      console.log('[SnapToAI] Mic permission check failed:', permErr.name, permErr.message);
-      if (permErr.name === 'NotAllowedError' || permErr.name === 'SecurityError') {
-        showMicBlockedHelp();
-      } else if (permErr.name === 'NotFoundError') {
-        addBubble('No microphone was found on this device.', 'error');
-      } else {
-        addBubble(`Could not access the microphone: ${permErr.message}`, 'error');
-      }
-      return;
-    }
-
-    recognition = createRecognition();
 
     try {
       recognition.start();
