@@ -805,10 +805,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         };
 
         try {
-          const tab = await chrome.tabs.get(tabId);
-          const url = tab && tab.url ? new URL(tab.url) : null;
-          const isDocsHost = !!url && url.hostname.includes('docs.google.com') &&
-            (url.pathname.includes('/spreadsheets/') || url.pathname.includes('/document/'));
+          // Right after a "navigate" step, tab.url can still briefly reflect
+          // an intermediate/redirecting URL (e.g. sheets.new before it lands
+          // on the real /spreadsheets/d/.../edit URL) — retry a few times
+          // before concluding this isn't a Sheets/Docs page.
+          let isDocsHost = false;
+          for (let i = 0; i < 5; i++) {
+            const tab = await chrome.tabs.get(tabId);
+            const url = tab && tab.url ? new URL(tab.url) : null;
+            isDocsHost = !!url && url.hostname.includes('docs.google.com') &&
+              (url.pathname.includes('/spreadsheets/') || url.pathname.includes('/document/'));
+            if (isDocsHost) break;
+            await new Promise(r => setTimeout(r, 300));
+          }
 
           if (!isDocsHost) {
             runFallbackType();
