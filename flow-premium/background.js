@@ -777,6 +777,118 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       })();
       return true;
     }
+    if (executeAction === 'type') {
+      // Google Sheets/Docs draw their real content on <canvas>, so they
+      // don't have a normal input to set .value on — the plain content-script
+      // "type" path used for regular websites ends up grabbing whichever
+      // stray text box it can find (the filename/title field at the very
+      // top), which is why typing landed "at the top" of the sheet/doc
+      // instead of inside it. Canvas apps like Sheets also flatly ignore
+      // synthetic (isTrusted:false) keyboard events, so once we know we're
+      // on a Sheets/Docs page we click + type using the real Chrome
+      // DevTools Protocol keyboard (chrome.debugger) instead — indistinguishable
+      // from someone physically typing. Every other site keeps using the
+      // existing content-script type path untouched below.
+      (async () => {
+        const runFallbackType = () => {
+          chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, (response) => {
+            if (chrome.runtime.lastError) {
+              chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] })
+                .then(() => {
+                  chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, sendResponse);
+                })
+                .catch(err => sendResponse({ success: false, error: err.message }));
+            } else {
+              sendResponse(response);
+            }
+          });
+        };
+
+        try {
+          const tab = await chrome.tabs.get(tabId);
+          const url = tab && tab.url ? new URL(tab.url) : null;
+          const isDocsHost = !!url && url.hostname.includes('docs.google.com') &&
+            (url.pathname.includes('/spreadsheets/') || url.pathname.includes('/document/'));
+
+          if (!isDocsHost) {
+            runFallbackType();
+            return;
+          }
+
+          const locate = async () => new Promise((resolve, reject) => {
+            chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction: 'locateForType', params }, (response) => {
+              if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+              else resolve(response);
+            });
+          });
+
+          let loc;
+          try {
+            loc = await locate();
+          } catch (_e) {
+            await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
+            loc = await locate();
+          }
+
+          if (!loc || !loc.success || typeof loc.x !== 'number' || typeof loc.y !== 'number') {
+            runFallbackType();
+            return;
+          }
+
+          const { x, y, mode } = loc;
+          const debuggee = { tabId };
+          await chrome.debugger.attach(debuggee, '1.3');
+          try {
+            const send = (method, params2) => new Promise((resolve, reject) => {
+              chrome.debugger.sendCommand(debuggee, method, params2, () => {
+                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+                else resolve();
+              });
+            });
+
+            // Click to focus the real grid/page content (not the title box).
+            await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+            await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+            await new Promise(r => setTimeout(r, 200));
+
+            const specialKeys = {
+              '\n': { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 },
+              '\t': { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }
+            };
+
+            const text = String(params.text ?? '');
+            for (const ch of text) {
+              if (specialKeys[ch]) {
+                const k = specialKeys[ch];
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: k.key, code: k.code, windowsVirtualKeyCode: k.windowsVirtualKeyCode });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp', key: k.key, code: k.code, windowsVirtualKeyCode: k.windowsVirtualKeyCode });
+              } else {
+                await send('Input.dispatchKeyEvent', { type: 'keyDown', text: ch, unmodifiedText: ch, key: ch });
+                await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ch });
+              }
+            }
+
+            // For spreadsheet cells, an untyped Enter leaves the cell stuck
+            // in edit mode with the value never actually saved — commit it
+            // unless the caller explicitly asked us not to.
+            if (mode === 'sheets' && params.pressEnter !== false) {
+              await new Promise(r => setTimeout(r, 100));
+              await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+              await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+            }
+
+            sendResponse({ success: true });
+          } finally {
+            chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          }
+        } catch (e) {
+          console.warn('[SnapToAI Agent] Trusted type failed, falling back:', e && e.message);
+          runFallbackType();
+        }
+      })();
+      return true;
+    }
     if (executeAction === 'doubleClick') {
       // Content-script click/dblclick events are ALWAYS isTrusted:false — no
       // amount of synthetic dispatchEvent() can change that. Security-sensitive

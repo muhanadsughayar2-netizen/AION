@@ -4196,6 +4196,47 @@
         return { success: true };
       }
       
+      case 'locateForType': {
+        // Google Sheets/Docs render their real content on <canvas>, not as
+        // normal DOM inputs — the generic "type" fallback below ends up
+        // grabbing whatever text input it can find on the page (the
+        // filename/title box at the very top), which is exactly the "it
+        // types at the top of the sheet/doc" bug. Here we just find WHERE
+        // the real grid/page content is so background.js can click + type
+        // there using genuinely trusted (chrome.debugger) input — canvas
+        // apps like Sheets ignore synthetic (isTrusted:false) key events.
+        const host = location.hostname;
+        const isSheets = host.includes('docs.google.com') && location.pathname.includes('/spreadsheets/');
+        const isDocs = host.includes('docs.google.com') && location.pathname.includes('/document/');
+
+        if (!isSheets && !isDocs) {
+          return { success: false };
+        }
+
+        let target = null;
+        if (isSheets) {
+          target = document.querySelector('.grid-container') || document.querySelector('#waffle');
+        } else {
+          target = document.querySelector('.kix-appview-editor') || document.querySelector('.kix-page-content-wrapper');
+        }
+
+        if (!target) {
+          return { success: false };
+        }
+
+        const rect = target.getBoundingClientRect();
+        // Aim just inside the top-left of the content area (roughly where
+        // cell A1 / the start of the document body is) rather than dead
+        // center, which on a mostly-empty sheet/doc can land past any
+        // existing content.
+        const x = rect.left + Math.min(120, rect.width * 0.15);
+        const y = rect.top + Math.min(80, rect.height * 0.12);
+
+        moveGhostCursor(x, y);
+        highlightElement(target);
+        return { success: true, x, y, mode: isSheets ? 'sheets' : 'docs' };
+      }
+
       case 'type': {
         let element = null;
         const attemptedSelectors = [];
