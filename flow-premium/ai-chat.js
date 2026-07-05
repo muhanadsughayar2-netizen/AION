@@ -8465,22 +8465,32 @@ async function runAgentTask(prompt, thread) {
     await new Promise(r => setTimeout(r, 700)); // let the page settle after the action
 
     // Some links/buttons open a NEW tab instead of navigating the current
-    // one (very common on channel/video pages, search results, etc). If we
-    // kept driving the old tab it would just sit there doing nothing while
-    // the real content loaded elsewhere. Re-detect which tab is actually
-    // active/focused now and follow it, so Autopilot moves with the user
-    // through new tabs instead of getting stuck on the original page.
+    // one (very common on channel/video pages, search results, etc). We
+    // used to "follow" by picking whichever tab was globally active/focused
+    // at that instant — but that meant TWO Autopilot windows running at the
+    // same time (or the user just switching tabs to check something else
+    // mid-task) would hijack each other's tab, since "focused tab" is
+    // shared browser-wide state, not something scoped to this task.
+    // Instead, only follow a tab that this task's OWN click/action actually
+    // opened: a brand-new tab whose openerTabId traces back to the tab we
+    // are currently driving. That keeps each agent instance locked to its
+    // own tab even if another agent (or the user) is active elsewhere.
     try {
-      const followWindows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
-      const followCandidates = followWindows
-        .flatMap(w => (w.tabs || []).filter(t => t.active).map(t => ({ ...t, _focused: w.focused })))
-        .sort((a, b) => (b._focused ? 1 : 0) - (a._focused ? 1 : 0) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
-      const freshTab = followCandidates[0];
-      if (freshTab && freshTab.id && !/^(chrome|chrome-extension|edge|about):/.test(freshTab.url || '')) {
-        if (freshTab.id !== tab.id) {
-          addAgentStepBubble(thread, `Followed into new tab: ${freshTab.title || freshTab.url}`);
-        }
+      const allTabsNow = await chrome.tabs.query({});
+      const openedByUs = allTabsNow
+        .filter(t => t.openerTabId === tab.id && t.id !== tab.id && !/^(chrome|chrome-extension|edge|about):/.test(t.url || ''))
+        .sort((a, b) => (b.id || 0) - (a.id || 0));
+      const freshTab = openedByUs[0];
+      if (freshTab && freshTab.id) {
+        addAgentStepBubble(thread, `Followed into new tab: ${freshTab.title || freshTab.url}`);
         tab = freshTab;
+      } else {
+        // No new tab was opened — make sure the tab we're driving still
+        // exists (it may have been closed) before continuing to use it.
+        try { tab = await chrome.tabs.get(tab.id); } catch (_) {
+          addAgentStepBubble(thread, 'The tab this task was controlling was closed.', 'error');
+          break;
+        }
       }
     } catch (_) { /* keep driving the previous tab if this lookup fails */ }
 

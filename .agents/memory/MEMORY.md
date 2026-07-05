@@ -2,3 +2,4 @@
 - [Gemini TTS chunking](gemini-tts-chunking.md) — generateContent TTS cannot stream; chunk text + queue playback for ~2s start while keeping natural voices.
 - [Veo native video extend](veo-video-extend.md) — real "extend" (Veo 3.1/3.1 Fast, pass back the actual video ref) keeps audio continuous; frame-capture continuation causes music hard-cuts.
 - [Autopilot synthetic drag/scroll/dblclick](autopilot-synthetic-interactions.md) — content-script automation needs manual event dispatch for dblclick and drag; scroll must target the real scrollable container, not window.
+- [Autopilot tab tracking](autopilot-tab-tracking.md) — never re-lock an agent loop onto "whichever tab is globally focused"; pin to the task's own tab and only follow via openerTabId, or concurrent agents/tab-switching hijack each other.
