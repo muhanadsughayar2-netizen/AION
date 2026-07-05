@@ -3774,8 +3774,8 @@
       ghostCursorStyle = document.createElement('style');
       ghostCursorStyle.textContent = `
         @keyframes snaptoai-cursor-pulse {
-          0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 20px rgba(138, 43, 226, 0.6), 0 0 40px rgba(138, 43, 226, 0.3); }
-          50% { transform: translate(-50%, -50%) scale(1.2); box-shadow: 0 0 30px rgba(138, 43, 226, 0.8), 0 0 60px rgba(138, 43, 226, 0.4); }
+          0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 20px rgba(56, 189, 248, 0.6), 0 0 40px rgba(52, 211, 153, 0.3); }
+          50% { transform: translate(-50%, -50%) scale(1.2); box-shadow: 0 0 30px rgba(56, 189, 248, 0.8), 0 0 60px rgba(52, 211, 153, 0.4); }
         }
         @keyframes snaptoai-cursor-click {
           0% { transform: translate(-50%, -50%) scale(1); }
@@ -3801,7 +3801,7 @@
           width: 24px;
           height: 24px;
           border-radius: 50%;
-          background: linear-gradient(135deg, #8a2be2 0%, #9945ff 50%, #00d4ff 100%);
+          background: linear-gradient(135deg, #38bdf8 0%, #34d399 100%);
           pointer-events: none;
           z-index: 2147483647;
           animation: snaptoai-cursor-pulse 1.5s ease-in-out infinite;
@@ -3819,12 +3819,16 @@
           transform: translate(-50%, -50%);
         }
         .snaptoai-ghost-cursor::after {
-          content: '🤖';
+          content: '';
           position: absolute;
-          top: -30px;
+          top: -34px;
           left: 50%;
           transform: translateX(-50%);
-          font-size: 20px;
+          width: 26px;
+          height: 26px;
+          background-image: url('${chrome.runtime.getURL('icons/agent-avatar.png')}');
+          background-size: contain;
+          background-repeat: no-repeat;
           filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
         }
         .snaptoai-ghost-cursor.clicking {
@@ -3834,14 +3838,14 @@
           position: fixed;
           width: 40px;
           height: 40px;
-          border: 3px solid #8a2be2;
+          border: 3px solid #38bdf8;
           border-radius: 50%;
           pointer-events: none;
           z-index: 2147483646;
           animation: snaptoai-ripple 0.6s ease-out forwards;
         }
         .snaptoai-element-highlight {
-          outline: 3px solid #8a2be2 !important;
+          outline: 3px solid #38bdf8 !important;
           outline-offset: 2px !important;
           animation: snaptoai-type-glow 0.8s ease-in-out infinite !important;
           transition: all 0.3s ease !important;
@@ -3851,7 +3855,7 @@
           top: 0;
           left: 0;
           right: 0;
-          background: linear-gradient(135deg, rgba(138, 43, 226, 0.95) 0%, rgba(75, 0, 130, 0.95) 100%);
+          background: linear-gradient(135deg, rgba(56, 189, 248, 0.95) 0%, rgba(52, 211, 153, 0.95) 100%);
           color: white;
           padding: 12px 20px;
           font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -3860,11 +3864,17 @@
           text-align: center;
           z-index: 2147483645;
           backdrop-filter: blur(10px);
-          box-shadow: 0 4px 20px rgba(138, 43, 226, 0.4);
+          box-shadow: 0 4px 20px rgba(52, 211, 153, 0.4);
           animation: snaptoai-banner-slide 4s ease-in-out forwards;
         }
         .snaptoai-agent-banner span {
           margin-right: 8px;
+          vertical-align: middle;
+        }
+        .snaptoai-agent-banner img {
+          width: 18px;
+          height: 18px;
+          vertical-align: middle;
         }
       `;
       document.head.appendChild(ghostCursorStyle);
@@ -3916,8 +3926,9 @@
     
     const banner = document.createElement('div');
     banner.className = 'snaptoai-agent-banner';
-    const icon = document.createElement('span');
-    icon.textContent = '🤖';
+    const icon = document.createElement('img');
+    icon.src = chrome.runtime.getURL('icons/agent-avatar.png');
+    icon.alt = '';
     banner.appendChild(icon);
     banner.appendChild(document.createTextNode(' Aion AI Agent: ' + message));
     document.body.appendChild(banner);

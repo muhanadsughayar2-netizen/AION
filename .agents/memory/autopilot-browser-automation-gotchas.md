@@ -33,6 +33,22 @@ content inside an inner `overflow:auto` div, not the page body — scrolling
 viewport-center (or the largest scrollable element on the page) and scroll
 that instead, falling back to `window`.
 
+## The Autopilot chat window is a real OS popup, not a page overlay
+It's opened via `chrome.windows.create({type:'popup', ...})`, so `chrome.windows.getCurrent()`
+inside its own script refers to *that* window, and `chrome.windows.update(id, {width,height,left,top})`
+can resize/reposition it live without reloading or interrupting an in-flight
+agent loop — useful for shrinking it into a small corner strip during a task
+so it stops covering the page it's controlling.
+
+**Why:** it's easy to assume "the extension UI" is a page-injected overlay
+(like the ghost cursor/banner in content.js) and reach for CSS/DOM tricks,
+but the chat window and the on-page automation visuals are two totally
+separate surfaces living in different documents.
+
+**How to apply:** to shrink/restore the chat window itself, resize the real
+window via `chrome.windows.update`; to change on-page automation visuals
+(cursor, banners), edit the content-script-injected styles instead.
+
 ## Cross-origin iframe content needs `allFrames: true`
 If `chrome.scripting.executeScript` injects only into the top frame,
 Autopilot can't read or act on content rendered inside a same-tab iframe

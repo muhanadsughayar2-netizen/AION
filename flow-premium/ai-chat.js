@@ -8333,12 +8333,87 @@ Rules:
 - If a page repeatedly returns no readable text or the same action fails the same way more than once in a row, stop retrying blindly — call "finish" and explain what's blocking you.
 - Keep your reasoning to yourself; only function calls and the final "finish" summary are shown to the user.`;
 
+// ── Autopilot mini mode ────────────────────────────────────────────────
+// While Autopilot runs, the chat window is its own real OS popup window
+// sitting on top of the page it's controlling. Shrinking it into a small
+// corner strip (instead of leaving it full-size) lets the user actually
+// watch the automation happen on the page underneath. Only touches window
+// size/position + a body class; the agent loop itself keeps running
+// unaffected since resizing a window doesn't reload its page.
+let _autopilotMiniActive = false;
+let _autopilotOriginalBounds = null;
+
+async function enterAutopilotMiniMode() {
+  if (_autopilotMiniActive) return;
+  try {
+    const win = await chrome.windows.getCurrent();
+    _autopilotOriginalBounds = { width: win.width, height: win.height, left: win.left, top: win.top };
+    const miniW = 320, miniH = 66;
+    const availW = window.screen.availWidth || 1280;
+    const availH = window.screen.availHeight || 800;
+    await chrome.windows.update(win.id, {
+      width: miniW,
+      height: miniH,
+      left: Math.max(0, availW - miniW - 24),
+      top: Math.max(0, availH - miniH - 24)
+    });
+  } catch (_e) { /* if resizing fails, just keep the full window — not fatal */ }
+  document.body.classList.add('autopilot-mini');
+  _autopilotMiniActive = true;
+}
+
+async function exitAutopilotMiniMode() {
+  if (!_autopilotMiniActive) return;
+  document.body.classList.remove('autopilot-mini');
+  _autopilotMiniActive = false;
+  try {
+    const win = await chrome.windows.getCurrent();
+    if (_autopilotOriginalBounds) {
+      await chrome.windows.update(win.id, _autopilotOriginalBounds);
+    }
+  } catch (_e) { /* not fatal */ }
+}
+
+function updateAutopilotMiniStatus(text) {
+  const el = document.getElementById('autopilotMiniText');
+  if (el && text) el.textContent = text;
+}
+
+function setupAutopilotMiniBar() {
+  const stopBtn = document.getElementById('autopilotMiniStop');
+  const expandBtn = document.getElementById('autopilotMiniExpand');
+  const bar = document.getElementById('autopilotMiniBar');
+  if (stopBtn) {
+    stopBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      agentStopRequested = true;
+      stopBtn.disabled = true;
+      updateAutopilotMiniStatus('Stopping…');
+    });
+  }
+  if (expandBtn) {
+    expandBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      exitAutopilotMiniMode();
+    });
+  }
+  if (bar) {
+    bar.addEventListener('click', () => exitAutopilotMiniMode());
+  }
+}
+setupAutopilotMiniBar();
+
 function addAgentStepBubble(thread, text, kind) {
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble ai agent-step';
-  bubble.style.cssText = 'background:rgba(168,85,247,0.08);border:1px solid rgba(168,85,247,0.22);font-size:12.5px;color:rgba(255,255,255,0.85);padding:8px 12px;';
-  const icon = kind === 'error' ? '⚠️' : kind === 'done' ? '✅' : '🤖';
-  bubble.innerHTML = `${icon} ${text}`;
+  bubble.style.cssText = 'background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.22);font-size:12.5px;color:rgba(255,255,255,0.85);padding:8px 12px;display:flex;align-items:flex-start;gap:7px;';
+  const iconHtml = kind === 'error'
+    ? '<span style="font-size:14px;line-height:1;flex-shrink:0;">⚠️</span>'
+    : kind === 'done'
+      ? '<span style="font-size:14px;line-height:1;flex-shrink:0;">✅</span>'
+      : `<img src="${chrome.runtime.getURL('icons/agent-avatar.png')}" alt="" style="width:16px;height:16px;flex-shrink:0;margin-top:1px;">`;
+  bubble.innerHTML = `${iconHtml}<span>${text}</span>`;
+  updateAutopilotMiniStatus(text);
   thread.appendChild(bubble);
   thread.scrollTop = thread.scrollHeight;
   return bubble;
@@ -8405,6 +8480,10 @@ async function runAgentTask(prompt, thread) {
   stopBtn.style.cssText = 'display:block;margin:8px auto;padding:6px 14px;font-size:12px;border-radius:20px;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.3);color:#ff8080;cursor:pointer;';
   stopBtn.addEventListener('click', () => { agentStopRequested = true; stopBtn.disabled = true; stopBtn.textContent = 'Stopping…'; });
   thread.appendChild(stopBtn);
+  // Shrink into a corner strip so the page Autopilot is controlling isn't
+  // hidden behind the chat window. Expands back on click, or automatically
+  // once the task finishes/stops below.
+  enterAutopilotMiniMode();
   thread.scrollTop = thread.scrollHeight;
 
   let tab;
@@ -8424,6 +8503,7 @@ async function runAgentTask(prompt, thread) {
   } catch (_) {}
   if (!tab || !tab.id) {
     stopBtn.remove();
+    exitAutopilotMiniMode();
     addAgentStepBubble(thread, "Couldn't find an active browser tab to control.", 'error');
     return;
   }
@@ -8562,6 +8642,7 @@ async function runAgentTask(prompt, thread) {
   }
 
   stopBtn.remove();
+  exitAutopilotMiniMode();
   scheduleChatHistorySave();
 }
 

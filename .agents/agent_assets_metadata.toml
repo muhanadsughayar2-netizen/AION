@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "XGguojAkouZImoHT6Tnho"
+uri = "file://attached_assets/generated_images/friendly_ai_avatar.png"
+type = "image"
+title = "friendly AI avatar"
 
 [[outputs]]
 id = "DZyebs5ayRflrM55AJABE"
