@@ -1665,6 +1665,11 @@ function initBroadcastSubBar() {
       const thread = document.getElementById('chatThread');
       if (!thread) return;
       const ci = document.getElementById('chatInput');
+      // Immediate feedback so the click never feels like it did nothing —
+      // the spinner card takes over a moment later once it's inserted.
+      const origLabel = genBtn.innerHTML;
+      genBtn.disabled = true;
+      genBtn.style.opacity = '0.55';
       showBroadcastCard(thread, {
         hidePicker: true,
         selFormat: _bsbSelFormat,
@@ -1675,6 +1680,11 @@ function initBroadcastSubBar() {
         autoStart: true
       });
       thread.scrollTop = thread.scrollHeight;
+      setTimeout(() => {
+        genBtn.disabled = false;
+        genBtn.style.opacity = '1';
+        genBtn.innerHTML = origLabel;
+      }, 800);
     });
   }
 }
@@ -6266,6 +6276,11 @@ function showBroadcastCard(thread, options = {}) {
     return null;
   }
 
+  // ── Loading spinner (used on prepBtn / statusEl during generation) ──
+  function bcSpinnerHtml(label) {
+    return `<span style="display:inline-flex;align-items:center;gap:7px;"><span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,0.35);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;flex-shrink:0;"></span>${label}</span>`;
+  }
+
   // ── Parse Gemini script ───────────────────────────────────────
   function bcParseScript(raw) {
     const result = [];
@@ -6830,7 +6845,11 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
     const apiKey = keyRes.geminiApiKey;
     if (!apiKey) { prepBtn.textContent = '🔑 Add API key in Settings first'; prepBtn.disabled = false; return; }
 
-    prepBtn.textContent = '⏳ Writing script…'; prepBtn.disabled = true;
+    // Visible spinner so it's obvious something is happening during the
+    // ~1 minute script+voice generation — plain text alone was easy to miss
+    // and made the feature look frozen/broken even though it was working.
+    prepBtn.innerHTML = bcSpinnerHtml('Writing script…');
+    prepBtn.disabled = true;
 
     const durCfg = DURATIONS.find(d => d.key === selDur) || DURATIONS[1];
     const trkCfg = TRACKS.find(t => t.key === selTrack) || TRACKS[1];
@@ -6892,8 +6911,9 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
 
     bcRenderScript();
     inputSec.style.display = 'none'; scriptSec.style.display = 'block';
-    statusEl.textContent = trkCfg.prompt ? 'Generating voices & music…' : 'Generating voices…';
-    broadBtn.textContent = '⏳ Preparing…';
+    statusEl.innerHTML = bcSpinnerHtml(trkCfg.prompt ? 'Generating voices & music…' : 'Generating voices…');
+    prepBtn.innerHTML = bcSpinnerHtml('Preparing…');
+    broadBtn.innerHTML = bcSpinnerHtml('Preparing…');
     broadBtn.style.opacity = '0.45'; broadBtn.style.pointerEvents = 'none';
 
     // Step 2 — Audio in parallel
@@ -6914,7 +6934,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       : `Ready — ${voiceOk}/${script.length} voices`;
     broadBtn.textContent = '▶ Start Broadcast';
     broadBtn.style.opacity = '1'; broadBtn.style.pointerEvents = 'auto';
-    prepBtn.textContent = '🎙️ Generate Broadcast'; prepBtn.disabled = false;
+    prepBtn.innerHTML = '🎙️ Generate Broadcast'; prepBtn.disabled = false;
   });
 
   // ── Start Broadcast ───────────────────────────────────────────
