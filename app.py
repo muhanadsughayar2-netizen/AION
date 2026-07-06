@@ -188,37 +188,57 @@ def init_db():
                 updated_at TIMESTAMP DEFAULT NOW()
             )
         ''')
+        # NOTE: every ALTER TABLE ... ADD COLUMN IF NOT EXISTS below is wrapped
+        # in its own SAVEPOINT. Postgres has a hard per-table limit of 1600
+        # column "slots" — and critically, that counter never goes back down
+        # even for columns that were later dropped. A table that has had many
+        # columns added/dropped over its history can permanently hit this
+        # ceiling long before it has anywhere near 1600 *live* columns. If
+        # that happens here, an un-guarded statement would abort this whole
+        # transaction and prevent the tables further below (institution_members,
+        # etc.) — and everything after ensure_db() app-wide — from initializing.
+        # Isolating each ALTER means one exhausted/legacy table degrades only
+        # its own optional columns instead of taking down the entire API.
+        def _safe_alter(sql):
+            try:
+                cur.execute('SAVEPOINT sp_alter')
+                cur.execute(sql)
+                cur.execute('RELEASE SAVEPOINT sp_alter')
+            except Exception as alter_err:
+                cur.execute('ROLLBACK TO SAVEPOINT sp_alter')
+                print(f'⚠️ Non-fatal schema alter skipped ({sql[:70]}...): {alter_err}')
+
         # Backfill for installs predating branding_locked.
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS branding_locked BOOLEAN DEFAULT FALSE")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS branding_locked BOOLEAN DEFAULT FALSE")
         # Optional light-mode logo variant (Task #20). Falls back to logo_url
         # when NULL so existing single-logo institutions keep working untouched.
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_url_light TEXT")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_url_light TEXT")
         # Task #40 — full 8-slot brand palette. brand_color (slot 5 = primary
         # action) already exists. The 7 columns below are nullable so any
         # institution that hasn't customized them keeps falling back to the
         # default dark theme — zero visual regression for existing tenants.
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_page_bg VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_card_bg VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_primary VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_muted VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_header_color VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_highlight_color VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_border_color VARCHAR(20)")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_page_bg VARCHAR(20)")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_card_bg VARCHAR(20)")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_primary VARCHAR(20)")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_muted VARCHAR(20)")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_header_color VARCHAR(20)")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_highlight_color VARCHAR(20)")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_border_color VARCHAR(20)")
         # Task #41 — 9th palette slot. Controls ::selection (text-highlight
         # "canyon blue") + checkbox/radio accent-color. Added so each
         # institution can fully control the highlight color when users
         # drag-select text in the popup, side panel, or AI chat.
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_selection_color VARCHAR(20)")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_selection_color VARCHAR(20)")
         # Task #41 — logo persistence across deploys. Replit's deployment
         # filesystem is ephemeral (files written under static/ are wiped on
         # every redeploy), which made institution logos vanish when admin
         # republished the extension landing page. Storing the binary in
         # Postgres survives all deploys; the file on disk is now just a
         # cache that's lazily rebuilt from the DB on first request.
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_blob BYTEA")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_blob_light BYTEA")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(40)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_mime_light VARCHAR(40)")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_blob BYTEA")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_blob_light BYTEA")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(40)")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_mime_light VARCHAR(40)")
         # Task #27 — institution-shared Gemini/Vertex key.
         # gemini_key_encrypted holds a Fernet ciphertext (never plaintext); gemini_key_hint
         # stores the last 4 visible chars for the masked admin preview. key_policy controls
@@ -230,13 +250,13 @@ def init_db():
         # key is the one actually used:
         #   'count-against-snaptoai-quota' — default; still decrements free_prompts
         #   'bypass-snaptoai-quota'        — institution pays Google directly, no metering
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS gemini_key_encrypted TEXT")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS gemini_key_hint VARCHAR(20)")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_policy VARCHAR(30) DEFAULT 'prefer-user-key'")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS billing_behavior VARCHAR(30) DEFAULT 'count-against-snaptoai-quota'")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_set_at TIMESTAMP")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_last_rotated_at TIMESTAMP")
-        cur.execute("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_last_used_at TIMESTAMP")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS gemini_key_encrypted TEXT")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS gemini_key_hint VARCHAR(20)")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_policy VARCHAR(30) DEFAULT 'prefer-user-key'")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS billing_behavior VARCHAR(30) DEFAULT 'count-against-snaptoai-quota'")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_set_at TIMESTAMP")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_last_rotated_at TIMESTAMP")
+        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS key_last_used_at TIMESTAMP")
         cur.execute('''
             CREATE TABLE IF NOT EXISTS institution_members (
                 id SERIAL PRIMARY KEY,

@@ -2,3 +2,4 @@
 - [Gemini TTS chunking](gemini-tts-chunking.md) — generateContent TTS cannot stream; chunk text + queue playback for ~2s start while keeping natural voices.
 - [Veo native video extend](veo-video-extend.md) — real "extend" (Veo 3.1/3.1 Fast, pass back the actual video ref) keeps audio continuous; frame-capture continuation causes music hard-cuts.
 - [Autopilot browser automation gotchas](autopilot-browser-automation-gotchas.md) — system-page hard-blocks, iframe scrolling, native double-click/drag, and canvas apps (Sheets/Docs) needing the real API instead of DOM/pixel guessing.
+- [Postgres 1600-column ceiling from init_db](postgres-column-ceiling-init-db.md) — one exhausted legacy table can silently 503 an entire API if startup ALTER statements aren't isolated per-statement.
