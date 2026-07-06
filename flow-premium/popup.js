@@ -5,13 +5,15 @@
 // Single source of truth for Gemini model IDs used in the popup.
 const MODELS = {
   chat: 'gemini-3-flash-preview',
-  // Billing probe chain (used by _popupDetectTier)
-  probeVeo3Fast:  'veo-3.0-fast-generate-001',
-  probeVeo31Fast: 'veo-3.1-fast-generate-preview',
-  probeVeo3:      'veo-3.0-generate-001',
-  probeVeo2:      'veo-2.0-generate-001',
-  probeImagen4:   'imagen-4.0-generate-001',
-  probeImagen3:   'imagen-3.0-generate-001'
+  // Billing probe chain (used by _popupDetectTier).
+  // NOTE (2026-07-06): veo-3.0-* / veo-2.0-* / imagen-3.0-* were fully retired by
+  // Google (404 on GET /v1beta/models/<id>). Only veo-3.1-*-preview and
+  // imagen-4.0-* are live — keep this in sync with flow-premium/ai-chat.js.
+  probeVeo31:       'veo-3.1-generate-preview',
+  probeVeo31Fast:   'veo-3.1-fast-generate-preview',
+  probeVeo31Lite:   'veo-3.1-lite-generate-preview',
+  probeImagen4:     'imagen-4.0-generate-001',
+  probeImagen4Fast: 'imagen-4.0-fast-generate-001'
 };
 // ============ END MODEL REGISTRY ============
 
@@ -3852,14 +3854,15 @@ async function _popupDetectTier(apiKey, cachedTier) {
   // the slowest single probe (~5s) instead of the sum of all probes (~60s+).
   // Short-circuit the moment any probe returns a definitive answer.
   const chain = [
-    { model: MODELS.probeVeo3Fast,  endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
-    { model: MODELS.probeVeo31Fast, endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
-    { model: MODELS.probeVeo3,      endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
-    // veo-2.0: billing checked before format — INVALID_ARGUMENT = billing OK = prepaid
-    { model: MODELS.probeVeo2,      endpoint: 'predictLongRunning',  trustFree: true,  treatInvalidAsPrepaid: true  },
+    // Only currently-live model IDs belong here — a dead model ID always returns
+    // NOT_FOUND, which this probe treats as inconclusive 'retry', silently
+    // degrading detection accuracy for every user instead of failing loudly.
+    { model: MODELS.probeVeo31,      endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.probeVeo31Fast,  endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.probeVeo31Lite,  endpoint: 'predictLongRunning',  trustFree: false, treatInvalidAsPrepaid: false },
     // Imagen: also billing-gated — INVALID_ARGUMENT means billing passed = prepaid
-    { model: MODELS.probeImagen4,   endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: true  },
-    { model: MODELS.probeImagen3,   endpoint: 'predict',             trustFree: false, treatInvalidAsPrepaid: true  }
+    { model: MODELS.probeImagen4,     endpoint: 'predict',            trustFree: false, treatInvalidAsPrepaid: true  },
+    { model: MODELS.probeImagen4Fast, endpoint: 'predict',            trustFree: false, treatInvalidAsPrepaid: true  }
   ];
 
   return new Promise((resolve) => {

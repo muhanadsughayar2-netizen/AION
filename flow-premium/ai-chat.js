@@ -17,21 +17,21 @@ const MODELS = {
   ttsPrimary:   'gemini-2.5-flash-preview-tts',
   ttsFallback:  'gemini-2.5-pro-preview-tts',
   // Video generation
+  // NOTE (2026-07-06): Google fully retired the veo-3.0-* and veo-2.0-* model IDs —
+  // they now 404. Only the veo-3.1-*-preview family is live. Do not reintroduce
+  // veo-3.0/veo-2.0 IDs without first checking they still resolve via
+  // GET https://generativelanguage.googleapis.com/v1beta/models/<id>.
   veo31:        'veo-3.1-generate-preview',
   veo31Fast:    'veo-3.1-fast-generate-preview',
   veo31Lite:    'veo-3.1-lite-generate-preview',
-  veoDefault:   'veo-3.0-generate-001',
+  veoDefault:   'veo-3.1-generate-preview',
   veoFallback:  'veo-3.1-fast-generate-preview',
   veoLite:      'veo-3.1-lite-generate-preview',
-  veo3Fast:     'veo-3.0-fast-generate-001',
-  veo2:         'veo-2.0-generate-001',
-  // Billing probe chain (used by detectKeyTierVerbose)
-  probeVeo3Fast:  'veo-3.0-fast-generate-001',
-  probeVeo31Fast: 'veo-3.1-fast-generate-preview',
-  probeVeo3:      'veo-3.0-generate-001',
-  probeVeo2:      'veo-2.0-generate-001',
-  probeImagen4:   'imagen-4.0-generate-001',
-  probeImagen3:   'imagen-3.0-generate-001'
+  // Billing probe chain (used by detectKeyTierVerbose) — must always point at
+  // models that are currently live, or the probe silently degrades to 'retry'
+  // for everyone and billing detection accuracy drops.
+  probeImagen4:     'imagen-4.0-generate-001',
+  probeImagen4Fast: 'imagen-4.0-fast-generate-001'
 };
 // ============ END MODEL REGISTRY ============
 
@@ -667,15 +667,16 @@ async function detectKeyTierVerbose(apiKey) {
   const probeChain = [
     // Veo first — Imagen last ("only available on paid plans" is a model-availability
     // message, NOT a billing-status message, and falsely flags prepaid keys as free).
-    { model: MODELS.probeVeo3Fast,  endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
-    { model: MODELS.probeVeo31Fast, endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
-    { model: MODELS.probeVeo3,      endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
-    // veo-2.0: Google checks billing BEFORE format here. INVALID_ARGUMENT = billing OK = prepaid.
-    // Free keys get FAILED_PRECONDITION from this model, never INVALID_ARGUMENT.
-    { model: MODELS.probeVeo2,      endpoint: 'predictLongRunning',  trustFreeVerdict: true,  treatInvalidAsPrepaid: true  },
+    // Only currently-live model IDs belong here (verified against
+    // GET /v1beta/models on 2026-07-06) — a dead model ID always returns
+    // NOT_FOUND, which this probe treats as an inconclusive 'retry', silently
+    // degrading detection accuracy for every user instead of failing loudly.
+    { model: MODELS.veo31,      endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.veo31Fast,  endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
+    { model: MODELS.veo31Lite,  endpoint: 'predictLongRunning',  trustFreeVerdict: false, treatInvalidAsPrepaid: false },
     // Imagen: also billing-gated — INVALID_ARGUMENT means billing passed = prepaid
-    { model: MODELS.probeImagen4,   endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: true  },
-    { model: MODELS.probeImagen3,   endpoint: 'predict',             trustFreeVerdict: false, treatInvalidAsPrepaid: true  }
+    { model: MODELS.probeImagen4,     endpoint: 'predict',        trustFreeVerdict: false, treatInvalidAsPrepaid: true  },
+    { model: MODELS.probeImagen4Fast, endpoint: 'predict',        trustFreeVerdict: false, treatInvalidAsPrepaid: true  }
   ];
 
   // Run all probes in PARALLEL (not sequential) so the total wait is bounded by
@@ -1292,13 +1293,13 @@ function showImageStudio(thread) {
 
 let activeVideoPollTimer = null;
 
+// NOTE (2026-07-06): veo-3.0-* and veo-2.0-* were fully retired by Google (404 on
+// GET /v1beta/models/<id>). Only the veo-3.1-*-preview family is live — do not add
+// back 3.0/2.0 entries without re-verifying they resolve first.
 const VEO_MODELS = [
   { id: MODELS.veo31,      label: '3.1',      desc: 'Best quality',          tier: 'top'   },
   { id: MODELS.veo31Fast,  label: '3.1 Fast', desc: 'Cheapest way to extend (720p)', tier: 'mid'   },
-  { id: MODELS.veo31Lite,  label: '3.1 Lite', desc: 'Quick drafts',          tier: 'lite'  },
-  { id: MODELS.veoDefault, label: '3.0',      desc: 'High quality',          tier: 'mid'   },
-  { id: MODELS.veo3Fast,   label: '3.0 Fast', desc: 'Fast + good',           tier: 'lite'  },
-  { id: MODELS.veo2,       label: '2.0',      desc: 'Basic (needs billing)', tier: 'basic' }
+  { id: MODELS.veo31Lite,  label: '3.1 Lite', desc: 'Quick drafts',          tier: 'lite'  }
 ];
 
 // Real Google Veo pricing (Gemini API / Vertex AI public rates, USD per second of video).
@@ -1306,10 +1307,7 @@ const VEO_MODELS = [
 const VEO_PRICING = {
   [MODELS.veo31]:      0.40,  // Veo 3.1 (with audio)
   [MODELS.veo31Fast]:  0.10,  // Veo 3.1 Fast @ 720p — default model, cheapest way to extend ($0.70 / 7s clip)
-  [MODELS.veo31Lite]:  0.10,  // Veo 3.1 Lite
-  [MODELS.veoDefault]: 0.75,  // Veo 3 (with audio)
-  [MODELS.veo3Fast]:   0.40,  // Veo 3 Fast (with audio)
-  [MODELS.veo2]:       0.50   // Veo 2 (no audio)
+  [MODELS.veo31Lite]:  0.10   // Veo 3.1 Lite
 };
 
 // Veo negative prompt — sent via parameters.negativePrompt INSTEAD of being
