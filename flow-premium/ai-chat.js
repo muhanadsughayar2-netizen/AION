@@ -10141,7 +10141,16 @@ async function getFriendlyErrorMessage(errorMsg) {
   if (lowerMsg.includes('network') || lowerMsg.includes('fetch') || lowerMsg.includes('connection')) {
     return `📡 Connection issue. Please check your internet and try again.`;
   }
-  
+
+  // Google server overload — this is Google's own raw message ("high demand",
+  // "overloaded", 503/UNAVAILABLE) and its exact wording changes between requests,
+  // which is confusing for users. Always translate it to one consistent message.
+  if (lowerMsg.includes('high demand') || lowerMsg.includes('overloaded') ||
+      lowerMsg.includes('unavailable') || lowerMsg.includes('503') ||
+      lowerMsg.includes('spikes in demand') || lowerMsg.includes('try again later')) {
+    return `🔥 Google's AI servers are very busy right now (this is on Google's end, not your key or your account). Please wait 30-60 seconds and try again.`;
+  }
+
   // Default: return original message
   return errorMsg;
 }
