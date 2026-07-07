@@ -4016,29 +4016,7 @@ async function saveGeminiKey() {
   }
 
   if (verdict) {
-    if (tier === 'prepaid') {
-      verdict.style.background = 'linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,200,100,0.06))';
-      verdict.style.border = '1px solid rgba(0,255,136,0.35)';
-      verdict.style.color = '#9bffcb';
-      verdict.innerHTML = `
-        <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#00ff88;margin-bottom:6px;">
-          <span style="width:8px;height:8px;border-radius:50%;background:#00ff88;"></span>Key connected — all AI features ready
-        </div>
-        <div style="color:rgba(255,255,255,0.85);">Vision, Image, Music &amp; Video are all available with your key.</div>
-      `;
-    } else {
-      verdict.style.background = 'linear-gradient(135deg, rgba(255,170,0,0.12), rgba(255,100,0,0.06))';
-      verdict.style.border = '1px solid rgba(255,170,0,0.35)';
-      verdict.style.color = '#ffd28a';
-      const extra = result.invalid ? ' Your key may also be invalid — double-check it.' : '';
-      verdict.innerHTML = `
-        <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#ffaa00;margin-bottom:6px;">
-          <span style="width:8px;height:8px;border-radius:50%;background:#ffaa00;"></span>Key connected — Vision &amp; Chat ready
-        </div>
-        <div style="color:rgba(255,255,255,0.85);">Image, Music &amp; Video need Google billing enabled on your account.${extra}</div>
-        <div style="margin-top:6px;"><a href="https://console.cloud.google.com/billing" target="_blank" style="color:var(--st-accent);">Enable billing (free $300 credit) →</a></div>
-      `;
-    }
+    verdict.style.display = 'none';
   }
   if (geminiSaveBtn) {
     geminiSaveBtn.disabled = false;

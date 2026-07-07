@@ -500,38 +500,13 @@ async function showProxyKeyPrompt() {
       const probe = await detectKeyTierVerbose(key);
       const tier = probe.tier;
 
-      if (tier === 'prepaid') {
-        statusEl.style.background = 'linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,200,100,0.06))';
-        statusEl.style.border = '1px solid rgba(0,255,136,0.35)';
-        statusEl.style.color = '#5dffa3';
-        statusEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:#00ff88;"><span style="width:8px;height:8px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;"></span>Key ready — all features available</span><div style="margin-top:4px;color:rgba(255,255,255,0.85);">Vision, Image, Music &amp; Video are all available with your key.</div>';
-        saveBtn.style.background = 'linear-gradient(135deg,#00ff88,#00c46f)';
-        saveBtn.style.color = '#111';
-        saveBtn.textContent = '✓ Save Key';
-        saveBtn.style.opacity = '1';
-        saveBtn.style.cursor = 'pointer';
-        saveBtn.disabled = false;
-      } else {
-        statusEl.style.background = 'linear-gradient(135deg, rgba(255,165,0,0.12), rgba(255,107,237,0.06))';
-        statusEl.style.border = '1px solid rgba(255,165,0,0.35)';
-        statusEl.style.color = '#ffd36a';
-        statusEl.innerHTML = `
-          <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#ffa500;margin-bottom:6px;">
-            <span style="width:8px;height:8px;border-radius:50%;background:#ffa500;box-shadow:0 0 8px #ffa500;"></span>Free tier detected
-          </div>
-          <div style="color:rgba(255,255,255,0.85);margin-bottom:10px;">
-            Your key works for Vision chat, but Image, Music and Video need a <b>prepaid (pay-as-you-go)</b> plan. Google gifts you <span style="color:#ffd700;font-weight:700;">$300 in free credits</span>.
-          </div>
-          <a href="https://console.cloud.google.com/billing" target="_blank" rel="noopener" style="display:block;text-align:center;padding:9px;border-radius:8px;background:linear-gradient(135deg,#ffa500,#ffd700);color:#111;font-size:12px;font-weight:700;text-decoration:none;">Upgrade to Prepaid & Claim $300 →</a>
-        `;
-        saveBtn.style.background = 'rgba(255,255,255,0.06)';
-        saveBtn.style.border = '1px solid rgba(255,255,255,0.15)';
-        saveBtn.style.color = '#fff';
-        saveBtn.textContent = 'Continue with Vision only';
-        saveBtn.style.opacity = '1';
-        saveBtn.style.cursor = 'pointer';
-        saveBtn.disabled = false;
-      }
+      statusEl.style.display = 'none';
+      saveBtn.style.background = 'linear-gradient(135deg,#00ff88,#00c46f)';
+      saveBtn.style.color = '#111';
+      saveBtn.textContent = '✓ Save Key';
+      saveBtn.style.opacity = '1';
+      saveBtn.style.cursor = 'pointer';
+      saveBtn.disabled = false;
 
       // Defer onclick replacement so the click that triggered runSave can't re-fire it.
       setTimeout(() => {
