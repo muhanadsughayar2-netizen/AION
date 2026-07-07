@@ -482,7 +482,7 @@ async function showProxyKeyPrompt() {
       saveBtn.disabled = true;
       saveBtn.style.opacity = '0.6';
       saveBtn.style.cursor = 'wait';
-      saveBtn.textContent = 'Testing key for prepaid access…';
+      saveBtn.textContent = 'Testing your key…';
 
       let statusEl = document.getElementById('geminiKeyTestStatus');
       if (!statusEl) {
@@ -504,10 +504,10 @@ async function showProxyKeyPrompt() {
         statusEl.style.background = 'linear-gradient(135deg, rgba(0,255,136,0.12), rgba(0,200,100,0.06))';
         statusEl.style.border = '1px solid rgba(0,255,136,0.35)';
         statusEl.style.color = '#5dffa3';
-        statusEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:#00ff88;"><span style="width:8px;height:8px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;"></span>Prepaid plan detected</span><div style="margin-top:4px;color:rgba(255,255,255,0.85);">All features unlocked: Vision, Image, Music & Video.</div>';
+        statusEl.innerHTML = '<span style="display:inline-flex;align-items:center;gap:6px;font-weight:700;color:#00ff88;"><span style="width:8px;height:8px;border-radius:50%;background:#00ff88;box-shadow:0 0 8px #00ff88;"></span>Key ready — all features available</span><div style="margin-top:4px;color:rgba(255,255,255,0.85);">Vision, Image, Music &amp; Video are all available with your key.</div>';
         saveBtn.style.background = 'linear-gradient(135deg,#00ff88,#00c46f)';
         saveBtn.style.color = '#111';
-        saveBtn.textContent = '✓ Activate Prepaid Plan';
+        saveBtn.textContent = '✓ Save Key';
         saveBtn.style.opacity = '1';
         saveBtn.style.cursor = 'pointer';
         saveBtn.disabled = false;
@@ -547,9 +547,9 @@ async function showProxyKeyPrompt() {
           _verdictLocked = false;
           closeModal();
           if (tier === 'prepaid') {
-            showPromptToast('🎉 Prepaid plan active — all AI features unlocked!', 3500);
+            showPromptToast('🎉 Key saved — all AI features are ready!', 3500);
           } else {
-            showPromptToast('Key saved — Vision unlocked. Upgrade to Prepaid for Image/Music/Video.', 4500);
+            showPromptToast('Key saved — Vision & Chat ready. Enable Google billing for Image/Music/Video.', 4500);
           }
           checkKeyTier();
         };
