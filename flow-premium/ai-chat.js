@@ -8138,16 +8138,6 @@ async function initializeChat() {
     return;
   }
 
-  // Check trial status — show upgrade modal if expired (non-blocking)
-  setTimeout(async () => {
-    if (!window.SnapToAISubscription) return;
-    const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
-    if (snaptoai_dev_override) return;
-    const sub = await window.SnapToAISubscription.check();
-    if (sub.status === 'trial_expired' || sub.status === 'subscription_expired') {
-      showTrialEndedModal(sub.status);
-    }
-  }, 600);
 }
 
 // Template logic for Magic Buttons
@@ -9120,28 +9110,6 @@ async function handleSend() {
   resetInputSize(input);
   sendBtn.disabled = true;
   addBubble(prompt, 'user');
-
-  // Subscription check after visual feedback so UI feels instant
-  if (window.SnapToAISubscription) {
-    const { snaptoai_dev_override } = await chrome.storage.local.get(['snaptoai_dev_override']);
-    if (!snaptoai_dev_override) {
-      const sub = await window.SnapToAISubscription.check();
-      if (sub.status === 'trial_expired' || sub.status === 'subscription_expired') {
-        // BYOK users pay Google directly — their own API key is their
-        // entitlement. Never block them with a trial/subscription gate,
-        // even if the server is unreachable and the local trial timer has run
-        // out. Only show the modal when they truly have no key at all.
-        const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
-        if (!geminiApiKey) {
-          releaseRequestLock();
-          sendBtn.disabled = false;
-          showTrialEndedModal(sub.status);
-          return;
-        }
-        // Has own key — fall through and let sendChat use it normally.
-      }
-    }
-  }
 
   addThinkingBubble();
 
