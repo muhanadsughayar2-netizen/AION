@@ -1025,70 +1025,32 @@ function initModeButtons() {
         _modeCheckInFlight = true;
         try {
           const synced = await chrome.storage.sync.get(['geminiApiKey']);
-          const local = await chrome.storage.local.get(['snaptoai_key_tier', 'snaptoai_key_tier_key']);
           const apiKey = synced.geminiApiKey;
-          const tierMatchesKey = local.snaptoai_key_tier_key === apiKey;
-          let isPrepaid = apiKey && tierMatchesKey && local.snaptoai_key_tier === 'prepaid';
 
-          if (apiKey && !isPrepaid) {
-            try {
-              const fresh = await detectKeyTier(apiKey);
-              await chrome.storage.local.set({
-                snaptoai_key_tier: fresh,
-                snaptoai_key_tier_key: apiKey,
-                snaptoai_key_tier_ts: Date.now()
-              });
-              if (fresh === 'prepaid') {
-                isPrepaid = true;
-                showPromptToast('🎉 Prepaid plan verified — all AI features unlocked!', 3500);
-              }
-            } catch (_) {}
-          }
-
-          if (!apiKey || !isPrepaid) {
-            // Revert active state back to current mode
+          if (!apiKey) {
+            // No key at all — tell the user to add one first.
             btns.forEach(b => b.classList.toggle('active', b.dataset.mode === currentAiMode));
             const thread = document.getElementById('chatThread');
             if (thread) {
               const card = document.createElement('div');
               card.className = 'chat-bubble ai';
               card.style.cssText = 'background:transparent;padding:0;border:none;';
-              card.innerHTML = apiKey ? buildUnlockCard(mode) : buildNeedKeyForPaidCard(mode);
+              card.innerHTML = buildNeedKeyForPaidCard(mode);
               thread.appendChild(card);
               thread.scrollTop = thread.scrollHeight;
             }
             _modeCheckInFlight = false;
             return;
           }
+          // User has their own API key — let them switch to any mode.
+          // If Google requires billing for this feature, the actual API call
+          // will return a clear billing error at that point instead of
+          // pre-blocking here based on an estimated tier.
         } catch (_) {
-          // Probe failed (network/timeout) — show a clear retry message,
-          // NOT the billing card (user may have billing set up fine).
-          btns.forEach(b => b.classList.toggle('active', b.dataset.mode === currentAiMode));
-          const thread = document.getElementById('chatThread');
-          if (thread) {
-            const meta = MODE_META[mode] || MODE_META['image'];
-            const card = document.createElement('div');
-            card.className = 'chat-bubble ai';
-            card.style.cssText = 'background:transparent;padding:0;border:none;';
-            card.innerHTML = `
-              <div style="padding:16px 18px;border-radius:14px;background:rgba(255,100,80,0.08);border:1px solid rgba(255,100,80,0.25);">
-                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
-                  <span style="font-size:22px;">⚠️</span>
-                  <span style="font-size:14px;font-weight:700;color:#fff;">Connection check failed</span>
-                </div>
-                <div style="font-size:12px;color:rgba(255,255,255,0.7);line-height:1.6;">
-                  Could not verify your API key tier right now. Check your internet connection and try again.
-                  If you have a prepaid Gemini key set in Settings, tap <b>${meta.name}</b> again to retry.
-                </div>
-              </div>`;
-            thread.appendChild(card);
-            thread.scrollTop = thread.scrollHeight;
-          }
           _modeCheckInFlight = false;
-          return;
         }
         _modeCheckInFlight = false;
-      }
+      } // end if (mode !== 'vision' && mode !== 'agent')
 
       currentAiMode = mode;
       chrome.storage.sync.set({ geminiModel: mode });
