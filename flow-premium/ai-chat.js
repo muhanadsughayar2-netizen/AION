@@ -9127,10 +9127,18 @@ async function handleSend() {
     if (!snaptoai_dev_override) {
       const sub = await window.SnapToAISubscription.check();
       if (sub.status === 'trial_expired' || sub.status === 'subscription_expired') {
-        releaseRequestLock();
-        sendBtn.disabled = false;
-        showTrialEndedModal(sub.status);
-        return;
+        // BYOK users pay Google directly — their own API key is their
+        // entitlement. Never block them with a trial/subscription gate,
+        // even if the server is unreachable and the local trial timer has run
+        // out. Only show the modal when they truly have no key at all.
+        const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
+        if (!geminiApiKey) {
+          releaseRequestLock();
+          sendBtn.disabled = false;
+          showTrialEndedModal(sub.status);
+          return;
+        }
+        // Has own key — fall through and let sendChat use it normally.
       }
     }
   }
