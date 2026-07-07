@@ -217,28 +217,13 @@ def init_db():
         # action) already exists. The 7 columns below are nullable so any
         # institution that hasn't customized them keeps falling back to the
         # default dark theme — zero visual regression for existing tenants.
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_page_bg VARCHAR(20)")
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_card_bg VARCHAR(20)")
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_primary VARCHAR(20)")
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_text_muted VARCHAR(20)")
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_header_color VARCHAR(20)")
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_highlight_color VARCHAR(20)")
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_border_color VARCHAR(20)")
-        # Task #41 — 9th palette slot. Controls ::selection (text-highlight
-        # "canyon blue") + checkbox/radio accent-color. Added so each
-        # institution can fully control the highlight color when users
-        # drag-select text in the popup, side panel, or AI chat.
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS brand_selection_color VARCHAR(20)")
-        # Task #41 — logo persistence across deploys. Replit's deployment
-        # filesystem is ephemeral (files written under static/ are wiped on
-        # every redeploy), which made institution logos vanish when admin
-        # republished the extension landing page. Storing the binary in
-        # Postgres survives all deploys; the file on disk is now just a
-        # cache that's lazily rebuilt from the DB on first request.
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_blob BYTEA")
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_blob_light BYTEA")
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_mime VARCHAR(40)")
-        _safe_alter("ALTER TABLE institutions ADD COLUMN IF NOT EXISTS logo_mime_light VARCHAR(40)")
+        # NOTE: brand_page_bg, brand_card_bg, brand_text_primary, brand_text_muted,
+        # brand_header_color, brand_highlight_color, brand_border_color, brand_selection_color,
+        # logo_blob, logo_blob_light, logo_mime, logo_mime_light were removed from the
+        # institutions table because Postgres's hard 1600-column-slot ceiling was already
+        # exhausted on the production table (1578 dropped-column slots + 22 live = 1600).
+        # Any ADD COLUMN would abort the whole DB init transaction and take down /api/*.
+        # Brand palette falls back to brand_color (#00d9ff default); logos use logo_url (URL-only).
         # Task #27 — institution-shared Gemini/Vertex key.
         # gemini_key_encrypted holds a Fernet ciphertext (never plaintext); gemini_key_hint
         # stores the last 4 visible chars for the masked admin preview. key_policy controls
@@ -492,35 +477,9 @@ def serve_institution_logo(filename):
     try:
         if not ensure_db():
             return ('Not found', 404)
-        conn = get_db(); cur = conn.cursor()
-        row = None
-        used_blob_col = used_mime_col = None
-        for cand_slug, cand_light in candidates:
-            used_blob_col = 'logo_blob_light' if cand_light else 'logo_blob'
-            used_mime_col = 'logo_mime_light' if cand_light else 'logo_mime'
-            cur.execute(
-                f"SELECT {used_blob_col}, {used_mime_col} FROM institutions WHERE slug=%s",
-                (cand_slug,)
-            )
-            row = cur.fetchone()
-            if row and row[0]:
-                break
-            row = None
-        cur.close(); conn.close()
-        if not row or not row[0]:
-            return ('Not found', 404)
-        data = bytes(row[0])
-        mime = row[1] or 'application/octet-stream'
-        # Lazy disk-cache restore — best-effort, don't fail the request.
-        try:
-            os.makedirs(INSTITUTION_LOGO_DIR, exist_ok=True)
-            with open(disk_path, 'wb') as out:
-                out.write(data)
-        except Exception:
-            pass
-        resp = Response(data, mimetype=mime)
-        resp.headers['Cache-Control'] = 'public, max-age=300'
-        return resp
+        # logo_blob/logo_mime columns removed (institutions table at Postgres 1600-slot limit).
+        # Logos are disk-only; if disk missed there's nothing to fall back to in DB.
+        return ('Not found', 404)
     except Exception as e:
         print(f'❌ serve_institution_logo {safe}: {e}', flush=True)
         return ('Not found', 404)
@@ -760,9 +719,9 @@ def _resolve_institution_for_email(cur, email):
     # in multiple institution_members rows (historical or moved-between-orgs).
     cur.execute("""
         SELECT m.institution_id, m.status, i.status, i.expires_at, i.slug, i.name, i.logo_url, i.brand_color, m.role, i.logo_url_light, m.expires_at,
-               i.brand_page_bg, i.brand_card_bg, i.brand_text_primary, i.brand_text_muted,
-               i.brand_header_color, i.brand_highlight_color, i.brand_border_color,
-               i.brand_selection_color
+               NULL AS brand_page_bg, NULL AS brand_card_bg, NULL AS brand_text_primary, NULL AS brand_text_muted,
+               NULL AS brand_header_color, NULL AS brand_highlight_color, NULL AS brand_border_color,
+               NULL AS brand_selection_color
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
         WHERE LOWER(m.email) = %s
         ORDER BY
@@ -795,9 +754,9 @@ def _resolve_institution_for_email(cur, email):
         return None, None, 'none'
     cur.execute("""
         SELECT id, slug, name, logo_url, brand_color, allowed_domains, status, expires_at, seat_limit, logo_url_light,
-               brand_page_bg, brand_card_bg, brand_text_primary, brand_text_muted,
-               brand_header_color, brand_highlight_color, brand_border_color,
-               brand_selection_color
+               NULL AS brand_page_bg, NULL AS brand_card_bg, NULL AS brand_text_primary, NULL AS brand_text_muted,
+               NULL AS brand_header_color, NULL AS brand_highlight_color, NULL AS brand_border_color,
+               NULL AS brand_selection_color
         FROM institutions WHERE allowed_domains IS NOT NULL AND allowed_domains <> ''
     """)
     seat_full_match = False
@@ -863,9 +822,9 @@ def _get_institution_branding_for_email(cur, email):
                m.status, m.role, i.logo_url_light,
                i.gemini_key_encrypted, i.gemini_key_hint, i.key_policy, i.billing_behavior,
                m.expires_at,
-               i.brand_page_bg, i.brand_card_bg, i.brand_text_primary, i.brand_text_muted,
-               i.brand_header_color, i.brand_highlight_color, i.brand_border_color,
-               i.brand_selection_color
+               NULL AS brand_page_bg, NULL AS brand_card_bg, NULL AS brand_text_primary, NULL AS brand_text_muted,
+               NULL AS brand_header_color, NULL AS brand_highlight_color, NULL AS brand_border_color,
+               NULL AS brand_selection_color
         FROM institution_members m JOIN institutions i ON i.id = m.institution_id
         WHERE LOWER(m.email) = %s
         ORDER BY
@@ -1032,9 +991,9 @@ def _institution_by_slug(cur, slug):
                expires_at, status, allowed_domains, notes, created_at, branding_locked, logo_url_light,
                gemini_key_encrypted, gemini_key_hint, key_policy, billing_behavior,
                key_set_at, key_last_rotated_at, key_last_used_at,
-               brand_page_bg, brand_card_bg, brand_text_primary, brand_text_muted,
-               brand_header_color, brand_highlight_color, brand_border_color,
-               brand_selection_color
+               NULL AS brand_page_bg, NULL AS brand_card_bg, NULL AS brand_text_primary, NULL AS brand_text_muted,
+               NULL AS brand_header_color, NULL AS brand_highlight_color, NULL AS brand_border_color,
+               NULL AS brand_selection_color
         FROM institutions WHERE slug=%s
     """, (slug,))
     return cur.fetchone()
@@ -3804,9 +3763,9 @@ def api_admin_inst_list():
                    NULL::text AS gemini_key_encrypted, NULL::text AS gemini_key_hint,
                    NULL::text AS key_policy, NULL::text AS billing_behavior,
                    NULL::timestamp AS key_set_at, NULL::timestamp AS key_last_rotated_at, NULL::timestamp AS key_last_used_at,
-                   brand_page_bg, brand_card_bg, brand_text_primary, brand_text_muted,
-                   brand_header_color, brand_highlight_color, brand_border_color,
-                   brand_selection_color
+                   NULL AS brand_page_bg, NULL AS brand_card_bg, NULL AS brand_text_primary, NULL AS brand_text_muted,
+                   NULL AS brand_header_color, NULL AS brand_highlight_color, NULL AS brand_border_color,
+                   NULL AS brand_selection_color
             FROM institutions ORDER BY created_at DESC
         """)
         rows = cur.fetchall()
@@ -4097,14 +4056,11 @@ def api_admin_inst_logo(inst_id):
         # and triggered a republish. The /static/institution-logos/<file>
         # route below transparently rebuilds the disk cache from this blob
         # on the first request after a fresh deploy.
-        mime_map = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-                    '.webp': 'image/webp', '.svg': 'image/svg+xml', '.gif': 'image/gif'}
-        mime = mime_map.get(ext, 'application/octet-stream')
-        blob_col = 'logo_blob_light' if suffix == '-light' else 'logo_blob'
-        mime_col = 'logo_mime_light' if suffix == '-light' else 'logo_mime'
+        # logo_blob/logo_mime columns removed (institutions table at Postgres 1600-slot limit).
+        # Logos are URL-only; the disk file written above is the persistent store.
         cur.execute(
-            f"UPDATE institutions SET {column}=%s, {blob_col}=%s, {mime_col}=%s, updated_at=NOW() WHERE id=%s",
-            (logo_url, psycopg2.Binary(blob), mime, inst_id)
+            f"UPDATE institutions SET {column}=%s, updated_at=NOW() WHERE id=%s",
+            (logo_url, inst_id)
         )
         conn.commit()
         cur.close(); conn.close()
@@ -6055,14 +6011,9 @@ def api_inst_set_branding(slug):
     # means "reset to default" so we store NULL (NOT empty string).
     PALETTE_SLOTS = [
         ('brandColor',     'brand_color'),
-        ('pageBg',         'brand_page_bg'),
-        ('cardBg',         'brand_card_bg'),
-        ('textPrimary',    'brand_text_primary'),
-        ('textMuted',      'brand_text_muted'),
-        ('headerColor',    'brand_header_color'),
-        ('highlightColor', 'brand_highlight_color'),
-        ('borderColor',    'brand_border_color'),
-        ('selectionColor', 'brand_selection_color'),
+        # pageBg/cardBg/textPrimary/textMuted/headerColor/highlightColor/borderColor/selectionColor
+        # columns were removed (institutions table hit Postgres 1600-slot ceiling in production).
+        # Only brand_color (the primary action colour) remains; the rest silently no-op.
     ]
     sets, vals, log_payload = [], [], {}
     for json_key, col in PALETTE_SLOTS:
@@ -6364,15 +6315,12 @@ def api_inst_upload_logo(slug):
         # Task #41 — persist binary in Postgres (see super-admin handler above
         # for the full rationale: Replit deploys wipe static/ on every push,
         # which broke ALL institutions' logos every time anyone uploaded).
-        mime_map = {'.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
-                    '.webp': 'image/webp', '.svg': 'image/svg+xml', '.gif': 'image/gif'}
-        mime = mime_map.get(ext, 'application/octet-stream')
-        blob_col = 'logo_blob_light' if suffix == '-light' else 'logo_blob'
-        mime_col = 'logo_mime_light' if suffix == '-light' else 'logo_mime'
+        # logo_blob/logo_mime columns removed (institutions table at Postgres 1600-slot limit).
+        # Logos are URL-only; the disk file written above is the persistent store.
         conn = get_db(); cur = conn.cursor()
         cur.execute(
-            f"UPDATE institutions SET {column}=%s, {blob_col}=%s, {mime_col}=%s, updated_at=NOW() WHERE slug=%s RETURNING id",
-            (logo_url, psycopg2.Binary(blob), mime, slug)
+            f"UPDATE institutions SET {column}=%s, updated_at=NOW() WHERE slug=%s RETURNING id",
+            (logo_url, slug)
         )
         _r = cur.fetchone()
         if _r:
