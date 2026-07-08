@@ -8840,6 +8840,101 @@ function initVoiceInput() {
   });
 }
 
+// ── Auto-generate AI images for fresh Build Mode sites ────────────────────────
+// Silently derives 3 cinematic image prompts from the build request, generates
+// them via Gemini image models, and returns an array of base64 data-URLs.
+// Returns [] on any failure so the build always falls back to Pexels gracefully.
+async function _deriveBuildImagePrompts(buildPrompt, count, apiKey) {
+  try {
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const r = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text:
+          `You are a creative director preparing visuals for a new website. ` +
+          `The site concept: "${buildPrompt}"\n\n` +
+          `Write exactly ${count} image prompts for a photo-realistic AI image generator. ` +
+          `Each should describe a different beautiful, editorial-quality scene that fits this site: ` +
+          `prompt 1 = a stunning hero / full-bleed background image; ` +
+          `prompt 2 = a lifestyle or product lifestyle shot for a mid-page feature; ` +
+          `prompt 3 = a warm human-connection or detail shot for a testimonial / CTA section. ` +
+          `Make every prompt cinematic, modern, and magazine-quality. ` +
+          `Output ONLY ${count} lines, one prompt per line, no numbering, no labels, no extra text.`
+        }] }],
+        generationConfig: { maxOutputTokens: 400, temperature: 0.85 }
+      }),
+      signal: AbortSignal.timeout(12000)
+    });
+    if (!r.ok) return [];
+    const data = await r.json();
+    const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    return text.split('\n').map(l => l.trim()).filter(Boolean).slice(0, count);
+  } catch (e) {
+    console.warn('[SnapToAI Build] prompt-derive failed:', e.message);
+    return [];
+  }
+}
+
+async function _generateOneBuildImage(imgPrompt, apiKey) {
+  for (const modelName of MODELS.imageChain) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${apiKey}`;
+      const r = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: imgPrompt }] }],
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+        }),
+        signal: AbortSignal.timeout(35000)
+      });
+      if (!r.ok) { console.warn('[SnapToAI Build] image model', modelName, 'returned', r.status); break; }
+      const data = await r.json();
+      const parts = data.candidates?.[0]?.content?.parts || [];
+      const imgPart = parts.find(p => p.inlineData?.mimeType?.startsWith('image/'));
+      if (imgPart) return `data:${imgPart.inlineData.mimeType};base64,${imgPart.inlineData.data}`;
+    } catch (e) {
+      console.warn('[SnapToAI Build] image gen error on', modelName, ':', e.message);
+    }
+  }
+  return null;
+}
+
+async function _autoGenerateBuildImages(buildPrompt, count, statusBubble) {
+  try {
+    const stored = await chrome.storage.local.get(['geminiKey']);
+    const apiKey = stored.geminiKey;
+    if (!apiKey) return [];
+
+    if (statusBubble) statusBubble.innerHTML =
+      `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.7);font-size:13px;">` +
+      `<span style="font-size:18px;">🎨</span>Creating ${count} custom AI images for your site…</div>`;
+
+    const prompts = await _deriveBuildImagePrompts(buildPrompt, count, apiKey);
+    if (!prompts.length) return [];
+
+    // Generate all images in parallel
+    const results = await Promise.all(prompts.map(p => _generateOneBuildImage(p, apiKey)));
+    const images = results.filter(Boolean);
+
+    if (statusBubble) {
+      if (images.length > 0) {
+        statusBubble.innerHTML =
+          `<div style="display:flex;align-items:center;gap:10px;color:rgba(99,202,183,0.9);font-size:13px;">` +
+          `<span style="font-size:18px;">✅</span>${images.length} custom AI images ready — building your site…</div>`;
+      } else {
+        statusBubble.innerHTML = ''; // silent fallback — Pexels images will be used
+      }
+    }
+    return images;
+  } catch (e) {
+    console.warn('[SnapToAI Build] Auto-image generation failed:', e.message);
+    return [];
+  }
+}
+// ── End auto-image generation ─────────────────────────────────────────────────
+
 // Handle send with streaming
 async function handleSend() {
   const input = document.getElementById('chatInput');
@@ -9021,6 +9116,33 @@ async function handleSend() {
         `(4) Keep all other design and content completely unchanged. ` +
         `(5) NEVER remove or replace any existing __SNAP_VID_N__, __SNAP_AUD_N__, or other __SNAP_*__ placeholder strings — they are live media references managed by the app.`;
     }
+
+    // ── Auto AI-image generation for fresh builds ─────────────────────────────
+    // When no images were attached by the user and this is a brand-new site,
+    // generate 3 custom Imagen photos tailored to the build request and embed
+    // them as __SNAP_IMG_0/1/2__ placeholders so the AI uses real AI-made
+    // visuals instead of Pexels stock photos. Fails silently → Pexels fallback.
+    if (!_isContinuationSend && !_lastBuiltCode && imageParts.length === 0) {
+      const _aiImgStatusBubble = addBubble('', 'ai');
+      const _aiGeneratedImages = await _autoGenerateBuildImages(prompt, 3, _aiImgStatusBubble);
+      if (_aiGeneratedImages.length > 0) {
+        _pendingBuildImages = _aiGeneratedImages;
+        const placeholders = _aiGeneratedImages.map((_, i) => `__SNAP_IMG_${i}__`).join(', ');
+        prompt +=
+          `\n\nAI IMAGE INSTRUCTION: ${_aiGeneratedImages.length} custom AI-generated images have been created specifically for this site. ` +
+          `Embed them using these exact placeholder strings as the <img> src values: ${placeholders}. ` +
+          `Placement rules: __SNAP_IMG_0__ = hero / full-bleed header image; ` +
+          `__SNAP_IMG_1__ = mid-page feature or lifestyle section; ` +
+          `__SNAP_IMG_2__ = testimonial, CTA, or closing section. ` +
+          `Style every one with: style="width:100%;height:100%;object-fit:cover;" ` +
+          `NEVER output the actual image data — use only the __SNAP_IMG_N__ placeholder strings. ` +
+          `Do NOT add any Pexels images — these custom AI images replace all stock photography.`;
+      } else if (_aiImgStatusBubble) {
+        // No images generated — remove the empty status bubble silently
+        _aiImgStatusBubble.remove?.() || (_aiImgStatusBubble.style && (_aiImgStatusBubble.style.display = 'none'));
+      }
+    }
+    // ── End auto AI-image generation ─────────────────────────────────────────
 
     // ── Audio embedding (mp3/wav/ogg) ────────────────────────────────────────
     const audioParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('audio/'));
