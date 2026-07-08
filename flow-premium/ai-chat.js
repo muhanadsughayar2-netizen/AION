@@ -7317,13 +7317,95 @@ PROFILE D — BRUTALIST / BOLD (creative studios / magazines / portfolios)
   Signature moves: visible grid borders, offset shadow (box-shadow: 4px 4px 0 #000), oversized bold type, stark high contrast, marquee text strip
   BANNED: gradients, blur, glass, rounded corners, subtlety, pastel
 
-PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
-  Use for: games, to-do apps, kids products, fun consumer tools, quizzes
+PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps)
+  Use for: to-do apps, kids products, fun consumer tools, quizzes
   Colors: bright saturated 3-color palette (coral + mint + sunny yellow, or sky blue + orange + white)
   Fonts: Nunito 700 (headings) + Inter 400 (body) from Google Fonts
   Radius: 20px+ | Section padding: 80px 20px
   Signature moves: illustrated inline SVG shapes, bouncy hover (transform: scale(1.05)), colorful solid-bordered cards, confetti on CTA
   BANNED: dark backgrounds, serif fonts, corporate language, muted colors
+
+PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
+  Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter
+  ⚠️  This profile replaces ALL website rules. A game is NOT a website with animations — it is a real interactive game engine built on <canvas>.
+
+  MANDATORY GAME ARCHITECTURE — every game must have ALL of these:
+
+  1. CANVAS ENGINE
+     - Single fullscreen <canvas id="gameCanvas"> fills the viewport (width=innerWidth, height=innerHeight)
+     - Main loop: requestAnimationFrame(gameLoop) — NEVER setTimeout/setInterval for movement
+     - gameLoop(timestamp) → update(dt) → draw() — delta-time (dt) based movement so speed is frame-rate independent
+     - Game states machine: STATE = { MENU, PLAYING, PAUSED, GAME_OVER, LEVEL_COMPLETE, WIN }
+     - currentState variable controls which update/draw branch runs
+
+  2. PLAYER with REAL PHYSICS
+     - player object: { x, y, vx, vy, width, height, onGround, health, lives, score, coins }
+     - Gravity constant: GRAVITY = 0.5 applied every frame (vy += GRAVITY)
+     - Jump: vy = -12 when onGround is true (SPACE or UP arrow)
+     - Left/right: vx = ±4, friction: vx *= 0.85 when no key pressed
+     - Sprite animation: spriteFrame cycles through walk/jump/idle frames every 8 ticks
+     - Draw player as detailed pixel-art rectangle with colored blocks (head, body, hat, eyes) — NEVER a plain colored square
+
+  3. TILE-BASED LEVELS — minimum 3 levels
+     - Each level defined as a 2D array of tile IDs (0=air, 1=ground, 2=brick, 3=coin, 4=enemy-spawn, 5=goal)
+     - TILE_SIZE = 40px | draw tiles as colored rectangles with borders to look like real game tiles
+     - Ground tiles: brown/orange with dark border | Brick: reddish with mortar lines drawn via strokeRect
+     - Coin tiles: gold circle drawn with arc() | Goal: animated flag or door
+     - Camera: ctx.translate(-cameraX, 0) so level scrolls as player moves right
+     - Level width = tiles[0].length * TILE_SIZE — can be much wider than screen
+
+  4. ENEMIES with AI — minimum 2 enemy types
+     - Enemy object: { x, y, vx, vy, type, health, alive, spriteFrame }
+     - Patrol AI: reverses direction when hitting a wall or edge of platform
+     - Stomp detection: player kills enemy by landing on top (player.vy > 0 && overlap from above)
+     - Enemy kills player on side/front collision → player loses a life
+     - Draw enemies as recognizable shapes: goombas=brown oval+feet, koopas=green+shell, etc.
+
+  5. SOUND via Web Audio API — no external files needed, all generated:
+     - audioCtx = new (window.AudioContext || window.webkitAudioContext)()
+     - playSound(freq, type, duration, vol) — creates OscillatorNode + GainNode, plays then disconnects
+     - Jump sound: freq=600, sawtooth, 0.1s | Coin: freq=880 then 1100, square, 0.08s
+     - Enemy stomp: freq=200, sawtooth, 0.15s | Death: descending sweep 440→110, 0.5s
+     - Level complete: C-E-G-C major arpeggio | Game over: slow descending minor
+     - Background music: looping sequence of notes using oscillator + setTimeout chain
+
+  6. HUD (Heads-Up Display) — drawn ON the canvas every frame, always on top:
+     - Top-left: SCORE: 00000 | LIVES: ❤❤❤ | COINS: 🪙00
+     - Top-right: LEVEL: 1-1 | TIME: 300 (countdown)
+     - Font: '16px "Courier New"' — pixel-game feel. fillStyle = white with black shadow (shadowBlur=4)
+     - Time runs out → player dies
+
+  7. POLISHED GAME SCREENS — drawn on canvas (NOT HTML overlays):
+     - MENU screen: game title in large pixel font, "PRESS SPACE TO START", animated background
+     - PAUSE screen: semi-transparent dark overlay + "PAUSED — PRESS P TO CONTINUE"
+     - GAME OVER: red text "GAME OVER", final score, "PRESS R TO RESTART"
+     - LEVEL COMPLETE: stars animation, "LEVEL COMPLETE!", auto-advance after 2s
+     - WIN screen: full celebration with score tally
+
+  8. CONTROLS — keyboard + mobile touch buttons:
+     - Keyboard: ArrowLeft/A=left, ArrowRight/D=right, ArrowUp/W/Space=jump, P=pause, R=restart
+     - Mobile: draw 4 touch buttons on canvas (◀ ▶ 🅐 for jump) — touchstart/touchend events
+     - keyState object tracks which keys are held down (keydown sets true, keyup sets false)
+
+  9. COLLECTIBLES & PROGRESSION
+     - Coins add 100 to score | Enemies stomped add 200 | Time bonus on level complete
+     - After level complete → load next level (increment levelIndex, reset player position)
+     - After final level → WIN screen
+
+  10. VISUAL POLISH
+      - Parallax background: 2-3 layers (sky, distant mountains, near hills) scrolling at 0.2x, 0.5x, 1x camera speed
+      - Particle effects: coin collect = 8 gold sparks; stomp = 5 brown puffs (simple circle particles)
+      - Screen shake on player death: offset draw by random ±5px for 0.5s
+      - All drawn with canvas 2D API — zero external images required
+
+  PROFILE F BANNED:
+  ✗ CSS animations pretending to be a game
+  ✗ HTML elements moving around the page (use canvas only)
+  ✗ setTimeout/setInterval for the game loop (use requestAnimationFrame)
+  ✗ A single level with no progression
+  ✗ Enemies that don't actually move or interact
+  ✗ Missing sound (Web Audio costs nothing and makes the game feel alive)
+  ✗ A plain colored square as the player — draw a recognizable character
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   STEP 2 — UNIVERSAL QUALITY RULES (ALL profiles)
