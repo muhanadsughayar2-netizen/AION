@@ -1708,11 +1708,11 @@ function showVideoStudio(thread) {
             <span>✨ Stylize photo first (helps with safety filters)</span>
           </label>
           <div class="stylize-style-selector" style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;">
-            <button class="stylize-btn selected" data-style="pixar" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.5);background:rgba(138,180,248,0.15);color:#8ab4f8;font-size:12px;font-weight:600;cursor:pointer;">Pixar 3D</button>
+            <button class="stylize-btn selected" data-style="realistic" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(0,217,255,0.5);background:rgba(0,217,255,0.15);color:#00d9ff;font-size:12px;font-weight:600;cursor:pointer;">✨ Realistic</button>
+            <button class="stylize-btn" data-style="pixar" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Pixar 3D</button>
             <button class="stylize-btn" data-style="anime" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Anime</button>
             <button class="stylize-btn" data-style="cartoon" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Cartoon</button>
             <button class="stylize-btn" data-style="watercolor" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Watercolor</button>
-            <button class="stylize-btn" data-style="oil" style="padding:3px 10px;border-radius:6px;border:1px solid rgba(138,180,248,0.2);background:rgba(138,180,248,0.04);color:#aabbcc;font-size:12px;font-weight:600;cursor:pointer;">Oil Paint</button>
           </div>
         </div>
       </div>` : ''}
@@ -1954,11 +1954,11 @@ function renderVeoPriceTable(studio) {
 
 async function stylizeImageForVideo(apiKey, imageData, style) {
   const stylePrompts = {
+    realistic: 'Enhance this photo to look like a premium professional photograph. Keep the exact same person, their face, facial features, skin tone, hair, expression, clothing, and background completely unchanged. Improve lighting to soft professional studio light, increase sharpness and detail, make skin texture natural and photorealistic. Do not change the art style — keep it 100% real and photographic. Do not add any text or words.',
     pixar: 'Transform this photo into a Pixar/Disney 3D animated style. Keep the exact same people, poses, expressions, clothing, and background but render everything as high-quality 3D Pixar animation. Do not add any text or words.',
     anime: 'Transform this photo into beautiful Japanese anime style. Keep the exact same people, poses, expressions, clothing, and background but render everything as detailed anime art. Do not add any text or words.',
     cartoon: 'Transform this photo into a fun colorful cartoon style like a modern animated movie. Keep the exact same people, poses, expressions, clothing, and background. Do not add any text or words.',
-    watercolor: 'Transform this photo into a beautiful watercolor painting. Keep the exact same people, poses, expressions, clothing, and background but render as soft watercolor art. Do not add any text or words.',
-    oil: 'Transform this photo into a classic oil painting style. Keep the exact same people, poses, expressions, clothing, and background but render as rich oil painting art. Do not add any text or words.'
+    watercolor: 'Transform this photo into a beautiful watercolor painting. Keep the exact same people, poses, expressions, clothing, and background but render as soft watercolor art. Do not add any text or words.'
   };
 
   const cleanB64 = imageData.includes(',') ? imageData.split(',')[1] : imageData;
