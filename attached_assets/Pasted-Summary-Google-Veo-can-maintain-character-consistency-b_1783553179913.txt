@@ -1,0 +1,26 @@
+Summary
+
+Google Veo can maintain character consistency, but it requires precise "Character DNA" descriptions and high-quality reference images to prevent "identity drift" or a cartoonish appearance [1.1.2, 1.3.3]. Your app likely defaults to a cartoon style because your prompts lack specific realism keywords or technical camera specifications [1.2.1, 1.2.5].
+
+Key Findings
+Character Consistency: Veo 3/3.1 supports consistency by using up to three reference images and a "Character DNA" block—a highly detailed text description of the person's features (face, skin texture, hair) that is reused in every prompt [1.1.5, 1.3.4].
+Avoiding the "Cartoon" Look: Without explicit instructions like "cinematic realism," "photorealistic," or "35mm lens," the model may default to simplified, animated styles [1.2.1, 1.2.5].
+Veo Rules & Restrictions:
+No Names: You cannot use real names or famous character names (e.g., "Spider-Man") [1.3.2].
+No "Identity-Lock" Phrases: Using words like "exact character" or "preserve identity" in the prompt is often prohibited; the model relies on the visual reference and descriptive text instead [1.3.2].
+Safety Filters: Prompts triggering safety filters (e.g., resembling real people or protected IP) may be blocked or simplified into generic cartoonish versions [1.3.1, 1.3.5].
+Recommended Prompt Template
+To achieve realism and consistency, use this structured approach:
+
+[Character DNA]: A [age]-year-old man with [specific hair texture/color], [eye shape/color], [skin texture details like stubble or wrinkles], wearing [specific outfit].
+
+[Scene Action]: The man is [detailed action, e.g., rapping into a studio microphone].
+
+[Technical Specs]: Cinematic realism, hyper-realistic, shot on 35mm lens, natural skin tones, 8k resolution, professional studio lighting. No on-screen captions [1.1.2, 1.3.3].
+
+Sources
+[1] I Perfected the Consistent Characters Formula in Google VEO 3
+[2] How to Make Consistent Characters in Veo 3 (AI Video Tutorial)
+[3] VEO 3 Video Prompt Guidelines | PDF | Image | Superheroes
+[4] Complete List of Styles & Prompts for Google VEO 3
+[5] Veo 3.1 Multi-Prompt Storytelling Best Practices

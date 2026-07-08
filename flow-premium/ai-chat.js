@@ -2818,7 +2818,7 @@ Return STRICT JSON ONLY (no markdown, no commentary) in this exact shape:
 {
   "title": "Max 6 words, title-case, no quotes.",
   "script_summary": "1-2 sentence pitch grounded in the user's subject and action.",
-  "style_bible": "3-5 sentences of cinematic direction: lighting setup, color palette, lens / camera language, mood. You may describe the character's physical appearance using nouns the user already used (or generic descriptors if the user gave none). Don't restate the action here.",
+  "style_bible": "3-5 sentences of cinematic direction: lighting setup, color palette, lens / camera language, mood. ALWAYS include photorealism keywords such as 'photorealistic', 'cinematic live-action realism', 'shot on 35mm lens', 'natural skin tones', 'hyper-realistic'. You may describe the character's physical appearance using nouns the user already used (or generic descriptors if the user gave none). Don't restate the action here.",
   "clips": [
     { "shot": "What concretely happens in this ${segLen}s segment, grounded in the user's subject and action. Add one camera move or framing choice." },
     ... exactly ${clipCount} entries ...
@@ -2830,7 +2830,8 @@ Hard rules:
 - The user's subject and action are clearly recognizable across the sequence (the style bible plus most shot descriptions should reference them).
 - Never introduce new characters mid-sequence unless the user brief explicitly asks for it.
 - Never cut to a different location.
-- Keep each "shot" description under 50 words.`;
+- Keep each "shot" description under 50 words.
+- ALWAYS direct for photorealistic, live-action cinematic output. Never animated, cartoon, illustrated, or CGI. The style_bible MUST contain at least one of: "photorealistic", "cinematic realism", "live-action", "hyper-realistic".`;
 
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`;
 
@@ -3241,7 +3242,10 @@ function compileScenePrompt({ userPrompt, styleBible, vibe, shot, index, total, 
     ? `[DIRECTOR'S NOTE] Establish the scene exactly. Do not rush to the end of the story.`
     : `[DIRECTOR'S NOTE] Same subjects, wardrobe, location, lighting, and palette as the previous segment.`;
 
-  return `${shotBlock}${styleBlock}${continuity}`;
+  // Always enforce realism — without explicit keywords Veo defaults to cartoon/animated styles.
+  const realism = `\n[RENDER STYLE] Photorealistic. Cinematic live-action. Shot on 35mm lens. Natural skin tones. Hyper-realistic detail. No animation, no cartoon, no illustrated, no CGI style.`;
+
+  return `${shotBlock}${styleBlock}${continuity}${realism}`;
 }
 
 // Recompile the full scenes array from current meta state.
