@@ -9018,6 +9018,72 @@ async function _autoGenerateBuildImages(buildPrompt, count, statusBubble) {
 }
 // ── End auto-image generation ─────────────────────────────────────────────────
 
+// ── Web design inspiration search ─────────────────────────────────────────────
+// Uses Gemini's built-in Google Search grounding tool to find real, modern
+// examples of whatever type of site/app the user wants to build, then returns
+// a concise design brief (colors, layout, typography, key sections) the builder
+// can use as a reference. Returns '' on any failure — build proceeds normally.
+async function _searchWebForDesignInspiration(buildPrompt, apiKey) {
+  try {
+    // Derive a clean search topic from the prompt
+    const topicRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text:
+            `From this website build request: "${buildPrompt}"\n` +
+            `Extract a SHORT 2-5 word search phrase to find the best real websites of this type (e.g. "yoga studio website 2025", "crypto dashboard app", "food delivery landing page"). ` +
+            `Output ONLY the phrase, nothing else.`
+          }] }],
+          generationConfig: { maxOutputTokens: 30, temperature: 0.3 }
+        }),
+        signal: AbortSignal.timeout(8000)
+      }
+    );
+    if (!topicRes.ok) return '';
+    const topicData = await topicRes.json();
+    const searchTopic = (topicData.candidates?.[0]?.content?.parts?.[0]?.text || '').trim().replace(/["""]/g, '');
+    if (!searchTopic) return '';
+
+    // Now use Gemini with Google Search grounding to find real examples
+    const searchRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tools: [{ google_search: {} }],
+          contents: [{ role: 'user', parts: [{ text:
+            `Search the web for: "${searchTopic}"\n\n` +
+            `Find the 3-5 most impressive, modern, well-designed websites of this type that exist TODAY. ` +
+            `For each one, note: exact color palette (hex values if possible), hero layout style, typography choices, key sections included, and what makes it visually stand out.\n\n` +
+            `Then produce a DESIGN BRIEF (under 300 words) titled "WEB INSPIRATION BRIEF" with:\n` +
+            `• DOMINANT COLORS: list 3-5 specific hex values observed across the best sites\n` +
+            `• TYPOGRAPHY: font styles and weights that work for this category\n` +
+            `• HERO SECTION: describe the most effective hero layout pattern found\n` +
+            `• KEY SECTIONS: list the 5-7 sections every great site in this category has\n` +
+            `• DESIGN SIGNATURE: 2-3 specific visual moves (e.g. full-bleed imagery, floating cards, bold stats) that make leaders in this space look premium\n` +
+            `• MOOD WORD: one word (e.g. energetic, serene, clinical, bold)\n\n` +
+            `Be specific and actionable — this brief will be used by a UI engineer to build the site.`
+          }] }],
+          generationConfig: { maxOutputTokens: 600, temperature: 0.4 }
+        }),
+        signal: AbortSignal.timeout(20000)
+      }
+    );
+    if (!searchRes.ok) return '';
+    const searchData = await searchRes.json();
+    const brief = (searchData.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+    return brief ? `\n\n${brief}` : '';
+  } catch (e) {
+    console.warn('[SnapToAI Build] Web inspiration search failed:', e.message);
+    return '';
+  }
+}
+// ── End web inspiration search ────────────────────────────────────────────────
+
 // Handle send with streaming
 async function handleSend() {
   const input = document.getElementById('chatInput');
@@ -9199,6 +9265,34 @@ async function handleSend() {
         `(4) Keep all other design and content completely unchanged. ` +
         `(5) NEVER remove or replace any existing __SNAP_VID_N__, __SNAP_AUD_N__, or other __SNAP_*__ placeholder strings — they are live media references managed by the app.`;
     }
+
+    // ── Web design inspiration search (fresh builds only) ────────────────────
+    // Searches the web via Gemini's Google Search grounding for the best real
+    // examples of this type of site and injects a design brief into the prompt.
+    // Fails silently — build always continues even if this step errors.
+    if (!_isContinuationSend && !_lastBuiltCode) {
+      const _webSearchBubble = addBubble(
+        `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.65);font-size:13px;">` +
+        `<span style="font-size:18px;">🔍</span>Searching the web for the best real designs to inspire your site…</div>`,
+        'ai'
+      );
+      const _storedKey = await chrome.storage.local.get(['geminiKey']);
+      const _searchApiKey = _storedKey.geminiKey;
+      if (_searchApiKey) {
+        const _inspoBrief = await _searchWebForDesignInspiration(prompt, _searchApiKey);
+        if (_inspoBrief) {
+          prompt += `\n\nWEB DESIGN RESEARCH — use this as your primary design reference. These are patterns and colors found on the best REAL websites of this type today. Follow them closely:\n${_inspoBrief}`;
+          if (_webSearchBubble) _webSearchBubble.innerHTML =
+            `<div style="display:flex;align-items:center;gap:10px;color:rgba(99,202,183,0.9);font-size:13px;">` +
+            `<span style="font-size:18px;">✅</span>Found real design inspiration from the web — building your site…</div>`;
+        } else {
+          if (_webSearchBubble) _webSearchBubble.style.display = 'none';
+        }
+      } else {
+        if (_webSearchBubble) _webSearchBubble.style.display = 'none';
+      }
+    }
+    // ── End web inspiration search ────────────────────────────────────────────
 
     // ── Auto AI-image generation for fresh builds ─────────────────────────────
     // When no images were attached by the user and this is a brand-new site,
