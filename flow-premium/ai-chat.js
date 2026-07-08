@@ -7276,6 +7276,7 @@ Before writing a single line of CSS, silently answer these 5 questions:
 Use your answers to pick ONE of the Aesthetic Profiles below. Never mix profiles.
 
 PROFILE SELECTION RULES — READ BEFORE CHOOSING:
+  • GAME RULE (highest priority — check this first): If the request contains ANY of these words — game, play, player, level, levels, score, lives, jump, shoot, enemy, enemies, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter, boss, sprite, tile, coin — you MUST use Profile F. No exceptions. Do not use any other profile. Do not build a website. Build a real canvas game engine.
   • ONLY pick Profile A (dark) when the user's request explicitly contains words like "dark", "night", "neon", "cyberpunk", "dashboard", or "developer tool". For ALL other requests — even tech, SaaS, or generic apps — default to Profile B, C, or the request's emotional tone.
   • If you are unsure which profile to pick, choose Profile B or C. They work for nearly everything and produce far more distinctive, wow-factor results than dark glassmorphism.
   • Never pick Profile A as a safe fallback. Dark glassmorphism is the #1 sign of a generic AI output. Surprise the user.
