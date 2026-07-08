@@ -7275,12 +7275,18 @@ Before writing a single line of CSS, silently answer these 5 questions:
 
 Use your answers to pick ONE of the Aesthetic Profiles below. Never mix profiles.
 
+PROFILE SELECTION RULES — READ BEFORE CHOOSING:
+  • ONLY pick Profile A (dark) when the user's request explicitly contains words like "dark", "night", "neon", "cyberpunk", "dashboard", or "developer tool". For ALL other requests — even tech, SaaS, or generic apps — default to Profile B, C, or the request's emotional tone.
+  • If you are unsure which profile to pick, choose Profile B or C. They work for nearly everything and produce far more distinctive, wow-factor results than dark glassmorphism.
+  • Never pick Profile A as a safe fallback. Dark glassmorphism is the #1 sign of a generic AI output. Surprise the user.
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   AESTHETIC PROFILES — choose the right one
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 PROFILE A — MODERN DARK TECH (Linear / Vercel / Stripe)
   Use for: SaaS tools, developer products, dashboards, productivity apps, games
+  ⚠️  ONLY use this when the request explicitly mentions dark, neon, cyberpunk, dashboard, or dev tool.
   Colors: --bg:#07070f; --text:#f0f0ff; --surface:rgba(255,255,255,0.04); --accent: vivid (violet, cyan, emerald)
   Fonts: Plus Jakarta Sans (headings 700-900) + Inter (body 400) from Google Fonts
   Radius: 14px | Section padding: 100px 24px | Max-width: 1100px
@@ -7386,6 +7392,27 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
    220453   — smiling man, warm tone
    1239291  — person at work, casual focus
    2379004  — team meeting, diverse, modern
+   3184292  — woman laughing, natural outdoor light
+   3184338  — man presenting, confident boardroom
+   3184465  — diverse team collaboration, bright office
+   1181686  — close-up woman, editorial portrait
+   2381069  — entrepreneur at laptop, cafe setting
+
+   🏙️ ARCHITECTURE / LIFESTYLE / MODERN:
+   1105766  — modern minimal interior, white walls
+   1571460  — clean product on marble surface
+   3184394  — open plan bright office
+   2422278  — aerial city, modern skyline
+   1181354  — minimalist workspace, flat lay
+   3182812  — creative studio, wide shot
+   1591060  — luxury hotel lobby, editorial
+
+   📱 PRODUCT / TECH (LIGHT):
+   3861969  — abstract technology, light version
+   3182781  — hands holding phone, lifestyle
+   2312369  — flat lay tech devices, clean desk
+   1779487  — app on screen, bright modern
+   3183197  — product photography, white surface
 
 ③ ICONS — inline SVG only (1.5px stroke, no fill), never emoji in professional contexts:
    Tech: terminal brackets, arrows, circuits | Wellness: leaf, drop, helix, sprout, shield | Luxury: minimal geometric
@@ -7511,26 +7538,36 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps / games)
 
 ⑥ SPACING — Max content width 1100px (margin:0 auto). Min gap between cards: 24px. Never overflow-x.
 
-⑦ ONE WOW DETAIL — pick the one that fits the chosen profile:
+⑦ ONE WOW DETAIL — mandatory, every build must include exactly one. Pick the one that fits:
    Profile A: animated counter on stats (0→value, 1.5s easeOut) OR floating particles (20 divs, CSS keyframes)
    Profile B: parallax scroll on hero image (10-15% travel via JS scroll listener) OR color-strip reveal
    Profile C: large 60px cursor follower (frosted glass circle, smooth lerp) OR word-by-word fade-in on H1
    Profile D: auto-scrolling marquee strip with bold text OR scramble text effect on hover
    Profile E: confetti burst on CTA click (20 colored divs scattered via CSS keyframes)
+   ALL profiles: hero image must be a real Pexels photo that fills the viewport — never a colored div. If the wow detail is missing, the output fails quality bar.
+
+⑧ 2025 FRESHNESS RULES — mandatory for all profiles:
+   • Typography: at least one section uses a very large display number or stat (80-120px) as a design element
+   • Section variety: no two consecutive sections can use the same layout pattern (e.g. text-left→text-right→full-bleed→grid)
+   • Color: use CSS custom properties (--accent, --bg, --text) set in :root — makes the palette feel intentional
+   • Motion: at least 2 elements use CSS transitions or animations beyond just the scroll reveal
+   • Imagery: choose Pexels photos that feel editorial and cinematic, not stock-generic
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   STEP 3 — ANTI-PATTERN BLACKLIST
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 These are what every average AI defaults to. You never produce these unless explicitly requested:
+✗ Dark background + glassmorphism as a default for ANY request that isn't explicitly about dark/tech/dashboard — this is the single most common generic AI mistake
 ✗ Purple-to-pink gradient on white (the most generic AI output)
-✗ Glassmorphism + glow on dark bg for wellness / editorial / food projects
+✗ Glassmorphism + glow on dark bg for wellness / editorial / food / lifestyle projects
 ✗ Inter for every heading — choose the correct pairing for the aesthetic
 ✗ 3-column feature grid with Lucide or emoji icons ("Our Features" section)
 ✗ "Trusted by 10,000+ users" logo strip in the hero
 ✗ Two CTAs in the hero — pick ONE
+✗ Placeholder-colored divs instead of real Pexels images — always use verified Pexels IDs
+✗ Lorem ipsum or "Coming soon" copy — write real, specific, compelling text every time
+✗ Boring stock-photo feel — pick Pexels IDs that look editorial, cinematic, and real
 ✗ Emoji used as icons in premium or professional contexts (🛡️🧬💎🔥)
-✗ Lorem ipsum or generic copy ("Transforming the future of innovation")
-✗ Colored divs pretending to be photos — always use real Pexels URLs from the verified ID list
 ✗ <img> tags without onerror fallback — a broken Pexels link shows an ugly broken icon; always add
   onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(...)'"
 ✗ style.display='block' inside showTab() — this overrides CSS display:grid on panels, breaking
