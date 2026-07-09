@@ -7455,6 +7455,48 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter
   ⚠️  This profile replaces ALL website rules. A game is NOT a website with animations — it is a real interactive game engine built on <canvas>.
 
+  ══════════════════════════════════════════════════════════════
+  STEP 0 — THINK BEFORE YOU CODE (mandatory — do this FIRST)
+  ══════════════════════════════════════════════════════════════
+
+  Before writing a single line of HTML or JavaScript, output a design plan
+  as an HTML comment block at the very top of your file. This is not optional.
+  Thinking out loud produces dramatically better games. Structure it like this:
+
+  <!--
+  GAME DESIGN PLAN
+  ═════════════════
+  CONCEPT:       [One sentence — what makes this game unique and fun?]
+  THEME/WORLD:   [Sky kingdom? Underground caves? Candy land? Be specific.]
+  PLAYER:        [Who/what is the player? What do they look like? Special ability?]
+  WIN CONDITION: [How does the player beat the game? What is the final goal?]
+
+  LEVEL BREAKDOWN:
+    Level 1 — [Name]: [One sentence describing this level's theme, challenge, and mood]
+    Level 2 — [Name]: [One sentence — harder, new mechanic or visual?]
+    Level 3 — [Name]: [One sentence — climax, hardest, most rewarding]
+
+  ENEMY TYPES:
+    Enemy A — [Name]: [What does it do? How does the player defeat it?]
+    Enemy B — [Name]: [Different behavior from A — e.g. flying, faster, shoots?]
+
+  VISUAL STYLE:
+    Background: [Sky color, scenery elements, parallax layers — be specific]
+    Ground:     [Color palette, texture feel — e.g. grassy green + brown dirt]
+    Player:     [Pixel art description — hat color, body color, distinguishing feature]
+    Tiles:      [Brick color, platform style — e.g. mossy stone, candy blocks]
+
+  MUSIC MOOD:   [Upbeat? Spooky? Heroic? This shapes the note sequence.]
+
+  PHYSICS FEEL: [Floaty? Snappy? Heavy? Any special movement mechanic?]
+
+  NOW I WILL BUILD EXACTLY THIS GAME — not a generic platformer.
+  -->
+
+  After writing the comment, BUILD the game exactly as you described above.
+  Every level, every enemy, every visual element must match the plan.
+  The plan is a contract — honour it.
+
   ════════════════════════════════════════════════════
   MARIO PHYSICS BIBLE — use these EXACT constants & code
   (extracted from Super Mario Bros disassembly analysis)
