@@ -1282,6 +1282,7 @@ let selectedVideoDuration = 8;
 // to signal that. Auto-chained in showVideoResult() once each clip lands.
 let selectedTotalDuration = 8;
 let selectedClipCount = 1; // locked — single 8s clip only, no stitching
+let selectedAspectRatio = '16:9'; // landscape by default; toggled by vsb-aspect buttons
 let userAvailableVeoModels = [];
 let selectedMusicModel = MODELS.musicDefault;
 
@@ -1321,6 +1322,7 @@ function initVideoSubBar() {
 
   // Sync globals to match what the HTML marks as active by default
   selectedVideoDuration = 8;
+  selectedAspectRatio = '16:9';
   // selectedCreativity already defaults to 'balanced' which matches the HTML default
 
   bar.querySelectorAll('.vsb-creat').forEach(btn => {
@@ -1337,6 +1339,14 @@ function initVideoSubBar() {
       bar.querySelectorAll('.vsb-dur').forEach(b => b.classList.remove('vsb-active'));
       btn.classList.add('vsb-active');
       selectedVideoDuration = parseInt(btn.dataset.dur);
+    });
+  });
+
+  bar.querySelectorAll('.vsb-aspect').forEach(btn => {
+    btn.addEventListener('click', () => {
+      bar.querySelectorAll('.vsb-aspect').forEach(b => b.classList.remove('vsb-active'));
+      btn.classList.add('vsb-active');
+      selectedAspectRatio = btn.dataset.aspect;
     });
   });
 
@@ -2037,7 +2047,7 @@ async function startVideoGeneration(prompt, thread) {
   // Veo credits are charged. Single clips skip this step (low risk, no
   // continuity to coordinate). Cancelling here is free.
   let prebuiltScenes = null;
-  let selectedAspectRatio = '16:9';
+  // selectedAspectRatio is now a global — set by vsb-aspect buttons in the bar
   if (clipCount > 1) {
     const planLoader = document.createElement('div');
     planLoader.className = 'chat-bubble ai';
