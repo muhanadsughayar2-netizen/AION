@@ -1312,7 +1312,7 @@ try {
 
 // ── Mode sub-bars ─────────────────────────────────────────────────────────
 let _videoSubBarInited = false;
-let _vsbStylizeStyle = 'pixar';
+let _vsbStylizeStyle = 'realistic'; // matches the vsb-active default in the HTML
 
 function initVideoSubBar() {
   if (_videoSubBarInited) return;
@@ -1323,6 +1323,7 @@ function initVideoSubBar() {
   // Sync globals to match what the HTML marks as active by default
   selectedVideoDuration = 8;
   selectedAspectRatio = '16:9';
+  _vsbStylizeStyle = 'realistic'; // HTML default is ✨ Real (vsb-active on realistic button)
   // selectedCreativity already defaults to 'balanced' which matches the HTML default
 
   bar.querySelectorAll('.vsb-creat').forEach(btn => {
