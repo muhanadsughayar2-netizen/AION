@@ -1,0 +1,72 @@
+To ensure your image speaks while maintaining its original realistic style (and avoiding the "cartoon" shift), you need to use a combination of Image-to-Video and Reference Images while anchoring the style in your text prompt.
+
+Based on the Veo 3.1 documentation you provided, here is how to fix the issue:
+
+Summary of the Solution
+The model is likely defaulting to a generic "creative" style because the prompt isn't strictly defining the visual aesthetic of the original image. To fix this, you must:
+
+Use the image as the starting frame (image parameter).
+Use the same image as a Reference Image (reference_images parameter) to lock in the subject's appearance.
+Use Style Keywords in your prompt (e.g., "photorealistic," "cinematic realism") to prevent the model from drifting into animation.
+Key Findings & Implementation
+1. Use Reference Images to "Lock" the Look
+The documentation states that Veo 3.1 can use up to three reference images to "preserve the subject's appearance." If you only use the image parameter, the model uses it as the first frame but may "drift" into a cartoon style as it generates the subsequent 7 seconds.
+
+Action: Pass your original image into the reference_images list with the reference_type="asset".
+2. Add Style Anchors to the Prompt
+If your prompt is just "make him say Hamlet," the model has too much creative freedom. You must describe the style of the image.
+
+Bad Prompt: The man says "To be or not to be."
+Good Prompt: A cinematic, photorealistic close-up of the weathered fisherman from the input image. He looks directly at the camera with a somber expression and speaks clearly, "To be or not to be, that is the question." Maintain the exact lighting, skin texture, and realistic film style of the original photo.
+3. Correct Code Structure (Python Example)
+Based on your Replit setup, ensure your API call looks like this:
+
+# 1. Define the reference to keep the face/style consistent
+subject_reference = types.VideoGenerationReferenceImage(
+  image=your_original_image, 
+  reference_type="asset"
+)
+
+# 2. Generate the video
+operation = client.models.generate_videos(
+    model="veo-3.1-generate-preview",
+    image=your_original_image, # This ensures it starts with your image
+    prompt="""A hyper-realistic cinematic portrait of the old man. 
+              He looks into the lens and speaks solemnly: 'To be or not to be, that is the question.' 
+              The style is photorealistic with high-detail skin textures, 
+              matching the original image exactly. No animation or cartoon style.""",
+    config=types.GenerateVideosConfig(
+      reference_images=[subject_reference], # This "locks" the appearance
+      person_generation="allow_adult" # Required for image-to-video
+    ),
+)
+Why it turned to a cartoon before
+Style Drift: Without the reference_images parameter, the model treats the first frame as a suggestion but relies on the text prompt for the "vibe" of the rest of the video [1].
+Prompt Vague-ness: If the prompt doesn't explicitly say "photorealistic" or "cinematic realism," the model might choose a "simpler" style (like cartoon) because it is computationally easier to animate lip-syncing on a stylized face than on a highly detailed human face [1].
+Sources
+[1] Internal Documentation: "Veo 3.1 excels at a wide range of visual and cinematic styles... Use reference images to guide the content... preserve the subject's appearance." [2] Veo Prompt Guide: "Good prompts are descriptive... incorporate video-specific terminology... Specify creative direction using specific film style keywords."
+
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
+
+🔍
+Vision
+
+✨
+Image
+
+🎵
+Music
+
+🎬
+Video
+
+🎙️
+Broadcast
+
+
+Autopilot
+✦ Custom Prompts
+Clear

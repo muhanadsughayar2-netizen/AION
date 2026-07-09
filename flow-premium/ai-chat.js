@@ -2131,6 +2131,7 @@ async function startVideoGeneration(prompt, thread) {
   thread.scrollTop = thread.scrollHeight;
 
   let stylizedImage = null;
+  let _realisticRefImage = null; // original image passed as referenceImages lock when Real mode
   if (includeImage) {
     // Read from storage (set by pill clicks) OR fall back to the JS variable
     // so stylize always fires when Snap is checked, even without a pill click.
@@ -2139,7 +2140,20 @@ async function startVideoGeneration(prompt, thread) {
       (typeof _vsbStylizeStyle !== 'undefined' ? _vsbStylizeStyle : 'pixar');
     chrome.storage.local.remove('_videoStylizeStyle');
 
-    if (stylizeStyle && currentImages[0]) {
+    if (stylizeStyle === 'realistic' && currentImages[0]) {
+      // REAL MODE: skip stylization entirely — keep the original image as-is.
+      // Pass it as referenceImages so Veo locks the subject's appearance.
+      const imgData = currentImages[0];
+      const cleanB64 = imgData.includes(',') ? imgData.split(',')[1] : imgData;
+      let mimeType = 'image/jpeg';
+      if (imgData.startsWith('data:')) {
+        const match = imgData.match(/^data:(image\/[a-zA-Z+]+);/);
+        if (match) mimeType = match[1];
+      }
+      _realisticRefImage = { base64: cleanB64, mimeType };
+      const text = progressBubble.querySelector('.video-progress-text');
+      if (text) text.textContent = '📸 Real mode — keeping your photo as-is...';
+    } else if (stylizeStyle && currentImages[0]) {
       const text = progressBubble.querySelector('.video-progress-text');
       if (text) text.textContent = '🎨 Stylizing your photo first...';
       console.log(`[SnapToAI Video] Stylizing image with style: ${stylizeStyle}`);
@@ -2166,18 +2180,23 @@ async function startVideoGeneration(prompt, thread) {
   }
 
   if (clipCount === 1) {
-    await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage, selectedAspectRatio);
+    await generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage, selectedAspectRatio, _realisticRefImage);
   } else {
     await generateMultiClip(prompt, apiKey, modelName, includeImage, clipCount, progressBubble, thread, stylizedImage, prebuiltScenes, selectedAspectRatio);
   }
 }
 
-async function generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage, aspectRatio) {
+async function generateSingleClip(prompt, apiKey, modelName, includeImage, progressBubble, thread, stylizedImage, aspectRatio, realisticRefImage) {
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:predictLongRunning?key=${apiKey}`;
 
+    // REAL MODE: prepend photorealistic style anchors so Veo doesn't drift to cartoon
+    const finalPrompt = realisticRefImage
+      ? `Photorealistic. Cinematic live-action. Hyper-realistic detail. Natural skin tones and textures. Shot on 35mm lens. Maintain the exact appearance, lighting, and style of the reference image. No animation, no cartoon, no illustrated style. ${prompt}`
+      : prompt;
+
     const requestBody = {
-      instances: [{ prompt: prompt }],
+      instances: [{ prompt: finalPrompt }],
       parameters: {
         aspectRatio: aspectRatio || '16:9',
         sampleCount: 1,
@@ -2188,7 +2207,14 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
       }
     };
 
-    if (includeImage && (stylizedImage || currentImages[0])) {
+    // REAL MODE: pass original image as referenceImages to lock subject appearance
+    if (realisticRefImage) {
+      requestBody.parameters.referenceImages = [{
+        referenceImage: { bytesBase64Encoded: realisticRefImage.base64, mimeType: realisticRefImage.mimeType },
+        referenceType: 'REFERENCE_TYPE_SUBJECT'
+      }];
+      requestBody.instances[0].image = { bytesBase64Encoded: realisticRefImage.base64, mimeType: realisticRefImage.mimeType };
+    } else if (includeImage && (stylizedImage || currentImages[0])) {
       if (stylizedImage) {
         requestBody.instances[0].image = { bytesBase64Encoded: stylizedImage.base64, mimeType: stylizedImage.mimeType };
       } else {
