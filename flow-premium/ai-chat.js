@@ -7463,19 +7463,20 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   The difference between a "game" that feels like homework and one players
   can't put down is these numbers and techniques. Copy them precisely:
 
-  ── PHYSICS CONSTANTS (copy exactly) ──────────────────
-  const GRAVITY_RISE  = 0.35;   // lighter gravity while ascending — floaty feel
-  const GRAVITY_FALL  = 0.75;   // heavier gravity while falling — snappy landing
-  const WALK_ACCEL    = 0.08;   // gradual acceleration — weight & momentum
-  const RUN_ACCEL     = 0.18;   // faster accel when run key held
-  const MAX_WALK      = 3.2;    // max walk speed (pixels/frame)
-  const MAX_RUN       = 6.0;    // max run speed (hold Shift/Z)
-  const FRICTION_GND  = 0.82;   // ground friction when no key pressed
+  ── PHYSICS CONSTANTS (copy exactly — tuned for all ages) ──
+  // ⚠️ NEVER increase these speeds — smoother & slower is more fun than twitchy
+  const GRAVITY_RISE  = 0.28;   // lighter gravity while ascending — floaty feel
+  const GRAVITY_FALL  = 0.55;   // heavier gravity while falling — gentle landing
+  const WALK_ACCEL    = 0.07;   // gradual acceleration — weight & momentum
+  const RUN_ACCEL     = 0.14;   // faster accel when run key held
+  const MAX_WALK      = 1.8;    // max walk speed — SLOW & SMOOTH for all players
+  const MAX_RUN       = 3.5;    // max run speed — still controlled, not frantic
+  const FRICTION_GND  = 0.80;   // ground friction when no key pressed (stops quickly)
   const FRICTION_AIR  = 0.96;   // air has almost no friction (keep momentum)
-  const JUMP_VELOCITY = -13.5;  // initial jump velocity
-  const MIN_JUMP_VY   = -5.5;   // variable jump: clip vy here if button released early
-  const COYOTE_FRAMES = 8;      // can still jump this many frames after walking off edge
-  const JUMP_BUFFER   = 8;      // queues jump if pressed this many frames before landing
+  const JUMP_VELOCITY = -11.5;  // initial jump velocity — satisfying arc
+  const MIN_JUMP_VY   = -5.0;   // variable jump: clip vy here if button released early
+  const COYOTE_FRAMES = 10;     // generous coyote time — forgiving for new players
+  const JUMP_BUFFER   = 10;     // generous jump buffer — easy to chain jumps
   const TILE_SIZE     = 40;
 
   ── PLAYER OBJECT (copy exactly) ──────────────────────
@@ -7708,14 +7709,29 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
 
   ── LEVEL FORMAT (tile-map array) — make wide levels ─
   // 0=air  1=ground  2=brick  3=coin  4=enemy-spawn  5=goal
-  // A good level is 60-100 columns wide with varied terrain
+  // ⚠️ MANDATORY: build AT LEAST 3 complete levels. Each must be different!
+  // Level 1 = easy, wide platforms. Level 2 = gaps + more enemies. Level 3 = hard.
   const LEVELS = [
-    [ // LEVEL 1-1
+    [ // LEVEL 1 — easy: wide platforms, few enemies, lots of coins
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
-      [0,0,0,0,0,0,0,2,2,0,0,0,0,3,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,2,0,0,0,0,0,1],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,1],
-      [0,0,4,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,1],
+      [0,0,0,0,0,0,0,2,2,2,0,0,0,3,3,0,0,0,0,2,2,2,2,0,0,0,0,0,0,2,2,0,0,0,0,1],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,1],
+      [0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,1],
       [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+    [ // LEVEL 2 — medium: gaps, more enemies, fewer coins, harder jumps
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+      [0,0,0,2,2,0,0,0,0,0,3,0,0,0,2,2,0,0,0,0,0,2,0,0,0,3,0,0,2,2,2,0,0,0,0,1],
+      [0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4,0,0,0,0,0,0,0,4,0,0,1],
+      [0,4,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,0,0,1,1,1,1,1,1,0,0,0,1,1,1],
+    ],
+    [ // LEVEL 3 — hard: lots of gaps, many enemies, high platforms
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+      [0,0,2,0,0,0,2,2,0,0,0,0,3,0,2,2,2,0,0,0,0,2,0,0,0,3,0,2,2,0,0,0,2,2,0,1],
+      [0,0,0,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,4,0,0,0,0,4,0,0,0,0,0,0,4,0,0,0,0,1],
+      [4,0,0,0,0,0,0,0,4,0,0,4,0,0,0,0,4,0,0,0,4,0,0,0,0,4,0,0,0,4,0,0,0,0,4,1],
+      [1,1,0,0,1,1,0,0,1,1,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,0,1,1],
     ],
   ];
 
@@ -7738,6 +7754,85 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
       ctx.beginPath(); ctx.arc(hx+140, canvas.height*0.72, 120, Math.PI, 0); ctx.fill();
     }
   }
+
+  ── BACKGROUND MUSIC (Web Audio — copy exactly) ────────
+  // A looping chiptune melody using oscillators. Call startMusic() when
+  // gameState changes to 'playing', stopMusic() on pause/game-over/menu.
+  const audioCtxMusic = new (window.AudioContext||window.webkitAudioContext)();
+  let musicNodes = [];
+  // Simple repeating note sequence — melody + bass
+  const MELODY = [523,659,784,1047,784,659,523,440,523,659,784,659,523,392,440,523];
+  const BASS   = [131,131,165,196,131,131,165,196,131,131,165,196,131,131,165,196];
+  let melodyIdx = 0, musicInterval = null;
+  function startMusic() {
+    if (musicInterval) return; // already playing
+    if (audioCtxMusic.state === 'suspended') audioCtxMusic.resume();
+    function playTick() {
+      const now = audioCtxMusic.currentTime;
+      // Melody note
+      const o1 = audioCtxMusic.createOscillator();
+      const g1 = audioCtxMusic.createGain();
+      o1.connect(g1); g1.connect(audioCtxMusic.destination);
+      o1.type = 'square'; o1.frequency.value = MELODY[melodyIdx % MELODY.length];
+      g1.gain.setValueAtTime(0.06, now);
+      g1.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
+      o1.start(now); o1.stop(now + 0.22);
+      // Bass note
+      const o2 = audioCtxMusic.createOscillator();
+      const g2 = audioCtxMusic.createGain();
+      o2.connect(g2); g2.connect(audioCtxMusic.destination);
+      o2.type = 'triangle'; o2.frequency.value = BASS[melodyIdx % BASS.length];
+      g2.gain.setValueAtTime(0.08, now);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
+      o2.start(now); o2.stop(now + 0.28);
+      melodyIdx++;
+    }
+    playTick();
+    musicInterval = setInterval(playTick, 260); // ~230 BPM sixteenth notes
+  }
+  function stopMusic() {
+    if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
+  }
+  // Call startMusic() when entering PLAYING state, stopMusic() on exit.
+
+  ── WIN / GAME-OVER RESET — MANDATORY (prevents stuck screen) ─
+  // ⚠️ NEVER leave the player on a static WIN or GAME_OVER screen with no way out.
+  // Copy this pattern EXACTLY for both states:
+  //
+  // LEVEL COMPLETE (reached tile 5):
+  //   gameState = 'LEVEL_COMPLETE';
+  //   stopMusic();
+  //   playSound(1047,'square',0.6,0.4); // fanfare
+  //   setTimeout(() => {
+  //     levelIndex = (levelIndex + 1) % LEVELS.length; // wrap to level 1 after last
+  //     resetLevel();           // resets enemies, coins, player position
+  //     gameState = 'PLAYING';
+  //     startMusic();
+  //   }, 2500);                 // 2.5 s celebration pause — then auto-advance
+  //
+  // GAME OVER (lives === 0):
+  //   gameState = 'GAME_OVER';
+  //   stopMusic();
+  //   playSound(150,'sawtooth',1.2,0.5);
+  //   setTimeout(() => {
+  //     player.lives = 3; player.score = 0; player.coins = 0;
+  //     levelIndex = 0;
+  //     resetLevel();
+  //     gameState = 'MENU';     // return to menu — never a dead end
+  //   }, 3000);
+  //
+  // WIN (all levels cleared):
+  //   gameState = 'WIN';
+  //   stopMusic();
+  //   setTimeout(() => {
+  //     player.lives = 3; player.score = 0; player.coins = 0;
+  //     levelIndex = 0;
+  //     resetLevel();
+  //     gameState = 'MENU';     // loop back to menu for replay
+  //   }, 4000);
+  //
+  // Space / tap always cancels the delay and jumps straight to MENU when on
+  // a terminal screen (GAME_OVER or WIN) so players are never truly stuck.
 
   ── HUD — draw every frame, always on top ─────────────
   function drawHUD(ctx) {
@@ -7767,15 +7862,18 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   MANDATORY GAME ARCHITECTURE SUMMARY:
   • requestAnimationFrame game loop with delta-time
   • Full state machine: MENU → PLAYING ↔ PAUSED → GAME_OVER / LEVEL_COMPLETE → WIN
-  • Physics from the MARIO PHYSICS BIBLE above — copy constants exactly
-  • Minimum 3 tile-map levels with varied terrain, enemies, coins
+  • Physics from the MARIO PHYSICS BIBLE above — copy constants EXACTLY (especially slow speeds)
+  • MINIMUM 3 tile-map levels — Level 1 easy, Level 2 medium, Level 3 hard (use the examples above)
   • 2+ enemy types with patrol AI + stomp-kill detection
-  • All sound from Web Audio API (no external files)
+  • ✅ BACKGROUND MUSIC — startMusic() on PLAYING, stopMusic() on exit (copy the Web Audio example above)
+  • ✅ NO STUCK SCREENS — WIN / GAME_OVER MUST auto-reset after ≤4 seconds (copy the reset pattern above)
+  • ✅ LEVEL COMPLETE auto-advances to next level — levelIndex wraps back to 0 after last level
+  • All SFX from Web Audio API (no external audio files)
   • Particles on every important event
   • Parallax 3-layer background
   • HUD drawn on canvas every frame
   • All game screens drawn on canvas (no HTML overlays)
-  • Keyboard + on-canvas mobile touch buttons
+  • Keyboard + on-canvas mobile touch buttons (arrow left/right + jump)
 
   PROFILE F BANNED:
   ✗ Instant velocity (vx=4) instead of acceleration — makes movement feel cheap
@@ -7784,10 +7882,11 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   ✗ Missing variable jump height — every jump identical is boring
   ✗ CSS animations pretending to be a game — must use canvas
   ✗ HTML elements moving around the page
-  ✗ setTimeout/setInterval for game loop
-  ✗ A single level with no progression
+  ✗ setTimeout/setInterval for game loop (use requestAnimationFrame)
+  ✗ Only 1 level — minimum 3 levels required, each distinct
   ✗ Enemies that don't move or interact
-  ✗ Missing sound
+  ✗ No background music — silent games feel dead
+  ✗ Stuck WIN / GAME_OVER screen with no way to continue — ALWAYS auto-reset
   ✗ A plain colored square as the player
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -12038,8 +12137,8 @@ async function _showBuildConfirmation(prompt) {
   responseBubble.innerHTML = '<span style="color:#8899aa;font-size:13px;">Summarising plan…</span>';
   thread.scrollTop = thread.scrollHeight;
 
-  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
-  const apiKey = keyResult.geminiApiKey;
+  const keyResult = await chrome.storage.local.get(['geminiKey']);
+  const apiKey = keyResult.geminiKey;
 
   let bullets = [];
   if (apiKey) {
@@ -12053,7 +12152,7 @@ async function _showBuildConfirmation(prompt) {
       // The user's build trigger message.
       contents.push({ role: 'user', parts: [{ text: prompt }] });
 
-      const summarySystem = `You are a concise project planner. Based on the conversation above, output EXACTLY 2-3 bullet points (one line each, starting with "•") that summarise what you are about to build or change. No intro sentence, no explanation — only the bullet lines.`;
+      const summarySystem = `You are a concise project planner. Based on the conversation above, output EXACTLY 2-3 bullet points (one line each, starting with "•") that summarise what you are about to build or change. Each bullet must be a COMPLETE sentence — do not cut off mid-word. No intro sentence, no explanation — only the bullet lines.`;
 
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
@@ -12063,7 +12162,7 @@ async function _showBuildConfirmation(prompt) {
           body: JSON.stringify({
             systemInstruction: { parts: [{ text: summarySystem }] },
             contents,
-            generationConfig: { maxOutputTokens: 150, temperature: 0.3 }
+            generationConfig: { maxOutputTokens: 400, temperature: 0.3 }
           })
         }
       );
