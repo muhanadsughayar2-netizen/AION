@@ -7743,11 +7743,11 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
     ctx.font = 'bold 16px "Courier New"';
     ctx.shadowColor='#000'; ctx.shadowBlur=4;
     ctx.fillStyle='#fff';
-    ctx.fillText(`SCORE: ${String(player.score).padStart(6,'0')}`, 16, 28);
-    ctx.fillText(`LIVES: ${'♥'.repeat(player.lives)}`, 16, 50);
-    ctx.fillText(`COINS: ${player.coins}`, 16, 72);
-    ctx.fillText(`LEVEL: ${levelIndex+1}`, canvas.width-130, 28);
-    ctx.fillText(`TIME:  ${Math.max(0, Math.ceil(timeLeft))}`, canvas.width-130, 50);
+    ctx.fillText('SCORE: ' + String(player.score).padStart(6,'0'), 16, 28);
+    ctx.fillText('LIVES: ' + String.fromCodePoint(0x2665).repeat(player.lives), 16, 50);
+    ctx.fillText('COINS: ' + player.coins, 16, 72);
+    ctx.fillText('LEVEL: ' + (levelIndex+1), canvas.width-130, 28);
+    ctx.fillText('TIME:  ' + Math.max(0, Math.ceil(timeLeft)), canvas.width-130, 50);
     ctx.restore();
   }
 
