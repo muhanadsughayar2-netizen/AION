@@ -9500,6 +9500,80 @@ async function _searchWebForDesignInspiration(buildPrompt, apiKey) {
 }
 // ── End web inspiration search ────────────────────────────────────────────────
 
+// ── Game mechanics reference search ───────────────────────────────────────────
+// When the user asks to build a game, this runs BEFORE the build to look up
+// real game dev references: physics constants, enemy AI patterns, level design,
+// control feel — whatever is specific to that game type.
+// Returns a concise "GAME MECHANICS BRIEF" injected into the prompt.
+// Fails silently — build always continues even if this step errors.
+async function _searchForGameMechanics(buildPrompt, apiKey) {
+  try {
+    // Step 1: identify the game genre / type
+    const genreRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text:
+            `From this game build request: "${buildPrompt}"\n` +
+            `Output a SHORT 3-6 word search phrase to find real game dev documentation, ` +
+            `physics analysis, or disassembly notes for this genre. ` +
+            `Examples: "platformer game physics constants feel", "top-down shooter enemy AI patterns", ` +
+            `"puzzle game level design principles", "mario bros physics disassembly analysis", ` +
+            `"breakout clone ball physics collision". Output ONLY the phrase, nothing else.`
+          }] }],
+          generationConfig: { maxOutputTokens: 30, temperature: 0.3 }
+        }),
+        signal: AbortSignal.timeout(8000)
+      }
+    );
+    if (!genreRes.ok) return '';
+    const genreData = await genreRes.json();
+    const searchPhrase = (genreData.candidates?.[0]?.content?.parts?.[0]?.text || '').trim().replace(/["""]/g, '');
+    if (!searchPhrase) return '';
+
+    // Step 2: search the web for real game mechanics references
+    const mechRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tools: [{ google_search: {} }],
+          contents: [{ role: 'user', parts: [{ text:
+            `Search the web for: "${searchPhrase}"\n\n` +
+            `You are helping a developer build a canvas game in JavaScript. ` +
+            `Find the best real game development references, physics analyses, disassembly notes, ` +
+            `or game-feel articles for this game type. ` +
+            `Focus on: exact numeric constants (gravity, jump velocity, speeds, friction), ` +
+            `enemy AI behaviour patterns, collision detection approaches, level design principles, ` +
+            `and the specific techniques that make this genre FEEL satisfying to play.\n\n` +
+            `Produce a GAME MECHANICS BRIEF (under 400 words) with these exact sections:\n` +
+            `• PHYSICS CONSTANTS: specific numeric values for gravity, jump force, speed, friction found in references\n` +
+            `• PLAYER FEEL: the 2-3 most important techniques for making movement feel good in this genre\n` +
+            `• ENEMY AI: how enemies move, attack, and react in the best examples of this game type\n` +
+            `• LEVEL DESIGN: what makes levels in this genre fun — progression, challenge, layout patterns\n` +
+            `• GENRE SIGNATURE: 2-3 mechanics that are essential to this genre (e.g. stomp-kill, bullet-time, combos)\n` +
+            `• COMMON MISTAKES: what amateur implementations get wrong that makes the game feel bad\n\n` +
+            `Be specific with numbers. A developer will copy these values directly into code.`
+          }] }],
+          generationConfig: { maxOutputTokens: 700, temperature: 0.3 }
+        }),
+        signal: AbortSignal.timeout(22000)
+      }
+    );
+    if (!mechRes.ok) return '';
+    const mechData = await mechRes.json();
+    const brief = (mechData.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+    return brief ? `\n\n${brief}` : '';
+  } catch (e) {
+    console.warn('[SnapToAI Build] Game mechanics search failed:', e.message);
+    return '';
+  }
+}
+// ── End game mechanics search ─────────────────────────────────────────────────
+
 // Handle send with streaming
 async function handleSend() {
   const input = document.getElementById('chatInput');
@@ -9712,33 +9786,63 @@ async function handleSend() {
     }
     // ── End uniqueness seed ───────────────────────────────────────────────────
 
-    // ── Web design inspiration search (fresh builds only) ────────────────────
-    // Searches the web via Gemini's Google Search grounding for the best real
-    // examples of this type of site and injects a design brief into the prompt.
-    // Fails silently — build always continues even if this step errors.
+    // ── Pre-build reference search (fresh builds only) ───────────────────────
+    // Games → search for real game mechanics, physics constants, AI patterns.
+    // Websites → search for real design inspiration and layout patterns.
+    // Both fail silently — build always continues.
     if (!_isContinuationSend && !_lastBuiltCode) {
-      const _webSearchBubble = addBubble(
-        `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.65);font-size:13px;">` +
-        `<span style="font-size:18px;">🔍</span>Searching the web for the best real designs to inspire your site…</div>`,
-        'ai'
-      );
-      const _storedKey = await chrome.storage.local.get(['geminiKey']);
-      const _searchApiKey = _storedKey.geminiKey;
-      if (_searchApiKey) {
-        const _inspoBrief = await _searchWebForDesignInspiration(prompt, _searchApiKey);
-        if (_inspoBrief) {
-          prompt += `\n\nWEB DESIGN RESEARCH — use this as your primary design reference. These are patterns and colors found on the best REAL websites of this type today. Follow them closely:\n${_inspoBrief}`;
-          if (_webSearchBubble) _webSearchBubble.innerHTML =
-            `<div style="display:flex;align-items:center;gap:10px;color:rgba(99,202,183,0.9);font-size:13px;">` +
-            `<span style="font-size:18px;">✅</span>Found real design inspiration from the web — building your site…</div>`;
+      const _storedKey2 = await chrome.storage.local.get(['geminiKey']);
+      const _searchApiKey = _storedKey2.geminiKey;
+
+      // Detect if this is a game request
+      const _gameKeywords = /\b(game|platformer|arcade|puzzle|shooter|rpg|mario|zelda|dungeon|level|player|score|enemy|enemies|jump|shoot|sprite|tile|coin|boss)\b/i;
+      const _isGameBuild = _gameKeywords.test(prompt);
+
+      if (_isGameBuild) {
+        // GAME BUILD → look up real game mechanics, physics, AI references
+        const _gameBubble = addBubble(
+          `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.65);font-size:13px;">` +
+          `<span style="font-size:18px;">🎮</span>Looking up real game mechanics & physics references for your game…</div>`,
+          'ai'
+        );
+        if (_searchApiKey) {
+          const _gameBrief = await _searchForGameMechanics(prompt, _searchApiKey);
+          if (_gameBrief) {
+            prompt += `\n\nGAME MECHANICS RESEARCH — found from real game dev references on the web. Use these values and techniques alongside the Mario Physics Bible above. Real-world data takes priority over defaults:\n${_gameBrief}`;
+            if (_gameBubble) _gameBubble.innerHTML =
+              `<div style="display:flex;align-items:center;gap:10px;color:rgba(99,202,183,0.9);font-size:13px;">` +
+              `<span style="font-size:18px;">✅</span>Found real game mechanics from the web — building your game…</div>`;
+          } else {
+            if (_gameBubble) _gameBubble.innerHTML =
+              `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.5);font-size:13px;">` +
+              `<span style="font-size:18px;">🎮</span>Using built-in Mario Physics Bible — building your game…</div>`;
+          }
+        } else {
+          if (_gameBubble) _gameBubble.style.display = 'none';
+        }
+      } else {
+        // WEBSITE BUILD → search for real design inspiration
+        const _webSearchBubble = addBubble(
+          `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.65);font-size:13px;">` +
+          `<span style="font-size:18px;">🔍</span>Searching the web for the best real designs to inspire your site…</div>`,
+          'ai'
+        );
+        if (_searchApiKey) {
+          const _inspoBrief = await _searchWebForDesignInspiration(prompt, _searchApiKey);
+          if (_inspoBrief) {
+            prompt += `\n\nWEB DESIGN RESEARCH — use this as your primary design reference. These are patterns and colors found on the best REAL websites of this type today. Follow them closely:\n${_inspoBrief}`;
+            if (_webSearchBubble) _webSearchBubble.innerHTML =
+              `<div style="display:flex;align-items:center;gap:10px;color:rgba(99,202,183,0.9);font-size:13px;">` +
+              `<span style="font-size:18px;">✅</span>Found real design inspiration from the web — building your site…</div>`;
+          } else {
+            if (_webSearchBubble) _webSearchBubble.style.display = 'none';
+          }
         } else {
           if (_webSearchBubble) _webSearchBubble.style.display = 'none';
         }
-      } else {
-        if (_webSearchBubble) _webSearchBubble.style.display = 'none';
       }
     }
-    // ── End web inspiration search ────────────────────────────────────────────
+    // ── End pre-build reference search ───────────────────────────────────────
 
     // ── Auto AI-image generation for fresh builds ─────────────────────────────
     // When no images were attached by the user and this is a brand-new site,
