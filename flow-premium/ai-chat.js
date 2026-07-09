@@ -9343,6 +9343,41 @@ function initVoiceInput() {
 // Silently derives 3 cinematic image prompts from the build request, generates
 // them via Gemini image models, and returns an array of base64 data-URLs.
 // Returns [] on any failure so the build always falls back to Pexels gracefully.
+// Step 1: Ask the AI how many images this specific concept actually needs.
+// Returns a number between 1 and 15.
+async function _determineBuildImageCount(buildPrompt, apiKey) {
+  try {
+    const r = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text:
+            `You are a web designer planning a website build.\n` +
+            `Concept: "${buildPrompt}"\n\n` +
+            `How many distinct photos/images does a high-quality website for this concept realistically need?\n` +
+            `Think about: hero image, feature section images, gallery/portfolio items, team photos, product shots, testimonial backgrounds, CTA images, footer background, etc.\n` +
+            `Count only PHOTOS/IMAGES — not icons, not logos, not illustrations.\n` +
+            `Output ONLY a single integer between 1 and 15. Nothing else.`
+          }] }],
+          generationConfig: { maxOutputTokens: 5, temperature: 0.2 }
+        }),
+        signal: AbortSignal.timeout(8000)
+      }
+    );
+    if (!r.ok) return 4;
+    const data = await r.json();
+    const num = parseInt((data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim(), 10);
+    if (isNaN(num)) return 4;
+    return Math.max(1, Math.min(15, num)); // clamp 1–15
+  } catch (e) {
+    return 4; // safe fallback
+  }
+}
+
+// Step 2: Given the concept and the exact count needed, write one image prompt per slot.
+// Each prompt is specific to WHERE in the site that image will appear.
 async function _deriveBuildImagePrompts(buildPrompt, count, apiKey) {
   try {
     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
@@ -9351,19 +9386,23 @@ async function _deriveBuildImagePrompts(buildPrompt, count, apiKey) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text:
-          `You are a creative director preparing visuals for a new website. ` +
-          `The site concept: "${buildPrompt}"\n\n` +
-          `Write exactly ${count} image prompts for a photo-realistic AI image generator. ` +
-          `Each should describe a different beautiful, editorial-quality scene that fits this site: ` +
-          `prompt 1 = a stunning hero / full-bleed background image; ` +
-          `prompt 2 = a lifestyle or product lifestyle shot for a mid-page feature; ` +
-          `prompt 3 = a warm human-connection or detail shot for a testimonial / CTA section. ` +
-          `Make every prompt cinematic, modern, and magazine-quality. ` +
-          `Output ONLY ${count} lines, one prompt per line, no numbering, no labels, no extra text.`
+          `You are a creative director preparing visuals for a new website.\n` +
+          `Site concept: "${buildPrompt}"\n\n` +
+          `This site needs exactly ${count} images. Write one AI image generation prompt per image.\n` +
+          `For each image, think about WHERE it will appear on the site and what it needs to show.\n` +
+          `Consider: hero/banner shots, product or service shots, lifestyle scenes, team or people shots, ` +
+          `gallery items, detail/texture shots, testimonial backgrounds, CTA closing shots.\n\n` +
+          `Rules:\n` +
+          `- Every prompt must be cinematic, magazine-quality, photo-realistic\n` +
+          `- Each image must be DIFFERENT from the others (different subject, angle, mood)\n` +
+          `- Be highly specific: include lighting, mood, color palette, composition\n` +
+          `- Do NOT include any text, logos, or UI elements in the images\n` +
+          `- Tailor every image to the exact concept — no generic stock photo vibes\n\n` +
+          `Output ONLY ${count} lines. One complete image prompt per line. No numbering, no labels, no extra text.`
         }] }],
-        generationConfig: { maxOutputTokens: 400, temperature: 0.85 }
+        generationConfig: { maxOutputTokens: Math.max(400, count * 80), temperature: 0.85 }
       }),
-      signal: AbortSignal.timeout(12000)
+      signal: AbortSignal.timeout(15000)
     });
     if (!r.ok) return [];
     const data = await r.json();
@@ -9400,20 +9439,28 @@ async function _generateOneBuildImage(imgPrompt, apiKey) {
   return null;
 }
 
-async function _autoGenerateBuildImages(buildPrompt, count, statusBubble) {
+async function _autoGenerateBuildImages(buildPrompt, statusBubble) {
   try {
     const stored = await chrome.storage.local.get(['geminiKey']);
     const apiKey = stored.geminiKey;
     if (!apiKey) return [];
 
+    // Step 1: ask the AI how many images THIS site actually needs
+    if (statusBubble) statusBubble.innerHTML =
+      `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.7);font-size:13px;">` +
+      `<span style="font-size:18px;">🎨</span>Figuring out how many images your site needs…</div>`;
+
+    const count = await _determineBuildImageCount(buildPrompt, apiKey);
+
     if (statusBubble) statusBubble.innerHTML =
       `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.7);font-size:13px;">` +
       `<span style="font-size:18px;">🎨</span>Creating ${count} custom AI images for your site…</div>`;
 
+    // Step 2: derive one specific prompt per image slot
     const prompts = await _deriveBuildImagePrompts(buildPrompt, count, apiKey);
     if (!prompts.length) return [];
 
-    // Generate all images in parallel
+    // Step 3: generate all images in parallel
     const results = await Promise.all(prompts.map(p => _generateOneBuildImage(p, apiKey)));
     const images = results.filter(Boolean);
 
@@ -9845,27 +9892,34 @@ async function handleSend() {
     // ── End pre-build reference search ───────────────────────────────────────
 
     // ── Auto AI-image generation for fresh builds ─────────────────────────────
-    // When no images were attached by the user and this is a brand-new site,
-    // generate 3 custom Imagen photos tailored to the build request and embed
-    // them as __SNAP_IMG_0/1/2__ placeholders so the AI uses real AI-made
-    // visuals instead of Pexels stock photos. Fails silently → Pexels fallback.
+    // Determines how many images THIS site needs (1-15), writes one cinematic
+    // prompt per slot, generates them all in parallel, and injects placeholders
+    // into the build prompt so the AI places each one in the right section.
+    // Fails silently → build falls back to Pexels stock photos.
     if (!_isContinuationSend && !_lastBuiltCode && imageParts.length === 0) {
       const _aiImgStatusBubble = addBubble('', 'ai');
-      const _aiGeneratedImages = await _autoGenerateBuildImages(prompt, 3, _aiImgStatusBubble);
+      const _aiGeneratedImages = await _autoGenerateBuildImages(prompt, _aiImgStatusBubble);
       if (_aiGeneratedImages.length > 0) {
         _pendingBuildImages = _aiGeneratedImages;
+        const n = _aiGeneratedImages.length;
         const placeholders = _aiGeneratedImages.map((_, i) => `__SNAP_IMG_${i}__`).join(', ');
+
+        // Build a dynamic placement guide so the AI knows where each image goes
+        const placementGuide = _aiGeneratedImages.map((_, i) => {
+          if (i === 0) return `__SNAP_IMG_0__ → HERO section, full-bleed above the fold`;
+          if (i === n - 1) return `__SNAP_IMG_${i}__ → CLOSING/CTA section at the bottom`;
+          return `__SNAP_IMG_${i}__ → section ${i + 1} of the page (feature, gallery, testimonial, etc.)`;
+        }).join('; ');
+
         prompt +=
-          `\n\nAI IMAGE INSTRUCTION: ${_aiGeneratedImages.length} custom AI-generated images have been created specifically for this site. ` +
-          `Embed them using these exact placeholder strings as the <img> src values: ${placeholders}. ` +
-          `Placement rules: __SNAP_IMG_0__ = hero / full-bleed header image; ` +
-          `__SNAP_IMG_1__ = mid-page feature or lifestyle section; ` +
-          `__SNAP_IMG_2__ = testimonial, CTA, or closing section. ` +
-          `Style every one with: style="width:100%;height:100%;object-fit:cover;" ` +
-          `NEVER output the actual image data — use only the __SNAP_IMG_N__ placeholder strings. ` +
-          `Do NOT add any Pexels images — these custom AI images replace all stock photography.`;
+          `\n\nAI IMAGE INSTRUCTION: ${n} custom AI-generated images have been created specifically for this site — one per major visual section. ` +
+          `Use ALL ${n} of them. Do NOT use any Pexels stock photos. ` +
+          `Placeholder strings to use as <img> src values: ${placeholders}. ` +
+          `Placement guide: ${placementGuide}. ` +
+          `Style every image: style="width:100%;height:100%;object-fit:cover;" ` +
+          `NEVER output actual image data — use ONLY the __SNAP_IMG_N__ placeholder strings. ` +
+          `If the site has more sections than images, repeat the last placeholder rather than adding Pexels URLs.`;
       } else if (_aiImgStatusBubble) {
-        // No images generated — remove the empty status bubble silently
         _aiImgStatusBubble.remove?.() || (_aiImgStatusBubble.style && (_aiImgStatusBubble.style.display = 'none'));
       }
     }
