@@ -7295,17 +7295,30 @@ After defining the brand, silently answer these 5 questions:
 
 Use your answers to pick ONE of the Aesthetic Profiles below. Never mix profiles.
 
-PROFILE SELECTION RULES — READ BEFORE CHOOSING:
-  • GAME RULE (highest priority): words like game/level/player/score/jump/shoot/enemy/arcade/puzzle/Mario → Profile F. Always.
-  • PERSONAL BRAND / NAME-AS-BRAND: person's name is the brand, coach, speaker, author, photographer portfolio, coming-soon → Profile G.
-  • DARK / MOODY / CINEMATIC / ARTISTIC: creative studio, musician, artist, fashion, film, "dark", "moody", "editorial magazine" → Profile H.
-  • TECH / SAAS / DASHBOARD: explicitly dark, developer tool, analytics, crypto, "dark theme" → Profile A.
-  • WELLNESS / FOOD / HEALTH / BEAUTY: yoga, restaurant, café, food, nutrition, beauty, spa → Profile B.
-  • LUXURY / PREMIUM / HIGH-END: jewellery, architecture, premium agency, luxury brand → Profile C.
-  • CREATIVE AGENCY / BOLD PORTFOLIO: bold studio, creative agency, art director portfolio → Profile D.
-  • KIDS / FUN / QUIZ / CONSUMER APP: playful, bright, children, quiz, fun tool → Profile E.
-  • EVERYTHING ELSE: default to Profile B. It works for nearly everything and produces distinctive results.
-  • NEVER pick Profile A as a safe fallback. Dark glassmorphism is the #1 sign of a generic AI output.
+PROFILE SELECTION RULES — READ BEFORE CHOOSING (follow this order top to bottom, stop at first match):
+
+  1. GAME: request contains game/level/player/score/jump/shoot/enemy/arcade/puzzle/Mario/RPG/dungeon → Profile F. Always. No exceptions.
+
+  2. COMING SOON / PERSONAL NAME IS BRAND: person's name as brand, coach, speaker, author, photographer, "coming soon" page → Profile G.
+
+  3. DARK CREATIVE / EDITORIAL (only when request says "dark", "moody", "cinematic", "film", "editorial", "magazine", "artistic"): creative studio, musician, artist, fashion photography → Profile H.
+
+  4. DARK TECH (ONLY when request literally contains the word "dark" OR "dashboard" OR "neon" OR "cyberpunk"): → Profile A.
+     ⛔ TECH or SaaS or AI tools WITHOUT those exact words → do NOT use Profile A. Use Profile B or C instead.
+     ⛔ "App", "tool", "software", "AI", "SaaS", "extension", "platform" alone do NOT trigger Profile A.
+
+  5. WELLNESS / FOOD / HEALTH / BEAUTY / FITNESS: yoga, restaurant, café, nutrition, beauty, spa, gym → Profile B.
+
+  6. LUXURY / PREMIUM / ARCHITECTURE / HIGH-END: jewellery, architecture, luxury product, fine dining, premium agency → Profile C.
+
+  7. BOLD CREATIVE AGENCY: art director, creative studio, bold portfolio → Profile D.
+
+  8. KIDS / PLAYFUL / FUN / QUIZ: children, quiz, bright, fun consumer app → Profile E.
+
+  9. DEFAULT (tech apps, SaaS, AI products, marketplaces, services, everything else): → Profile B.
+     Profile B works beautifully for tech products and looks far more professional than dark glassmorphism.
+
+  ⛔ HARD RULE: If the user's message does not contain the word "dark", you must NOT use Profile A. No exceptions.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   AESTHETIC PROFILES — choose the right one
