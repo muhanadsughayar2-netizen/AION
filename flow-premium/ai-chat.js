@@ -9757,58 +9757,140 @@ async function _searchWebForDesignInspiration(buildPrompt, apiKey) {
 }
 // ── End web inspiration search ────────────────────────────────────────────────
 
-// ── Game Design AI Agent ───────────────────────────────────────────────────────
-// Runs BEFORE every game build. Uses Gemini 2.5 Pro to think through and author
-// a complete, specific game design document — concept, world, 3 levels, 2 enemy
-// types, visual palette, music mood, special mechanic. The builder then follows
-// this AI-authored spec exactly instead of guessing. Fails silently.
-async function _designGameWithAI(buildPrompt, apiKey) {
+// ── Build Design AI Agent (Gemini 2.5 Pro) ────────────────────────────────────
+// Fires on EVERY fresh build — games AND websites.
+// Uses Gemini 2.5 Pro to think through and author a complete creative spec:
+// concept, visual palette, layout/level structure, interactions, mood.
+// The builder follows this spec exactly. Fails silently.
+async function _designBuildWithAI(buildPrompt, apiKey, isGame) {
   try {
+    const systemText = isGame
+      ? `You are a lead game designer at a world-class studio (Nintendo, Valve, Naughty Dog level). ` +
+        `Read the game request and produce a vivid, specific, original game design document. ` +
+        `Be creative and concrete — no generic phrases. Every detail specific enough to build without questions. ` +
+        `Output ONLY the design document. No preamble.`
+      : `You are a world-class creative director and UX architect (Apple, Stripe, Linear level). ` +
+        `Read the website/app request and produce a vivid, specific creative brief. ` +
+        `Be concrete — exact colors, fonts, layout decisions, copy tone, interaction details. ` +
+        `Output ONLY the creative brief. No preamble.`;
+
+    const userText = isGame
+      ? `Game request: "${buildPrompt}"\n\n` +
+        `Write a complete game design document:\n\n` +
+        `CONCEPT: [One punchy sentence — the unique hook]\n\n` +
+        `WORLD & THEME: [Specific setting, mood, exact colors, time of day]\n\n` +
+        `PLAYER CHARACTER: [Name, exact pixel art colors per body part, one special ability]\n\n` +
+        `LEVEL 1 — [Invent a name]: [Theme, layout feel, visual signature, main challenge]\n` +
+        `LEVEL 2 — [Invent a name]: [What changes — new hazard, faster pace, new visual]\n` +
+        `LEVEL 3 — [Invent a name]: [Climax — hardest, most visually striking, epic payoff]\n\n` +
+        `ENEMY A — [Name]: [Exact behavior, how defeated, exact pixel art colors]\n` +
+        `ENEMY B — [Name]: [Different behavior, different weakness, different look]\n\n` +
+        `VISUAL PALETTE:\n  Sky: [hex]\n  Ground: [hex + texture feel]\n  Platforms: [hex]\n  Player: [colors per part]\n  Enemies: [colors]\n\n` +
+        `MUSIC: [BPM range, feel, instrument style]\n\n` +
+        `PHYSICS FEEL: [How movement feels — floaty? snappy? heavy?]\n\n` +
+        `SPECIAL MECHANIC: [One mechanic that makes this game unique]`
+      : `Website/app request: "${buildPrompt}"\n\n` +
+        `Write a complete creative brief:\n\n` +
+        `CONCEPT: [What this product IS and who it's for — one sentence]\n\n` +
+        `VISUAL IDENTITY:\n  Primary color: [exact hex]\n  Accent color: [exact hex]\n  Background: [exact hex]\n  Text color: [exact hex]\n  Font style: [e.g. geometric sans, editorial serif]\n\n` +
+        `LAYOUT:\n  Hero: [what the hero section shows — headline tone, layout type]\n  Section 2: [what it covers]\n  Section 3: [what it covers]\n  CTA: [what action and copy tone]\n\n` +
+        `TONE & COPY: [How the writing sounds — bold? warm? minimal? technical?]\n\n` +
+        `KEY INTERACTION: [One standout interaction or animation that elevates the page]\n\n` +
+        `INSPIRATION: [3 words that capture the feel — e.g. "dark, editorial, cinematic"]`;
+
     const res = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text:
-            `You are a lead game designer at a world-class studio. ` +
-            `Your job is to read a game request and produce a vivid, specific, original game design document. ` +
-            `Be creative and concrete — no generic phrases like "exciting levels" or "fun enemies". ` +
-            `Every detail must be specific enough that a developer can build it without asking any questions. ` +
-            `Output ONLY the design document. No preamble, no meta-commentary.`
-          }] },
-          contents: [{ role: 'user', parts: [{ text:
-            `Game request: "${buildPrompt}"\n\n` +
-            `Write a complete game design document with EXACTLY these sections:\n\n` +
-            `CONCEPT: [One punchy sentence — the unique hook that makes this game irresistible]\n\n` +
-            `WORLD & THEME: [Specific setting, mood, atmosphere — mention exact colors, time of day, weather]\n\n` +
-            `PLAYER CHARACTER: [Name, appearance (exact pixel art colors), one special ability]\n\n` +
-            `LEVEL 1 — [Invent a name]: [Specific theme, layout feel, visual signature, main challenge]\n` +
-            `LEVEL 2 — [Invent a name]: [What changes — new hazard, faster pace, new visual element]\n` +
-            `LEVEL 3 — [Invent a name]: [Climax — hardest, most visually striking, epic ending]\n\n` +
-            `ENEMY A — [Name]: [Exact behavior, how defeated, exact pixel art colors]\n` +
-            `ENEMY B — [Name]: [Different behavior, different weakness, different look]\n\n` +
-            `VISUAL PALETTE:\n` +
-            `  Sky: [exact hex color]\n` +
-            `  Ground tiles: [exact hex color + texture feel]\n` +
-            `  Platform tiles: [exact hex color]\n` +
-            `  Player: [exact colors per body part]\n` +
-            `  Enemies: [colors for each enemy type]\n\n` +
-            `MUSIC: [Tempo BPM range, feel, note style — e.g. "120BPM bouncy chiptune, major key"]\n\n` +
-            `PHYSICS FEEL: [Exactly how movement should feel — e.g. "floaty with high jump, slow walk"]\n\n` +
-            `SPECIAL MECHANIC: [One unique mechanic that makes this game different from any other]`
-          }] }],
+          systemInstruction: { parts: [{ text: systemText }] },
+          contents: [{ role: 'user', parts: [{ text: userText }] }],
           generationConfig: { maxOutputTokens: 1200, temperature: 1.0 }
         }),
-        signal: AbortSignal.timeout(20000)
+        signal: AbortSignal.timeout(22000)
       }
     );
     if (!res.ok) return '';
     const data = await res.json();
     return (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
   } catch (e) {
-    console.warn('[SnapToAI] Game design agent failed:', e.message);
+    console.warn('[SnapToAI] Design agent failed:', e.message);
     return '';
+  }
+}
+
+// ── Build Music Agent (Lyria) ─────────────────────────────────────────────────
+// Fires on EVERY fresh build alongside the other agents.
+// Asks Gemini to write a Lyria prompt matching the build, then generates a WAV
+// clip and returns it as a base64 data URL for embedding in _pendingBuildAudio.
+// Fails silently — build always continues without music.
+async function _generateBuildMusic(buildPrompt, apiKey) {
+  try {
+    // Step 1: Gemini writes a concise Lyria music prompt tuned to this build
+    const pRes = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text:
+            `Write a concise Lyria music generation prompt (max 25 words) for background music that perfectly matches the mood and purpose of this app/game build: "${buildPrompt}". ` +
+            `Output ONLY the music prompt. Examples of good prompts: "upbeat chiptune adventure 120BPM major key bouncy", "dark cinematic ambient tension low drones", "warm jazz lounge bossa nova 90BPM relaxed".`
+          }] }],
+          generationConfig: { maxOutputTokens: 60 }
+        }),
+        signal: AbortSignal.timeout(8000)
+      }
+    );
+    const musicPrompt = pRes.ok
+      ? ((await pRes.json()).candidates?.[0]?.content?.parts?.[0]?.text || '').trim()
+      : buildPrompt;
+
+    // Step 2: Generate the music clip with Lyria
+    for (const model of ['lyria-3', 'lyria-3-clip-preview']) {
+      const r = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ role: 'user', parts: [{ text: musicPrompt }] }],
+            generationConfig: { responseModalities: ['AUDIO'] }
+          }),
+          signal: AbortSignal.timeout(55000)
+        }
+      );
+      if (!r.ok) continue;
+      const body = await r.json();
+      for (const ap of (body.candidates?.[0]?.content?.parts || [])) {
+        if (!ap.inlineData?.data) continue;
+        const b64 = ap.inlineData.data;
+        const mime = (ap.inlineData.mimeType || '').toLowerCase();
+        // Convert PCM → WAV → base64 data URL (pcmToWav is scoped elsewhere)
+        const raw = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+        if (!mime || mime.includes('pcm') || mime.startsWith('audio/l')) {
+          const sr = 24000, ch = 1, bps = 16;
+          const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
+          const ws = (o, v) => { for (let i = 0; i < v.length; i++) dv.setUint8(o + i, v.charCodeAt(i)); };
+          ws(0,'RIFF'); dv.setUint32(4, 36 + raw.byteLength, true);
+          ws(8,'WAVE'); ws(12,'fmt ');
+          dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,ch,true);
+          dv.setUint32(24,sr,true); dv.setUint32(28,sr*ch*bps/8,true);
+          dv.setUint16(32,ch*bps/8,true); dv.setUint16(34,bps,true);
+          ws(36,'data'); dv.setUint32(40,raw.byteLength,true);
+          const hdrArr = new Uint8Array(hdr);
+          const wav = new Uint8Array(44 + raw.byteLength);
+          wav.set(hdrArr, 0); wav.set(raw, 44);
+          return `data:audio/wav;base64,${btoa(String.fromCharCode(...wav))}`;
+        }
+        return `data:${mime};base64,${b64}`;
+      }
+    }
+    return null;
+  } catch (e) {
+    console.warn('[SnapToAI] Build music agent failed:', e.message);
+    return null;
   }
 }
 
@@ -10098,69 +10180,88 @@ async function handleSend() {
     }
     // ── End uniqueness seed ───────────────────────────────────────────────────
 
-    // ── Pre-build reference search (fresh builds only) ───────────────────────
-    // Games → search for real game mechanics, physics constants, AI patterns.
-    // Websites → search for real design inspiration and layout patterns.
-    // Both fail silently — build always continues.
+    // ── 5-Agent parallel pre-build pipeline (fresh builds only) ─────────────
+    // ALL agents fire simultaneously via Promise.all — zero sequential wait.
+    // Agent 1: Gemini 2.5 Pro Design Agent   — full creative/game spec
+    // Agent 2: Web Research Agent            — real-world design/mechanics refs
+    // Agent 3: Game Mechanics Agent          — game physics & AI patterns (games only)
+    // Agent 4: Lyria Music Agent             — AI background music clip
+    // Agent 5: Image Generation Agent        — AI images (fires in next block)
     if (!_isContinuationSend && !_lastBuiltCode) {
       const _storedKey2 = await chrome.storage.local.get(['geminiKey']);
-      const _searchApiKey = _storedKey2.geminiKey;
+      const _buildApiKey = _storedKey2.geminiKey;
 
-      // Detect if this is a game request
       const _gameKeywords = /\b(game|platformer|arcade|puzzle|shooter|rpg|mario|zelda|dungeon|level|player|score|enemy|enemies|jump|shoot|sprite|tile|coin|boss)\b/i;
       const _isGameBuild = _gameKeywords.test(prompt);
 
-      if (_isGameBuild) {
-        // GAME BUILD — two AI agents fire in parallel before the builder:
-        // 1. Design agent (Gemini 2.5 Pro) — thinks up the full game spec
-        // 2. Mechanics search — looks up real physics/AI references from the web
-        const _gameBubble = addBubble(
-          `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.65);font-size:13px;">` +
-          `<span style="font-size:18px;">🎮</span>Designing your game with Gemini 2.5 Pro…</div>`,
-          'ai'
-        );
-        if (_searchApiKey) {
-          // Run both agents in parallel — no extra wait time
-          const [_gameDesign, _gameBrief] = await Promise.all([
-            _designGameWithAI(prompt, _searchApiKey),
-            _searchForGameMechanics(prompt, _searchApiKey)
-          ]);
-          if (_gameDesign) {
-            // Design spec goes FIRST — highest priority. Builder follows this exactly.
-            prompt = `GAME DESIGN DOCUMENT (created by AI designer — follow this exactly, every level, character, color, and mechanic):\n\n${_gameDesign}\n\n` + prompt;
-          }
-          if (_gameBrief) {
-            prompt += `\n\nGAME MECHANICS RESEARCH — real game dev references from the web:\n${_gameBrief}`;
-          }
-          if (_gameBubble) _gameBubble.innerHTML =
-            `<div style="display:flex;align-items:center;gap:10px;color:rgba(99,202,183,0.9);font-size:13px;">` +
-            `<span style="font-size:18px;">✅</span>${_gameDesign ? 'Game designed by AI' : 'Game specs ready'} — building now…</div>`;
-        } else {
-          if (_gameBubble) _gameBubble.style.display = 'none';
+      // Single status bubble for all agents
+      const _agentBubble = addBubble(
+        `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.65);font-size:13px;">` +
+        `<span style="font-size:20px;">⚡</span>` +
+        `<span>${_isGameBuild ? '4' : '3'} AI agents working simultaneously on your ${_isGameBuild ? 'game' : 'build'}…</span></div>`,
+        'ai'
+      );
+
+      if (_buildApiKey) {
+        // Fire all agents in parallel — no waiting for one before starting the next
+        const [_designSpec, _webRef, _gameRef, _musicDataUrl] = await Promise.all([
+          // Agent 1 — Gemini 2.5 Pro creative/design spec (every build)
+          _designBuildWithAI(prompt, _buildApiKey, _isGameBuild),
+          // Agent 2 — web research: design inspiration (websites) or game mechanics (games)
+          _isGameBuild
+            ? _searchForGameMechanics(prompt, _buildApiKey)
+            : _searchWebForDesignInspiration(prompt, _buildApiKey),
+          // Agent 3 — extra mechanics deep-dive (games only, else resolves instantly)
+          _isGameBuild ? _searchForGameMechanics(prompt + ' physics constants enemy AI', _buildApiKey) : Promise.resolve(''),
+          // Agent 4 — Lyria background music (every build)
+          _generateBuildMusic(prompt, _buildApiKey)
+        ]);
+
+        // Inject design spec FIRST — highest priority context for the builder
+        if (_designSpec) {
+          const specLabel = _isGameBuild
+            ? `GAME DESIGN DOCUMENT — authored by AI designer, follow exactly:`
+            : `CREATIVE BRIEF — authored by AI creative director, follow exactly:`;
+          prompt = `${specLabel}\n\n${_designSpec}\n\n` + prompt;
         }
+
+        // Inject web/mechanics research
+        if (_webRef) {
+          prompt += _isGameBuild
+            ? `\n\nGAME MECHANICS RESEARCH — real physics, AI, and design references:\n${_webRef}`
+            : `\n\nWEB DESIGN RESEARCH — patterns from top real sites of this type today:\n${_webRef}`;
+        }
+        if (_isGameBuild && _gameRef && _gameRef !== _webRef) {
+          prompt += `\n\nADDITIONAL GAME MECHANICS REFERENCE:\n${_gameRef}`;
+        }
+
+        // Queue Lyria music for embedding in the built app
+        if (_musicDataUrl) {
+          const _audOffset = _pendingBuildAudio.length;
+          _pendingBuildAudio.push(_musicDataUrl);
+          prompt +=
+            `\n\nAI BACKGROUND MUSIC: A Lyria-generated music clip has been created for this ${_isGameBuild ? 'game' : 'app'}. ` +
+            `Embed it as a looping background track using this placeholder as the src: __SNAP_AUD_${_audOffset}__. ` +
+            `Pattern: <audio id="snapBgMusic" src="__SNAP_AUD_${_audOffset}__" autoplay loop style="display:none"></audio>. ` +
+            `Add a small mute/unmute toggle button in the corner (bottom-right, 36×36px, semi-transparent). ` +
+            `NEVER output the actual audio data — use ONLY the __SNAP_AUD_${_audOffset}__ placeholder string.`;
+        }
+
+        // Update bubble to show results
+        const _agentResults = [
+          _designSpec ? '✅ Design spec' : null,
+          _webRef ? '✅ Web research' : null,
+          _musicDataUrl ? '✅ Music' : null
+        ].filter(Boolean).join(' · ');
+        if (_agentBubble) _agentBubble.innerHTML =
+          `<div style="display:flex;align-items:center;gap:10px;color:rgba(99,202,183,0.9);font-size:13px;">` +
+          `<span style="font-size:20px;">⚡</span>` +
+          `<span>${_agentResults || 'Agents ready'} — building now…</span></div>`;
       } else {
-        // WEBSITE BUILD → search for real design inspiration
-        const _webSearchBubble = addBubble(
-          `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.65);font-size:13px;">` +
-          `<span style="font-size:18px;">🔍</span>Searching the web for the best real designs to inspire your site…</div>`,
-          'ai'
-        );
-        if (_searchApiKey) {
-          const _inspoBrief = await _searchWebForDesignInspiration(prompt, _searchApiKey);
-          if (_inspoBrief) {
-            prompt += `\n\nWEB DESIGN RESEARCH — use this as your primary design reference. These are patterns and colors found on the best REAL websites of this type today. Follow them closely:\n${_inspoBrief}`;
-            if (_webSearchBubble) _webSearchBubble.innerHTML =
-              `<div style="display:flex;align-items:center;gap:10px;color:rgba(99,202,183,0.9);font-size:13px;">` +
-              `<span style="font-size:18px;">✅</span>Found real design inspiration from the web — building your site…</div>`;
-          } else {
-            if (_webSearchBubble) _webSearchBubble.style.display = 'none';
-          }
-        } else {
-          if (_webSearchBubble) _webSearchBubble.style.display = 'none';
-        }
+        if (_agentBubble) _agentBubble.style.display = 'none';
       }
     }
-    // ── End pre-build reference search ───────────────────────────────────────
+    // ── End 5-agent pipeline ──────────────────────────────────────────────────
 
     // ── Auto AI-image generation for fresh builds ─────────────────────────────
     // Determines how many images THIS site needs (1-15), writes one cinematic
