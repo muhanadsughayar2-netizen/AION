@@ -7453,83 +7453,340 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter
   ⚠️  This profile replaces ALL website rules. A game is NOT a website with animations — it is a real interactive game engine built on <canvas>.
 
-  MANDATORY GAME ARCHITECTURE — every game must have ALL of these:
+  ════════════════════════════════════════════════════
+  MARIO PHYSICS BIBLE — use these EXACT constants & code
+  (extracted from Super Mario Bros disassembly analysis)
+  ════════════════════════════════════════════════════
 
-  1. CANVAS ENGINE
-     - Single fullscreen <canvas id="gameCanvas"> fills the viewport (width=innerWidth, height=innerHeight)
-     - Main loop: requestAnimationFrame(gameLoop) — NEVER setTimeout/setInterval for movement
-     - gameLoop(timestamp) → update(dt) → draw() — delta-time (dt) based movement so speed is frame-rate independent
-     - Game states machine: STATE = { MENU, PLAYING, PAUSED, GAME_OVER, LEVEL_COMPLETE, WIN }
-     - currentState variable controls which update/draw branch runs
+  The difference between a "game" that feels like homework and one players
+  can't put down is these numbers and techniques. Copy them precisely:
 
-  2. PLAYER with REAL PHYSICS
-     - player object: { x, y, vx, vy, width, height, onGround, health, lives, score, coins }
-     - Gravity constant: GRAVITY = 0.5 applied every frame (vy += GRAVITY)
-     - Jump: vy = -12 when onGround is true (SPACE or UP arrow)
-     - Left/right: vx = ±4, friction: vx *= 0.85 when no key pressed
-     - Sprite animation: spriteFrame cycles through walk/jump/idle frames every 8 ticks
-     - Draw player as detailed pixel-art rectangle with colored blocks (head, body, hat, eyes) — NEVER a plain colored square
+  ── PHYSICS CONSTANTS (copy exactly) ──────────────────
+  const GRAVITY_RISE  = 0.35;   // lighter gravity while ascending — floaty feel
+  const GRAVITY_FALL  = 0.75;   // heavier gravity while falling — snappy landing
+  const WALK_ACCEL    = 0.08;   // gradual acceleration — weight & momentum
+  const RUN_ACCEL     = 0.18;   // faster accel when run key held
+  const MAX_WALK      = 3.2;    // max walk speed (pixels/frame)
+  const MAX_RUN       = 6.0;    // max run speed (hold Shift/Z)
+  const FRICTION_GND  = 0.82;   // ground friction when no key pressed
+  const FRICTION_AIR  = 0.96;   // air has almost no friction (keep momentum)
+  const JUMP_VELOCITY = -13.5;  // initial jump velocity
+  const MIN_JUMP_VY   = -5.5;   // variable jump: clip vy here if button released early
+  const COYOTE_FRAMES = 8;      // can still jump this many frames after walking off edge
+  const JUMP_BUFFER   = 8;      // queues jump if pressed this many frames before landing
+  const TILE_SIZE     = 40;
 
-  3. TILE-BASED LEVELS — minimum 3 levels
-     - Each level defined as a 2D array of tile IDs (0=air, 1=ground, 2=brick, 3=coin, 4=enemy-spawn, 5=goal)
-     - TILE_SIZE = 40px | draw tiles as colored rectangles with borders to look like real game tiles
-     - Ground tiles: brown/orange with dark border | Brick: reddish with mortar lines drawn via strokeRect
-     - Coin tiles: gold circle drawn with arc() | Goal: animated flag or door
-     - Camera: ctx.translate(-cameraX, 0) so level scrolls as player moves right
-     - Level width = tiles[0].length * TILE_SIZE — can be much wider than screen
+  ── PLAYER OBJECT (copy exactly) ──────────────────────
+  const player = {
+    x: 80, y: 300, vx: 0, vy: 0, w: 28, h: 36,
+    onGround: false, facing: 1,            // 1=right, -1=left
+    coyoteTimer: 0, jumpBuffer: 0,
+    running: false, spriteFrame: 0, frameTick: 0,
+    lives: 3, score: 0, coins: 0, state: 'idle'  // idle|walk|run|jump|fall|dead
+  };
 
-  4. ENEMIES with AI — minimum 2 enemy types
-     - Enemy object: { x, y, vx, vy, type, health, alive, spriteFrame }
-     - Patrol AI: reverses direction when hitting a wall or edge of platform
-     - Stomp detection: player kills enemy by landing on top (player.vy > 0 && overlap from above)
-     - Enemy kills player on side/front collision → player loses a life
-     - Draw enemies as recognizable shapes: goombas=brown oval+feet, koopas=green+shell, etc.
+  ── UPDATE LOOP (copy this physics logic exactly) ──────
+  function updatePlayer(dt) {
+    // 1. INPUT → acceleration (not instant velocity)
+    const runHeld = keyState['ShiftLeft'] || keyState['KeyZ'];
+    const accel   = runHeld ? RUN_ACCEL : WALK_ACCEL;
+    const maxSpd  = runHeld ? MAX_RUN   : MAX_WALK;
+    player.running = runHeld;
 
-  5. SOUND via Web Audio API — no external files needed, all generated:
-     - audioCtx = new (window.AudioContext || window.webkitAudioContext)()
-     - playSound(freq, type, duration, vol) — creates OscillatorNode + GainNode, plays then disconnects
-     - Jump sound: freq=600, sawtooth, 0.1s | Coin: freq=880 then 1100, square, 0.08s
-     - Enemy stomp: freq=200, sawtooth, 0.15s | Death: descending sweep 440→110, 0.5s
-     - Level complete: C-E-G-C major arpeggio | Game over: slow descending minor
-     - Background music: looping sequence of notes using oscillator + setTimeout chain
+    if (keyState['ArrowLeft']  || keyState['KeyA']) {
+      player.vx = Math.max(player.vx - accel, -maxSpd);
+      player.facing = -1;
+    } else if (keyState['ArrowRight'] || keyState['KeyD']) {
+      player.vx = Math.min(player.vx + accel,  maxSpd);
+      player.facing = 1;
+    } else {
+      // friction — different on ground vs air
+      player.vx *= player.onGround ? FRICTION_GND : FRICTION_AIR;
+      if (Math.abs(player.vx) < 0.1) player.vx = 0;
+    }
 
-  6. HUD (Heads-Up Display) — drawn ON the canvas every frame, always on top:
-     - Top-left: SCORE: 00000 | LIVES: ❤❤❤ | COINS: 🪙00
-     - Top-right: LEVEL: 1-1 | TIME: 300 (countdown)
-     - Font: '16px "Courier New"' — pixel-game feel. fillStyle = white with black shadow (shadowBlur=4)
-     - Time runs out → player dies
+    // 2. VARIABLE JUMP HEIGHT — release early = shorter hop
+    if (keyState['Space'] || keyState['ArrowUp'] || keyState['KeyW']) {
+      if (player.jumpBuffer > 0 || player.coyoteTimer > 0) {
+        player.vy = JUMP_VELOCITY;
+        player.onGround = false;
+        player.coyoteTimer = 0;
+        player.jumpBuffer  = 0;
+        playSound(523, 'square', 0.12, 0.4);    // jump sfx
+      }
+    } else {
+      // Early release → clip upward velocity (short hop)
+      if (player.vy < MIN_JUMP_VY) player.vy = MIN_JUMP_VY;
+    }
 
-  7. POLISHED GAME SCREENS — drawn on canvas (NOT HTML overlays):
-     - MENU screen: game title in large pixel font, "PRESS SPACE TO START", animated background
-     - PAUSE screen: semi-transparent dark overlay + "PAUSED — PRESS P TO CONTINUE"
-     - GAME OVER: red text "GAME OVER", final score, "PRESS R TO RESTART"
-     - LEVEL COMPLETE: stars animation, "LEVEL COMPLETE!", auto-advance after 2s
-     - WIN screen: full celebration with score tally
+    // 3. JUMP BUFFER — queues jump pressed slightly before landing
+    if ((keyState['Space'] || keyState['ArrowUp'] || keyState['KeyW'])
+        && !player.onGround && player.jumpBuffer === 0) {
+      player.jumpBuffer = JUMP_BUFFER;
+    }
+    if (player.jumpBuffer > 0) player.jumpBuffer--;
 
-  8. CONTROLS — keyboard + mobile touch buttons:
-     - Keyboard: ArrowLeft/A=left, ArrowRight/D=right, ArrowUp/W/Space=jump, P=pause, R=restart
-     - Mobile: draw 4 touch buttons on canvas (◀ ▶ 🅐 for jump) — touchstart/touchend events
-     - keyState object tracks which keys are held down (keydown sets true, keyup sets false)
+    // 4. GRAVITY — asymmetric: lighter going up, heavier coming down
+    player.vy += (player.vy < 0) ? GRAVITY_RISE : GRAVITY_FALL;
+    player.vy  = Math.min(player.vy, 18); // terminal velocity
 
-  9. COLLECTIBLES & PROGRESSION
-     - Coins add 100 to score | Enemies stomped add 200 | Time bonus on level complete
-     - After level complete → load next level (increment levelIndex, reset player position)
-     - After final level → WIN screen
+    // 5. COYOTE TIME
+    if (player.onGround) { player.coyoteTimer = COYOTE_FRAMES; }
+    else if (player.coyoteTimer > 0) { player.coyoteTimer--; }
 
-  10. VISUAL POLISH
-      - Parallax background: 2-3 layers (sky, distant mountains, near hills) scrolling at 0.2x, 0.5x, 1x camera speed
-      - Particle effects: coin collect = 8 gold sparks; stomp = 5 brown puffs (simple circle particles)
-      - Screen shake on player death: offset draw by random ±5px for 0.5s
-      - All drawn with canvas 2D API — zero external images required
+    // 6. MOVE & COLLIDE
+    player.x += player.vx;
+    player.y += player.vy;
+    player.onGround = false;
+    resolveCollisions(); // tile AABB collision — sets onGround=true when landing
+
+    // 7. SPRITE STATE
+    if (!player.onGround)      player.state = player.vy < 0 ? 'jump' : 'fall';
+    else if (Math.abs(player.vx) > 0.1) player.state = player.running ? 'run' : 'walk';
+    else                       player.state = 'idle';
+
+    // 8. ANIMATION — frame advances faster when running
+    player.frameTick++;
+    const frameRate = player.running ? 4 : 7;
+    if (player.frameTick >= frameRate) { player.frameTick = 0; player.spriteFrame = (player.spriteFrame+1)%3; }
+  }
+
+  ── DRAW PLAYER AS PIXEL-ART CHARACTER ────────────────
+  // Draw a recognizable character — hat, face, body, overalls
+  // Use ctx.save()/restore() + ctx.scale(-1,1) to flip when facing left
+  function drawPlayer(ctx) {
+    ctx.save();
+    ctx.translate(player.x + player.w/2, player.y + player.h/2);
+    if (player.facing === -1) ctx.scale(-1, 1);
+    const x = -player.w/2, y = -player.h/2;
+    // Hat
+    ctx.fillStyle = '#CC0000'; ctx.fillRect(x+4, y, 20, 8);
+    ctx.fillStyle = '#CC0000'; ctx.fillRect(x+2, y+8, 24, 6);
+    // Face
+    ctx.fillStyle = '#F4A460'; ctx.fillRect(x+4, y+14, 20, 12);
+    // Eyes
+    ctx.fillStyle = '#000';    ctx.fillRect(x+8, y+16, 4, 4);
+    // Overalls
+    ctx.fillStyle = '#0000CC'; ctx.fillRect(x+4, y+26, 20, 10);
+    ctx.fillStyle = '#CC0000'; ctx.fillRect(x+6, y+26, 16, 6);
+    // Feet (animate walk cycle)
+    ctx.fillStyle = '#4B2F0A';
+    if (player.state === 'idle' || player.state === 'jump' || player.state === 'fall') {
+      ctx.fillRect(x+4, y+36, 10, 6); ctx.fillRect(x+14, y+36, 10, 6);
+    } else {
+      const kick = player.spriteFrame === 1 ? 4 : 0;
+      ctx.fillRect(x+4,  y+36+kick, 10, 6);
+      ctx.fillRect(x+14, y+36-kick, 10, 6);
+    }
+    ctx.restore();
+  }
+
+  ── TILE COLLISION (AABB, copy exactly) ───────────────
+  function resolveCollisions() {
+    const col1 = Math.floor(player.x / TILE_SIZE);
+    const col2 = Math.floor((player.x + player.w - 1) / TILE_SIZE);
+    const row1 = Math.floor(player.y / TILE_SIZE);
+    const row2 = Math.floor((player.y + player.h - 1) / TILE_SIZE);
+    for (let r = row1; r <= row2; r++) {
+      for (let c = col1; c <= col2; c++) {
+        const tile = currentLevel[r]?.[c];
+        if (!tile || tile === 0 || tile === 3 || tile === 4) continue; // air/coin/spawn = passable
+        const tx = c*TILE_SIZE, ty = r*TILE_SIZE;
+        const overlapX = (player.x + player.w) - tx;
+        const overlapY = (player.y + player.h) - ty;
+        const dx = (player.x + player.w/2) - (tx + TILE_SIZE/2);
+        const dy = (player.y + player.h/2) - (ty + TILE_SIZE/2);
+        if (Math.abs(dx)/TILE_SIZE > Math.abs(dy)/TILE_SIZE) {
+          player.x -= overlapX * Math.sign(dx); player.vx = 0;
+        } else {
+          player.y -= overlapY * Math.sign(dy); player.vy = 0;
+          if (dy < 0) player.onGround = true; // landed on top
+        }
+      }
+    }
+  }
+
+  ── ENEMY AI (copy for goomba-style patrol) ───────────
+  // enemy object: { x, y, vx:-1.2, vy:0, w:32, h:32, alive:true, type:'goomba', flat:false, flatTimer:0 }
+  function updateEnemy(e) {
+    if (!e.alive) return;
+    e.vy += GRAVITY_FALL;
+    e.x += e.vx; e.y += e.vy;
+    // Reverse at edges / walls
+    const cAhead = Math.floor((e.x + (e.vx > 0 ? e.w : 0)) / TILE_SIZE);
+    const rFoot  = Math.floor((e.y + e.h + 1) / TILE_SIZE);
+    const rHead  = Math.floor(e.y / TILE_SIZE);
+    const atWall = currentLevel[rHead]?.[cAhead] > 0;
+    const noFloor= !currentLevel[rFoot]?.[cAhead];
+    if (atWall || noFloor) e.vx *= -1;
+    // Stomp check: player lands on enemy from above
+    const overlap = rectsOverlap(player, e);
+    if (overlap && player.vy > 0 && player.y + player.h < e.y + e.h/2) {
+      e.alive = false; player.vy = -8; player.score += 200;
+      playSound(180, 'sawtooth', 0.18, 0.5);
+      spawnParticles(e.x+e.w/2, e.y, '#8B4513', 6);
+    } else if (overlap && e.alive) {
+      playerDie();
+    }
+  }
+
+  ── WEB AUDIO SFX (copy exactly) ──────────────────────
+  const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  function playSound(freq, type, dur, vol=0.3, freqEnd=null) {
+    const o = audioCtx.createOscillator();
+    const g = audioCtx.createGain();
+    o.connect(g); g.connect(audioCtx.destination);
+    o.type = type; o.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    if (freqEnd) o.frequency.linearRampToValueAtTime(freqEnd, audioCtx.currentTime + dur);
+    g.gain.setValueAtTime(vol, audioCtx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + dur);
+    o.start(); o.stop(audioCtx.currentTime + dur);
+  }
+  // Coin collect: two-note jingle
+  function playCoinSfx() {
+    playSound(988, 'square', 0.08, 0.3);
+    setTimeout(() => playSound(1319, 'square', 0.12, 0.3), 80);
+  }
+  // Game over: descending glide
+  function playGameOverSfx() { playSound(440, 'sawtooth', 0.8, 0.4, 110); }
+  // Level complete: C-E-G-C arpeggio
+  function playLevelClearSfx() {
+    [523,659,784,1047].forEach((f,i) => setTimeout(()=>playSound(f,'square',0.15,0.35), i*120));
+  }
+
+  ── PARTICLES (add life to every event) ───────────────
+  const particles = [];
+  function spawnParticles(x, y, color, count=8) {
+    for (let i=0; i<count; i++) {
+      const angle = (Math.PI*2/count)*i;
+      particles.push({ x, y, vx: Math.cos(angle)*3, vy: Math.sin(angle)*3-2,
+                        life:1, color, r:4 });
+    }
+  }
+  function updateParticles() {
+    for (let i=particles.length-1; i>=0; i--) {
+      const p=particles[i]; p.x+=p.vx; p.y+=p.vy; p.vy+=0.15; p.life-=0.04;
+      if (p.life<=0) particles.splice(i,1);
+    }
+  }
+  function drawParticles(ctx) {
+    particles.forEach(p=>{
+      ctx.save(); ctx.globalAlpha=p.life;
+      ctx.fillStyle=p.color; ctx.beginPath();
+      ctx.arc(p.x,p.y,p.r,0,Math.PI*2); ctx.fill(); ctx.restore();
+    });
+  }
+
+  ── TILE DRAWING — look like real Mario tiles ─────────
+  function drawTile(ctx, tileId, x, y) {
+    if (tileId === 1) { // Ground block
+      ctx.fillStyle='#C84B10'; ctx.fillRect(x,y,TILE_SIZE,TILE_SIZE);
+      ctx.strokeStyle='#8B2E00'; ctx.lineWidth=2; ctx.strokeRect(x+1,y+1,TILE_SIZE-2,TILE_SIZE-2);
+      ctx.fillStyle='#E0601A';
+      ctx.fillRect(x+3,y+3,TILE_SIZE-6,10); ctx.fillRect(x+3,y+TILE_SIZE-13,TILE_SIZE-6,10);
+    } else if (tileId === 2) { // Brick
+      ctx.fillStyle='#B84020'; ctx.fillRect(x,y,TILE_SIZE,TILE_SIZE);
+      ctx.strokeStyle='#D4D4A0'; ctx.lineWidth=2;
+      ctx.strokeRect(x+1,y+1,TILE_SIZE/2-2,TILE_SIZE/2-2);
+      ctx.strokeRect(x+TILE_SIZE/2+1,y+1,TILE_SIZE/2-2,TILE_SIZE/2-2);
+      ctx.strokeRect(x+4,y+TILE_SIZE/2+1,TILE_SIZE/2-2,TILE_SIZE/2-2);
+    } else if (tileId === 3) { // Coin — animated gold arc
+      const bob = Math.sin(Date.now()*0.005)*3;
+      ctx.fillStyle='#FFD700'; ctx.beginPath();
+      ctx.arc(x+TILE_SIZE/2, y+TILE_SIZE/2+bob, 10, 0, Math.PI*2); ctx.fill();
+      ctx.fillStyle='#FFF176'; ctx.beginPath();
+      ctx.arc(x+TILE_SIZE/2-3, y+TILE_SIZE/2+bob-3, 4, 0, Math.PI*2); ctx.fill();
+    } else if (tileId === 5) { // Goal flag
+      ctx.strokeStyle='#888'; ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(x+TILE_SIZE/2,y+4); ctx.lineTo(x+TILE_SIZE/2,y+TILE_SIZE-4); ctx.stroke();
+      ctx.fillStyle='#00CC00'; ctx.beginPath();
+      ctx.moveTo(x+TILE_SIZE/2,y+4); ctx.lineTo(x+TILE_SIZE-4,y+14); ctx.lineTo(x+TILE_SIZE/2,y+24); ctx.fill();
+    }
+  }
+
+  ── LEVEL FORMAT (tile-map array) — make wide levels ─
+  // 0=air  1=ground  2=brick  3=coin  4=enemy-spawn  5=goal
+  // A good level is 60-100 columns wide with varied terrain
+  const LEVELS = [
+    [ // LEVEL 1-1
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+      [0,0,0,0,0,0,0,2,2,0,0,0,0,3,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,2,0,0,0,0,0,1],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,1],
+      [0,0,4,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    ],
+  ];
+
+  ── PARALLAX BACKGROUND (3 layers, always draw first) ─
+  // bgOffset increases each frame proportional to cameraX
+  function drawBackground(ctx, cameraX) {
+    // Sky
+    ctx.fillStyle='#5C94FC'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    // Far mountains (0.2x parallax)
+    ctx.fillStyle='#6A9FFF';
+    for (let i=0; i<8; i++) {
+      const mx = (i*200 - cameraX*0.2) % (canvas.width+200);
+      ctx.beginPath(); ctx.moveTo(mx,canvas.height*0.6);
+      ctx.lineTo(mx+100,canvas.height*0.3); ctx.lineTo(mx+200,canvas.height*0.6); ctx.fill();
+    }
+    // Near hills (0.5x parallax)
+    ctx.fillStyle='#3D8B00';
+    for (let i=0; i<6; i++) {
+      const hx = (i*280 - cameraX*0.5) % (canvas.width+280);
+      ctx.beginPath(); ctx.arc(hx+140, canvas.height*0.72, 120, Math.PI, 0); ctx.fill();
+    }
+  }
+
+  ── HUD — draw every frame, always on top ─────────────
+  function drawHUD(ctx) {
+    ctx.save();
+    ctx.font = 'bold 16px "Courier New"';
+    ctx.shadowColor='#000'; ctx.shadowBlur=4;
+    ctx.fillStyle='#fff';
+    ctx.fillText(`SCORE: ${String(player.score).padStart(6,'0')}`, 16, 28);
+    ctx.fillText(`LIVES: ${'♥'.repeat(player.lives)}`, 16, 50);
+    ctx.fillText(`COINS: ${player.coins}`, 16, 72);
+    ctx.fillText(`LEVEL: ${levelIndex+1}`, canvas.width-130, 28);
+    ctx.fillText(`TIME:  ${Math.max(0, Math.ceil(timeLeft))}`, canvas.width-130, 50);
+    ctx.restore();
+  }
+
+  ── GAME SCREEN RENDERS (all on canvas, NO HTML overlays) ─
+  function drawMenuScreen(ctx) {
+    ctx.fillStyle='rgba(0,0,0,0.72)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#FFD700'; ctx.font='bold 64px "Courier New"';
+    ctx.textAlign='center'; ctx.fillText('SUPER', canvas.width/2, canvas.height/2-80);
+    ctx.fillText('[GAME TITLE]', canvas.width/2, canvas.height/2-10);
+    ctx.fillStyle='#fff'; ctx.font='22px "Courier New"';
+    if (Math.floor(Date.now()/600)%2) ctx.fillText('PRESS SPACE TO START', canvas.width/2, canvas.height/2+70);
+    ctx.textAlign='left';
+  }
+
+  MANDATORY GAME ARCHITECTURE SUMMARY:
+  • requestAnimationFrame game loop with delta-time
+  • Full state machine: MENU → PLAYING ↔ PAUSED → GAME_OVER / LEVEL_COMPLETE → WIN
+  • Physics from the MARIO PHYSICS BIBLE above — copy constants exactly
+  • Minimum 3 tile-map levels with varied terrain, enemies, coins
+  • 2+ enemy types with patrol AI + stomp-kill detection
+  • All sound from Web Audio API (no external files)
+  • Particles on every important event
+  • Parallax 3-layer background
+  • HUD drawn on canvas every frame
+  • All game screens drawn on canvas (no HTML overlays)
+  • Keyboard + on-canvas mobile touch buttons
 
   PROFILE F BANNED:
-  ✗ CSS animations pretending to be a game
-  ✗ HTML elements moving around the page (use canvas only)
-  ✗ setTimeout/setInterval for the game loop (use requestAnimationFrame)
+  ✗ Instant velocity (vx=4) instead of acceleration — makes movement feel cheap
+  ✗ Same gravity up and down — kills the floaty Mario jump arc
+  ✗ Missing coyote time — players fall off edges before they can jump
+  ✗ Missing variable jump height — every jump identical is boring
+  ✗ CSS animations pretending to be a game — must use canvas
+  ✗ HTML elements moving around the page
+  ✗ setTimeout/setInterval for game loop
   ✗ A single level with no progression
-  ✗ Enemies that don't actually move or interact
-  ✗ Missing sound (Web Audio costs nothing and makes the game feel alive)
-  ✗ A plain colored square as the player — draw a recognizable character
+  ✗ Enemies that don't move or interact
+  ✗ Missing sound
+  ✗ A plain colored square as the player
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   STEP 2 — UNIVERSAL QUALITY RULES (ALL profiles)
