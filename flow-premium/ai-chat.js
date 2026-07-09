@@ -7333,13 +7333,34 @@ PROFILE A — MODERN DARK TECH (Linear / Vercel / Stripe)
   Signature moves: layered radial gradient bg div, glassmorphism cards, glow button, gradient-clipped H1 text
   BANNED for this profile: serif fonts, warm neutrals, emoji icons
 
-PROFILE B — EDITORIAL LIGHT (Aesop / Sakara / Daily Harvest — wellness / food / beauty / health)
-  Use for: wellness brands, food, beauty, health, premium lifestyle, editorial content, landing pages with warmth
+PROFILE B — EDITORIAL LIGHT (Aesop / Sakara / Daily Harvest — wellness / food / beauty / health / SaaS / tech)
+  Use for: wellness brands, food, beauty, health, premium lifestyle, SaaS tools, AI products, apps, services — anything that is NOT explicitly dark
   Colors: --bg:#F9FBF9; --text:#0A2E36; --surface:#ffffff; --accent:#FF7043; --sage:#76A08A
   Fonts: Playfair Display 400 (headings, tight tracking) + Inter 400 (body) from Google Fonts
   Radius: 4px (sharp) | Section padding: 160px 24px | Max-width: 1100px
-  Signature moves: cream base, deep-forest text, sage secondary color, generous whitespace, thin-line SVG icons (vessel/sprout/helix/shield), real Pexels macro photography, ONE blood-orange CTA per section
-  BANNED: dark backgrounds, glassmorphism, glow shadows, gradient-clipped text, emoji icons, "Trusted by" strips, two CTAs in hero
+
+  MANDATORY HERO PATTERN — copy this CSS structure exactly:
+  <section style="min-height:100vh;display:flex;align-items:center;background:#F9FBF9;padding:0 5vw;gap:60px;">
+    <div style="flex:1;max-width:560px;">
+      <p style="font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:600;letter-spacing:0.18em;text-transform:uppercase;color:#76A08A;margin-bottom:20px;">YOUR CATEGORY LABEL</p>
+      <h1 style="font-family:'Playfair Display',serif;font-size:clamp(2.8rem,5vw,4.5rem);line-height:1.1;color:#0A2E36;margin-bottom:24px;">Short Punchy<br>Headline Here</h1>
+      <p style="font-family:'Inter',sans-serif;font-size:1.05rem;line-height:1.7;color:#4A6670;max-width:440px;margin-bottom:40px;">One compelling sentence about the benefit.</p>
+      <a style="display:inline-block;background:#FF7043;color:#fff;font-family:'Inter',sans-serif;font-size:0.88rem;font-weight:600;letter-spacing:0.06em;padding:16px 36px;text-decoration:none;border-radius:4px;">ACTION VERB HERE →</a>
+    </div>
+    <div style="flex:1;border-radius:4px;overflow:hidden;height:580px;"><img src="PEXELS_URL" style="width:100%;height:100%;object-fit:cover;"></div>
+  </section>
+
+  MANDATORY SECTION PATTERN — alternating full-bleed color blocks:
+  <section style="background:#0A2E36;padding:120px 5vw;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center;">
+    <img src="PEXELS_URL" style="width:100%;height:500px;object-fit:cover;border-radius:4px;">
+    <div>
+      <h2 style="font-family:'Playfair Display',serif;font-size:clamp(2rem,3.5vw,3rem);color:#F9FBF9;margin-bottom:20px;">Section Title</h2>
+      <p style="font-family:'Inter',sans-serif;color:rgba(249,251,249,0.75);line-height:1.8;font-size:1rem;">Body copy goes here.</p>
+    </div>
+  </section>
+
+  Signature moves: cream/forest alternating sections, sage secondary color, generous whitespace, real Pexels photography, ONE blood-orange CTA per section
+  BANNED: dark glassmorphism, glow shadows, gradient-clipped text, emoji icons, "Trusted by" strips
 
 PROFILE C — LUXURY MINIMAL (Apple / Arc / Rauno / premium product)
   Use for: premium products, high-end portfolios, agencies, luxury apps
@@ -7367,32 +7388,66 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps)
 
 PROFILE G — BOLD TYPOGRAPHY / TYPE-FORWARD (Kay Van Hans / Revert / Coming Soon / personal brand)
   Use for: personal brands, photographers, coming-soon pages, bold portfolios, coaches, speakers, authors, any request where the PERSON or NAME is the brand
-  Colors: high-contrast 2-tone — most powerful combos: black #0A0A0A + warm white #F5F0EB, OR deep navy #0B1120 + cream #F2EDE4, OR forest #1C2B1A + off-white #FAFAF7. One electric accent for CTAs only.
-  Fonts: Bebas Neue OR Playfair Display 900 (headings, letter-spacing: -0.02em) + Inter 300 (body) from Google Fonts
-  Radius: 0-4px | Section padding: 120px 40px | Max-width: 1200px
-  Signature moves:
-    • Hero = the person's NAME in massive type (clamp(6rem,15vw,14rem)) filling the viewport — the name IS the design
-    • Full-width black-and-white or high-contrast portrait photo bleeds edge to edge
-    • ONE punchy tagline in small caps beneath the name (font-size: 0.85rem, letter-spacing: 0.3em)
-    • Alternating sections: all-white text-only → full-bleed photo → all-black reversed → repeat
-    • Minimal nav: name left, 3 links right, NO logo icon
-    • Footer: large repeated name in light grey as watermark behind contact details
-  BANNED: busy layouts, multiple colors, gradient backgrounds, rounded cards, emoji, stock-style photos
+  Colors: #0A0A0A background + #F5F0EB warm white. One electric accent (e.g. #FFD700 gold or #FF3B3B red) for ONE CTA only.
+  Fonts: 'Bebas Neue' (headings) + 'Inter' weight 300 (body) from Google Fonts
+  Radius: 0px | Max-width: 1200px
+
+  MANDATORY HERO — copy this exact structure:
+  <section style="min-height:100vh;background:#0A0A0A;display:flex;flex-direction:column;justify-content:flex-end;padding:0 5vw 80px;position:relative;overflow:hidden;">
+    <img src="PEXELS_URL" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0.35;">
+    <div style="position:relative;z-index:2;">
+      <h1 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(7rem,18vw,16rem);line-height:0.9;color:#F5F0EB;letter-spacing:-0.01em;margin:0;">BRAND<br>NAME</h1>
+      <p style="font-family:'Inter',sans-serif;font-size:0.82rem;font-weight:300;letter-spacing:0.35em;text-transform:uppercase;color:rgba(245,240,235,0.6);margin:24px 0 40px;">TAGLINE IN SMALL CAPS HERE</p>
+      <a style="display:inline-block;background:#FFD700;color:#0A0A0A;font-family:'Inter',sans-serif;font-size:0.78rem;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;padding:14px 36px;text-decoration:none;">GET STARTED</a>
+    </div>
+  </section>
+
+  MANDATORY SECOND SECTION — pure white, type only, no images:
+  <section style="background:#F5F0EB;padding:140px 5vw;display:flex;align-items:flex-start;gap:80px;">
+    <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,8vw,7rem);color:#0A0A0A;line-height:0.95;flex:1;">THE WORK SPEAKS<br>FOR ITSELF</h2>
+    <p style="font-family:'Inter',sans-serif;font-weight:300;font-size:1.05rem;line-height:1.8;color:#3a3a3a;flex:1;padding-top:20px;">Body copy goes here — short, direct, no fluff.</p>
+  </section>
+
+  MANDATORY THIRD SECTION — full-bleed photo, dark overlay, reversed text:
+  <section style="position:relative;height:80vh;overflow:hidden;">
+    <img src="PEXELS_URL" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.5);">
+    <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;">
+      <h2 style="font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,10vw,9rem);color:#F5F0EB;line-height:0.9;">ONE POWERFUL<br>STATEMENT</h2>
+    </div>
+  </section>
+
+  BANNED: rounded corners, multiple colors, gradients, emoji, busy layouts, small typography, generic stock imagery
 
 PROFILE H — DARK CREATIVE EDITORIAL (Train of Thought / moody magazine / creative studio)
-  Use for: creative studios, photographers, artists, musicians, film, fashion, anything described as "dark", "moody", "cinematic", "editorial", "magazine", "artistic"
-  Colors: --bg:#0C0C0C; --surface:#141414; --text:#F0EDE8; --accent: ONE bold color (electric green #00FF87, warm amber #FFB830, or blood red #E63946)
-  Fonts: DM Serif Display 400 italic (headings) + DM Sans 300 (body) from Google Fonts
-  Radius: 6px | Section padding: 120px 48px | Max-width: 1100px
-  Signature moves:
-    • Hero: full-bleed dark cinematic photo, large serif italic headline overlaid with thin white text
-    • Text-image ratio heavily favors imagery — photos are large, text is sparse and poetic
-    • Section dividers: thin horizontal lines (1px rgba(255,255,255,0.12)) not background-color changes
-    • Pull quotes: single sentence in large italic serif, centered, generous top/bottom padding
-    • Grid of editorial photos: 3-col asymmetric, different heights, NO captions — let images speak
-    • Accent color used ONLY on links and one CTA — never for backgrounds
-    • One section of ONLY a single centered sentence in large type (2.5rem) on dark bg — dramatic pause
-  BANNED: bright backgrounds, playful fonts, emoji, colorful UI elements, busy layouts, generic stock photos
+  Use for: creative studios, photographers, artists, musicians, film, fashion — "dark", "moody", "cinematic", "editorial", "magazine", "artistic"
+  Colors: --bg:#0C0C0C; --text:#F0EDE8; --accent:#FFB830 (amber) OR #E63946 (red) — ONE only, never for backgrounds
+  Fonts: 'DM Serif Display' italic (headings) + 'DM Sans' weight 300 (body) from Google Fonts
+
+  MANDATORY HERO — copy this exact structure:
+  <section style="position:relative;height:100vh;overflow:hidden;">
+    <img src="PEXELS_URL" style="width:100%;height:100%;object-fit:cover;filter:brightness(0.4);">
+    <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:flex-end;padding:0 6vw 10vh;">
+      <h1 style="font-family:'DM Serif Display',serif;font-style:italic;font-size:clamp(3rem,7vw,6.5rem);line-height:1.05;color:#F0EDE8;max-width:800px;margin:0 0 24px;">The headline sits<br>at the bottom, sparse.</h1>
+      <div style="width:50px;height:1px;background:rgba(240,237,232,0.4);margin-bottom:20px;"></div>
+      <p style="font-family:'DM Sans',sans-serif;font-weight:300;font-size:0.9rem;letter-spacing:0.12em;text-transform:uppercase;color:rgba(240,237,232,0.55);">CATEGORY · YEAR</p>
+    </div>
+  </section>
+
+  MANDATORY DRAMATIC PAUSE SECTION — text only, nothing else:
+  <section style="background:#0C0C0C;padding:160px 6vw;text-align:center;border-top:1px solid rgba(240,237,232,0.08);">
+    <p style="font-family:'DM Serif Display',serif;font-style:italic;font-size:clamp(1.8rem,4vw,3.2rem);color:#F0EDE8;line-height:1.4;max-width:700px;margin:0 auto;">
+      "One single sentence that makes the visitor feel something."
+    </p>
+  </section>
+
+  MANDATORY PHOTO GRID — asymmetric heights, no captions:
+  <section style="background:#0C0C0C;padding:80px 4vw;display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px;border-top:1px solid rgba(240,237,232,0.08);">
+    <img src="PEXELS_URL" style="width:100%;height:560px;object-fit:cover;">
+    <img src="PEXELS_URL" style="width:100%;height:260px;object-fit:cover;align-self:flex-end;">
+    <img src="PEXELS_URL" style="width:100%;height:380px;object-fit:cover;">
+  </section>
+
+  BANNED: bright/white backgrounds, rounded cards, colorful UI, emoji, busy text-heavy layouts
 
 PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter
