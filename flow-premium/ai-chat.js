@@ -7488,6 +7488,12 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
    For smaller cards use w=800 instead of w=1200.
    Always set: object-fit:cover; width:100%; height:100% on every img element. Descriptive alt text required.
 
+   ⚠️ PHOTO UNIQUENESS — CRITICAL: You must choose DIFFERENT Pexels photo IDs every single build.
+   BANNED IDs (overused — never use these): 1181671, 3184465, 3184291, 3182812, 1181244, 3184292,
+   3182781, 1181345, 3184311, 3183150, 3184405, 3184418, 3183197, 1181290, 1181672, 3184293.
+   Choose photo IDs that are thematically specific to this EXACT topic — not generic office/laptop shots.
+   Use high, varied ID numbers (above 10000000) for fresh, less commonly used photos.
+
    BROKEN IMAGE PROTECTION — every <img> MUST have an onerror handler:
    <img src="https://images.pexels.com/photos/{ID}/pexels-photo-{ID}.jpeg?auto=compress&cs=tinysrgb&w=1200"
         alt="descriptive text"
@@ -9353,16 +9359,46 @@ async function handleSend() {
       _pendingBuildImages = imageParts.map(f => `data:${f.mimeType};base64,${f.data}`);
       const placeholderList = _pendingBuildImages.map((_, i) => `__SNAP_IMG_${_imgOffset + i}__`).join(', ');
       const examplePlaceholder = `__SNAP_IMG_${_imgOffset}__`;
-      prompt += `\n\nIMAGE EMBED INSTRUCTION: The user attached ${imageParts.length} image(s). ` +
-        `Use these exact placeholder strings as the src values: ${placeholderList} ` +
-        `(example: <img src="${examplePlaceholder}" alt="..." style="width:100%;height:100%;object-fit:cover;">). ` +
-        `CRITICAL RULES: ` +
-        `(1) If the user said "replace", "change", "swap", or "update" an image — find that EXACT existing <img> tag and change ONLY its src attribute to the placeholder. Do NOT add a new img tag. ` +
-        `(2) If the user said "add" or gave no specific target — place the image prominently above the fold: replace the hero image, or insert it as the first visual element after the headline. NEVER bury it at the bottom. ` +
-        `(3) NEVER output any actual base64 data — only use the placeholder strings. ` +
-        `(4) Keep all other design and content completely unchanged. ` +
-        `(5) NEVER remove or replace any existing __SNAP_VID_N__, __SNAP_AUD_N__, or other __SNAP_*__ placeholder strings — they are live media references managed by the app.`;
+
+      // Different instruction depending on whether this is a fresh build or a patch edit
+      if (!_lastBuiltCode) {
+        // FRESH BUILD with user images: treat them as the primary product/brand visuals
+        prompt += `\n\nPRODUCT IMAGE INSTRUCTION (FRESH BUILD): The user has provided ${imageParts.length} real image(s) of their actual product, app, or brand. ` +
+          `These are the PRIMARY visuals for the entire site — DO NOT use any Pexels stock photos at all. ` +
+          `Use these exact placeholder strings as <img> src values: ${placeholderList}. ` +
+          `MANDATORY PLACEMENT — distribute them across the site: ` +
+          `${_pendingBuildImages.length >= 1 ? `__SNAP_IMG_${_imgOffset}__ = HERO section (full-bleed above the fold, the very first thing visitors see — make it large and prominent); ` : ''}` +
+          `${_pendingBuildImages.length >= 2 ? `__SNAP_IMG_${_imgOffset + 1}__ = FEATURES or HOW IT WORKS section (mid-page, showing the product in use); ` : ''}` +
+          `${_pendingBuildImages.length >= 3 ? `__SNAP_IMG_${_imgOffset + 2}__ = TESTIMONIAL, CTA, or CLOSING section (bottom of page, inspiring action); ` : ''}` +
+          `If there are more images, distribute them naturally across remaining sections. ` +
+          `Style every image with: style="width:100%;height:100%;object-fit:cover;" ` +
+          `CRITICAL: NEVER use any Pexels URLs. NEVER output actual base64 data — only placeholder strings. ` +
+          `NEVER remove any __SNAP_VID_N__, __SNAP_AUD_N__ placeholders.`;
+      } else {
+        // PATCH EDIT with user images: follow user's explicit placement instructions
+        prompt += `\n\nIMAGE EMBED INSTRUCTION: The user attached ${imageParts.length} image(s). ` +
+          `Use these exact placeholder strings as the src values: ${placeholderList} ` +
+          `(example: <img src="${examplePlaceholder}" alt="..." style="width:100%;height:100%;object-fit:cover;">). ` +
+          `CRITICAL RULES: ` +
+          `(1) If the user said "replace", "change", "swap", or "update" an image — find that EXACT existing <img> tag and change ONLY its src attribute to the placeholder. Do NOT add a new img tag. ` +
+          `(2) If the user said "add" or gave no specific target — place the image prominently above the fold: replace the hero image, or insert it as the first visual element after the headline. NEVER bury it at the bottom. ` +
+          `(3) NEVER output any actual base64 data — only use the placeholder strings. ` +
+          `(4) Keep all other design and content completely unchanged. ` +
+          `(5) NEVER remove or replace any existing __SNAP_VID_N__, __SNAP_AUD_N__, or other __SNAP_*__ placeholder strings — they are live media references managed by the app.`;
+      }
     }
+
+    // ── Uniqueness seed (fresh builds only) ──────────────────────────────────
+    // Injects a random token so the AI can't reuse the same Pexels IDs or
+    // layout patterns it used in previous builds in this session.
+    if (!_isContinuationSend && !_lastBuiltCode) {
+      const _buildSeed = Math.floor(Math.random() * 9000000) + 1000000;
+      const _buildTs = new Date().toISOString().slice(0,16).replace('T',' ');
+      prompt += `\n\n[BUILD-SEED:${_buildSeed} TIME:${_buildTs}] ` +
+        `This is a completely fresh build — you MUST pick brand-new Pexels photo IDs not used in any previous response. ` +
+        `Do not reuse IDs you have used before. The seed guarantees uniqueness: treat it as a creative direction token.`;
+    }
+    // ── End uniqueness seed ───────────────────────────────────────────────────
 
     // ── Web design inspiration search (fresh builds only) ────────────────────
     // Searches the web via Gemini's Google Search grounding for the best real
