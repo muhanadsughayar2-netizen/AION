@@ -7707,31 +7707,94 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
     }
   }
 
-  ── LEVEL FORMAT (tile-map array) — make wide levels ─
-  // 0=air  1=ground  2=brick  3=coin  4=enemy-spawn  5=goal
-  // ⚠️ MANDATORY: build AT LEAST 3 complete levels. Each must be different!
-  // Level 1 = easy, wide platforms. Level 2 = gaps + more enemies. Level 3 = hard.
+  ── CANVAS + LEVEL DIMENSIONS — CRITICAL, READ THIS FIRST ─
+  // Canvas height MUST equal (number of rows in level) × TILE_SIZE.
+  // Mismatch = player spawns underground or floats in air. Never hard-code y:300.
+  //
+  // STANDARD SETUP — copy exactly:
+  //   const TILE_SIZE = 40;
+  //   const ROWS = 12;   // level arrays must have EXACTLY 12 rows
+  //   const COLS = 60;   // each row must have EXACTLY 60 columns
+  //   canvas.width  = 800;           // visible area (camera scrolls the level)
+  //   canvas.height = ROWS * TILE_SIZE;  // = 480 — ALWAYS derive height this way
+  //
+  // PLAYER SPAWN — NEVER hard-code player.y. Always use resetLevel():
+  function resetLevel() {
+    const lvl = LEVELS[levelIndex];
+    // Find the topmost solid tile in column 2 and place player just above it
+    let spawnRow = lvl.length - 1;
+    for (let r = 0; r < lvl.length; r++) {
+      if (lvl[r][2] === 1 || lvl[r][2] === 2) { spawnRow = r; break; }
+    }
+    player.x = 2 * TILE_SIZE;
+    player.y = spawnRow * TILE_SIZE - player.h - 1;  // 1px gap so gravity engages
+    player.vx = 0; player.vy = 0;
+    player.onGround = false; player.coyoteTimer = 0; player.jumpBuffer = 0;
+    // Re-spawn enemies from spawn tiles in the level
+    enemies = [];
+    coins   = [];
+    lvl.forEach((row, r) => row.forEach((tile, c) => {
+      if (tile === 4) enemies.push({ x:c*TILE_SIZE, y:r*TILE_SIZE, vx:-1, vy:0, w:32, h:32, alive:true });
+      if (tile === 3) coins.push(  { x:c*TILE_SIZE+8, y:r*TILE_SIZE+8, r:10, collected:false });
+    }));
+    cameraX  = 0;
+    timeLeft = 200;
+  }
+
+  ── LEVEL FORMAT (12 rows × 60 cols) ──────────────────
+  // 0=air  1=solid-ground  2=brick-platform  3=coin  4=enemy-spawn  5=goal
+  // ⚠️ EVERY level array MUST have exactly 12 rows and 60 columns.
+  //    Row 10 and row 11 are the main ground. Goal (5) goes in row 0 at column 59.
+  //    Rows 0-1: sky / high goal area
+  //    Rows 2-5: high platforms and coins
+  //    Rows 6-9: mid/low platforms, enemies
+  //    Rows 10-11: solid ground (MUST be solid = 1 across most columns)
+  //
+  // ⚠️ MINIMUM 3 complete levels. Level 1 = easy, Level 2 = medium, Level 3 = hard.
+  //
+  // VERIFIED WORKING EXAMPLE — all 12 rows × 60 columns, player spawns correctly:
   const LEVELS = [
-    [ // LEVEL 1 — easy: wide platforms, few enemies, lots of coins
-      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
-      [0,0,0,0,0,0,0,2,2,2,0,0,0,3,3,0,0,0,0,2,2,2,2,0,0,0,0,0,0,2,2,0,0,0,0,1],
-      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,1],
-      [0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,1],
-      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+    [ // LEVEL 1 — easy: wide ground, low platforms, few enemies, lots of coins
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,2,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,4,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     ],
-    [ // LEVEL 2 — medium: gaps, more enemies, fewer coins, harder jumps
-      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
-      [0,0,0,2,2,0,0,0,0,0,3,0,0,0,2,2,0,0,0,0,0,2,0,0,0,3,0,0,2,2,2,0,0,0,0,1],
-      [0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4,0,0,0,0,0,0,0,4,0,0,1],
-      [0,4,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,0,0,4,0,0,0,0,0,0,4,0,0,0,0,0,0,0,1],
-      [1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,0,0,1,1,1,1,1,1,0,0,0,1,1,1],
+    [ // LEVEL 2 — medium: gaps in ground, more enemies, harder platform jumps
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,4,0,0,0,0,0,4,0,0,0,0,0,4,0,0,0,0,0,0,4,0,0,0,0,4,0,0,0,0,4,0,0,0,0,0,4,0,0,0,0,4,0,0,0,4,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+      [1,1,1,1,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
     ],
-    [ // LEVEL 3 — hard: lots of gaps, many enemies, high platforms
-      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
-      [0,0,2,0,0,0,2,2,0,0,0,0,3,0,2,2,2,0,0,0,0,2,0,0,0,3,0,2,2,0,0,0,2,2,0,1],
-      [0,0,0,0,4,0,0,0,0,4,0,0,0,0,0,0,0,0,4,0,0,0,0,4,0,0,0,0,0,0,4,0,0,0,0,1],
-      [4,0,0,0,0,0,0,0,4,0,0,4,0,0,0,0,4,0,0,0,4,0,0,0,0,4,0,0,0,4,0,0,0,0,4,1],
-      [1,1,0,0,1,1,0,0,1,1,1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1,0,0,1,1,0,1,1],
+    [ // LEVEL 3 — hard: many gaps, dense enemies, tight platforms
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,5],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,2,2,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0],
+      [0,0,0,0,3,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,3,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,2,2,0,0],
+      [0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,3,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,4,0,0,0,4,0,0,4,0,0,0,4,0,0,4,0,0,0,4,0,4,0,0,0,4,0,0,4,0,0,4,0,0,0,4,0,0,4,0,0,0,4,0,4,0,0,0,4,0,0,4,0,0,0,4,0,0,4,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+      [1,1,1,0,0,1,1,0,0,0,1,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1,1,0,0,1,1,1,0,0,1,1,0,0,1,1,1,0,0,1,1,1,0,0,1,1,0,0,1,1,1,0,0,1,1,1],
+      [1,1,1,0,0,1,1,0,0,0,1,1,1,0,0,1,1,0,0,1,1,0,0,0,1,1,1,0,0,1,1,1,0,0,1,1,0,0,1,1,1,0,0,1,1,1,0,0,1,1,0,0,1,1,1,0,0,1,1,1],
     ],
   ];
 
@@ -7756,44 +7819,48 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   }
 
   ── BACKGROUND MUSIC (Web Audio — copy exactly) ────────
-  // A looping chiptune melody using oscillators. Call startMusic() when
-  // gameState changes to 'playing', stopMusic() on pause/game-over/menu.
-  const audioCtxMusic = new (window.AudioContext||window.webkitAudioContext)();
-  let musicNodes = [];
-  // Simple repeating note sequence — melody + bass
+  // ⚠️ USE THE SAME audioCtx as SFX — only ONE AudioContext per game, ever.
+  // Do NOT create a second AudioContext for music. Reuse the one from playSound().
+  //
+  // SINGLE AudioContext setup (declare ONCE at the top of your script):
+  //   const audioCtx = new (window.AudioContext||window.webkitAudioContext)();
+  //
+  // Music uses pre-scheduled notes via audioCtx.currentTime (no setInterval needed).
+  // Call startMusic() on entering PLAYING state, stopMusic() on any exit.
   const MELODY = [523,659,784,1047,784,659,523,440,523,659,784,659,523,392,440,523];
   const BASS   = [131,131,165,196,131,131,165,196,131,131,165,196,131,131,165,196];
-  let melodyIdx = 0, musicInterval = null;
+  let melodyStep = 0, musicTimer = null;
   function startMusic() {
-    if (musicInterval) return; // already playing
-    if (audioCtxMusic.state === 'suspended') audioCtxMusic.resume();
-    function playTick() {
-      const now = audioCtxMusic.currentTime;
-      // Melody note
-      const o1 = audioCtxMusic.createOscillator();
-      const g1 = audioCtxMusic.createGain();
-      o1.connect(g1); g1.connect(audioCtxMusic.destination);
-      o1.type = 'square'; o1.frequency.value = MELODY[melodyIdx % MELODY.length];
+    if (musicTimer) return; // guard: never double-start
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+    function tick() {
+      if (!musicTimer) return; // stopped while waiting
+      const now = audioCtx.currentTime;
+      const o1 = audioCtx.createOscillator(), g1 = audioCtx.createGain();
+      o1.connect(g1); g1.connect(audioCtx.destination);
+      o1.type = 'square';
+      o1.frequency.value = MELODY[melodyStep % MELODY.length];
       g1.gain.setValueAtTime(0.06, now);
-      g1.gain.exponentialRampToValueAtTime(0.001, now + 0.22);
-      o1.start(now); o1.stop(now + 0.22);
-      // Bass note
-      const o2 = audioCtxMusic.createOscillator();
-      const g2 = audioCtxMusic.createGain();
-      o2.connect(g2); g2.connect(audioCtxMusic.destination);
-      o2.type = 'triangle'; o2.frequency.value = BASS[melodyIdx % BASS.length];
-      g2.gain.setValueAtTime(0.08, now);
-      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.28);
-      o2.start(now); o2.stop(now + 0.28);
-      melodyIdx++;
+      g1.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      o1.start(now); o1.stop(now + 0.2);
+      const o2 = audioCtx.createOscillator(), g2 = audioCtx.createGain();
+      o2.connect(g2); g2.connect(audioCtx.destination);
+      o2.type = 'triangle';
+      o2.frequency.value = BASS[melodyStep % BASS.length];
+      g2.gain.setValueAtTime(0.07, now);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+      o2.start(now); o2.stop(now + 0.26);
+      melodyStep++;
+      musicTimer = setTimeout(tick, 260);
     }
-    playTick();
-    musicInterval = setInterval(playTick, 260); // ~230 BPM sixteenth notes
+    musicTimer = true; // mark as started before first tick
+    tick();
   }
   function stopMusic() {
-    if (musicInterval) { clearInterval(musicInterval); musicInterval = null; }
+    if (musicTimer && musicTimer !== true) clearTimeout(musicTimer);
+    musicTimer = null;
   }
-  // Call startMusic() when entering PLAYING state, stopMusic() on exit.
+  // Call startMusic() when entering PLAYING, stopMusic() when leaving.
 
   ── WIN / GAME-OVER RESET — MANDATORY (prevents stuck screen) ─
   // ⚠️ NEVER leave the player on a static WIN or GAME_OVER screen with no way out.
