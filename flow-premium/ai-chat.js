@@ -2299,6 +2299,28 @@ async function generateSingleClip(prompt, apiKey, modelName, includeImage, progr
       }
     }
 
+    // Defensive retry: referenceImages is only supported by the new generateVideos
+    // API, not by the predictLongRunning endpoint we use. Strip it and retry —
+    // the image is still passed as instances[0].image (starting frame), which is
+    // supported everywhere and still anchors the subject's appearance.
+    if (!resp.ok && requestBody.parameters && requestBody.parameters.referenceImages) {
+      const lower = (data?.error?.message || '').toLowerCase();
+      if (resp.status === 400 && lower.includes('referenceimages')) {
+        console.log(`[SnapToAI Video] Model ${modelName} rejected referenceImages — retrying without it (image kept as starting frame).`);
+        delete requestBody.parameters.referenceImages;
+        try {
+          resp = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(requestBody)
+          });
+          data = await resp.json();
+        } catch (riErr) {
+          console.log('[SnapToAI Video] referenceImages-stripped retry threw:', riErr.message);
+        }
+      }
+    }
+
     if (!resp.ok) {
       const errorMsg = data.error?.message || `API error ${resp.status}`;
       console.log(`[SnapToAI Video] API error: ${errorMsg}`);
