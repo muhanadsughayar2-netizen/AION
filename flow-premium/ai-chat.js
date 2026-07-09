@@ -7296,10 +7296,16 @@ After defining the brand, silently answer these 5 questions:
 Use your answers to pick ONE of the Aesthetic Profiles below. Never mix profiles.
 
 PROFILE SELECTION RULES — READ BEFORE CHOOSING:
-  • GAME RULE (highest priority — check this first): If the request contains ANY of these words — game, play, player, level, levels, score, lives, jump, shoot, enemy, enemies, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter, boss, sprite, tile, coin — you MUST use Profile F. No exceptions. Do not use any other profile. Do not build a website. Build a real canvas game engine.
-  • ONLY pick Profile A (dark) when the user's request explicitly contains words like "dark", "night", "neon", "cyberpunk", "dashboard", or "developer tool". For ALL other requests — even tech, SaaS, or generic apps — default to Profile B, C, or the request's emotional tone.
-  • If you are unsure which profile to pick, choose Profile B or C. They work for nearly everything and produce far more distinctive, wow-factor results than dark glassmorphism.
-  • Never pick Profile A as a safe fallback. Dark glassmorphism is the #1 sign of a generic AI output. Surprise the user.
+  • GAME RULE (highest priority): words like game/level/player/score/jump/shoot/enemy/arcade/puzzle/Mario → Profile F. Always.
+  • PERSONAL BRAND / NAME-AS-BRAND: person's name is the brand, coach, speaker, author, photographer portfolio, coming-soon → Profile G.
+  • DARK / MOODY / CINEMATIC / ARTISTIC: creative studio, musician, artist, fashion, film, "dark", "moody", "editorial magazine" → Profile H.
+  • TECH / SAAS / DASHBOARD: explicitly dark, developer tool, analytics, crypto, "dark theme" → Profile A.
+  • WELLNESS / FOOD / HEALTH / BEAUTY: yoga, restaurant, café, food, nutrition, beauty, spa → Profile B.
+  • LUXURY / PREMIUM / HIGH-END: jewellery, architecture, premium agency, luxury brand → Profile C.
+  • CREATIVE AGENCY / BOLD PORTFOLIO: bold studio, creative agency, art director portfolio → Profile D.
+  • KIDS / FUN / QUIZ / CONSUMER APP: playful, bright, children, quiz, fun tool → Profile E.
+  • EVERYTHING ELSE: default to Profile B. It works for nearly everything and produces distinctive results.
+  • NEVER pick Profile A as a safe fallback. Dark glassmorphism is the #1 sign of a generic AI output.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   AESTHETIC PROFILES — choose the right one
@@ -7345,6 +7351,35 @@ PROFILE E — PLAYFUL / VIBRANT (Duolingo / Pitch / consumer apps)
   Radius: 20px+ | Section padding: 80px 20px
   Signature moves: illustrated inline SVG shapes, bouncy hover (transform: scale(1.05)), colorful solid-bordered cards, confetti on CTA
   BANNED: dark backgrounds, serif fonts, corporate language, muted colors
+
+PROFILE G — BOLD TYPOGRAPHY / TYPE-FORWARD (Kay Van Hans / Revert / Coming Soon / personal brand)
+  Use for: personal brands, photographers, coming-soon pages, bold portfolios, coaches, speakers, authors, any request where the PERSON or NAME is the brand
+  Colors: high-contrast 2-tone — most powerful combos: black #0A0A0A + warm white #F5F0EB, OR deep navy #0B1120 + cream #F2EDE4, OR forest #1C2B1A + off-white #FAFAF7. One electric accent for CTAs only.
+  Fonts: Bebas Neue OR Playfair Display 900 (headings, letter-spacing: -0.02em) + Inter 300 (body) from Google Fonts
+  Radius: 0-4px | Section padding: 120px 40px | Max-width: 1200px
+  Signature moves:
+    • Hero = the person's NAME in massive type (clamp(6rem,15vw,14rem)) filling the viewport — the name IS the design
+    • Full-width black-and-white or high-contrast portrait photo bleeds edge to edge
+    • ONE punchy tagline in small caps beneath the name (font-size: 0.85rem, letter-spacing: 0.3em)
+    • Alternating sections: all-white text-only → full-bleed photo → all-black reversed → repeat
+    • Minimal nav: name left, 3 links right, NO logo icon
+    • Footer: large repeated name in light grey as watermark behind contact details
+  BANNED: busy layouts, multiple colors, gradient backgrounds, rounded cards, emoji, stock-style photos
+
+PROFILE H — DARK CREATIVE EDITORIAL (Train of Thought / moody magazine / creative studio)
+  Use for: creative studios, photographers, artists, musicians, film, fashion, anything described as "dark", "moody", "cinematic", "editorial", "magazine", "artistic"
+  Colors: --bg:#0C0C0C; --surface:#141414; --text:#F0EDE8; --accent: ONE bold color (electric green #00FF87, warm amber #FFB830, or blood red #E63946)
+  Fonts: DM Serif Display 400 italic (headings) + DM Sans 300 (body) from Google Fonts
+  Radius: 6px | Section padding: 120px 48px | Max-width: 1100px
+  Signature moves:
+    • Hero: full-bleed dark cinematic photo, large serif italic headline overlaid with thin white text
+    • Text-image ratio heavily favors imagery — photos are large, text is sparse and poetic
+    • Section dividers: thin horizontal lines (1px rgba(255,255,255,0.12)) not background-color changes
+    • Pull quotes: single sentence in large italic serif, centered, generous top/bottom padding
+    • Grid of editorial photos: 3-col asymmetric, different heights, NO captions — let images speak
+    • Accent color used ONLY on links and one CTA — never for backgrounds
+    • One section of ONLY a single centered sentence in large type (2.5rem) on dark bg — dramatic pause
+  BANNED: bright backgrounds, playful fonts, emoji, colorful UI elements, busy layouts, generic stock photos
 
 PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter
