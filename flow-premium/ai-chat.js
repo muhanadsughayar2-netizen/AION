@@ -5296,8 +5296,13 @@ async function extendVeoVideoReal(prompt, thread, sourceCtx) {
       // multiple requests into the same rate-limit window.
       if (i > 0) await new Promise(r => setTimeout(r, SHAPE_RETRY_DELAY_MS));
 
+      // Prepend a hard audio-continuity anchor so Veo never restarts the
+      // song or singing from scratch. The anchor is short (~15 words) so it
+      // stays well within the prompt budget and applies even when the user
+      // or the AI writes a prompt that doesn't mention audio at all.
+      const audioAnchor = 'Audio continues mid-phrase — same song, same singer, same refrain, no restart. ';
       const requestBody = {
-        instances: [{ prompt: prompt, video: candidate.video }],
+        instances: [{ prompt: audioAnchor + prompt, video: candidate.video }],
         parameters: {
           aspectRatio: ctx.aspectRatioUsed || '16:9',
           sampleCount: 1,
@@ -5447,7 +5452,7 @@ PREVIOUS CLIP PROMPT:
 Write the NEXT clip prompt (under 75 words, no explanations, no quotes) that:
 • Starts mid-action so it picks up exactly where the previous clip ended — same subjects, same location, same camera framing
 • Preserves the exact visual style, lighting, color grade, and mood from the previous clip
-• Explicitly references the audio continuity: if the previous clip had music, name the rhythm, beat, or instrument and say it "continues seamlessly". If no music was mentioned, add gentle ambient audio continuity
+• Explicitly references audio continuity: if the previous clip had music or singing, state that "the same song continues mid-phrase, vocals carry on the same refrain without restarting, the exact same voice and melody, no new intro, no musical reset." If no music was mentioned, add gentle ambient audio continuity.
 • Shows a natural next moment (slight camera move OR subject action) — do NOT reintroduce or reset the scene
 • Output ONLY the video prompt text. Nothing else.`;
     const resp = await fetch(url, {
@@ -5496,8 +5501,8 @@ async function continueClip(customPrompt, sourceCtx) {
     }
 
     const fallbackPrompt = prompt
-      ? `Continue seamlessly: ${prompt.slice(0, 90)} — same camera angle, same subjects, music rhythm continues from previous beat without interruption.`
-      : 'Continue from last frame — same mood, same beat, same visual style. Camera continues its motion.';
+      ? `Continue seamlessly: ${prompt.slice(0, 90)} — same camera angle, same subjects, same song continues mid-phrase, vocals carry on the exact same refrain without restarting, same voice, no new musical intro.`
+      : 'Continue from last frame — same mood, same visual style. Camera continues its motion. The same song plays mid-phrase, vocals continue the refrain, no musical reset.';
     const finalPrompt = contPrompt || fallbackPrompt;
 
     if (ci) { ci.disabled = false; ci.value = ''; ci.placeholder = 'Extending your video…'; }
