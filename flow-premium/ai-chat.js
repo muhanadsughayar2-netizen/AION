@@ -1351,6 +1351,11 @@ function initVideoSubBar() {
   const snapCb = document.getElementById('vsbUseSnap');
   const stylizeRow = document.getElementById('vsbStylizeRow');
   if (snapCb && stylizeRow) {
+    // Show immediately on init if checkbox is already checked (it is by default)
+    stylizeRow.style.display = snapCb.checked ? 'flex' : 'none';
+    if (snapCb.checked) {
+      try { chrome.storage.local.set({ _videoStylizeStyle: _vsbStylizeStyle }); } catch {}
+    }
     snapCb.addEventListener('change', () => {
       stylizeRow.style.display = snapCb.checked ? 'flex' : 'none';
       if (snapCb.checked) {
