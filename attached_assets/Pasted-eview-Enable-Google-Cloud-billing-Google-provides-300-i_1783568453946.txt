@@ -1,0 +1,593 @@
+eview)
+🎁Enable Google Cloud billing → Google provides $300 in credits
+Add Billing
+✕
+◀
+Screenshot
+Screenshot
+Tap image → send to chat
+🔍 Vision mode
+Overview The ultimate visual workspace for Google AI Studio. Run Gemini, Veo, and Lyria directly with your free API key. No subscriptions. 💎"Aion AI: Your All-in-One AI Creative Studio. Use Google’s most powerful AI models directly in your browser—no monthly subscriptions, no middleman, just pure creative power." ✨ THE BUILD & SNAP SYSTEM (Your Superpower) 🎯 SNAP VISION: Instantly "snip" any part of your screen. Whether it's a bug in your code, a complex document, or a website layout, Aion AI analyzes it in seconds to give you answers, translations, or fixes. 🏗️ LIVE APP BUILDER: The ultimate no-code sandbox. Just describe the tool you want (like a "Neon Fitness Tracker" or a "Custom Calculator"), and Aion AI writes the code and launches a working app for you instantly. 🎨 THE CREATIVE SUITE 🎬 Veo 3.1 Video Studio: Turn your ideas into cinematic videos with high-quality sound automatically synced to the action. 🎙️ Broadcast Studio: Transform any file or image into a multi-voice AI podcast or talk show. Meet your hosts: Zephyr (The Host), Kore (The Expert), and Fenrir (The Creative). 🍌 Nano Banana Image Studio: Edit, upscale, and create photorealistic images with professional precision in seconds. 🎵 Lyria Music Studio: Compose studio-grade background music and soundscapes just by describing the "vibe." 🛡️ PRIVACY YOU CAN TRUST 🔐 100% Local Processing: Your keys and prompts stay inside your browser. We never see, collect, or store your data. 📡 Direct Connection: Your data travels directly to Google, ensuring your work remains private and secure. 🎁 $300 CREDIT BONUS New Google Cloud accounts can receive $300 in free platform credits [1]. Use these credits to explore heavy video (Veo) and audio (Lyria) generation for free! 🛠️ START IN 15 SECONDS Install Aion AI. Connect: Use our 1-click link to get your free key from Google AI Studio. Create: Paste your key and start building the future. See less create for me a website that matches my current theme in the chrome extension and make it ompressive
+This sounds like a total game-changer for anyone tired of monthly subscriptions! Since Aion AI is all about "pure
+
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
+build it [BUILD-SEED:6362051 TIME:2026-07-09 03:37] This is a completely fresh build — you MUST pick brand-new Pexels photo IDs not used in any previous response. Do not reuse IDs you have used before. The seed guarantees uniqueness: treat it as a creative direction token.
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aion AI | The Sovereign Creative Engine</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Plus Jakarta Sans', 'sans-serif'],
+            body: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              black: '#050508',
+              surface: '#0d0d14',
+              accent: '#8B5CF6',
+              cyan: '#06B6D4',
+              glass: 'rgba(255, 255, 255, 0.03)',
+              border: 'rgba(255, 255, 255, 0.08)'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #050508;
+      --accent: #8B5CF6;
+    }
+    body { background-color: var(--bg); color: #f0f0ff; font-family: 'Inter', sans-serif; }
+    .glass { background: var(--brand-glass); backdrop-filter: blur(12px); border: 1px solid var(--brand-border); }
+    .gradient-text { background: linear-gradient(135deg, #fff 30%, #8B5CF6 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .glow-hover:hover { box-shadow: 0 0 30px rgba(139, 92, 246, 0.3); border-color: rgba(139, 92, 246, 0.5); }
+    
+    .reveal { opacity: 1; transform: none; }
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp { 
+      from { opacity: 0; transform: translateY(30px); } 
+      to { opacity: 1; transform: translateY(0); } 
+    }
+
+    .shimmer {
+      position: relative; overflow: hidden;
+    }
+    .shimmer::after {
+      content: ''; position: absolute; top: -50%; left: -50%; width: 200%; height: 200%;
+      background: linear-gradient(45deg, transparent 45%, rgba(255,255,255,0.05) 50%, transparent 55%);
+      animation: shimmer 4s infinite linear;
+    }
+    @keyframes shimmer { 0% { transform: translate(-30%, -30%); } 100% { transform: translate(30%, 30%); } }
+
+    .snap-cursor {
+      position: absolute; width: 100px; height: 100px; border: 2px solid var(--accent);
+      background: rgba(139, 92, 246, 0.1); pointer-events: none; transition: 0.1s ease-out;
+      display: none; z-index: 50;
+    }
+    
+    .orb {
+      position: absolute; width: 400px; height: 400px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(139, 92, 246, 0.15) 0%, transparent 70%);
+      filter: blur(60px); z-index: -1;
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-brand-accent/30">
+
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-[100] px-6 py-4">
+    <div class="max-w-[1100px] mx-auto glass rounded-full px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-brand-accent rounded-lg flex items-center justify-center">
+          <i data-lucide="zap" class="text-white w-5 h-5 fill-current"></i>
+        </div>
+        <span class="font-heading font-extrabold text-xl tracking-tight">AION AI</span>
+      </div>
+      <div class="hidden md:flex items-center gap-8 text-sm font-medium text-white/60">
+        <a href="#features" class="hover:text-white transition-colors">Workspace</a>
+        <a href="#creative" class="hover:text-white transition-colors">Creative Suite</a>
+        <a href="#privacy" class="hover:text-white transition-colors">Privacy</a>
+        <a href="#install" class="hover:text-white transition-colors">Setup</a>
+      </div>
+      <a href="#install" class="bg-white text-brand-black px-5 py-2 rounded-full text-sm font-bold hover:scale-105 transition-transform">Get Extension</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <section class="relative min-h-screen flex items-center pt-20 overflow-hidden">
+    <div class="orb top-[-100px] right-[-100px]"></div>
+    <div class="orb bottom-[-100px] left-[-100px] bg-brand-cyan/10"></div>
+    
+    <div class="max-w-[1100px] mx-auto px-6 grid lg:grid-cols-2 gap-12 items-center">
+      <div class="reveal">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-accent/10 border border-brand-accent/20 text-brand-accent text-xs font-bold uppercase tracking-widest mb-6">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-brand-accent opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-brand-accent"></span>
+          </span>
+          Powered by Gemini 1.5 Pro
+        </div>
+        <h1 class="font-heading text-5xl md:text-7xl leading-[1.1] mb-6 gradient-text">
+          Pure Power.<br>Zero Middlemen.
+        </h1>
+        <p class="text-lg text-white/50 leading-relaxed max-w-lg mb-10">
+          The ultimate visual workspace for Google AI Studio. Run Gemini, Veo, and Lyria directly with your own API key. No monthly subscriptions. Just pure creative speed.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <a href="#install" class="bg-brand-accent text-white px-8 py-4 rounded-xl font-bold flex items-center gap-3 hover:scale-105 transition-all glow-hover">
+            Install Aion AI <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </a>
+          <div class="flex items-center gap-3 px-6 py-4 glass rounded-xl text-sm font-medium">
+            <i data-lucide="shield-check" class="text-brand-cyan w-5 h-5"></i>
+            100% Private API Connection
+          </div>
+        </div>
+      </div>
+      
+      <div class="relative reveal delay-200">
+        <div class="glass rounded-2xl p-2 rotate-2 hover:rotate-0 transition-transform duration-700 aspect-video relative overflow-hidden group">
+          <img src="https://images.pexels.com/photos/1103970/pexels-photo-1103970.jpeg?auto=compress&cs=tinysrgb&w=1200" 
+               alt="AI Interface Preview" 
+               class="w-full h-full object-cover rounded-xl"
+               onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'">
+          <div class="absolute inset-0 bg-gradient-to-t from-brand-black/80 to-transparent flex flex-col justify-end p-8">
+            <div class="flex gap-2 mb-4">
+              <div class="w-12 h-2 bg-brand-accent rounded-full"></div>
+              <div class="w-6 h-2 bg-white/20 rounded-full"></div>
+              <div class="w-6 h-2 bg-white/20 rounded-full"></div>
+            </div>
+            <p class="text-white font-bold text-xl">Gemini 1.5 Flash Active</p>
+            <p class="text-white/50 text-sm">Processing 1M tokens context window...</p>
+          </div>
+        </div>
+        <!-- Decorative Elements -->
+        <div class="absolute -top-6 -right-6 w-24 h-24 glass rounded-full flex items-center justify-center animate-bounce duration-[3000ms]">
+          <i data-lucide="sparkles" class="text-brand-accent w-8 h-8"></i>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Snap Vision Feature -->
+  <section id="features" class="py-32 relative bg-brand-surface/30">
+    <div class="max-w-[1100px] mx-auto px-6">
+      <div class="text-center mb-20 reveal">
+        <h2 class="font-heading text-4xl mb-4">The Build & Snap System</h2>
+        <p class="text-white/50 max-w-2xl mx-auto">Your superpower for instant analysis and creation. From screen snips to working applications in seconds.</p>
+      </div>
+
+      <div class="grid md:grid-cols-2 gap-8">
+        <!-- Snap Vision Card -->
+        <div class="glass p-8 rounded-3xl relative overflow-hidden group reveal" onmousemove="handleSnapMove(event)" onmouseenter="showSnap()" onmouseleave="hideSnap()">
+          <div class="snap-cursor" id="snapBox"></div>
+          <div class="mb-6 w-14 h-14 bg-brand-cyan/10 rounded-2xl flex items-center justify-center">
+            <i data-lucide="scan-eye" class="text-brand-cyan w-8 h-8"></i>
+          </div>
+          <h3 class="font-heading text-2xl mb-4">Snap Vision</h3>
+          <p class="text-white/50 mb-8">Instantly "snip" any part of your screen. Whether it's a bug in your code, a complex document, or a website layout, Aion AI analyzes it in seconds to give you fixes or translations.</p>
+          <div class="relative h-48 bg-brand-black rounded-xl border border-brand-border flex items-center justify-center overflow-hidden">
+             <img src="https://images.pexels.com/photos/574071/pexels-photo-574071.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                  class="opacity-40 w-full h-full object-cover"
+                  onerror="this.style.display='none';this.parentElement.style.background='#050508'">
+             <div class="absolute inset-0 flex items-center justify-center">
+               <div class="px-4 py-2 bg-brand-cyan text-brand-black font-bold rounded text-xs animate-pulse">ANALYZING VIEWPORT...</div>
+             </div>
+          </div>
+        </div>
+
+        <!-- Live App Builder -->
+        <div class="glass p-8 rounded-3xl relative overflow-hidden group reveal delay-100">
+          <div class="mb-6 w-14 h-14 bg-brand-accent/10 rounded-2xl flex items-center justify-center">
+            <i data-lucide="cpu" class="text-brand-accent w-8 h-8"></i>
+          </div>
+          <h3 class="font-heading text-2xl mb-4">Live App Builder</h3>
+          <p class="text-white/50 mb-8">The ultimate no-code sandbox. Describe the tool you want—like a "Neon Fitness Tracker"—and Aion AI writes the code and launches a working app instantly.</p>
+          <div class="bg-brand-black/50 p-4 rounded-xl border border-brand-border font-mono text-xs text-brand-accent/80">
+            <div class="flex gap-2 mb-2"><div class="w-2 h-2 rounded-full bg-red-500"></div><div class="w-2 h-2 rounded-full bg-yellow-500"></div><div class="w-2 h-2 rounded-full bg-green-500"></div></div>
+            <p class="mb-1">Creating: <span class="text-white">Neon_Tracker.jsx</span></p>
+            <p class="opacity-50">const App = () => {</p>
+            <p class="opacity-50 ml-4">return &lt;div className="bg-black"&gt;</p>
+            <p class="opacity-50 ml-8">Build Progress: <span class="text-brand-cyan">98%</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Creative Suite Tabs -->
+  <section id="creative" class="py-32">
+    <div class="max-w-[1100px] mx-auto px-6">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-12 gap-6 reveal">
+        <div>
+          <h2 class="font-heading text-4xl mb-4">The Creative Suite</h2>
+          <p class="text-white/50">Google's premium generation models, unlocked for you.</p>
+        </div>
+        <div class="flex gap-2 glass p-1 rounded-full overflow-x-auto whitespace-nowrap">
+          <button onclick="showTab('veo', this)" class="tab-btn active px-6 py-2 rounded-full text-sm font-bold transition-all">Veo 3.1</button>
+          <button onclick="showTab('broadcast', this)" class="tab-btn px-6 py-2 rounded-full text-sm font-bold transition-all opacity-50">Broadcast</button>
+          <button onclick="showTab('banana', this)" class="tab-btn px-6 py-2 rounded-full text-sm font-bold transition-all opacity-50">Nano Banana</button>
+          <button onclick="showTab('lyria', this)" class="tab-btn px-6 py-2 rounded-full text-sm font-bold transition-all opacity-50">Lyria</button>
+        </div>
+      </div>
+
+      <!-- Tab Content: Veo -->
+      <div id="veo" class="tab-panel active reveal">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+          <div class="relative rounded-3xl overflow-hidden aspect-video glass">
+            <img src="https://images.pexels.com/photos/2510428/pexels-photo-2510428.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="Cinematic Video" class="w-full h-full object-cover"
+                 onerror="this.style.display='none';this.parentElement.style.background='#111'">
+            <div class="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border border-white/30 cursor-pointer hover:scale-110 transition-transform">
+                <i data-lucide="play" class="text-white fill-current w-6 h-6"></i>
+              </div>
+            </div>
+          </div>
+          <div>
+            <h3 class="font-heading text-3xl mb-6">Veo 3.1 Video Studio</h3>
+            <p class="text-white/50 mb-8 leading-relaxed">Turn your ideas into cinematic videos with high-quality sound automatically synced to the action. Direct prompt-to-video pipeline with 4K upscaling and temporal consistency.</p>
+            <ul class="space-y-4 mb-10">
+              <li class="flex items-center gap-3 text-sm font-medium"><i data-lucide="check-circle" class="text-brand-accent w-5 h-5"></i> 1080p to 4K Generation</li>
+              <li class="flex items-center gap-3 text-sm font-medium"><i data-lucide="check-circle" class="text-brand-accent w-5 h-5"></i> Automatic Audio-Visual Sync</li>
+              <li class="flex items-center gap-3 text-sm font-medium"><i data-lucide="check-circle" class="text-brand-accent w-5 h-5"></i> Style Transfer & Camera Control</li>
+            </ul>
+            <button class="w-full py-4 bg-white/5 border border-white/10 rounded-xl font-bold hover:bg-white/10 transition-colors">Launch Video Studio</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Broadcast -->
+      <div id="broadcast" class="tab-panel hidden reveal">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <h3 class="font-heading text-3xl mb-6">Broadcast Studio</h3>
+            <p class="text-white/50 mb-8 leading-relaxed">Transform any file or image into a multi-voice AI podcast. Our specialized agents analyze your content and debate it in real-time.</p>
+            <div class="grid grid-cols-3 gap-4 mb-10">
+              <div class="text-center">
+                <div class="w-16 h-16 rounded-full bg-brand-accent/20 mx-auto mb-2 flex items-center justify-center border border-brand-accent/30">
+                  <i data-lucide="user" class="text-brand-accent w-6 h-6"></i>
+                </div>
+                <p class="text-xs font-bold">Zephyr</p>
+                <p class="text-[10px] opacity-50">The Host</p>
+              </div>
+              <div class="text-center">
+                <div class="w-16 h-16 rounded-full bg-brand-cyan/20 mx-auto mb-2 flex items-center justify-center border border-brand-cyan/30">
+                  <i data-lucide="award" class="text-brand-cyan w-6 h-6"></i>
+                </div>
+                <p class="text-xs font-bold">Kore</p>
+                <p class="text-[10px] opacity-50">The Expert</p>
+              </div>
+              <div class="text-center">
+                <div class="w-16 h-16 rounded-full bg-orange-500/20 mx-auto mb-2 flex items-center justify-center border border-orange-500/30">
+                  <i data-lucide="palette" class="text-orange-500 w-6 h-6"></i>
+                </div>
+                <p class="text-xs font-bold">Fenrir</p>
+                <p class="text-[10px] opacity-50">The Creative</p>
+              </div>
+            </div>
+            <button class="w-full py-4 bg-brand-accent rounded-xl font-bold hover:scale-[1.02] transition-transform">Start Your Show</button>
+          </div>
+          <div class="glass p-8 rounded-3xl border-brand-accent/20">
+            <div class="flex items-center gap-4 mb-6">
+              <div class="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+              <span class="text-xs font-bold uppercase tracking-widest opacity-50">Live Recording</span>
+            </div>
+            <div class="space-y-6">
+              <div class="flex gap-4">
+                <div class="w-8 h-8 rounded-full bg-brand-accent"></div>
+                <div class="flex-1 bg-white/5 rounded-2xl rounded-tl-none p-4 text-sm italic">"Kore, what's your take on the latest Gemini 1.5 token efficiency?"</div>
+              </div>
+              <div class="flex gap-4 flex-row-reverse">
+                <div class="w-8 h-8 rounded-full bg-brand-cyan"></div>
+                <div class="flex-1 bg-brand-cyan/10 rounded-2xl rounded-tr-none p-4 text-sm font-medium">"It's revolutionary, Zephyr. We're seeing near-perfect retrieval across 2M tokens."</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Nano Banana -->
+      <div id="banana" class="tab-panel hidden reveal">
+        <div class="grid lg:grid-cols-2 gap-12 items-center">
+          <div class="grid grid-cols-2 gap-4">
+            <div class="aspect-square rounded-2xl overflow-hidden glass">
+              <img src="https://images.pexels.com/photos/3493777/pexels-photo-3493777.jpeg?auto=compress&cs=tinysrgb&w=400" 
+                   class="w-full h-full object-cover" onerror="this.style.display='none';this.parentElement.style.background='#222'">
+            </div>
+            <div class="aspect-square rounded-2xl overflow-hidden glass mt-8">
+              <img src="https://images.pexels.com/photos/1092730/pexels-photo-1092730.jpeg?auto=compress&cs=tinysrgb&w=400" 
+                   class="w-full h-full object-cover" onerror="this.style.display='none';this.parentElement.style.background='#222'">
+            </div>
+          </div>
+          <div>
+            <h3 class="font-heading text-3xl mb-6">Nano Banana Image Studio</h3>
+            <p class="text-white/50 mb-8 leading-relaxed">The fastest image editor in your browser. Edit, upscale, and create photorealistic images with professional precision in seconds. Powered by Google's latest diffusion architecture.</p>
+            <div class="space-y-4">
+              <div class="glass p-4 rounded-xl flex items-center justify-between">
+                <span class="text-sm font-bold">4X AI Upscaling</span>
+                <i data-lucide="zap" class="text-brand-accent w-5 h-5"></i>
+              </div>
+              <div class="glass p-4 rounded-xl flex items-center justify-between">
+                <span class="text-sm font-bold">Generative Fill</span>
+                <i data-lucide="layers" class="text-brand-cyan w-5 h-5"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Content: Lyria -->
+      <div id="lyria" class="tab-panel hidden reveal">
+        <div class="glass p-12 rounded-[40px] text-center max-w-3xl mx-auto">
+          <div class="w-20 h-20 bg-brand-accent/20 rounded-full flex items-center justify-center mx-auto mb-8 border border-brand-accent/30">
+            <i data-lucide="music" class="text-brand-accent w-10 h-10"></i>
+          </div>
+          <h3 class="font-heading text-3xl mb-4">Lyria Music Studio</h3>
+          <p class="text-white/50 mb-10">Compose studio-grade background music and soundscapes just by describing the "vibe". Perfect for streamers, creators, and developers.</p>
+          <div class="flex items-center justify-center gap-1 h-12 mb-10">
+            <div class="w-1 bg-brand-accent rounded-full animate-[bounce_1s_infinite]"></div>
+            <div class="w-1 bg-brand-accent rounded-full animate-[bounce_1.2s_infinite]"></div>
+            <div class="w-1 bg-brand-accent rounded-full animate-[bounce_0.8s_infinite]"></div>
+            <div class="w-1 bg-brand-accent rounded-full animate-[bounce_1.5s_infinite]"></div>
+            <div class="w-1 bg-brand-accent rounded-full animate-[bounce_1.1s_infinite]"></div>
+          </div>
+          <button class="bg-white text-brand-black px-10 py-4 rounded-full font-bold hover:scale-105 transition-transform">Generate Soundscape</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Privacy Section -->
+  <section id="privacy" class="py-32 bg-brand-surface">
+    <div class="max-w-[1100px] mx-auto px-6">
+      <div class="grid lg:grid-cols-2 gap-20 items-center">
+        <div class="reveal">
+          <h2 class="font-heading text-4xl mb-6">Privacy You Can Trust</h2>
+          <p class="text-lg text-white/50 mb-10">We believe in a world where AI doesn't mean surveillance. Aion AI is built on a foundation of radical privacy.</p>
+          
+          <div class="space-y-8">
+            <div class="flex gap-6">
+              <div class="w-12 h-12 shrink-0 glass rounded-xl flex items-center justify-center">
+                <i data-lucide="lock" class="text-brand-accent w-6 h-6"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-lg mb-1">100% Local Processing</h4>
+                <p class="text-sm text-white/40">Your keys and prompts stay inside your browser. We never see, collect, or store your data.</p>
+              </div>
+            </div>
+            <div class="flex gap-6">
+              <div class="w-12 h-12 shrink-0 glass rounded-xl flex items-center justify-center">
+                <i data-lucide="satellite" class="text-brand-cyan w-6 h-6"></i>
+              </div>
+              <div>
+                <h4 class="font-bold text-lg mb-1">Direct Connection</h4>
+                <p class="text-sm text-white/40">Your data travels directly to Google's servers via their secure API, ensuring your work remains private.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="relative reveal delay-200">
+          <div class="glass p-1 rounded-3xl overflow-hidden aspect-square relative shimmer">
+            <img src="https://images.pexels.com/photos/3861969/pexels-photo-3861969.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 class="w-full h-full object-cover rounded-[22px] opacity-60"
+                 onerror="this.style.display='none';this.parentElement.style.background='#080808'">
+            <div class="absolute inset-0 flex items-center justify-center p-12">
+              <div class="text-center">
+                <i data-lucide="shield" class="w-16 h-16 text-brand-accent mx-auto mb-6"></i>
+                <p class="font-heading text-xl">Encrypted End-to-End</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA / Setup -->
+  <section id="install" class="py-32 relative overflow-hidden">
+    <div class="orb top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 opacity-20"></div>
+    <div class="max-w-[1100px] mx-auto px-6 text-center reveal">
+      <h2 class="font-heading text-5xl md:text-6xl mb-8">Start in 15 Seconds</h2>
+      <p class="text-white/50 mb-16 max-w-xl mx-auto">Get Google's most powerful AI models working for you today. No credit card required to start.</p>
+      
+      <div class="grid md:grid-cols-3 gap-8 mb-20">
+        <div class="glass p-8 rounded-3xl border-white/5">
+          <div class="text-4xl font-heading text-brand-accent mb-4">01</div>
+          <h4 class="font-bold mb-2">Install Aion AI</h4>
+          <p class="text-xs text-white/40">Download the Chrome Extension from the official store.</p>
+        </div>
+        <div class="glass p-8 rounded-3xl border-white/5">
+          <div class="text-4xl font-heading text-brand-cyan mb-4">02</div>
+          <h4 class="font-bold mb-2">Connect Key</h4>
+          <p class="text-xs text-white/40">Use our 1-click link to get your free key from Google AI Studio.</p>
+        </div>
+        <div class="glass p-8 rounded-3xl border-white/5">
+          <div class="text-4xl font-heading text-brand-accent mb-4">03</div>
+          <h4 class="font-bold mb-2">Create</h4>
+          <p class="text-xs text-white/40">Paste your key and start building the future.</p>
+        </div>
+      </div>
+
+      <div class="bg-brand-accent/10 border border-brand-accent/20 p-8 rounded-[40px] inline-block max-w-2xl">
+        <div class="flex items-center gap-4 mb-4 justify-center">
+          <i data-lucide="gift" class="text-brand-accent w-6 h-6"></i>
+          <span class="font-bold text-xl">$300 Credit Bonus</span>
+        </div>
+        <p class="text-sm text-white/60 mb-6">New Google Cloud accounts can receive $300 in free platform credits. Use these to explore heavy video and audio generation for free!</p>
+        <button class="bg-brand-accent text-white px-10 py-4 rounded-xl font-bold hover:scale-105 transition-transform">Get Started Now</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-20 border-t border-brand-border">
+    <div class="max-w-[1100px] mx-auto px-6">
+      <div class="flex flex-col md:flex-row justify-between gap-12 mb-20">
+        <div class="max-w-xs">
+          <div class="flex items-center gap-2 mb-6">
+            <div class="w-8 h-8 bg-brand-accent rounded-lg flex items-center justify-center">
+              <i data-lucide="zap" class="text-white w-5 h-5 fill-current"></i>
+            </div>
+            <span class="font-heading font-extrabold text-xl tracking-tight">AION AI</span>
+          </div>
+          <p class="text-sm text-white/40 leading-relaxed">Bringing the world's most powerful AI models directly to your browser, privately and without subscriptions.</p>
+        </div>
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-12">
+          <div>
+            <h5 class="font-bold mb-6 text-sm">Product</h5>
+            <ul class="space-y-4 text-sm text-white/40">
+              <li><a href="#" class="hover:text-brand-accent">Workspace</a></li>
+              <li><a href="#" class="hover:text-brand-accent">Creative Suite</a></li>
+              <li><a href="#" class="hover:text-brand-accent">API Docs</a></li>
+            </ul>
+          </div>
+          <div>
+            <h5 class="font-bold mb-6 text-sm">Legal</h5>
+            <ul class="space-y-4 text-sm text-white/40">
+              <li><button onclick="openLegal('Privacy Policy', privacyContent)" class="hover:text-brand-accent">Privacy</button></li>
+              <li><button onclick="openLegal('Terms of Service', termsContent)" class="hover:text-brand-accent">Terms</button></li>
+              <li><button onclick="openLegal('Cookie Policy', cookieContent)" class="hover:text-brand-accent">Cookies</button></li>
+            </ul>
+          </div>
+          <div class="col-span-2 md:col-span-1">
+            <h5 class="font-bold mb-6 text-sm">Newsletter</h5>
+            <div class="flex gap-2">
+              <input type="email" placeholder="Email" class="bg-white/5 border border-white/10 rounded-lg px-4 py-2 text-sm w-full outline-none focus:border-brand-accent">
+              <button class="p-2 bg-brand-accent rounded-lg"><i data-lucide="send" class="w-4 h-4"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="flex flex-col md:flex-row justify-between items-center gap-6 pt-10 border-t border-white/5 text-[10px] text-white/30 uppercase tracking-[0.2em] font-bold">
+        <p>© 2024 Aion AI Creative. All Rights Reserved.</p>
+        <p>Built for the Sovereign Creator.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Legal Modal -->
+  <div id="legalModal" class="fixed inset-0 bg-brand-black/95 z-[1000] hidden items-center justify-center p-6">
+    <div class="glass max-w-2xl w-full max-height-[80vh] overflow-y-auto p-12 rounded-3xl relative">
+      <button onclick="closeLegal()" class="absolute top-6 right-6 text-white/50 hover:text-white">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+      <h2 id="legalTitle" class="font-heading text-3xl mb-8"></h2>
+      <div id="legalBody" class="text-white/60 text-sm leading-relaxed space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // Initialize Icons
+      lucide.createIcons();
+
+      // Intersection Observer for Scroll Animations
+      const _io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add('visible');
+            _io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.1 });
+
+      document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+      
+      // Safety Fallback
+      setTimeout(() => {
+        document.querySelectorAll('.reveal').forEach(el => {
+          el.style.opacity = '1';
+          el.style.transform = 'none';
+        });
+      }, 1500);
+
+      // Tab Logic
+      window.showTab = function(id, btn) {
+        document.querySelectorAll('.tab-panel').forEach(p => {
+          p.classList.add('hidden');
+          p.classList.remove('block');
+        });
+        document.querySelectorAll('.tab-btn').forEach(b => {
+          b.classList.remove('active', 'bg-brand-accent');
+          b.classList.add('opacity-50');
+        });
+        
+        const panel = document.getElementById(id);
+        panel.classList.remove('hidden');
+        panel.classList.add('block');
+        
+        btn.classList.add('active', 'bg-brand-accent');
+        btn.classList.remove('opacity-50');
+      };
+
+      // Snap Vision Simulation
+      const snapBox = document.getElementById('snapBox');
+      window.handleSnapMove = function(e) {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const x = e.clientX - rect.left - 50;
+        const y = e.clientY - rect.top - 50;
+        snapBox.style.left = x + 'px';
+        snapBox.style.top = y + 'px';
+      };
+      window.showSnap = () => snapBox.style.display = 'block';
+      window.hideSnap = () => snapBox.style.display = 'none';
+
+      // Legal Modals
+      window.openLegal = function(title, body) {
+        document.getElementById('legalTitle').textContent = title;
+        document.getElementById('legalBody').innerHTML = body;
+        document.getElementById('legalModal').style.display = 'flex';
+      };
+      window.closeLegal = function() {
+        document.getElementById('legalModal').style.display = 'none';
+      };
+
+      // Content for Modals
+      window.privacyContent = `
+        <p>Aion AI operates on a "Zero-Knowledge" architecture. We do not maintain any backend servers that store user data, prompts, or API keys.</p>
+        <p>Your Google AI Studio API key is stored locally within your browser's secure storage (localStorage) and is never transmitted to our servers. All AI interactions occur via direct client-side requests to Google's API endpoints.</p>
+        <p>We do not track your usage patterns beyond basic, anonymous extension installation metrics provided by the Chrome Web Store.</p>
+      `;
+      window.termsContent = `
+        <p>Aion AI is a visual interface tool. By using this extension, you agree that you are solely responsible for your interactions with Google AI Studio and adherence to Google's Generative AI Prohibited Use Policy.</p>
+        <p>Aion AI is provided "as is" without warranty of any kind. We are not responsible for any costs incurred on your Google Cloud account or any data loss that may occur through the use of AI generation models.</p>
+      `;
+      window.cookieContent = `
+        <p>Aion AI does not use tracking cookies. We utilize local browser storage only to maintain your interface preferences and locally-stored API keys, which are necessary for the extension's core functionality.</p>
+      `;
+
+      // Smooth Scroll
+      document.querySelectorAll('a[href^="#"]').forEach(a => {
+        a.addEventListener('click', function(e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            window.scrollTo({
+              top: target.offsetTop - 100,
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+
+    })();
+  </script>
+</body>
+</html>

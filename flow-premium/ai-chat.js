@@ -7325,8 +7325,10 @@ PROFILE SELECTION RULES — READ BEFORE CHOOSING (follow this order top to botto
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 PROFILE A — MODERN DARK TECH (Linear / Vercel / Stripe)
-  Use for: SaaS tools, developer products, dashboards, productivity apps, games
-  ⚠️  ONLY use this when the request explicitly mentions dark, neon, cyberpunk, dashboard, or dev tool.
+  🚫 FORBIDDEN unless the request literally contains one of: "dark", "neon", "cyberpunk", "dashboard"
+  🚫 AI tools, SaaS products, apps, extensions, platforms → Profile B (NEVER Profile A for these)
+  🚫 "AI", "app", "tool", "software", "studio", "extension" alone DO NOT trigger this profile
+  ✅ ONLY triggers on explicit darkness keywords. When in doubt → Profile B.
   Colors: --bg:#07070f; --text:#f0f0ff; --surface:rgba(255,255,255,0.04); --accent: vivid (violet, cyan, emerald)
   Fonts: Plus Jakarta Sans (headings 700-900) + Inter (body 400) from Google Fonts
   Radius: 14px | Section padding: 100px 24px | Max-width: 1100px
@@ -9895,25 +9897,37 @@ async function handleSend() {
     // Determines how many images THIS site needs (1-15), writes one cinematic
     // prompt per slot, generates them all in parallel, and injects placeholders
     // into the build prompt so the AI places each one in the right section.
+    // Runs even when the user attaches their own images — AI images are offset
+    // to start AFTER the user-provided images so both coexist.
     // Fails silently → build falls back to Pexels stock photos.
-    if (!_isContinuationSend && !_lastBuiltCode && imageParts.length === 0) {
+    if (!_isContinuationSend && !_lastBuiltCode) {
       const _aiImgStatusBubble = addBubble('', 'ai');
       const _aiGeneratedImages = await _autoGenerateBuildImages(prompt, _aiImgStatusBubble);
       if (_aiGeneratedImages.length > 0) {
-        _pendingBuildImages = _aiGeneratedImages;
+        // Offset AI image indices so they start AFTER any user-provided product images
+        const _aiImgOffset = imageParts.length;
+        // Merge: keep user images first, then AI images
+        const _userImgs = _aiImgOffset > 0 ? (_pendingBuildImages || []) : [];
+        _pendingBuildImages = [..._userImgs, ..._aiGeneratedImages];
+
         const n = _aiGeneratedImages.length;
-        const placeholders = _aiGeneratedImages.map((_, i) => `__SNAP_IMG_${i}__`).join(', ');
+        const placeholders = _aiGeneratedImages.map((_, i) => `__SNAP_IMG_${_aiImgOffset + i}__`).join(', ');
 
         // Build a dynamic placement guide so the AI knows where each image goes
         const placementGuide = _aiGeneratedImages.map((_, i) => {
-          if (i === 0) return `__SNAP_IMG_0__ → HERO section, full-bleed above the fold`;
-          if (i === n - 1) return `__SNAP_IMG_${i}__ → CLOSING/CTA section at the bottom`;
-          return `__SNAP_IMG_${i}__ → section ${i + 1} of the page (feature, gallery, testimonial, etc.)`;
+          const idx = _aiImgOffset + i;
+          if (_aiImgOffset === 0 && i === 0) return `__SNAP_IMG_${idx}__ → HERO section, full-bleed above the fold`;
+          if (i === n - 1) return `__SNAP_IMG_${idx}__ → CLOSING/CTA section at the bottom`;
+          return `__SNAP_IMG_${idx}__ → section ${i + 1} of the page (feature, gallery, testimonial, background, etc.)`;
         }).join('; ');
 
+        const _aiImgLabel = _aiImgOffset > 0
+          ? `AI BACKGROUND IMAGE INSTRUCTION: ${n} AI-generated atmospheric/scene images supplement the product shots above. Use them in every section NOT already covered by the product images.`
+          : `AI IMAGE INSTRUCTION: ${n} custom AI-generated images have been created specifically for this site — one per major visual section. Use ALL ${n} of them.`;
+
         prompt +=
-          `\n\nAI IMAGE INSTRUCTION: ${n} custom AI-generated images have been created specifically for this site — one per major visual section. ` +
-          `Use ALL ${n} of them. Do NOT use any Pexels stock photos. ` +
+          `\n\n${_aiImgLabel} ` +
+          `Do NOT use any Pexels stock photos. ` +
           `Placeholder strings to use as <img> src values: ${placeholders}. ` +
           `Placement guide: ${placementGuide}. ` +
           `Style every image: style="width:100%;height:100%;object-fit:cover;" ` +
