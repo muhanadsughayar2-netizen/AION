@@ -9757,6 +9757,61 @@ async function _searchWebForDesignInspiration(buildPrompt, apiKey) {
 }
 // ── End web inspiration search ────────────────────────────────────────────────
 
+// ── Game Design AI Agent ───────────────────────────────────────────────────────
+// Runs BEFORE every game build. Uses Gemini 2.5 Pro to think through and author
+// a complete, specific game design document — concept, world, 3 levels, 2 enemy
+// types, visual palette, music mood, special mechanic. The builder then follows
+// this AI-authored spec exactly instead of guessing. Fails silently.
+async function _designGameWithAI(buildPrompt, apiKey) {
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-pro:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text:
+            `You are a lead game designer at a world-class studio. ` +
+            `Your job is to read a game request and produce a vivid, specific, original game design document. ` +
+            `Be creative and concrete — no generic phrases like "exciting levels" or "fun enemies". ` +
+            `Every detail must be specific enough that a developer can build it without asking any questions. ` +
+            `Output ONLY the design document. No preamble, no meta-commentary.`
+          }] },
+          contents: [{ role: 'user', parts: [{ text:
+            `Game request: "${buildPrompt}"\n\n` +
+            `Write a complete game design document with EXACTLY these sections:\n\n` +
+            `CONCEPT: [One punchy sentence — the unique hook that makes this game irresistible]\n\n` +
+            `WORLD & THEME: [Specific setting, mood, atmosphere — mention exact colors, time of day, weather]\n\n` +
+            `PLAYER CHARACTER: [Name, appearance (exact pixel art colors), one special ability]\n\n` +
+            `LEVEL 1 — [Invent a name]: [Specific theme, layout feel, visual signature, main challenge]\n` +
+            `LEVEL 2 — [Invent a name]: [What changes — new hazard, faster pace, new visual element]\n` +
+            `LEVEL 3 — [Invent a name]: [Climax — hardest, most visually striking, epic ending]\n\n` +
+            `ENEMY A — [Name]: [Exact behavior, how defeated, exact pixel art colors]\n` +
+            `ENEMY B — [Name]: [Different behavior, different weakness, different look]\n\n` +
+            `VISUAL PALETTE:\n` +
+            `  Sky: [exact hex color]\n` +
+            `  Ground tiles: [exact hex color + texture feel]\n` +
+            `  Platform tiles: [exact hex color]\n` +
+            `  Player: [exact colors per body part]\n` +
+            `  Enemies: [colors for each enemy type]\n\n` +
+            `MUSIC: [Tempo BPM range, feel, note style — e.g. "120BPM bouncy chiptune, major key"]\n\n` +
+            `PHYSICS FEEL: [Exactly how movement should feel — e.g. "floaty with high jump, slow walk"]\n\n` +
+            `SPECIAL MECHANIC: [One unique mechanic that makes this game different from any other]`
+          }] }],
+          generationConfig: { maxOutputTokens: 1200, temperature: 1.0 }
+        }),
+        signal: AbortSignal.timeout(20000)
+      }
+    );
+    if (!res.ok) return '';
+    const data = await res.json();
+    return (data.candidates?.[0]?.content?.parts?.[0]?.text || '').trim();
+  } catch (e) {
+    console.warn('[SnapToAI] Game design agent failed:', e.message);
+    return '';
+  }
+}
+
 // ── Game mechanics reference search ───────────────────────────────────────────
 // When the user asks to build a game, this runs BEFORE the build to look up
 // real game dev references: physics constants, enemy AI patterns, level design,
@@ -10056,24 +10111,30 @@ async function handleSend() {
       const _isGameBuild = _gameKeywords.test(prompt);
 
       if (_isGameBuild) {
-        // GAME BUILD → look up real game mechanics, physics, AI references
+        // GAME BUILD — two AI agents fire in parallel before the builder:
+        // 1. Design agent (Gemini 2.5 Pro) — thinks up the full game spec
+        // 2. Mechanics search — looks up real physics/AI references from the web
         const _gameBubble = addBubble(
           `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.65);font-size:13px;">` +
-          `<span style="font-size:18px;">🎮</span>Looking up real game mechanics & physics references for your game…</div>`,
+          `<span style="font-size:18px;">🎮</span>Designing your game with Gemini 2.5 Pro…</div>`,
           'ai'
         );
         if (_searchApiKey) {
-          const _gameBrief = await _searchForGameMechanics(prompt, _searchApiKey);
-          if (_gameBrief) {
-            prompt += `\n\nGAME MECHANICS RESEARCH — found from real game dev references on the web. Use these values and techniques alongside the Mario Physics Bible above. Real-world data takes priority over defaults:\n${_gameBrief}`;
-            if (_gameBubble) _gameBubble.innerHTML =
-              `<div style="display:flex;align-items:center;gap:10px;color:rgba(99,202,183,0.9);font-size:13px;">` +
-              `<span style="font-size:18px;">✅</span>Found real game mechanics from the web — building your game…</div>`;
-          } else {
-            if (_gameBubble) _gameBubble.innerHTML =
-              `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.5);font-size:13px;">` +
-              `<span style="font-size:18px;">🎮</span>Using built-in Mario Physics Bible — building your game…</div>`;
+          // Run both agents in parallel — no extra wait time
+          const [_gameDesign, _gameBrief] = await Promise.all([
+            _designGameWithAI(prompt, _searchApiKey),
+            _searchForGameMechanics(prompt, _searchApiKey)
+          ]);
+          if (_gameDesign) {
+            // Design spec goes FIRST — highest priority. Builder follows this exactly.
+            prompt = `GAME DESIGN DOCUMENT (created by AI designer — follow this exactly, every level, character, color, and mechanic):\n\n${_gameDesign}\n\n` + prompt;
           }
+          if (_gameBrief) {
+            prompt += `\n\nGAME MECHANICS RESEARCH — real game dev references from the web:\n${_gameBrief}`;
+          }
+          if (_gameBubble) _gameBubble.innerHTML =
+            `<div style="display:flex;align-items:center;gap:10px;color:rgba(99,202,183,0.9);font-size:13px;">` +
+            `<span style="font-size:18px;">✅</span>${_gameDesign ? 'Game designed by AI' : 'Game specs ready'} — building now…</div>`;
         } else {
           if (_gameBubble) _gameBubble.style.display = 'none';
         }
