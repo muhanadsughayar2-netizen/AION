@@ -9361,6 +9361,18 @@ async function runAgentTask(prompt, thread) {
       addAgentStepBubble(thread, `Step failed: ${execResult?.error || 'unknown error'} — trying a different approach…`, 'error');
     }
 
+    // If navigate opened a NEW tab (system-page fallback path), switch control
+    // to that tab immediately so all subsequent actions target it correctly.
+    if (execResult && execResult.success && execResult.newTabId) {
+      try {
+        const newTabInfo = await chrome.tabs.get(execResult.newTabId);
+        if (newTabInfo && newTabInfo.id) {
+          tab = newTabInfo;
+          addAgentStepBubble(thread, `Opened in new tab: ${newTabInfo.url || 'loading...'}`);
+        }
+      } catch (_) {}
+    }
+
     await new Promise(r => setTimeout(r, 700)); // let the page settle after the action
 
     // Some links/buttons open a NEW tab instead of navigating the current

@@ -768,8 +768,64 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         try {
           let url = (params && params.url || '').trim();
           if (!url) { sendResponse({ success: false, error: 'No URL provided' }); return; }
+          // Reject navigating TO a chrome:// or extension:// URL — those are
+          // privileged pages the agent cannot control anyway.
+          if (/^(chrome|chrome-extension|edge|about|devtools|brave|opera|vivaldi):/.test(url)) {
+            sendResponse({ success: false, error: `Cannot navigate to a restricted browser URL: ${url}` });
+            return;
+          }
           if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+
+          // Get the current tab URL to check if it's a restricted system page.
+          let currentTab = null;
+          try { currentTab = await chrome.tabs.get(tabId); } catch (_) {}
+          const isSystemPage = /^(chrome|chrome-extension|edge|about|devtools|brave|opera|vivaldi):/.test(
+            (currentTab && currentTab.url) || ''
+          );
+
+          if (isSystemPage) {
+            // chrome.tabs.update on NTP/system pages is restricted in MV3.
+            // Open the URL in the same tab via tabs.create (reuses the window).
+            try {
+              const newTab = await chrome.tabs.create({ url, windowId: currentTab.windowId, index: currentTab.index, active: true });
+              // Wait up to 15s for the new tab to finish loading
+              await new Promise(resolve => {
+                const timeout = setTimeout(() => {
+                  chrome.tabs.onUpdated.removeListener(listener);
+                  resolve();
+                }, 15000);
+                function listener(changedTabId, info) {
+                  if (changedTabId === newTab.id && info.status === 'complete') {
+                    clearTimeout(timeout);
+                    chrome.tabs.onUpdated.removeListener(listener);
+                    resolve();
+                  }
+                }
+                chrome.tabs.onUpdated.addListener(listener);
+              });
+              sendResponse({ success: true, newTabId: newTab.id });
+            } catch (createErr) {
+              sendResponse({ success: false, error: (createErr && createErr.message) || String(createErr) });
+            }
+            return;
+          }
+
+          // Normal tab: just navigate in place and wait for it to load.
           await chrome.tabs.update(tabId, { url });
+          await new Promise(resolve => {
+            const timeout = setTimeout(() => {
+              chrome.tabs.onUpdated.removeListener(listener);
+              resolve();
+            }, 15000);
+            function listener(changedTabId, info) {
+              if (changedTabId === tabId && info.status === 'complete') {
+                clearTimeout(timeout);
+                chrome.tabs.onUpdated.removeListener(listener);
+                resolve();
+              }
+            }
+            chrome.tabs.onUpdated.addListener(listener);
+          });
           sendResponse({ success: true });
         } catch (e) {
           sendResponse({ success: false, error: (e && e.message) || String(e) });
