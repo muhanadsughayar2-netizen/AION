@@ -6400,7 +6400,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       <textarea class="bc-source" placeholder="Topic, article, notes, script outline… (optional if media attached)" style="width:100%;box-sizing:border-box;min-height:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(45,212,191,0.18);border-radius:10px;padding:9px 11px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;line-height:1.4;"></textarea>
       <input type="file" class="bc-img-input" accept="image/*" multiple style="display:none;">
       <input type="file" class="bc-vid-input" accept="video/*" style="display:none;">
-      <input type="file" class="bc-file-input" accept=".txt,.md,.csv,.json,.pdf,.pptx,.docx" style="display:none;">
+      <input type="file" class="bc-file-input" accept=".txt,.md,.csv,.json,.pdf" style="display:none;">
     </div>
 
     <div style="margin-bottom:14px;">
@@ -6750,6 +6750,22 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
   fileInput.addEventListener('change', () => {
     const file = fileInput.files[0]; if (!file) return;
     const isText = /\.(txt|md|csv|json|html)$/i.test(file.name) || file.type.startsWith('text/');
+    const isUnsupported = /\.(docx|doc|pptx|ppt|xlsx|xls)$/i.test(file.name);
+
+    if (isUnsupported) {
+      // Word/PowerPoint/Excel files can't be sent to Gemini as binary —
+      // their MIME types are not supported. Guide the user to a working alternative.
+      const ext = file.name.split('.').pop().toLowerCase();
+      const tip = (ext === 'docx' || ext === 'doc')
+        ? `"${file.name}" is a Word document — Gemini can't read it directly.\n\nTo use your content:\n• Save it as a PDF and re-upload, OR\n• Open it, select all (Ctrl+A), copy, and paste your text into the chat.`
+        : (ext === 'pptx' || ext === 'ppt')
+        ? `"${file.name}" is a PowerPoint file — Gemini can't read it directly.\n\nTo use your content:\n• Export it as a PDF and re-upload, OR\n• Copy the text from each slide and paste it into the chat.`
+        : `"${file.name}" is a spreadsheet — Gemini can't read it directly.\n\nTo use your content:\n• Save as .csv and re-upload, OR\n• Copy your data and paste it into the chat.`;
+      addBubble(tip, 'error');
+      fileInput.value = '';
+      return;
+    }
+
     if (isText) {
       const reader = new FileReader();
       reader.onload = ev => {
