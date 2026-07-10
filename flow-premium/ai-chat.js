@@ -7366,6 +7366,8 @@ Use your answers to pick ONE of the Aesthetic Profiles below. Never mix profiles
 
 PROFILE SELECTION RULES — READ BEFORE CHOOSING (follow this order top to bottom, stop at first match):
 
+  0. PRESENTATION / SLIDES / PITCH DECK: request contains "presentation", "slides", "slideshow", "PowerPoint", "pptx", "pitch deck", "slide deck" → Profile P. Always. No exceptions.
+
   1. GAME: request contains game/level/player/score/jump/shoot/enemy/arcade/puzzle/Mario/RPG/dungeon → Profile F. Always. No exceptions.
 
   2. COMING SOON / PERSONAL NAME IS BRAND: person's name as brand, coach, speaker, author, photographer, "coming soon" page → Profile G.
@@ -7519,6 +7521,70 @@ PROFILE H — DARK CREATIVE EDITORIAL (Train of Thought / moody magazine / creat
   </section>
 
   BANNED: bright/white backgrounds, rounded cards, colorful UI, emoji, busy text-heavy layouts
+
+PROFILE P — PRESENTATION / SLIDE DECK (PowerPoint-style)
+  Use for: ANY request containing presentation, slides, slideshow, PowerPoint, pptx, pitch deck, slide deck.
+  ⚠️  This profile replaces ALL website rules. A presentation is NOT a scrolling website — it is a fullscreen slide-by-slide viewer with a real downloadable .pptx button.
+
+  ══════════════════════════════════════════════════════════════
+  MANDATORY ARCHITECTURE — copy this exact pattern every time
+  ══════════════════════════════════════════════════════════════
+
+  1. DEFINE all slide content as a JS array at the top of your <script>:
+     const SLIDES = [
+       { title: "Slide Title", subtitle: "Optional subtitle", bullets: ["Point A", "Point B", "Point C"], notes: "Speaker notes" },
+       // … one object per slide, 8–15 slides total
+     ];
+
+  2. RENDER the current slide from SLIDES[currentIndex] into a fullscreen <div id="slide-stage">.
+
+  3. NAVIGATION — keyboard (ArrowLeft / ArrowRight / Space) + on-screen Prev / Next buttons + click-anywhere-to-advance.
+
+  4. SLIDE COUNTER — always show "3 / 12" style, top-right corner.
+
+  5. DOWNLOAD BUTTON — a prominent "⬇ Download PowerPoint" button (top-right, near counter) that calls generatePptx().
+
+  6. MANDATORY HEAD SCRIPTS — include BOTH of these in <head>:
+     <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+     <script src="https://cdn.tailwindcss.com"></script>
+
+  7. PPTXGENJS EXPORT FUNCTION — wire this exact function (adapt colors/fonts to the theme):
+     async function generatePptx() {
+       const pptx = new PptxGenJS();
+       pptx.layout = 'LAYOUT_WIDE';  // 16:9
+       SLIDES.forEach(s => {
+         const slide = pptx.addSlide();
+         // Dark background
+         slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{color:'0F172A'} });
+         // Title
+         slide.addText(s.title, { x:0.5, y:0.4, w:12, h:1.2, fontSize:36, bold:true, color:'FFFFFF', fontFace:'Calibri' });
+         // Subtitle (if present)
+         if (s.subtitle) slide.addText(s.subtitle, { x:0.5, y:1.5, w:12, h:0.6, fontSize:20, color:'94A3B8', fontFace:'Calibri' });
+         // Bullet points
+         if (s.bullets && s.bullets.length) {
+           const bulletText = s.bullets.map(b => ({ text: b, options: { bullet: true } }));
+           slide.addText(bulletText, { x:0.5, y:2.2, w:12, h:4.5, fontSize:18, color:'E2E8F0', fontFace:'Calibri', lineSpacingMultiple:1.4 });
+         }
+         // Slide number
+         slide.addText((SLIDES.indexOf(s)+1) + ' / ' + SLIDES.length, { x:11.5, y:6.8, w:1.5, h:0.4, fontSize:10, color:'64748B', align:'right' });
+       });
+       await pptx.writeFile({ fileName: 'presentation.pptx' });
+     }
+
+  PROFILE P VISUAL DESIGN:
+  Background: #0F172A (deep navy) | Accent: #6366F1 (indigo) | Text: #F8FAFC
+  Font: 'Inter' from Google Fonts — 700 for titles, 400 for body
+  Each slide fills 100vw × 100vh. Progress bar at the very bottom.
+  Title: centered or left-aligned, large (clamp(2rem, 6vw, 4rem)).
+  Bullets: appear with a fade-in stagger (0.1s each) as the slide renders.
+  Transition: 0.35s fade between slides (opacity + slight translateY).
+  Thumbnail strip: optional 60px row at the bottom showing mini slide previews.
+
+  PROFILE P BANNED:
+  ✗ Scrolling page layout — every slide must be fullscreen, no scroll
+  ✗ Omitting the Download PowerPoint button
+  ✗ Hardcoding slide content as HTML — ALWAYS use the SLIDES array
+  ✗ Using any other CDN for pptx — only pptxgenjs@3.12.0 from jsdelivr
 
 PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter
@@ -10273,13 +10339,16 @@ async function handleSend() {
       const _buildApiKey = _storedKey2.geminiKey;
 
       const _gameKeywords = /\b(game|platformer|arcade|puzzle|shooter|rpg|mario|zelda|dungeon|level|player|score|enemy|enemies|jump|shoot|sprite|tile|coin|boss)\b/i;
+      const _presentationKeywords = /\b(presentation|slides|slideshow|powerpoint|pptx|pitch deck|slide deck|deck)\b/i;
       const _isGameBuild = _gameKeywords.test(prompt);
+      const _isPresentationBuild = !_isGameBuild && _presentationKeywords.test(prompt);
 
       // Single status bubble for all agents
+      const _buildLabel = _isGameBuild ? 'game' : _isPresentationBuild ? 'presentation' : 'build';
       const _agentBubble = addBubble(
         `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.65);font-size:13px;">` +
         `<span style="font-size:20px;">⚡</span>` +
-        `<span>${_isGameBuild ? '4' : '3'} AI agents working simultaneously on your ${_isGameBuild ? 'game' : 'build'}…</span></div>`,
+        `<span>${_isGameBuild ? '4' : '3'} AI agents working simultaneously on your ${_buildLabel}…</span></div>`,
         'ai'
       );
 
@@ -10326,6 +10395,20 @@ async function handleSend() {
             `Pattern: <audio id="snapBgMusic" src="__SNAP_AUD_${_audOffset}__" autoplay loop style="display:none"></audio>. ` +
             `Add a small mute/unmute toggle button in the corner (bottom-right, 36×36px, semi-transparent). ` +
             `NEVER output the actual audio data — use ONLY the __SNAP_AUD_${_audOffset}__ placeholder string.`;
+        }
+
+        // Inject presentation-specific instructions
+        if (_isPresentationBuild) {
+          prompt +=
+            `\n\n⚡ PRESENTATION BUILD — MANDATORY RULES (highest priority, override everything else):\n` +
+            `1. Use PROFILE P from the system prompt. No scrolling page. Fullscreen slides only.\n` +
+            `2. Include <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script> in <head>.\n` +
+            `3. Define ALL slide content in a const SLIDES = [ ... ] array in your <script> block.\n` +
+            `4. The "⬇ Download PowerPoint" button must call generatePptx() which uses PptxGenJS to write a real .pptx file to disk.\n` +
+            `5. Generate 10–15 content-rich slides based on the user's topic — do NOT use placeholder text.\n` +
+            `6. Every slide must have: title (string), subtitle (optional string), bullets (string array), notes (string).\n` +
+            `7. The generatePptx() function must iterate over the SLIDES array — never hardcode slide content in the function.\n` +
+            `RESULT: the user clicks "Download PowerPoint" and gets a real, openable presentation.pptx file.`;
         }
 
         // Update bubble to show results
