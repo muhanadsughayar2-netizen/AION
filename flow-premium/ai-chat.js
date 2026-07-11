@@ -6400,7 +6400,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       <textarea class="bc-source" placeholder="Topic, article, notes, script outline… (optional if media attached)" style="width:100%;box-sizing:border-box;min-height:60px;background:rgba(255,255,255,0.04);border:1px solid rgba(45,212,191,0.18);border-radius:10px;padding:9px 11px;color:#e8eef4;font-size:12px;font-family:inherit;resize:vertical;outline:none;transition:border-color 0.2s;line-height:1.4;"></textarea>
       <input type="file" class="bc-img-input" accept="image/*" multiple style="display:none;">
       <input type="file" class="bc-vid-input" accept="video/*" style="display:none;">
-      <input type="file" class="bc-file-input" accept=".txt,.md,.csv,.json,.pdf" style="display:none;">
+      <input type="file" class="bc-file-input" accept=".txt,.md,.csv,.json,.pdf,.pptx,.docx" style="display:none;">
     </div>
 
     <div style="margin-bottom:14px;">
@@ -6750,22 +6750,6 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
   fileInput.addEventListener('change', () => {
     const file = fileInput.files[0]; if (!file) return;
     const isText = /\.(txt|md|csv|json|html)$/i.test(file.name) || file.type.startsWith('text/');
-    const isUnsupported = /\.(docx|doc|pptx|ppt|xlsx|xls)$/i.test(file.name);
-
-    if (isUnsupported) {
-      // Word/PowerPoint/Excel files can't be sent to Gemini as binary —
-      // their MIME types are not supported. Guide the user to a working alternative.
-      const ext = file.name.split('.').pop().toLowerCase();
-      const tip = (ext === 'docx' || ext === 'doc')
-        ? `"${file.name}" is a Word document — Gemini can't read it directly.\n\nTo use your content:\n• Save it as a PDF and re-upload, OR\n• Open it, select all (Ctrl+A), copy, and paste your text into the chat.`
-        : (ext === 'pptx' || ext === 'ppt')
-        ? `"${file.name}" is a PowerPoint file — Gemini can't read it directly.\n\nTo use your content:\n• Export it as a PDF and re-upload, OR\n• Copy the text from each slide and paste it into the chat.`
-        : `"${file.name}" is a spreadsheet — Gemini can't read it directly.\n\nTo use your content:\n• Save as .csv and re-upload, OR\n• Copy your data and paste it into the chat.`;
-      addBubble(tip, 'error');
-      fileInput.value = '';
-      return;
-    }
-
     if (isText) {
       const reader = new FileReader();
       reader.onload = ev => {
@@ -7570,9 +7554,8 @@ PROFILE P — PRESENTATION / SLIDE DECK (PowerPoint-style)
        pptx.layout = 'LAYOUT_WIDE';  // 16:9
        SLIDES.forEach(s => {
          const slide = pptx.addSlide();
-         // ✅ REAL slide background — editable in PowerPoint via Format Background
-         // NEVER use addShape for backgrounds — that locks the color and prevents editing
-         slide.background = { color: '0F172A' };
+         // Dark background
+         slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{color:'0F172A'} });
          // Title
          slide.addText(s.title, { x:0.5, y:0.4, w:12, h:1.2, fontSize:36, bold:true, color:'FFFFFF', fontFace:'Calibri' });
          // Subtitle (if present)
@@ -10425,10 +10408,7 @@ async function handleSend() {
             `5. Generate 10–15 content-rich slides based on the user's topic — do NOT use placeholder text.\n` +
             `6. Every slide must have: title (string), subtitle (optional string), bullets (string array), notes (string).\n` +
             `7. The generatePptx() function must iterate over the SLIDES array — never hardcode slide content in the function.\n` +
-            `8. CRITICAL — slide background: use slide.background = { color: 'HEX' } — NEVER addShape for backgrounds.\n` +
-            `   addShape backgrounds are locked shapes that users cannot edit in PowerPoint's Format Background dialog.\n` +
-            `   slide.background sets the real native PowerPoint background — fully editable, themeable, and replaceable.\n` +
-            `RESULT: the user clicks "Download PowerPoint" and gets a real, fully-editable .pptx file where they can change backgrounds, themes, fonts, and layout in PowerPoint.`;
+            `RESULT: the user clicks "Download PowerPoint" and gets a real, openable presentation.pptx file.`;
         }
 
         // Update bubble to show results
@@ -12379,11 +12359,6 @@ function _isBuildInstruction(prompt, hasFiles) {
 
   // Re-check after stripping ("sure, do that" → "do that" → build).
   if (confirmRe.test(p)) return true;
-
-  // Clear-intent requests: presentation/game/app builds have obvious intent
-  // and don't need a chat discussion first — build immediately.
-  const directBuildRe = /\b(presentation|slide deck|slideshow|pitch deck|slides|powerpoint|pptx|game|platformer|arcade|puzzle|shooter)\b/i;
-  if (directBuildRe.test(raw)) return true;
 
   // Anything else — questions, action verbs, descriptions, image uploads —
   // goes to chat. The AI will discuss and prompt the user for explicit confirmation.

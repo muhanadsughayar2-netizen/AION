@@ -10,7 +10,10 @@ import json
 import time
 import base64
 import uuid
-genai = None  # Lazy-loaded on first use to keep startup fast
+try:
+    import google.generativeai as genai
+except Exception:
+    genai = None
 
 # Disable automatic static folder - we'll handle all routing manually
 app = Flask(__name__, static_folder=None)
@@ -358,19 +361,11 @@ def lazy_init_db():
 
 app.url_map.strict_slashes = False
 
-def _get_genai():
-    """Lazy-load google.generativeai only when first needed — keeps startup fast."""
-    global genai
-    if genai is None:
-        try:
-            import google.generativeai as _genai
-            genai = _genai
-            api_key = os.environ.get('GEMINI_API_KEY')
-            if api_key:
-                genai.configure(api_key=api_key)
-        except Exception as e:
-            print(f'⚠️ Gemini SDK init failed: {e}')
-    return genai
+if genai and os.environ.get('GEMINI_API_KEY'):
+    try:
+        genai.configure(api_key=os.environ.get('GEMINI_API_KEY'))
+    except Exception as e:
+        print(f'⚠️ Gemini SDK init failed: {e}')
 
 @app.route('/api/check-video-support', methods=['POST', 'OPTIONS'])
 def check_video_support():
@@ -3227,13 +3222,9 @@ def get_or_create_trial():
 
 @app.route('/')
 def index():
-    try:
-        response = Response(get_index_html(), mimetype='text/html')
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-        return response
-    except Exception as e:
-        print(f'⚠️ index route error: {e}')
-        return Response('<html><body><h1>SnapToAI</h1></body></html>', mimetype='text/html', status=200)
+    response = Response(get_index_html(), mimetype='text/html')
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    return response
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
