@@ -12380,6 +12380,11 @@ function _isBuildInstruction(prompt, hasFiles) {
   // Re-check after stripping ("sure, do that" → "do that" → build).
   if (confirmRe.test(p)) return true;
 
+  // Clear-intent requests: presentation/game/app builds have obvious intent
+  // and don't need a chat discussion first — build immediately.
+  const directBuildRe = /\b(presentation|slide deck|slideshow|pitch deck|slides|powerpoint|pptx|game|platformer|arcade|puzzle|shooter)\b/i;
+  if (directBuildRe.test(raw)) return true;
+
   // Anything else — questions, action verbs, descriptions, image uploads —
   // goes to chat. The AI will discuss and prompt the user for explicit confirmation.
   return false;
