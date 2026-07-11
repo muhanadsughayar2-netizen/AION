@@ -7340,7 +7340,7 @@ Every output must start with this exact <head> block:
   A <style> block for custom CSS that Tailwind can't express (gradients, animations, overlaps)
 
 Icons: always use Lucide — call lucide.createIcons() in a <script> at bottom of body.
-Images: use real Pexels URLs. Always add onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'" on every <img>.
+Images: use real Pexels URLs ONLY when no __SNAP_IMG_N__ placeholders are present in the prompt. If __SNAP_IMG_N__ placeholders exist, use ONLY those as <img> src values — NEVER use any Pexels URLs when the user has provided their own images. Always add onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'" on every <img>.
 JavaScript: all inline in a single <script> before </body>. Use IntersectionObserver for scroll-reveal animations.
 
 EXCEPTION — CONTINUE_BUILD: If the user message starts with "CONTINUE_BUILD:", the previous
@@ -10338,9 +10338,11 @@ async function handleSend() {
     if (!_isContinuationSend && !_lastBuiltCode) {
       const _buildSeed = Math.floor(Math.random() * 9000000) + 1000000;
       const _buildTs = new Date().toISOString().slice(0,16).replace('T',' ');
+      const _userHasImages = filesQueue.some(f => f.mimeType && f.mimeType.startsWith('image/'));
       prompt += `\n\n[BUILD-SEED:${_buildSeed} TIME:${_buildTs}] ` +
-        `This is a completely fresh build — you MUST pick brand-new Pexels photo IDs not used in any previous response. ` +
-        `Do not reuse IDs you have used before. The seed guarantees uniqueness: treat it as a creative direction token.`;
+        (_userHasImages
+          ? `This is a completely fresh build. The user has provided their own images via __SNAP_IMG_N__ placeholders — use ONLY those. DO NOT use any Pexels URLs. The seed guarantees a unique layout: treat it as a creative direction token.`
+          : `This is a completely fresh build — you MUST pick brand-new Pexels photo IDs not used in any previous response. Do not reuse IDs you have used before. The seed guarantees uniqueness: treat it as a creative direction token.`);
     }
     // ── End uniqueness seed ───────────────────────────────────────────────────
 
@@ -10451,10 +10453,10 @@ async function handleSend() {
     // Determines how many images THIS site needs (1-15), writes one cinematic
     // prompt per slot, generates them all in parallel, and injects placeholders
     // into the build prompt so the AI places each one in the right section.
-    // Runs even when the user attaches their own images — AI images are offset
-    // to start AFTER the user-provided images so both coexist.
+    // SKIPPED when the user has attached their own images — we use only theirs.
     // Fails silently → build falls back to Pexels stock photos.
-    if (!_isContinuationSend && !_lastBuiltCode) {
+    const _userProvidedImages = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
+    if (!_isContinuationSend && !_lastBuiltCode && _userProvidedImages.length === 0) {
       const _aiImgStatusBubble = addBubble('', 'ai');
       const _aiGeneratedImages = await _autoGenerateBuildImages(prompt, _aiImgStatusBubble);
       if (_aiGeneratedImages.length > 0) {
