@@ -3222,9 +3222,13 @@ def get_or_create_trial():
 
 @app.route('/')
 def index():
-    response = Response(get_index_html(), mimetype='text/html')
-    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-    return response
+    try:
+        response = Response(get_index_html(), mimetype='text/html')
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        return response
+    except Exception as e:
+        print(f'⚠️ index route error: {e}')
+        return Response('<html><body><h1>SnapToAI</h1></body></html>', mimetype='text/html', status=200)
 
 @app.route('/static/<path:filename>')
 def static_files(filename):
