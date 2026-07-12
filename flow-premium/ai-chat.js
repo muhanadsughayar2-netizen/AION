@@ -10329,23 +10329,6 @@ async function handleSend() {
   _skipNewAppGuard = false; // consume the one-time bypass
   // ── End new-app guard ──────────────────────────────────────────────────────
 
-  // ── Shop Setup Panel intercept ─────────────────────────────────────────────
-  // When a fresh shop build is detected and the user hasn't provided real
-  // payment info yet, show a quick setup card to collect products + payment
-  // links BEFORE building. This means the built HTML works immediately with
-  // no manual placeholder editing needed.
-  const _earlyShopKw = /\b(shop|store|buy|sell|product|price|payment|checkout|cart|e-?commerce|stripe|paypal|order|purchase|selling)\b/i;
-  const _hasRealPayment = /paypal\.me\/\S+|buy\.stripe\.com\/\S+|stripe\.com\/pay\/\S+/i;
-  if (buildModeEnabled && !_lastBuiltCode && !_isContinuationSend && !_skipShopSetup && _earlyShopKw.test(prompt) && !_hasRealPayment.test(prompt)) {
-    input.value = '';
-    resetInputSize(input);
-    addBubble(prompt, 'user');
-    _showShopSetupPanel(prompt, input);
-    return;
-  }
-  _skipShopSetup = false;
-  // ── End shop setup intercept ───────────────────────────────────────────────
-
   // ── Build Mode conversation router ─────────────────────────────────────────
   // Fires whether or not a site has been built yet.
   // • No site yet  → chat gathers requirements; user says "build it" to start.
