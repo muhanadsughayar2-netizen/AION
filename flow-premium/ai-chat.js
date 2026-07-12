@@ -14184,17 +14184,82 @@ function _reloadSandbox() {
   iframe.src = 'sandbox.html';
 }
 
+// Auto-patch generated HTML so that any function referenced in an onclick/onchange/
+// onsubmit/oninput attribute but defined as a plain `function fnName(){}` (instead of
+// `window.fnName = function(){}`) is still reachable from HTML attribute handlers.
+// This is a safety net for when the AI doesn't follow the window-attachment rule.
+function _patchWindowFunctions(html) {
+  if (!html) return html;
+  try {
+    // 1. Collect every function name referenced in inline event attributes.
+    const attrFnNames = new Set();
+    const attrRe = /\bon(?:click|change|submit|input|mousedown|mouseup|keydown|keyup|focus|blur)=["']([^"']+)["']/gi;
+    let m;
+    while ((m = attrRe.exec(html)) !== null) {
+      // Extract leading identifier from the handler expression, e.g. "addToCart(1,'x',9)" → "addToCart"
+      const fnMatch = m[1].match(/^\s*([a-zA-Z_$][a-zA-Z0-9_$]*)\s*\(/);
+      if (fnMatch) attrFnNames.add(fnMatch[1]);
+      // Also handle "window.fnName(" — already on window, no patch needed
+    }
+    if (attrFnNames.size === 0) return html;
+
+    // 2. For each <script>…</script> block, ensure onclick-referenced functions
+    //    are reachable from window. Two strategies applied in sequence:
+    //
+    //    a) INLINE CONVERSION: rewrite `function fnName(` → `window.fnName = function fnName(`
+    //       This works even inside an IIFE where post-hoc injection is out-of-scope.
+    //
+    //    b) POST-INJECTION: for top-level declarations that weren't converted,
+    //       append `if(typeof fnName==="function")window.fnName=fnName;` at end.
+    return html.replace(/<script(\b[^>]*)>([\s\S]*?)<\/script>/gi, (full, attrs, body) => {
+      let newBody = body;
+      const tailInjections = [];
+
+      for (const name of attrFnNames) {
+        // Already properly window-attached — nothing to do
+        if (new RegExp('window\\.' + name + '\\s*=').test(newBody)) continue;
+
+        const plainFnRe = new RegExp('\\bfunction\\s+' + name + '\\s*\\(', 'g');
+        if (plainFnRe.test(newBody)) {
+          // Strategy (a): inline conversion — safe inside IIFEs and at top-level
+          newBody = newBody.replace(
+            new RegExp('\\bfunction\\s+(' + name + ')\\s*\\(', 'g'),
+            'window.$1 = function $1('
+          );
+        } else {
+          // Strategy (b): top-level arrow / const / let / var fn — append assignment
+          const assignRe = new RegExp('(?:const|let|var)\\s+' + name + '\\s*=');
+          if (assignRe.test(newBody)) {
+            tailInjections.push('if(typeof ' + name + '!=="undefined")window.' + name + '=' + name + ';');
+          }
+        }
+      }
+
+      if (newBody === body && tailInjections.length === 0) return full;
+      const tail = tailInjections.length
+        ? '\n// [SnapToAI auto-patch]\n' + tailInjections.join('\n') + '\n'
+        : '';
+      return '<script' + attrs + '>' + newBody + tail + '</script>';
+    });
+  } catch (e) {
+    // Never break the preview pipeline on a patch failure
+    return html;
+  }
+}
+
 function _postToSandbox(code, isFinal) {
   const iframe = document.getElementById('livePreview');
   if (!iframe) return;
-  _lastBuiltCode = code; // always keep buffer fresh
+  // Auto-patch: ensure all onclick-referenced functions are on window
+  const patched = _patchWindowFunctions(code);
+  _lastBuiltCode = patched; // always keep buffer fresh
   _updateBuildInput();
   // Gate on handshake — contentWindow is always truthy once element exists,
   // so we must check _isSandboxReady explicitly. If sandbox isn't ready yet,
   // the handshake listener will auto-flush _lastBuiltCode when it fires.
   if (!_isSandboxReady) return;
   if (iframe.contentWindow) {
-    iframe.contentWindow.postMessage({ htmlCode: code, isFinal: !!isFinal }, '*');
+    iframe.contentWindow.postMessage({ htmlCode: patched, isFinal: !!isFinal }, '*');
   }
 }
 
