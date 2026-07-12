@@ -1949,6 +1949,51 @@
           <span id="previewBuildingTxt">Compiling…</span>
         </div>
         <iframe id="livePreview" src="sandbox.html" allow="fullscreen; autoplay; encrypted-media; picture-in-picture" style="width:100%;height:200px;border:none;display:none;background:#07070a;"></iframe>
+
+        <!-- ── Quick Fix Toolbar ── appears after build completes ── -->
+        <div id="quickFixBar" style="display:none; padding:6px 10px; border-top:1px solid rgba(255,160,50,0.15); background:rgba(8,8,12,0.99); flex-wrap:wrap; align-items:center; gap:5px; flex-shrink:0;">
+          <span style="font-size:8px; font-weight:800; color:rgba(255,160,50,0.45); font-family:monospace; letter-spacing:0.8px; text-transform:uppercase; flex:0 0 auto; margin-right:2px;">⚡ Quick Fix</span>
+          <button id="qfImagesBtn" style="font-size:10px; font-weight:700; padding:4px 9px; border-radius:20px; background:rgba(255,160,50,0.1); border:1px solid rgba(255,160,50,0.28); color:#ffa032; cursor:pointer; transition:all 0.15s; font-family:monospace; white-space:nowrap;">📸 Fix Images</button>
+          <button id="qfColorsBtn" style="font-size:10px; font-weight:700; padding:4px 9px; border-radius:20px; background:rgba(120,80,255,0.1); border:1px solid rgba(120,80,255,0.28); color:#a07aff; cursor:pointer; transition:all 0.15s; font-family:monospace; white-space:nowrap;">🎨 Colors</button>
+          <button id="qfAskBtn" style="font-size:10px; font-weight:700; padding:4px 9px; border-radius:20px; background:rgba(0,200,255,0.08); border:1px solid rgba(0,200,255,0.25); color:#4dc9f0; cursor:pointer; transition:all 0.15s; font-family:monospace; white-space:nowrap;">✏️ Ask AI</button>
+        </div>
+
+        <!-- ── Pexels Image Fix Panel ── -->
+        <div id="pexelsFixPanel" style="display:none; border-top:1px solid rgba(255,160,50,0.12); background:rgba(10,10,14,0.99); max-height:260px; overflow-y:auto;">
+          <div style="padding:8px 10px 4px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; background:rgba(10,10,14,0.99); z-index:2; border-bottom:1px solid rgba(255,160,50,0.08);">
+            <span style="font-size:9px; font-weight:800; color:#ffa032; font-family:monospace; letter-spacing:0.5px; text-transform:uppercase;">📸 Tap any image and describe the right photo</span>
+            <button id="closePexelsFix" style="background:none; border:none; color:rgba(255,255,255,0.3); cursor:pointer; font-size:12px; line-height:1; padding:0 2px;">✕</button>
+          </div>
+          <div id="pexelsFixGrid" style="display:grid; grid-template-columns:repeat(3,1fr); gap:6px; padding:8px 10px;"></div>
+          <div style="padding:6px 10px 10px; display:flex; gap:6px; align-items:center; border-top:1px solid rgba(255,255,255,0.04);">
+            <button id="pexelsFixApplyBtn" style="flex:1; padding:7px; border-radius:10px; background:rgba(255,160,50,0.14); border:1px solid rgba(255,160,50,0.4); color:#ffa032; font-size:11px; font-weight:700; cursor:pointer; font-family:monospace; letter-spacing:0.3px;">✦ Fix All Described Images</button>
+            <button id="pexelsFixAutoBtn" style="padding:7px 10px; border-radius:10px; background:rgba(80,200,120,0.1); border:1px solid rgba(80,200,120,0.3); color:#50dc78; font-size:10px; font-weight:700; cursor:pointer; font-family:monospace; white-space:nowrap;" title="Let AI pick the best photos automatically">✨ Auto-Fix All</button>
+          </div>
+        </div>
+
+        <!-- ── Color Fix Panel ── -->
+        <div id="colorFixPanel" style="display:none; border-top:1px solid rgba(120,80,255,0.15); background:rgba(10,10,14,0.99); padding:10px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:9px;">
+            <span style="font-size:9px; font-weight:800; color:#a07aff; font-family:monospace; letter-spacing:0.5px; text-transform:uppercase;">🎨 Pick a new accent colour</span>
+            <button id="closeColorFix" style="background:none; border:none; color:rgba(255,255,255,0.3); cursor:pointer; font-size:12px; line-height:1; padding:0 2px;">✕</button>
+          </div>
+          <div id="colorSwatches" style="display:flex; gap:7px; flex-wrap:wrap; margin-bottom:9px;">
+            <button class="clr-swatch" data-color="#00FF88" data-name="Electric Green" style="width:28px;height:28px;border-radius:8px;background:#00FF88;border:2px solid transparent;cursor:pointer;transition:transform 0.15s;flex-shrink:0;" title="Electric Green"></button>
+            <button class="clr-swatch" data-color="#4285F4" data-name="Google Blue" style="width:28px;height:28px;border-radius:8px;background:#4285F4;border:2px solid transparent;cursor:pointer;transition:transform 0.15s;flex-shrink:0;" title="Google Blue"></button>
+            <button class="clr-swatch" data-color="#FF6B35" data-name="Energy Orange" style="width:28px;height:28px;border-radius:8px;background:#FF6B35;border:2px solid transparent;cursor:pointer;transition:transform 0.15s;flex-shrink:0;" title="Energy Orange"></button>
+            <button class="clr-swatch" data-color="#E91E8C" data-name="Hot Pink" style="width:28px;height:28px;border-radius:8px;background:#E91E8C;border:2px solid transparent;cursor:pointer;transition:transform 0.15s;flex-shrink:0;" title="Hot Pink"></button>
+            <button class="clr-swatch" data-color="#FFD700" data-name="Gold" style="width:28px;height:28px;border-radius:8px;background:#FFD700;border:2px solid transparent;cursor:pointer;transition:transform 0.15s;flex-shrink:0;" title="Gold"></button>
+            <button class="clr-swatch" data-color="#00D4FF" data-name="Cyan" style="width:28px;height:28px;border-radius:8px;background:#00D4FF;border:2px solid transparent;cursor:pointer;transition:transform 0.15s;flex-shrink:0;" title="Cyan"></button>
+            <button class="clr-swatch" data-color="#A855F7" data-name="Purple" style="width:28px;height:28px;border-radius:8px;background:#A855F7;border:2px solid transparent;cursor:pointer;transition:transform 0.15s;flex-shrink:0;" title="Purple"></button>
+            <button class="clr-swatch" data-color="#F43F5E" data-name="Rose" style="width:28px;height:28px;border-radius:8px;background:#F43F5E;border:2px solid transparent;cursor:pointer;transition:transform 0.15s;flex-shrink:0;" title="Rose"></button>
+            <label style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:8px;border:1.5px dashed rgba(255,255,255,0.2);cursor:pointer;font-size:12px;flex-shrink:0;" title="Custom colour">
+              <input type="color" id="customColorPicker" style="opacity:0;position:absolute;width:1px;height:1px;" value="#ffffff">
+              +
+            </label>
+          </div>
+          <div style="font-size:9px; color:rgba(255,255,255,0.28); font-family:monospace;">Tap a colour → AI patches the whole site in seconds</div>
+        </div>
+
         <!-- Image Map Panel: shows thumbnails of all images embedded in the build -->
         <div id="imageMapPanel" style="display:none; padding:8px 10px 10px; border-top:1px solid rgba(255,160,50,0.1); background:rgba(10,10,14,0.97);">
           <div style="font-size:8.5px; font-weight:800; color:rgba(255,160,50,0.4); font-family:monospace; letter-spacing:0.8px; margin-bottom:7px; text-transform:uppercase;">📸 Images in build — tap ↺ to replace</div>

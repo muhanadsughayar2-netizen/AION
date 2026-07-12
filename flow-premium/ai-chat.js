@@ -12276,6 +12276,7 @@ function addBubbleActions(bubble, text) {
     if (finalCode) {
       _showLivePreview(finalCode);
       _showImageMap();
+      _showQuickFixBar();
     } else {
       // No code at all: hide the spinner without showing blank iframe
       const building = document.getElementById('previewBuilding');
@@ -14088,6 +14089,219 @@ function _replaceImageInBuild(key, dataUrl) {
     document.getElementById('sendBtn')?.click();
   }
 }
+
+// ── Quick Fix Toolbar ──────────────────────────────────────────────────────
+
+function _showQuickFixBar() {
+  const bar = document.getElementById('quickFixBar');
+  if (bar) bar.style.display = 'flex';
+}
+
+function _hideAllFixPanels() {
+  ['pexelsFixPanel','colorFixPanel'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = 'none';
+  });
+}
+
+// ── 📸 Fix Images panel ────────────────────────────────────────────────────
+
+function _openPexelsFixPanel() {
+  _hideAllFixPanels();
+  const panel = document.getElementById('pexelsFixPanel');
+  const grid  = document.getElementById('pexelsFixGrid');
+  if (!panel || !grid || !_lastBuiltCode) return;
+
+  // Extract all unique Pexels photo IDs from the built HTML
+  const re = /https:\/\/images\.pexels\.com\/photos\/(\d+)\/[^"'\s>)]+/g;
+  const seen = new Set();
+  const entries = []; // [{id, fullSrc, altText}]
+  let m;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = _lastBuiltCode;
+  // Walk actual img elements to get alt text too
+  tmp.querySelectorAll('img[src*="pexels.com"]').forEach(img => {
+    const srcMatch = img.src.match(/photos\/(\d+)\//);
+    if (!srcMatch) return;
+    const id = srcMatch[1];
+    if (seen.has(id)) return;
+    seen.add(id);
+    entries.push({ id, src: img.src, alt: img.alt || '' });
+  });
+  // Fallback: regex scan for any remaining Pexels URLs not in img tags
+  while ((m = re.exec(_lastBuiltCode)) !== null) {
+    const id = m[1];
+    if (seen.has(id)) continue;
+    seen.add(id);
+    entries.push({ id, src: m[0], alt: '' });
+  }
+
+  if (entries.length === 0) {
+    panel.style.display = 'block';
+    grid.innerHTML = '<div style="color:rgba(255,255,255,0.3);font-size:10px;padding:8px;font-family:monospace;">No Pexels images found in this build.</div>';
+    return;
+  }
+
+  grid.innerHTML = '';
+  entries.forEach(({ id, src, alt }) => {
+    const thumbSrc = `https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=120&h=90&fit=crop`;
+    const cell = document.createElement('div');
+    cell.style.cssText = 'display:flex;flex-direction:column;gap:4px;';
+    cell.dataset.pexelsId = id;
+    cell.dataset.origSrc = src;
+    cell.innerHTML = `
+      <div style="position:relative;border-radius:7px;overflow:hidden;border:1.5px solid rgba(255,255,255,0.1);cursor:pointer;" class="qf-img-wrap">
+        <img src="${thumbSrc}" style="width:100%;aspect-ratio:4/3;object-fit:cover;display:block;"
+             onerror="this.src='https://images.pexels.com/photos/${id}/pexels-photo-${id}.jpeg?auto=compress&cs=tinysrgb&w=120'">
+        <div class="qf-img-overlay" style="position:absolute;inset:0;background:rgba(255,160,50,0.0);transition:background 0.15s;display:flex;align-items:center;justify-content:center;">
+          <span style="font-size:16px;opacity:0;transition:opacity 0.15s;">✏️</span>
+        </div>
+      </div>
+      <input class="qf-desc-input" type="text" placeholder="${alt || 'Describe…'}"
+             style="width:100%;padding:4px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.05);color:#fff;font-size:9px;font-family:monospace;box-sizing:border-box;outline:none;"
+             data-pexels-id="${id}">
+    `;
+    // Hover highlight
+    const wrap = cell.querySelector('.qf-img-wrap');
+    const overlay = cell.querySelector('.qf-img-overlay');
+    const pen = overlay.querySelector('span');
+    wrap.addEventListener('mouseenter', () => { overlay.style.background = 'rgba(255,160,50,0.25)'; pen.style.opacity = '1'; });
+    wrap.addEventListener('mouseleave', () => { overlay.style.background = 'rgba(255,160,50,0)'; pen.style.opacity = '0'; });
+    // Click focuses the input
+    wrap.addEventListener('click', () => cell.querySelector('.qf-desc-input').focus());
+    grid.appendChild(cell);
+  });
+
+  panel.style.display = 'block';
+}
+
+function _sendImageFixPatch(autoMode) {
+  if (!_lastBuiltCode) return;
+  const grid = document.getElementById('pexelsFixGrid');
+  if (!grid) return;
+
+  if (autoMode) {
+    // Auto mode: let AI decide — describe each image by its alt or context
+    const cells = grid.querySelectorAll('[data-pexels-id]');
+    const list = [];
+    cells.forEach(cell => {
+      const id = cell.dataset.pexelsId;
+      const input = cell.querySelector('.qf-desc-input');
+      const hint = input ? (input.placeholder !== 'Describe…' ? input.placeholder : '') : '';
+      list.push(`Photo ID ${id}${hint ? ` (context: "${hint}")` : ''}`);
+    });
+    if (list.length === 0) return;
+    const chatInput = document.getElementById('chatInput');
+    if (chatInput) {
+      chatInput.value = `Look at every image in the current site. Each one should show a photo that matches the section it is in (hero background = the industry setting, trainer cards = real people doing that sport/role, product cards = the actual product, etc.). Replace ALL images using fresh Pexels URLs that genuinely match. Keep all other code, colours, layout, and text exactly the same. Do NOT reuse photo IDs you already used.`;
+      document.getElementById('sendBtn')?.click();
+      document.getElementById('pexelsFixPanel').style.display = 'none';
+    }
+    return;
+  }
+
+  // Manual mode: collect only inputs the user filled in
+  const cells = grid.querySelectorAll('[data-pexels-id]');
+  const fixes = [];
+  cells.forEach(cell => {
+    const id    = cell.dataset.pexelsId;
+    const desc  = cell.querySelector('.qf-desc-input')?.value?.trim();
+    if (desc) fixes.push({ id, desc });
+  });
+
+  if (fixes.length === 0) {
+    // Nothing typed — prompt user
+    const firstInput = grid.querySelector('.qf-desc-input');
+    if (firstInput) { firstInput.focus(); firstInput.style.borderColor = '#ffa032'; setTimeout(() => { firstInput.style.borderColor = 'rgba(255,255,255,0.1)'; }, 1500); }
+    return;
+  }
+
+  const lines = fixes.map(f => `- Replace Pexels photo ID ${f.id} with a photo showing: "${f.desc}"`).join('\n');
+  const chatInput = document.getElementById('chatInput');
+  if (chatInput) {
+    chatInput.value = `Fix these specific images in the current site:\n${lines}\n\nFind real Pexels photo URLs for each description. Keep all other code, colours, layout, and text exactly the same.`;
+    document.getElementById('sendBtn')?.click();
+    document.getElementById('pexelsFixPanel').style.display = 'none';
+  }
+}
+
+// ── 🎨 Colors panel ────────────────────────────────────────────────────────
+
+function _openColorPanel() {
+  _hideAllFixPanels();
+  const panel = document.getElementById('colorFixPanel');
+  if (panel) panel.style.display = 'block';
+}
+
+function _applyColorFix(hex, name) {
+  const chatInput = document.getElementById('chatInput');
+  if (!chatInput || !_lastBuiltCode) return;
+  chatInput.value = `Change the accent colour of the entire site to ${name} (${hex}). Update every place the current accent colour is used — buttons, borders, highlights, glows, text accents, active states. Keep all other code exactly the same.`;
+  document.getElementById('sendBtn')?.click();
+  document.getElementById('colorFixPanel').style.display = 'none';
+}
+
+// ── ✏️ Ask AI quick-fix ────────────────────────────────────────────────────
+
+function _openAskFix() {
+  // Directly focus chat input with a helpful pre-fill hint
+  const chatInput = document.getElementById('chatInput');
+  if (!chatInput) return;
+  chatInput.placeholder = 'Describe what to fix — e.g. "make the hero text bigger" or "change the pricing to £29/month"…';
+  chatInput.focus();
+  // Reset placeholder after typing starts
+  chatInput.addEventListener('input', function restore() {
+    chatInput.placeholder = 'Ask about your screenshot…';
+    chatInput.removeEventListener('input', restore);
+  });
+}
+
+// ── Wire up Quick Fix button events ───────────────────────────────────────
+(function _initQuickFixBar() {
+  document.getElementById('qfImagesBtn')?.addEventListener('click', () => {
+    const panel = document.getElementById('pexelsFixPanel');
+    if (panel && panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+    _openPexelsFixPanel();
+  });
+  document.getElementById('qfColorsBtn')?.addEventListener('click', () => {
+    const panel = document.getElementById('colorFixPanel');
+    if (panel && panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+    _openColorPanel();
+  });
+  document.getElementById('qfAskBtn')?.addEventListener('click', _openAskFix);
+
+  document.getElementById('closePexelsFix')?.addEventListener('click', () => {
+    document.getElementById('pexelsFixPanel').style.display = 'none';
+  });
+  document.getElementById('closeColorFix')?.addEventListener('click', () => {
+    document.getElementById('colorFixPanel').style.display = 'none';
+  });
+
+  document.getElementById('pexelsFixApplyBtn')?.addEventListener('click', () => _sendImageFixPatch(false));
+  document.getElementById('pexelsFixAutoBtn')?.addEventListener('click',  () => _sendImageFixPatch(true));
+
+  // Colour swatches
+  document.querySelectorAll('.clr-swatch').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _applyColorFix(btn.dataset.color, btn.dataset.name);
+    });
+    btn.addEventListener('mouseenter', () => { btn.style.transform = 'scale(1.18)'; btn.style.borderColor = '#fff'; });
+    btn.addEventListener('mouseleave', () => { btn.style.transform = 'scale(1)'; btn.style.borderColor = 'transparent'; });
+  });
+
+  // Custom colour picker
+  const customPicker = document.getElementById('customColorPicker');
+  customPicker?.addEventListener('change', () => {
+    _applyColorFix(customPicker.value, 'Custom');
+  });
+})();
+
+// Also hide quick-fix panels when preview is closed
+document.getElementById('closePreviewBtn')?.addEventListener('click', () => {
+  _hideAllFixPanels();
+  const bar = document.getElementById('quickFixBar');
+  if (bar) bar.style.display = 'none';
+}, true); // capture=true so it runs alongside the existing handler
 
 // ── Staged Media for Build Mode ────────────────────────────────────────────
 // Holds an image or video the user tagged to embed in the next build.
