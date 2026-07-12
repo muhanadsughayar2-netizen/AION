@@ -879,6 +879,7 @@ let currentPageUrl = '';
 let codeExecutionEnabled = false;
 let researchMode = false;
 let buildModeEnabled = false;
+let _buildUseSnaps = false; // "Use my screenshots in build" toggle
 let buildStage = null; // null=classic, 'L1'=scaffold, 'L2'=design, 'L3'=activate, 'UPDATE'=patch
 let _buildBodyHtml = '';
 let _buildStyleCss = '';
@@ -10281,6 +10282,16 @@ async function handleSend() {
   if (buildModeEnabled) {
     const imageParts = filesQueue.filter(f => f.mimeType && f.mimeType.startsWith('image/'));
 
+    // "Use my screenshots in build" — inject all captured screenshots as embedded images
+    if (_buildUseSnaps && currentImages && currentImages.length > 0) {
+      currentImages.slice(0, 6).forEach(dataUrl => {
+        if (!dataUrl) return;
+        const mimeType = dataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+        const data = dataUrl.split(',')[1];
+        if (data) imageParts.push({ name: 'screenshot', mimeType, data });
+      });
+    }
+
     if (imageParts.length > 0) {
       const _imgOffset = Object.keys(_committedMediaMap).filter(k => k.startsWith('__SNAP_IMG_')).length;
       _pendingBuildImages = imageParts.map(f => `data:${f.mimeType};base64,${f.data}`);
@@ -11680,6 +11691,7 @@ function addBubbleActions(bubble, text) {
     const finalCode = _lastBuiltCode || thisCode;
     if (finalCode) {
       _showLivePreview(finalCode);
+      _showImageMap();
     } else {
       // No code at all: hide the spinner without showing blank iframe
       const building = document.getElementById('previewBuilding');
@@ -12528,6 +12540,8 @@ function _showNewAppConfirmation(prompt, input) {
     _lastBuiltCode = '';
     _lastBuiltCodeForPatch = '';
     _committedMediaMap = {};
+    const _nac_imgMap = document.getElementById('imageMapPanel');
+    if (_nac_imgMap) _nac_imgMap.style.display = 'none';
     _buildBodyHtml = '';
     _buildStyleCss = '';
     _buildScriptJs = '';
@@ -12822,6 +12836,8 @@ async function clearChat() {
   _lastBuiltCode = '';
   _lastBuiltCodeForPatch = '';
   _committedMediaMap = {};
+  const _clr_imgMap = document.getElementById('imageMapPanel');
+  if (_clr_imgMap) _clr_imgMap.style.display = 'none';
   try { chrome.storage.local.remove(['snaptoai_built_code']); } catch(e) {}
   _updateBuildInput();
 
@@ -13271,6 +13287,106 @@ chrome.storage.local.get([
   if (res.snaptoai_build_script) _buildScriptJs = res.snaptoai_build_script;
 });
 
+// ── Image Map: visual thumbnail grid for images embedded in the build ─────
+function _showImageMap() {
+  const panel = document.getElementById('imageMapPanel');
+  const grid  = document.getElementById('imageMapGrid');
+  if (!panel || !grid) return;
+
+  const imgEntries = Object.entries(_committedMediaMap)
+    .filter(([k]) => k.startsWith('__SNAP_IMG_'))
+    .sort((a, b) => {
+      const na = parseInt((a[0].match(/\d+/) || ['0'])[0]);
+      const nb = parseInt((b[0].match(/\d+/) || ['0'])[0]);
+      return na - nb;
+    });
+
+  if (imgEntries.length === 0) { panel.style.display = 'none'; return; }
+
+  panel.style.display = 'block';
+  grid.innerHTML = '';
+
+  imgEntries.forEach(([key, dataUrl], idx) => {
+    const item = document.createElement('div');
+    item.style.cssText = 'position:relative;flex-shrink:0;width:54px;';
+    item.innerHTML = `
+      <img src="${dataUrl}" style="width:54px;height:42px;object-fit:cover;border-radius:6px;border:1px solid rgba(255,160,50,0.22);display:block;" alt="Build image ${idx+1}">
+      <div style="font-size:7.5px;color:rgba(255,160,50,0.5);text-align:center;margin-top:2px;font-family:monospace;letter-spacing:0.3px;">IMG ${idx + 1}</div>
+      <button data-key="${key}" style="position:absolute;top:1px;right:1px;width:16px;height:16px;border-radius:50%;background:#ffa032;border:none;color:#000;font-size:10px;font-weight:900;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,0.55);" title="Replace this image">↺</button>
+    `;
+    item.querySelector('button').addEventListener('click', (e) => {
+      e.stopPropagation();
+      _openImageReplacer(key, idx + 1);
+    });
+    grid.appendChild(item);
+  });
+}
+
+function _openImageReplacer(key, num) {
+  const modal      = document.getElementById('imageReplacerModal');
+  const title      = document.getElementById('imageReplacerTitle');
+  const snapSec    = document.getElementById('imageReplacerSnaps');
+  const snapGrid   = document.getElementById('imageReplacerSnapGrid');
+  const fileInput  = document.getElementById('imageReplacerFileInput');
+  const uploadBtn  = document.getElementById('imageReplacerUploadBtn');
+  if (!modal) return;
+
+  if (title) title.textContent = `Replace Image ${num}`;
+
+  // Populate screenshot thumbnails
+  if (snapGrid) snapGrid.innerHTML = '';
+  if (snapSec && snapGrid && Array.isArray(currentImages) && currentImages.length > 0) {
+    snapSec.style.display = 'block';
+    currentImages.slice(0, 8).forEach((dataUrl, i) => {
+      const thumb = document.createElement('img');
+      thumb.src   = dataUrl;
+      thumb.style.cssText = 'width:56px;height:44px;object-fit:cover;border-radius:6px;border:2px solid transparent;cursor:pointer;transition:border-color 0.15s;display:block;';
+      thumb.title = `Screenshot ${i + 1}`;
+      thumb.addEventListener('click', () => {
+        modal.style.display = 'none';
+        _replaceImageInBuild(key, dataUrl);
+      });
+      thumb.addEventListener('mouseover', () => { thumb.style.borderColor = '#ffa032'; });
+      thumb.addEventListener('mouseout',  () => { thumb.style.borderColor = 'transparent'; });
+      snapGrid.appendChild(thumb);
+    });
+  } else if (snapSec) {
+    snapSec.style.display = 'none';
+  }
+
+  // Upload from device
+  if (uploadBtn && fileInput) {
+    uploadBtn.onclick = () => fileInput.click();
+    fileInput.onchange = (ev) => {
+      const file = ev.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (re) => {
+        modal.style.display = 'none';
+        _replaceImageInBuild(key, re.target.result);
+        fileInput.value = '';
+      };
+      reader.readAsDataURL(file);
+    };
+  }
+
+  modal.style.display = 'flex';
+}
+
+function _replaceImageInBuild(key, dataUrl) {
+  if (!buildModeEnabled || !_lastBuiltCode) return;
+  const mimeType = dataUrl.startsWith('data:image/png') ? 'image/png' : 'image/jpeg';
+  const data = (dataUrl.split(',')[1] || '').trim();
+  if (!data) return;
+  filesQueue.push({ name: 'replacement.jpg', mimeType, data });
+  const input = document.getElementById('chatInput');
+  if (input) {
+    const imgNum = parseInt((key.match(/\d+/) || ['0'])[0]) + 1;
+    input.value = `Replace image ${imgNum} (${key}) with the attached image. Keep all other content and design completely unchanged.`;
+    document.getElementById('sendBtn')?.click();
+  }
+}
+
 // ── Staged Media for Build Mode ────────────────────────────────────────────
 // Holds an image or video the user tagged to embed in the next build.
 let _stagedBuildMedia = null; // { type, mimeType, data (base64), label }
@@ -13571,6 +13687,8 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
   e.currentTarget.title = buildModeEnabled
     ? 'Build Mode ON — describe a site and send to generate it'
     : 'Build Mode — generate and preview websites & apps live';
+  const _bsb = document.getElementById('buildSubBar');
+  if (_bsb) _bsb.style.display = buildModeEnabled ? 'flex' : 'none';
   if (!buildModeEnabled) {
     buildStage = null;
     // Do NOT clear _lastBuiltCode or storage here — the user may toggle Build
@@ -13589,6 +13707,20 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
   } else {
     _updateBuildInput();
   }
+});
+
+// "Use my screenshots in build" checkbox
+document.getElementById('buildUseSnap')?.addEventListener('change', (e) => {
+  _buildUseSnaps = e.target.checked;
+});
+
+// Image replacer modal — close on X or backdrop click
+document.getElementById('closeImageReplacer')?.addEventListener('click', () => {
+  const m = document.getElementById('imageReplacerModal');
+  if (m) m.style.display = 'none';
+});
+document.getElementById('imageReplacerModal')?.addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.style.display = 'none';
 });
 
 // Stage button handlers
