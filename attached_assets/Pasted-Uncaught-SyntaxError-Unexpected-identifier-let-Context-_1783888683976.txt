@@ -1,0 +1,1509 @@
+Uncaught SyntaxError: Unexpected identifier 'let'
+Context
+ai-chat.html?count=1
+Stack Trace
+ai-chat.js:8530 (anonymous function)
+...
+8031
+8032
+8033
+8034
+8035
+8036
+8037
+8038
+8039
+8040
+8041
+8042
+8043
+8044
+8045
+8046
+8047
+8048
+8049
+8050
+8051
+8052
+8053
+8054
+8055
+8056
+8057
+8058
+8059
+8060
+8061
+8062
+8063
+8064
+8065
+8066
+8067
+8068
+8069
+8070
+8071
+8072
+8073
+8074
+8075
+8076
+8077
+8078
+8079
+8080
+8081
+8082
+8083
+8084
+8085
+8086
+8087
+8088
+8089
+8090
+8091
+8092
+8093
+8094
+8095
+8096
+8097
+8098
+8099
+8100
+8101
+8102
+8103
+8104
+8105
+8106
+8107
+8108
+8109
+8110
+8111
+8112
+8113
+8114
+8115
+8116
+8117
+8118
+8119
+8120
+8121
+8122
+8123
+8124
+8125
+8126
+8127
+8128
+8129
+8130
+8131
+8132
+8133
+8134
+8135
+8136
+8137
+8138
+8139
+8140
+8141
+8142
+8143
+8144
+8145
+8146
+8147
+8148
+8149
+8150
+8151
+8152
+8153
+8154
+8155
+8156
+8157
+8158
+8159
+8160
+8161
+8162
+8163
+8164
+8165
+8166
+8167
+8168
+8169
+8170
+8171
+8172
+8173
+8174
+8175
+8176
+8177
+8178
+8179
+8180
+8181
+8182
+8183
+8184
+8185
+8186
+8187
+8188
+8189
+8190
+8191
+8192
+8193
+8194
+8195
+8196
+8197
+8198
+8199
+8200
+8201
+8202
+8203
+8204
+8205
+8206
+8207
+8208
+8209
+8210
+8211
+8212
+8213
+8214
+8215
+8216
+8217
+8218
+8219
+8220
+8221
+8222
+8223
+8224
+8225
+8226
+8227
+8228
+8229
+8230
+8231
+8232
+8233
+8234
+8235
+8236
+8237
+8238
+8239
+8240
+8241
+8242
+8243
+8244
+8245
+8246
+8247
+8248
+8249
+8250
+8251
+8252
+8253
+8254
+8255
+8256
+8257
+8258
+8259
+8260
+8261
+8262
+8263
+8264
+8265
+8266
+8267
+8268
+8269
+8270
+8271
+8272
+8273
+8274
+8275
+8276
+8277
+8278
+8279
+8280
+8281
+8282
+8283
+8284
+8285
+8286
+8287
+8288
+8289
+8290
+8291
+8292
+8293
+8294
+8295
+8296
+8297
+8298
+8299
+8300
+8301
+8302
+8303
+8304
+8305
+8306
+8307
+8308
+8309
+8310
+8311
+8312
+8313
+8314
+8315
+8316
+8317
+8318
+8319
+8320
+8321
+8322
+8323
+8324
+8325
+8326
+8327
+8328
+8329
+8330
+8331
+8332
+8333
+8334
+8335
+8336
+8337
+8338
+8339
+8340
+8341
+8342
+8343
+8344
+8345
+8346
+8347
+8348
+8349
+8350
+8351
+8352
+8353
+8354
+8355
+8356
+8357
+8358
+8359
+8360
+8361
+8362
+8363
+8364
+8365
+8366
+8367
+8368
+8369
+8370
+8371
+8372
+8373
+8374
+8375
+8376
+8377
+8378
+8379
+8380
+8381
+8382
+8383
+8384
+8385
+8386
+8387
+8388
+8389
+8390
+8391
+8392
+8393
+8394
+8395
+8396
+8397
+8398
+8399
+8400
+8401
+8402
+8403
+8404
+8405
+8406
+8407
+8408
+8409
+8410
+8411
+8412
+8413
+8414
+8415
+8416
+8417
+8418
+8419
+8420
+8421
+8422
+8423
+8424
+8425
+8426
+8427
+8428
+8429
+8430
+8431
+8432
+8433
+8434
+8435
+8436
+8437
+8438
+8439
+8440
+8441
+8442
+8443
+8444
+8445
+8446
+8447
+8448
+8449
+8450
+8451
+8452
+8453
+8454
+8455
+8456
+8457
+8458
+8459
+8460
+8461
+8462
+8463
+8464
+8465
+8466
+8467
+8468
+8469
+8470
+8471
+8472
+8473
+8474
+8475
+8476
+8477
+8478
+8479
+8480
+8481
+8482
+8483
+8484
+8485
+8486
+8487
+8488
+8489
+8490
+8491
+8492
+8493
+8494
+8495
+8496
+8497
+8498
+8499
+8500
+8501
+8502
+8503
+8504
+8505
+8506
+8507
+8508
+8509
+8510
+8511
+8512
+8513
+8514
+8515
+8516
+8517
+8518
+8519
+8520
+8521
+8522
+8523
+8524
+8525
+8526
+8527
+8528
+8529
+8530
+8531
+8532
+8533
+8534
+8535
+8536
+8537
+8538
+8539
+8540
+8541
+8542
+8543
+8544
+8545
+8546
+8547
+8548
+8549
+8550
+8551
+8552
+8553
+8554
+8555
+8556
+8557
+8558
+8559
+8560
+8561
+8562
+8563
+8564
+8565
+8566
+8567
+8568
+8569
+8570
+8571
+8572
+8573
+8574
+8575
+8576
+8577
+8578
+8579
+8580
+8581
+8582
+8583
+8584
+8585
+8586
+8587
+8588
+8589
+8590
+8591
+8592
+8593
+8594
+8595
+8596
+8597
+8598
+8599
+8600
+8601
+8602
+8603
+8604
+8605
+8606
+8607
+8608
+8609
+8610
+8611
+8612
+8613
+8614
+8615
+8616
+8617
+8618
+8619
+8620
+8621
+8622
+8623
+8624
+8625
+8626
+8627
+8628
+8629
+8630
+8631
+8632
+8633
+8634
+8635
+8636
+8637
+8638
+8639
+8640
+8641
+8642
+8643
+8644
+8645
+8646
+8647
+8648
+8649
+8650
+8651
+8652
+8653
+8654
+8655
+8656
+8657
+8658
+8659
+8660
+8661
+8662
+8663
+8664
+8665
+8666
+8667
+8668
+8669
+8670
+8671
+8672
+8673
+8674
+8675
+8676
+8677
+8678
+8679
+8680
+8681
+8682
+8683
+8684
+8685
+8686
+8687
+8688
+8689
+8690
+8691
+8692
+8693
+8694
+8695
+8696
+8697
+8698
+8699
+8700
+8701
+8702
+8703
+8704
+8705
+8706
+8707
+8708
+8709
+8710
+8711
+8712
+8713
+8714
+8715
+8716
+8717
+8718
+8719
+8720
+8721
+8722
+8723
+8724
+8725
+8726
+8727
+8728
+8729
+8730
+8731
+8732
+8733
+8734
+8735
+8736
+8737
+8738
+8739
+8740
+8741
+8742
+8743
+8744
+8745
+8746
+8747
+8748
+8749
+8750
+8751
+8752
+8753
+8754
+8755
+8756
+8757
+8758
+8759
+8760
+8761
+8762
+8763
+8764
+8765
+8766
+8767
+8768
+8769
+8770
+8771
+8772
+8773
+8774
+8775
+8776
+8777
+8778
+8779
+8780
+8781
+8782
+8783
+8784
+8785
+8786
+8787
+8788
+8789
+8790
+8791
+8792
+8793
+8794
+8795
+8796
+8797
+8798
+8799
+8800
+8801
+8802
+8803
+8804
+8805
+8806
+8807
+8808
+8809
+8810
+8811
+8812
+8813
+8814
+8815
+8816
+8817
+8818
+8819
+8820
+8821
+8822
+8823
+8824
+8825
+8826
+8827
+8828
+8829
+8830
+8831
+8832
+8833
+8834
+8835
+8836
+8837
+8838
+8839
+8840
+8841
+8842
+8843
+8844
+8845
+8846
+8847
+8848
+8849
+8850
+8851
+8852
+8853
+8854
+8855
+8856
+8857
+8858
+8859
+8860
+8861
+8862
+8863
+8864
+8865
+8866
+8867
+8868
+8869
+8870
+8871
+8872
+8873
+8874
+8875
+8876
+8877
+8878
+8879
+8880
+8881
+8882
+8883
+8884
+8885
+8886
+8887
+8888
+8889
+8890
+8891
+8892
+8893
+8894
+8895
+8896
+8897
+8898
+8899
+8900
+8901
+8902
+8903
+8904
+8905
+8906
+8907
+8908
+8909
+8910
+8911
+8912
+8913
+8914
+8915
+8916
+8917
+8918
+8919
+8920
+8921
+8922
+8923
+8924
+8925
+8926
+8927
+8928
+8929
+8930
+8931
+8932
+8933
+8934
+8935
+8936
+8937
+8938
+8939
+8940
+8941
+8942
+8943
+8944
+8945
+8946
+8947
+8948
+8949
+8950
+8951
+8952
+8953
+8954
+8955
+8956
+8957
+8958
+8959
+8960
+8961
+8962
+8963
+8964
+8965
+8966
+8967
+8968
+8969
+8970
+8971
+8972
+8973
+8974
+8975
+8976
+8977
+8978
+8979
+8980
+8981
+8982
+8983
+8984
+8985
+8986
+8987
+8988
+8989
+8990
+8991
+8992
+8993
+8994
+8995
+8996
+8997
+8998
+8999
+9000
+9001
+9002
+9003
+9004
+9005
+9006
+9007
+9008
+9009
+9010
+9011
+9012
+9013
+9014
+9015
+9016
+9017
+9018
+9019
+9020
+9021
+9022
+9023
+9024
+9025
+9026
+9027
+9028
+9029
+...
+<8030 lines not shown>
+      o1.type = 'square';
+      o1.frequency.value = MELODY[melodyStep % MELODY.length];
+      g1.gain.setValueAtTime(0.06, now);
+      g1.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+      o1.start(now); o1.stop(now + 0.2);
+      const o2 = audioCtx.createOscillator(), g2 = audioCtx.createGain();
+      o2.connect(g2); g2.connect(audioCtx.destination);
+      o2.type = 'triangle';
+      o2.frequency.value = BASS[melodyStep % BASS.length];
+      g2.gain.setValueAtTime(0.07, now);
+      g2.gain.exponentialRampToValueAtTime(0.001, now + 0.26);
+      o2.start(now); o2.stop(now + 0.26);
+      melodyStep++;
+      musicTimer = setTimeout(tick, 260);
+    }
+    musicTimer = true; // mark as started before first tick
+    tick();
+  }
+  function stopMusic() {
+    if (musicTimer && musicTimer !== true) clearTimeout(musicTimer);
+    musicTimer = null;
+  }
+  // Call startMusic() when entering PLAYING, stopMusic() when leaving.
+
+  ── WIN / GAME-OVER RESET — MANDATORY (prevents stuck screen) ─
+  // ⚠️ NEVER leave the player on a static WIN or GAME_OVER screen with no way out.
+  // Copy this pattern EXACTLY for both states:
+  //
+  // LEVEL COMPLETE (reached tile 5):
+  //   gameState = 'LEVEL_COMPLETE';
+  //   stopMusic();
+  //   playSound(1047,'square',0.6,0.4); // fanfare
+  //   setTimeout(() => {
+  //     levelIndex = (levelIndex + 1) % LEVELS.length; // wrap to level 1 after last
+  //     resetLevel();           // resets enemies, coins, player position
+  //     gameState = 'PLAYING';
+  //     startMusic();
+  //   }, 2500);                 // 2.5 s celebration pause — then auto-advance
+  //
+  // GAME OVER (lives === 0):
+  //   gameState = 'GAME_OVER';
+  //   stopMusic();
+  //   playSound(150,'sawtooth',1.2,0.5);
+  //   setTimeout(() => {
+  //     player.lives = 3; player.score = 0; player.coins = 0;
+  //     levelIndex = 0;
+  //     resetLevel();
+  //     gameState = 'MENU';     // return to menu — never a dead end
+  //   }, 3000);
+  //
+  // WIN (all levels cleared):
+  //   gameState = 'WIN';
+  //   stopMusic();
+  //   setTimeout(() => {
+  //     player.lives = 3; player.score = 0; player.coins = 0;
+  //     levelIndex = 0;
+  //     resetLevel();
+  //     gameState = 'MENU';     // loop back to menu for replay
+  //   }, 4000);
+  //
+  // Space / tap always cancels the delay and jumps straight to MENU when on
+  // a terminal screen (GAME_OVER or WIN) so players are never truly stuck.
+
+  ── HUD — draw every frame, always on top ─────────────
+  function drawHUD(ctx) {
+    ctx.save();
+    ctx.font = 'bold 16px "Courier New"';
+    ctx.shadowColor='#000'; ctx.shadowBlur=4;
+    ctx.fillStyle='#fff';
+    ctx.fillText('SCORE: ' + String(player.score).padStart(6,'0'), 16, 28);
+    ctx.fillText('LIVES: ' + String.fromCodePoint(0x2665).repeat(player.lives), 16, 50);
+    ctx.fillText('COINS: ' + player.coins, 16, 72);
+    ctx.fillText('LEVEL: ' + (levelIndex+1), canvas.width-130, 28);
+    ctx.fillText('TIME:  ' + Math.max(0, Math.ceil(timeLeft)), canvas.width-130, 50);
+    ctx.restore();
+  }
+
+  ── GAME SCREEN RENDERS (all on canvas, NO HTML overlays) ─
+  function drawMenuScreen(ctx) {
+    ctx.fillStyle='rgba(0,0,0,0.72)'; ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#FFD700'; ctx.font='bold 64px "Courier New"';
+    ctx.textAlign='center'; ctx.fillText('SUPER', canvas.width/2, canvas.height/2-80);
+    ctx.fillText('[GAME TITLE]', canvas.width/2, canvas.height/2-10);
+    ctx.fillStyle='#fff'; ctx.font='22px "Courier New"';
+    if (Math.floor(Date.now()/600)%2) ctx.fillText('PRESS SPACE TO START', canvas.width/2, canvas.height/2+70);
+    ctx.textAlign='left';
+  }
+
+  MANDATORY GAME ARCHITECTURE SUMMARY:
+  • requestAnimationFrame game loop with delta-time
+  • Full state machine: MENU → PLAYING ↔ PAUSED → GAME_OVER / LEVEL_COMPLETE → WIN
+  • Physics from the MARIO PHYSICS BIBLE above — copy constants EXACTLY (especially slow speeds)
+  • MINIMUM 3 tile-map levels — Level 1 easy, Level 2 medium, Level 3 hard (use the examples above)
+  • 2+ enemy types with patrol AI + stomp-kill detection
+  • ✅ BACKGROUND MUSIC — startMusic() on PLAYING, stopMusic() on exit (copy the Web Audio example above)
+  • ✅ NO STUCK SCREENS — WIN / GAME_OVER MUST auto-reset after ≤4 seconds (copy the reset pattern above)
+  • ✅ LEVEL COMPLETE auto-advances to next level — levelIndex wraps back to 0 after last level
+  • All SFX from Web Audio API (no external audio files)
+  • Particles on every important event
+  • Parallax 3-layer background
+  • HUD drawn on canvas every frame
+  • All game screens drawn on canvas (no HTML overlays)
+  • Keyboard + on-canvas mobile touch buttons (arrow left/right + jump)
+
+  PROFILE F BANNED:
+  ✗ Instant velocity (vx=4) instead of acceleration — makes movement feel cheap
+  ✗ Same gravity up and down — kills the floaty Mario jump arc
+  ✗ Missing coyote time — players fall off edges before they can jump
+  ✗ Missing variable jump height — every jump identical is boring
+  ✗ CSS animations pretending to be a game — must use canvas
+  ✗ HTML elements moving around the page
+  ✗ setTimeout/setInterval for game loop (use requestAnimationFrame)
+  ✗ Only 1 level — minimum 3 levels required, each distinct
+  ✗ Enemies that don't move or interact
+  ✗ No background music — silent games feel dead
+  ✗ Stuck WIN / GAME_OVER screen with no way to continue — ALWAYS auto-reset
+  ✗ A plain colored square as the player
+
+PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
+  Use for: ANY request containing shop, store, buy, sell, product, price, payment, checkout, cart, e-commerce, Stripe, PayPal, order, purchase.
+  ⚠️  This profile builds a fully-functional static shop with real payment links — not a fake demo.
+
+  ══════════════════════════════════════════════════════════════
+  MANDATORY ARCHITECTURE — include every section below
+  ══════════════════════════════════════════════════════════════
+
+  1. HEADER — logo left + site name, navigation (Products · About · Cart), floating cart icon with item-count badge.
+
+  2. HERO — bold headline + one-sentence value prop + primary CTA button ("Shop Now" or "Browse Products").
+
+  3. PRODUCT GRID — 3–6 product cards in a responsive CSS grid (auto-fill, minmax(260px,1fr)).
+     Each card MUST have:
+       • Product image (Pexels photo or user screenshot)
+       • Product name (bold, 1.1rem)
+       • Short description (2 lines max)
+       • Price displayed prominently (e.g. $29.99)
+       • "🛒 Add to Cart" button (adds to JS cart) AND a "Buy Now" button (opens payment link directly)
+
+  4. CART SYSTEM — pure JS, no server:
+     • A JS array (let cart = []) tracks items: { name, price, qty }
+     • Floating cart button (top-right) shows badge with item count
+     • Cart drawer/modal: lists items, shows subtotal, has "Checkout" button
+     • "Checkout" button opens the Stripe Payment Link in a new tab
+
+  5. PAYMENT BUTTONS — use Stripe Payment Links (no server, just a URL):
+     • Every "Buy Now" and "Checkout" must use: href="https://buy.stripe.com/REPLACE_WITH_YOUR_STRIPE_LINK"
+     • Add HTML comment on each: <!-- Create your link at dashboard.stripe.com → Payment Links, then replace the URL above -->
+     • Also offer a PayPal fallback button: <a href="https://paypal.me/YOURUSERNAME/AMOUNT">Pay with PayPal 💳</a>
+     • Add comment: <!-- Replace with your PayPal.me link, e.g. paypal.me/YourName/29 -->
+
+  6. TRUST SECTION — "Safe & Secure Checkout" row with: 🔒 SSL Secured · 💳 Visa / Mastercard / PayPal · 🔄 Easy Returns
+
+  7. FOOTER — links, social icons, payment method badges (text-based), copyright.
+
+  PROFILE S VISUAL STYLE:
+  Clean, modern, light background (#FAFAFA), product cards with subtle shadow + hover lift.
+  Accent: brand color from user's request or default #6366F1 (indigo).
+  "Buy Now" button: solid accent color, white text, 44px tall, border-radius:8px.
+  Cart badge: red pill (background:#EF4444) over cart icon.
+
+  PROFILE S BANNED:
+  ✗ Fake "Add to Cart" that does nothing — must update cart array + badge count
+  ✗ Missing prices on any product card
+  ✗ "Click here" or "Learn more" as the CTA — always use action + price: "Buy Now — $29"
+  ✗ No payment method listed anywhere on the page
+  ✗ Placeholder text like "Product description here" — write real copy based on the user's topic
+  ✗ A server-side checkout — everything must work as a static HTML file (Stripe links open in new tab)
+
+  ══════════════════════════════════════════════════════════════
+  PROFILE S-ADMIN — AMAZON-STYLE OWNER-MANAGED SHOP
+  Activate when user says: "add products", "manage products", "admin panel", "Amazon style",
+  "edit price", "delete product", "create offer", "my own products", "admin dashboard".
+  ══════════════════════════════════════════════════════════════
+
+  Build a DUAL-MODE site — customer storefront + owner admin panel — all in one HTML file.
+  Products are stored in localStorage as JSON, so the owner's catalog persists in their browser.
+
+  ADMIN PANEL (hidden by default, revealed by clicking the logo 3× or pressing Alt+A):
+  1. Simple password gate (default password: "admin123" — shown in the panel so owner can change it).
+  2. "Add Product" form — fields: Product Name, Price ($), Original Price (for sale badge), Description, Image URL or 📁 Upload Image button (FileReader → base64 into localStorage).
+  3. Product list table — rows show: thumbnail, name, price, offer%. Each row has:
+       • ✏️ Edit (inline edit of name, price, offer%)
+       • 🗑️ Delete (removes from localStorage, re-renders storefront)
+       • 🏷️ Set Offer % (e.g. 20 → shows "SALE −20%" red badge on the card, crossed-out original price)
+  4. "Preview Store" button that closes admin and shows the storefront.
+  5. Save button writes the products array to localStorage key "snap_products".
+
+  STOREFRONT (customer view):
+  • On load, read products from localStorage key "snap_products".
+  • If localStorage is empty, show a starter set of 3 demo products so the store never looks empty.
+  • Product cards: image, name, offer badge (if any), crossed-out original price + sale price, "🛒 Add to Cart" + "Buy Now" buttons.
+  • Cart drawer and Stripe/PayPal checkout as in standard PROFILE S.
+
+  DATA SCHEMA (store in localStorage["snap_products"] as JSON array):
+  [{ id, name, price, originalPrice, offerPct, description, imageData, stripeLink, paypalLink }]
+
+  PROFILE S-ADMIN BANNED:
+  ✗ Requiring a server or database — everything lives in the browser localStorage
+  ✗ Admin panel visible to customers without the secret gesture/shortcut
+  ✗ Image uploads that fail silently — show a preview thumbnail after upload
+  ✗ More than 100 products (localStorage has ~5MB limit; warn the owner at 80 products)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  STEP 2 — UNIVERSAL QUALITY RULES (ALL profiles)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+① TYPOGRAPHY HIERARCHY — never same font-size for different levels:
+   H1: clamp(2.8rem,6vw,5rem) | H2: clamp(1.8rem,3.5vw,3rem) | H3: 1.25rem | Body: 1rem/1.7
+
+② REAL IMAGERY — use Pexels CDN (always works, no CORS). NEVER make up a photo ID.
+   Format: https://images.pexels.com/photos/{ID}/pexels-photo-{ID}.jpeg?auto=compress&cs=tinysrgb&w=1200
+   For smaller cards use w=800 instead of w=1200.
+   Always set: object-fit:cover; width:100%; height:100% on every img element. Descriptive alt text required.
+
+   ⚠️ PHOTO UNIQUENESS — CRITICAL: You must choose DIFFERENT Pexels photo IDs every single build.
+   BANNED IDs (overused — never use these): 1181671, 3184465, 3184291, 3182812, 1181244, 3184292,
+   3182781, 1181345, 3184311, 3183150, 3184405, 3184418, 3183197, 1181290, 1181672, 3184293.
+   Choose photo IDs that are thematically specific to this EXACT topic — not generic office/laptop shots.
+   Use high, varied ID numbers (above 10000000) for fresh, less commonly used photos.
+
+   BROKEN IMAGE PROTECTION — every <img> MUST have an onerror handler:
+   <img src="https://images.pexels.com/photos/{ID}/pexels-photo-{ID}.jpeg?auto=compress&cs=tinysrgb&w=1200"
+        alt="descriptive text"
+        onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1a1a2e 0%,#16213e 100%)'"
+        style="object-fit:cover;width:100%;height:100%">
+   The onerror hides the broken <img> tag and replaces it with a dark gradient on the parent div,
+   keeping layout intact. Adapt the gradient colours to match the site's palette.
+   NEVER leave an <img> without onerror — broken image icons destroy the visual quality of the site.
+
+   VERIFIED PEXELS IDs — pick the closest match to the content:
+
+   🍊 FOOD / WELLNESS / NUTRITION:
+   1640777  — vibrant healthy food spread, hero-worthy
+   1132047  — red berries macro
+   1367240  — walnuts close-up
+   1640775  — green salad bowl, fresh
+   1640774  — colorful vegetables flatlay
+   1640773  — fruit and greens arrangement
+   1092730  — avocado and greens
+   1279330  — mushrooms macro close-up
+   1410235  — superfood smoothie bowl
+   3493777  — citrus cross-section macro
+
+   🧘 HEALTH / LIFESTYLE / WELLNESS:
+   3822621  — yoga pose, calm, outdoor
+   3757942  — meditation, seated, serene
+   3757954  — wellness lifestyle, warm light
+   4056723  — supplements, capsules on clean surface
+   3958794  — active healthy woman, running
+
+   💻 TECH / SAAS / PRODUCTIVITY:
+   574071   — laptop on clean desk, minimal
+   1181244  — code on screen, developer
+   92904    — workspace with monitor
+   577585   — startup team working, modern office
+   3861969  — abstract technology blue
+
+   🎨 ABSTRACT / GRADIENT / BACKGROUNDS:
+   1103970  — purple-teal gradient, abstract
+   1266808  — warm orange abstract bokeh
+   4559555  — soft pastel gradient texture
+   3585078  — dark moody abstract
+
+   🌿 NATURE / OUTDOOR:
+   414612   — forest green path, sunlight
+   158028   — mountain lake, still water
+   255379   — green leaves macro, nature
+   33109    — ocean waves, horizon
+   2387793  — wildflower meadow
+
+   👥 PEOPLE / PORTRAITS:
+   774909   — professional woman, confident, natural light
+   220453   — smiling man, warm tone
+   1239291  — person at work, casual focus
+   2379004  — team meeting, diverse, modern
+   3184292  — woman laughing, natural outdoor light
+   3184338  — man presenting, confident boardroom
+   3184465  — diverse team collaboration, bright office
+   1181686  — close-up woman, editorial portrait
+   2381069  — entrepreneur at laptop, cafe setting
+
+   🏙️ ARCHITECTURE / LIFESTYLE / MODERN:
+   1105766  — modern minimal interior, white walls
+   1571460  — clean product on marble surface
+   3184394  — open plan bright office
+   2422278  — aerial city, modern skyline
+   1181354  — minimalist workspace, flat lay
+   3182812  — creative studio, wide shot
+   1591060  — luxury hotel lobby, editorial
+
+   📱 PRODUCT / TECH (LIGHT):
+   3861969  — abstract technology, light version
+   3182781  — hands holding phone, lifestyle
+   2312369  — flat lay tech devices, clean desk
+   1779487  — app on screen, bright modern
+   3183197  — product photography, white surface
+
+③ ICONS — inline SVG only (1.5px stroke, no fill), never emoji in professional contexts:
+   Tech: terminal brackets, arrows, circuits | Wellness: leaf, drop, helix, sprout, shield | Luxury: minimal geometric
+
+④ SCROLL ANIMATIONS — SAFETY RULE (blank sections = broken site):
+   COPY THIS EXACTLY — do not invent a different pattern:
+
+   CSS (inside <style>):
+     /* .reveal has NO opacity:0 — content is always visible if JS fails */
+     .reveal.visible { animation: revealUp 0.7s cubic-bezier(0.16,1,0.3,1) both; }
+     @keyframes revealUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:none; } }
+
+   JS (inside your IIFE — see ⑤ for the required IIFE wrapper):
+     const _io = new IntersectionObserver(entries => entries.forEach(e => {
+       if (e.isIntersecting) { e.target.classList.add('visible'); _io.unobserve(e.target); }
+     }), { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
+     document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+     // MANDATORY safety net — forces all elements visible after 1s even if observer never fires:
+     setTimeout(function(){ document.querySelectorAll('.reveal').forEach(function(el){ el.style.opacity='1'; el.style.transform='none'; }); }, 1000);
+
+   WHY THIS PATTERN IS SAFE: \`.reveal\` has no opacity:0 in CSS. Without \`.visible\`, content
+   is fully visible (opacity defaults to 1). When observer fires, \`.visible\` triggers the animation
+   (animation-fill-mode:both applies the \`from\` state briefly, then animates in). If JS crashes,
+   zero content is hidden. NEVER write \`.reveal { opacity: 0 }\` — that makes a blank site on JS errors.
+
+⑤ FULLY WORKING JS — every button, toggle, tab, gauge, and form MUST actually work:
+
+   SCRIPT PLACEMENT — CRITICAL: Write the <script> block BEFORE the footer and modal HTML
+   (i.e. before </section> of the last content section, not at the very end of </body>).
+   If the response is cut off by token limits, the footer/modal are lost but JS still runs.
+   Because the script executes after all content above it is parsed, the DOM is already ready —
+   DO NOT wrap anything in DOMContentLoaded (the event fires before inline scripts run when the
+   script is at end of body, making the callback never execute).
+
+   IIFE WRAPPER — REQUIRED FOR ALL SCRIPT CONTENT (prevents fatal redeclaration crashes):
+   The live preview re-evaluates the script on every update. If any const/let is declared at the
+   top level of a <script> block, re-evaluation throws: "Identifier 'x' has already been declared"
+   and all JS on the page dies. The ONLY safe pattern is ONE IIFE wrapping all logic:
+
+     <script>
+     (function() {
+       // ALL const/let/var declarations go inside here — safe from redeclaration forever.
+       const _io = new IntersectionObserver(...);
+
+       // Functions called by onclick="" must be attached to window so HTML can find them:
+       window.openModal = function(id) { document.getElementById(id).style.display = 'flex'; };
+       window.closeModal = function(id) { document.getElementById(id).style.display = 'none'; };
+       window.showTab = function(id, btn) { /* ... */ };
+     })();
+     </script>
+
+   NEVER declare const/let at the top level of <script>. NEVER use function declarations for
+   onclick handlers — use window.fnName = function(){} inside the IIFE instead.
+
+   SCROLL LINKS — use plain anchor tags, never onclick for scrolling:
+     <a href="#sectionId" class="btn">Go There</a>   ← works with zero JavaScript
+   Never write onclick="scrollToSection('...')" — it requires a JS function that may be missing.
+
+   WIRING PATTERN for everything else (inside the IIFE, not at top level):
+     const btn = document.getElementById('myBtn');
+     if (btn) btn.addEventListener('click', () => { /* handler */ });
+
+   MODAL / OVERLAY: toggle style.display between 'flex' and 'none'.
+   GAUGE / PROGRESS RINGS: animate stroke-dashoffset with setTimeout(fn, 100).
+   TOGGLES / FOOD BUTTONS: classList.toggle('active') — also update any linked counter or gauge.
+   TABS — COPY THIS EXACT PATTERN (classList approach — preserves display:grid on panels):
+     HTML:
+       <div class="tab-bar">
+         <button class="tab-btn active" onclick="showTab('t1',this)">Tab One</button>
+         <button class="tab-btn" onclick="showTab('t2',this)">Tab Two</button>
+         <button class="tab-btn" onclick="showTab('t3',this)">Disclaimer</button>
+       </div>
+       <div id="t1" class="tab-panel active">...real content...</div>
+       <div id="t2" class="tab-panel">...real content...</div>
+       <div id="t3" class="tab-panel">...real written disclaimer text...</div>
+     CSS:
+       .tab-panel { display: none; }
+       .tab-panel.active { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: center;
+                           animation: slideUp 0.5s cubic-bezier(0.16,1,0.3,1) forwards; }
+       @keyframes slideUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:none; } }
+       .tab-btn { opacity:0.5; border: 1px solid transparent; border-radius: 100px; }
+       .tab-btn.active { opacity:1; background: var(--accent); color: var(--bg); }
+     JS (window-attached inside IIFE — so onclick="" can find it):
+       window.showTab = function(id, btn) {
+         document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+         const panel = document.getElementById(id);
+         if (panel) panel.classList.add('active');
+         if (btn) btn.classList.add('active');
+       };
+     IMPORTANT: do NOT use style.display on panels — classList toggle preserves display:grid from CSS.
+     CONTENT RULE: every tab panel MUST have real written content matching the tab label.
+     Disclaimer tab → write a real 2-paragraph medical/legal disclaimer specific to the site topic.
+     Protocol tab → write real protocol steps. Interactions tab → real interaction list. No empty panels.
+
+   SMOOTH SCROLL — account for sticky nav height (90px offset):
+     document.querySelectorAll('a[href^="#"]').forEach(a => {
+       a.addEventListener('click', function(e) {
+         e.preventDefault();
+         const el = document.querySelector(this.getAttribute('href'));
+         if (el) window.scrollTo({ top: el.getBoundingClientRect().top + window.pageYOffset - 90, behavior: 'smooth' });
+       });
+     });
+
+   INTERACTIVE VISUALIZER / TOGGLE BUTTONS — use data attributes + cumulative pattern:
+     HTML: <button class="bio-btn" data-value="25" data-color="#00f2ff" data-name="Wild Berries">+ Berries</button>
+     JS: let score = 0;
+         document.querySelectorAll('.bio-btn').forEach(btn => {
+           btn.addEventListener('click', () => {
+             const val = +btn.dataset.value, color = btn.dataset.color, name = btn.dataset.name;
+             if (btn.classList.contains('active')) { btn.classList.remove('active'); score -= val; }
+             else { btn.classList.add('active'); score += val; }
+             score = Math.max(0, Math.min(100, score));
+             // update ring: const offset = 816 - (score/100)*816; ring.style.strokeDashoffset = offset;
+             // update label: label.textContent = 'Activated: ' + name;
+           });
+         });
+
+   ACCORDIONS: classList.toggle('open') on parent, max-height:0→500px transition on content.
+   PRICING BUTTONS: wire to scroll to the relevant section (never leave as dead stubs).
+   FORMS: preventDefault() + show a visible success message inline — no page reload.
+   DO NOT wrap code in DOMContentLoaded. DO NOT leave any button as a visual-only stub.
+
+⑥ SPACING — Max content width 1100px (margin:0 auto). Min gap between cards: 24px. Never overflow-x.
+
+⑦ ONE WOW DETAIL — mandatory, every build must include exactly one. Pick the one that fits:
+   Profile A: animated counter on stats (0→value, 1.5s easeOut) OR floating particles (20 divs, CSS keyframes)
+   Profile B: parallax scroll on hero image (10-15% travel via JS scroll listener) OR color-strip reveal
+   Profile C: large 60px cursor follower (frosted glass circle, smooth lerp) OR word-by-word fade-in on H1
+   Profile D: auto-scrolling marquee strip with bold text OR scramble text effect on hover
+   Profile E: confetti burst on CTA click (20 colored divs scattered via CSS keyframes)
+   ALL profiles: hero image must be a real Pexels photo that fills the viewport — never a colored div. If the wow detail is missing, the output fails quality bar.
+
+⑧ WIX-QUALITY LAYOUT STANDARDS — the difference between a template people pay for and a generic AI site:
+
+   LAYOUT VARIETY — use at least 4 of these section patterns (never repeat the same pattern twice):
+   • FULL-BLEED HERO: image fills 100vh, headline text overlaid with contrast — most powerful opening
+   • COLOR BLOCK: solid brand-color background section, large white or dark text, zero images — creates visual rhythm
+   • EDITORIAL SPLIT: 50/50 image + text, image bleeds to edge of its column (no padding), text has generous padding
+   • TYPOGRAPHY-LED: one section that is ONLY large text (120-200px headline) and nothing else — makes a bold statement
+   • MASONRY / ASYMMETRIC GRID: images in a 2+1 or 3-panel grid where cells are different heights — feels editorial
+   • FULL-BLEED PHOTO + FLOATING CARD: photo as background, content card floats centered with white bg + shadow
+   • MARQUEE TICKER STRIP: horizontal auto-scrolling strip of repeated brand phrase or client names
+   • PRODUCT/SERVICE CARDS: items displayed with large image top, minimal text below — like a menu or portfolio grid
+
+   COPY RULES — every word must sound like a real brand wrote it:
+   • Hero headline: max 6 words, provocative or poetic (e.g. "Food Worth Remembering" not "Welcome to Our Restaurant")
+   • Subheadline: one sentence that makes the value proposition visceral and specific
+   • Section titles: active verb phrases ("Crafted With Intention", "Made For the Bold", "Where Flavor Lives")
+   • CTA buttons: specific action words ("Reserve a Table", "Start Your Journey", "See the Menu") never "Learn More"
+   • Body copy: 2-3 sentences max per section — if it's longer, it's a wall of text that nobody reads
+
+   COLOR BOLDNESS — use the brand's signature color with conviction:
+   • At least one section uses the signature color as a full background
+   • Navigation uses the signature color or is fully transparent over the hero
+   • CTA button is always the signature color — never grey, never white-outline-only
+   • Use a 3-color max palette: signature + neutral (white/cream/black) + one soft accent
+
+⑨ 2025 FRESHNESS RULES — mandatory for all profiles:
+   • At least one section uses a very large display number or stat (80-120px) as a design element
+   • No two consecutive sections use the same layout pattern
+   • CSS custom properties (--accent, --bg, --text, --font-heading) set in :root
+   • At least 2 elements use CSS transitions or animations beyond just scroll reveal
+   • All photography feels editorial and curated — never generic stock
+
+⑩ MOBILE-FIRST RESPONSIVE — mandatory for ALL profiles, every single build:
+   • <meta name="viewport" content="width=device-width, initial-scale=1"> in <head> — ALWAYS.
+   • Base styles written for mobile (small screen) first; desktop via @media (min-width:768px) and @media (min-width:1024px).
+   • Navigation: on mobile (<768px), the top nav links MUST collapse into a hamburger menu (☰) that opens a full-width dropdown. No horizontal nav overflow.
+   • Product grids, card rows, feature columns: single column on mobile, multi-column on desktop using grid auto-fill or Flexbox wrap.
+   • Touch targets: every clickable element (buttons, links, tabs, cart icon) must be at least 44×44px — never smaller on mobile.
+   • Font sizes: body min 16px on mobile; headings use clamp() so they scale gracefully.
+   • No fixed-width elements wider than 100vw — no horizontal scroll on mobile.
+   • Images: max-width:100%; height:auto — never overflow their container.
+   • The site must look great and be fully usable on a 375px-wide phone screen (iPhone SE / Android mid-range).
+   BANNED: • overflow-x:hidden as the only "fix" for horizontal scroll — fix the root cause instead.
+            • Fixed pixel widths (e.g. width:800px) without a max-width:100% fallback.
+            • Tiny text (< 12px) or overlapping elements at 375px viewport width.
+
+⑪ GLOBAL STATE ENGINE — mandatory for any build with a cart, admin panel, dashboard, form, or tabs:
+   Initialize this pattern inside your <script> before any UI code:
+   const appState = {
+     data: {},          // products[], cart[], user, etc. — whatever this specific build needs
+     ui:   {},          // isDarkMode, activeTab, isAdminOpen, isCartOpen, etc.
+     update(key, value) {
+       const keys = key.split('.');
+       let obj = this;
+       keys.slice(0,-1).forEach(k => obj = obj[k]);
+       obj[keys[keys.length-1]] = value;
+       localStorage.setItem('__snap_state', JSON.stringify({ data: this.data, ui: this.ui }));
+       this.render();
+     },
+     render() { /* re-draw every UI component that reads from appState */ }
+   };
+   // Restore on load:
+   try { const s = JSON.parse(localStorage.getItem('__snap_state')||'{}');
+         if (s.data) appState.data = s.data;
+         if (s.ui)   appState.ui   = s.ui; } catch(e){}
+   RULES:
+   • Every "Add to Cart", "Delete Product", "Toggle Dark Mode" etc. must call appState.update() — NEVER mutate DOM directly.
+   • appState.render() re-draws every UI block that reads state (cart count badge, product grid, admin table).
+   • On page load, always restore from localStorage so the user never loses their data on refresh.
+   • Cart badge, product list, admin rows — all must stay in sync automatically via render().
+   BANNED: • Loose global variables like `let cart = []` on complex builds — use appState instead.
+            • Direct innerHTML edits without going through render() — they will desync.
+            • Forgetting to save to localStorage — state must survive page refresh.

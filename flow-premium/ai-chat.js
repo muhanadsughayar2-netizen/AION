@@ -8527,7 +8527,7 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
    • appState.render() re-draws every UI block that reads state (cart count badge, product grid, admin table).
    • On page load, always restore from localStorage so the user never loses their data on refresh.
    • Cart badge, product list, admin rows — all must stay in sync automatically via render().
-   BANNED: • Loose global variables like `let cart = []` on complex builds — use appState instead.
+   BANNED: • Loose global variables like \`let cart = []\` on complex builds — use appState instead.
             • Direct innerHTML edits without going through render() — they will desync.
             • Forgetting to save to localStorage — state must survive page refresh.
 
