@@ -7326,6 +7326,7 @@ Every output must start with this exact <head> block:
 
 Icons: always use Lucide — call lucide.createIcons() in a <script> at bottom of body.
 Images: use real Pexels URLs. Always add onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'" on every <img>.
+External links: every <a> pointing to an outside domain (social media, PayPal, Stripe, YouTube, etc.) MUST have target="_blank" rel="noopener noreferrer". Without this the preview iframe tries to navigate itself to that URL and gets blocked by CSP.
 JavaScript: all inline in a single <script> before </body>. Use IntersectionObserver for scroll-reveal animations.
 ⚠️ CRITICAL IIFE RULE — every single build, no exceptions:
 Wrap ALL script logic in one IIFE: (function(){ ... })();
@@ -8240,9 +8241,11 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   7. TRUST ROW — one line: 🔒 SSL Secured · 💳 PayPal / Visa / Mastercard · 🔄 Easy Returns · ⭐ 5-Star Reviews
 
   8. FOOTER:
-     Social row: Instagram <a href="https://instagram.com/[brandname]"><i data-lucide="instagram"></i></a>
-                 TikTok  <a href="https://tiktok.com/@[brandname]">[TikTok SVG below]</a>
+     Social row — every external link MUST have target="_blank" rel="noopener noreferrer":
+     Instagram: <a href="https://instagram.com/[brandname]" target="_blank" rel="noopener noreferrer"><i data-lucide="instagram"></i></a>
+     TikTok:    <a href="https://tiktok.com/@[brandname]" target="_blank" rel="noopener noreferrer">[TikTok SVG below]</a>
      TikTok SVG: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.17 8.17 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+     PayPal / Stripe buttons: also MUST have target="_blank" rel="noopener noreferrer"
      Copyright: <script>document.write('© ' + new Date().getFullYear() + ' [Brand]. All rights reserved.');</script>
 
   REVEAL ANIMATION — CORRECT pattern (copy exactly):
