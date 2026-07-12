@@ -13275,6 +13275,7 @@ function _showNewAppConfirmation(prompt, input) {
 
   document.getElementById('nacBtnFresh').addEventListener('click', () => {
     card.remove();
+    document.getElementById('_resumeBuildBanner')?.remove();
     // Wipe all build state so the next send is treated as a first build
     _lastBuiltCode = '';
     _lastBuiltCodeForPatch = '';
@@ -13671,6 +13672,7 @@ async function clearChat() {
   // Purge build cache so new builds start from a clean slate — not the previous
   // site. Without this the AI gets the old HTML as context and tries to merge
   // rather than starting fresh, producing "ghost" sites from prior sessions.
+  document.getElementById('_resumeBuildBanner')?.remove();
   _lastBuiltCode = '';
   _lastBuiltCodeForPatch = '';
   _committedMediaMap = {};
@@ -14122,7 +14124,16 @@ chrome.storage.local.get([
   'snaptoai_build_style',
   'snaptoai_build_script'
 ], (res) => {
-  if (res.snaptoai_built_code) _lastBuiltCode = res.snaptoai_built_code;
+  if (res.snaptoai_built_code) {
+    _lastBuiltCode = res.snaptoai_built_code;
+    // If Build Mode is already active when the popup loads, immediately show the
+    // loaded site so the user knows exactly what they are editing (prevents the
+    // "AION instead of Lumio Store" confusion where a stale site silently loads).
+    if (buildModeEnabled) {
+      _showResumedBuildBanner(_lastBuiltCode);
+      _showLivePreview(_lastBuiltCode);
+    }
+  }
   if (res.snaptoai_build_body)  _buildBodyHtml = res.snaptoai_build_body;
   if (res.snaptoai_build_style) _buildStyleCss  = res.snaptoai_build_style;
   if (res.snaptoai_build_script) _buildScriptJs = res.snaptoai_build_script;
@@ -14821,10 +14832,16 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
       if (res.snaptoai_built_code) {
         _lastBuiltCode = res.snaptoai_built_code;
         _updateBuildInput();
+        // Show the user what site they're resuming — prevents editing wrong site
+        _showResumedBuildBanner(_lastBuiltCode);
+        _showLivePreview(_lastBuiltCode);
       }
     });
   } else {
     _updateBuildInput();
+    // Already have code from current session — show it and the "Resuming" banner
+    _showResumedBuildBanner(_lastBuiltCode);
+    _showLivePreview(_lastBuiltCode);
   }
 });
 
@@ -14901,6 +14918,48 @@ function _updateBuildInput() {
   } else {
     input.placeholder = 'Ask about your screenshot...';
   }
+}
+
+// Show a dismissible banner when a previous session's built site is resumed.
+// This makes it obvious to the user WHICH site is loaded so they don't
+// unknowingly edit an old site when they meant to start something new.
+function _showResumedBuildBanner(code) {
+  if (!code) return;
+  const existing = document.getElementById('_resumeBuildBanner');
+  if (existing) existing.remove();
+  const titleMatch = code.match(/<title[^>]*>([^<]+)<\/title>/i);
+  const siteTitle = (titleMatch ? titleMatch[1].trim() : 'Previous build').slice(0, 40);
+  const thread = document.getElementById('chatThread');
+  if (!thread) return;
+  const banner = document.createElement('div');
+  banner.id = '_resumeBuildBanner';
+  banner.style.cssText = 'background:rgba(74,158,255,0.09);border:1px solid rgba(74,158,255,0.22);border-radius:8px;padding:8px 12px;margin:6px 0 4px;display:flex;align-items:center;gap:8px;font-size:12px;color:#8899aa;';
+  banner.innerHTML =
+    '<span style="font-size:15px;">📄</span>' +
+    '<span>Resuming: <strong style="color:#cdd6f4;">' + siteTitle.replace(/</g, '&lt;') + '</strong></span>' +
+    '<button id="_resumeBannerClear" style="margin-left:auto;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.1);color:#aab;cursor:pointer;font-size:11px;padding:2px 8px;border-radius:4px;">✕ Start fresh</button>';
+  // Insert near the top of the thread (after the modeLabel span if present)
+  const modeLabel = thread.querySelector('#modeLabel');
+  if (modeLabel && modeLabel.nextSibling) {
+    thread.insertBefore(banner, modeLabel.nextSibling);
+  } else {
+    thread.appendChild(banner);
+  }
+  document.getElementById('_resumeBannerClear')?.addEventListener('click', () => {
+    banner.remove();
+    _lastBuiltCode = '';
+    _lastBuiltCodeForPatch = '';
+    _committedMediaMap = {};
+    _buildBodyHtml = '';
+    _buildStyleCss = '';
+    _buildScriptJs = '';
+    try { chrome.storage.local.remove(['snaptoai_built_code', 'snaptoai_build_body', 'snaptoai_build_style', 'snaptoai_build_script']); } catch(e) {}
+    _updateBuildInput();
+    const w = document.getElementById('previewWrapper');
+    if (w) w.style.display = 'none';
+    const iframe = document.getElementById('livePreview');
+    if (iframe) { iframe.style.display = 'none'; iframe.src = 'about:blank'; }
+  });
 }
 
 document.getElementById('previewOpenTabBtn')?.addEventListener('click', () => {
