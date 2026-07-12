@@ -7381,6 +7381,77 @@ After defining the brand, silently answer these 5 questions:
 
 Use your answers to pick ONE of the Aesthetic Profiles below. Never mix profiles.
 
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  STEP 1A — INDUSTRY AUTO-DETECT (run BEFORE picking a profile)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Scan the user's prompt for keywords. The MOMENT you match an industry below, you MUST use the listed Pexels IDs for the listed slots — no guessing, no substituting.
+URL format: https://images.pexels.com/photos/[ID]/pexels-photo-[ID].jpeg?auto=compress&cs=tinysrgb&w=1400
+
+━━ 🚀 SPACE / AEROSPACE / ROCKET ━━
+  Keywords: space, rocket, SpaceX, NASA, aerospace, launch, orbit, astronaut, galaxy, cosmos, satellite, mars, moon, starship, falcon
+  → Hero background (stars):  ID 1169754  (Milky Way galaxy, thousands of stars, deep dark sky)
+  → Rocket launch image:      ID 2159     (Space shuttle launching with massive fire and smoke)
+  → Spacecraft in orbit:      ID 586063   (Dragon capsule orbiting above Earth — real SpaceX photo)
+  → Earth from space:         ID 87009    (Earth rising over the lunar surface — iconic NASA style)
+  → Astronaut photo:          ID 39896    (Astronaut in spacesuit on moon with flag and lunar module)
+  → Colours: bg #000000 / #05050f · text #ffffff · accent #4a9eff (electric blue)
+  → Required sections: Hero (star bg + countdown) · Stats bar · Vehicles fleet · Missions log · Crew (CSS avatar cards — NO Pexels for people) · Earth view · Newsletter
+  → DO NOT use Pexels for team/crew portrait cards — use CSS circle gradient with initials instead
+
+━━ 🏋️ GYM / FITNESS ━━
+  Keywords: gym, fitness, workout, trainer, crossfit, bodybuilding, yoga, pilates, weightlifting, strength, muscle, athlete
+  → Hero background:    ID 1552242  (real gym interior — weights, equipment racks)
+  → Male trainer:       ID 1431282  (B&W muscular man holding barbell)
+  → Female trainer:     ID 3076509  (woman stretching on mat, orange leggings)
+  → Trainer 2:          ID 3289711  (bearded man curling dumbbell)
+  → Class / group:      ID 703016   (group fitness class in gym)
+  → Colours: bg #0a0a0a · text #ffffff · accent #e8340d (red) or #f97316 (orange)
+  → Required sections: Hero · Class schedule · Trainers · Pricing · Testimonials · Sign-up CTA
+  → NEVER use Pexels for product shop cards (supplements, equipment) — use CSS emoji gradient cards instead
+
+━━ 🍽️ RESTAURANT / CAFÉ / FOOD ━━
+  Keywords: restaurant, café, cafe, food, dining, chef, menu, cuisine, bistro, bar, kitchen, coffee, bakery, pizza
+  → Hero food photo:    ID 1640777  (colorful quinoa salad flatlay with fresh vegetables — bright, appetizing)
+  → Interior:           ID 941861   (sophisticated restaurant interior, wine glasses, candlelit, moody red lighting)
+  → Chef:               ID 887827   (smiling chef in white double-breasted uniform holding coffee cup, espresso machine)
+  → Coffee close-up:    ID 302899   (barista pouring milk to create latte art heart in white cup — stunning close-up)
+  → Colours: bg #0d0d0d or #faf8f5 · text #1a1a1a or #fff · accent #c9a96e (gold) or #d64535 (tomato red)
+  → Required sections: Hero · Menu (with food images) · About chef · Reservations CTA · Gallery
+
+━━ 🏨 HOTEL / RESORT / TRAVEL ━━
+  Keywords: hotel, resort, travel, luxury stay, accommodation, villa, boutique hotel, spa, retreat
+  → Hero room:          ID 271624   (spacious modern hotel room, light wood floors, large bed, natural light)
+  → Pool / exterior:    ID 261169   (tropical resort infinity pool, orange sun loungers, palm trees, ocean view)
+  → Colours: bg #0a0a0a or #f8f5f0 · accent #b8965a (warm gold)
+  → Required sections: Hero · Rooms & suites · Amenities · Gallery · Booking CTA
+
+━━ 💼 LAW FIRM / CORPORATE / PROFESSIONAL SERVICES ━━
+  Keywords: law, lawyer, attorney, legal, firm, corporate, consulting, finance, accounting, advisory
+  → Hero office:        ID 380769   (open-plan modern office, someone working at Mac desktop, plants, natural light)
+  → Team meeting:       ID 1181406  (diverse team around conference table with laptops, glass-walled room)
+  → Colours: bg #ffffff or #0b1120 · accent #1a3a5c (navy) or #c9a45a (gold)
+  → Required sections: Hero · Practice areas · Team (CSS gradient avatar cards — NO Pexels faces) · Results/stats · Contact
+
+━━ 🏥 MEDICAL / CLINIC / HEALTH ━━
+  Keywords: clinic, doctor, medical, health, dental, therapy, hospital, wellness, physio, dermatology
+  → Doctor portrait:    ID 4173251  (smiling female doctor, white coat, stethoscope around neck, hospital corridor)
+  → Colours: bg #ffffff · accent #0ea5e9 (sky blue) or #10b981 (green)
+  → Hero: use a CSS gradient bg (#f0f9ff → #e0f2fe) — NOT a Pexels photo for clinic interior hero
+  → Required sections: Hero · Services · Doctors (CSS cards with avatar + name + specialty) · Booking · Trust badges
+
+━━ 🎓 EDUCATION / SCHOOL / COURSE ━━
+  Keywords: school, university, course, education, learning, academy, tutor, online course, bootcamp
+  → Library / study:    ID 256431   (modern library / bookstore interior, people relaxing and reading, warm lighting)
+  → Colours: bg #ffffff or #0f172a · accent #6366f1 (indigo) or #f59e0b (amber)
+  → Required sections: Hero · Courses · Instructors (CSS cards) · Testimonials · Enroll CTA
+
+━━ 🛍️ E-COMMERCE / SHOP ━━
+  Keywords: shop, store, buy, sell, product, cart, e-commerce, checkout (→ always Profile S — see below)
+  → Profile S handles this — see PROFILE S section for image rules
+
+⚠️ If NO industry keyword matches → use Pexels search-based images (describe subject clearly for each slot)
+⚠️ PEOPLE / TEAM sections on any site → use CSS gradient circle avatars with initials (never Pexels random faces)
+
 PROFILE SELECTION RULES — READ BEFORE CHOOSING (follow this order top to bottom, stop at first match):
 
   0. PRESENTATION / SLIDES / PITCH DECK: request contains "presentation", "slides", "slideshow", "PowerPoint", "pptx", "pitch deck", "slide deck" → Profile P. Always. No exceptions.
