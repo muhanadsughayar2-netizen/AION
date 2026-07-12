@@ -7369,6 +7369,8 @@ PROFILE SELECTION RULES — READ BEFORE CHOOSING (follow this order top to botto
 
   0. PRESENTATION / SLIDES / PITCH DECK: request contains "presentation", "slides", "slideshow", "PowerPoint", "pptx", "pitch deck", "slide deck" → Profile P. Always. No exceptions.
 
+  0.5. SHOP / STORE / E-COMMERCE: request contains shop, store, buy, sell, product, price, payment, checkout, cart, e-commerce, Stripe, PayPal, order, purchase → Profile S. Always. No exceptions.
+
   1. GAME: request contains game/level/player/score/jump/shoot/enemy/arcade/puzzle/Mario/RPG/dungeon → Profile F. Always. No exceptions.
 
   2. COMING SOON / PERSONAL NAME IS BRAND: person's name as brand, coach, speaker, author, photographer, "coming soon" page → Profile G.
@@ -8137,6 +8139,56 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   ✗ No background music — silent games feel dead
   ✗ Stuck WIN / GAME_OVER screen with no way to continue — ALWAYS auto-reset
   ✗ A plain colored square as the player
+
+PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
+  Use for: ANY request containing shop, store, buy, sell, product, price, payment, checkout, cart, e-commerce, Stripe, PayPal, order, purchase.
+  ⚠️  This profile builds a fully-functional static shop with real payment links — not a fake demo.
+
+  ══════════════════════════════════════════════════════════════
+  MANDATORY ARCHITECTURE — include every section below
+  ══════════════════════════════════════════════════════════════
+
+  1. HEADER — logo left + site name, navigation (Products · About · Cart), floating cart icon with item-count badge.
+
+  2. HERO — bold headline + one-sentence value prop + primary CTA button ("Shop Now" or "Browse Products").
+
+  3. PRODUCT GRID — 3–6 product cards in a responsive CSS grid (auto-fill, minmax(260px,1fr)).
+     Each card MUST have:
+       • Product image (Pexels photo or user screenshot)
+       • Product name (bold, 1.1rem)
+       • Short description (2 lines max)
+       • Price displayed prominently (e.g. $29.99)
+       • "🛒 Add to Cart" button (adds to JS cart) AND a "Buy Now" button (opens payment link directly)
+
+  4. CART SYSTEM — pure JS, no server:
+     • A JS array (let cart = []) tracks items: { name, price, qty }
+     • Floating cart button (top-right) shows badge with item count
+     • Cart drawer/modal: lists items, shows subtotal, has "Checkout" button
+     • "Checkout" button opens the Stripe Payment Link in a new tab
+
+  5. PAYMENT BUTTONS — use Stripe Payment Links (no server, just a URL):
+     • Every "Buy Now" and "Checkout" must use: href="https://buy.stripe.com/REPLACE_WITH_YOUR_STRIPE_LINK"
+     • Add HTML comment on each: <!-- Create your link at dashboard.stripe.com → Payment Links, then replace the URL above -->
+     • Also offer a PayPal fallback button: <a href="https://paypal.me/YOURUSERNAME/AMOUNT">Pay with PayPal 💳</a>
+     • Add comment: <!-- Replace with your PayPal.me link, e.g. paypal.me/YourName/29 -->
+
+  6. TRUST SECTION — "Safe & Secure Checkout" row with: 🔒 SSL Secured · 💳 Visa / Mastercard / PayPal · 🔄 Easy Returns
+
+  7. FOOTER — links, social icons, payment method badges (text-based), copyright.
+
+  PROFILE S VISUAL STYLE:
+  Clean, modern, light background (#FAFAFA), product cards with subtle shadow + hover lift.
+  Accent: brand color from user's request or default #6366F1 (indigo).
+  "Buy Now" button: solid accent color, white text, 44px tall, border-radius:8px.
+  Cart badge: red pill (background:#EF4444) over cart icon.
+
+  PROFILE S BANNED:
+  ✗ Fake "Add to Cart" that does nothing — must update cart array + badge count
+  ✗ Missing prices on any product card
+  ✗ "Click here" or "Learn more" as the CTA — always use action + price: "Buy Now — $29"
+  ✗ No payment method listed anywhere on the page
+  ✗ Placeholder text like "Product description here" — write real copy based on the user's topic
+  ✗ A server-side checkout — everything must work as a static HTML file (Stripe links open in new tab)
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   STEP 2 — UNIVERSAL QUALITY RULES (ALL profiles)
@@ -10376,23 +10428,37 @@ async function handleSend() {
         }
       }).join(' | ');
 
+      // Detect if user wants the image used as a logo / favicon (not a hero image)
+      const _isIconBuild = /\b(icon|favicon|logo|brand[\s-]?logo|site[\s-]?logo|app[\s-]?icon|navbar[\s-]?logo)\b/i.test(prompt);
+
       // Different instruction depending on whether this is a fresh build or a patch edit
       if (!_lastBuiltCode) {
-        // FRESH BUILD with user images: treat them as the primary product/brand visuals
-        prompt += `\n\nPRODUCT IMAGE INSTRUCTION (FRESH BUILD): The user has provided ${imageParts.length} real screenshot(s) of their actual product, app, or brand. ` +
-          `These are the PRIMARY visuals for the entire site — DO NOT use any Pexels stock photos at all. ` +
-          `Use these exact placeholder strings as <img> src values: ${placeholderList}. ` +
-          ((_dimHints) ? `IMAGE DIMENSIONS (use these to size containers correctly — NEVER stretch or crop unexpectedly): ${_dimHints}. ` : '') +
-          `SIZING RULES — apply these exact styles per image: ${_perImgCss}. ` +
-          `For portrait images (phone screenshots): wrap in a centered flex container with overflow:hidden; never set height:100% on the container — let height:auto preserve the natural ratio. ` +
-          `For landscape images: wrap in a div with the matching aspect-ratio so the image fills it without distortion. ` +
-          `MANDATORY PLACEMENT — distribute them across the site: ` +
-          `${_pendingBuildImages.length >= 1 ? `__SNAP_IMG_${_imgOffset}__ = HERO section (full-bleed above the fold, the very first thing visitors see — make it large and prominent); ` : ''}` +
-          `${_pendingBuildImages.length >= 2 ? `__SNAP_IMG_${_imgOffset + 1}__ = FEATURES or HOW IT WORKS section (mid-page, showing the product in use); ` : ''}` +
-          `${_pendingBuildImages.length >= 3 ? `__SNAP_IMG_${_imgOffset + 2}__ = TESTIMONIAL, CTA, or CLOSING section (bottom of page, inspiring action); ` : ''}` +
-          `If there are more images, distribute them naturally across remaining sections. ` +
-          `CRITICAL: NEVER use any Pexels URLs. NEVER output actual base64 data — only placeholder strings. ` +
-          `NEVER remove any __SNAP_VID_N__, __SNAP_AUD_N__ placeholders.`;
+        if (_isIconBuild) {
+          // LOGO / FAVICON build — image goes small in header + as browser tab icon, NOT as hero
+          prompt += `\n\nLOGO / FAVICON INSTRUCTION (FRESH BUILD): The user has provided ${imageParts.length} image(s) to use as the site logo and/or favicon. ` +
+            `DO NOT place these images as large hero or background images. ` +
+            `MANDATORY USAGE for __SNAP_IMG_${_imgOffset}__: ` +
+            `(1) Add <link rel="icon" type="image/png" href="__SNAP_IMG_${_imgOffset}__"> inside <head> so it appears as the browser tab favicon. ` +
+            `(2) Place a small <img src="__SNAP_IMG_${_imgOffset}__" alt="logo" style="height:36px;width:auto;object-fit:contain;display:block;"> in the top-left of the navbar/header next to the site name. ` +
+            `(3) If there are additional images (${_pendingBuildImages.length > 1 ? placeholderList.split(', ').slice(1).join(', ') : 'none'}), use them as product photos or section visuals — sized naturally (width:100%;height:auto). ` +
+            `CRITICAL: NEVER use any Pexels URLs when the user has provided their own logo. NEVER output actual base64 data — only placeholder strings.`;
+        } else {
+          // FRESH BUILD with user images: treat them as the primary product/brand visuals
+          prompt += `\n\nPRODUCT IMAGE INSTRUCTION (FRESH BUILD): The user has provided ${imageParts.length} real screenshot(s) of their actual product, app, or brand. ` +
+            `These are the PRIMARY visuals for the entire site — DO NOT use any Pexels stock photos at all. ` +
+            `Use these exact placeholder strings as <img> src values: ${placeholderList}. ` +
+            ((_dimHints) ? `IMAGE DIMENSIONS (use these to size containers correctly — NEVER stretch or crop unexpectedly): ${_dimHints}. ` : '') +
+            `SIZING RULES — apply these exact styles per image: ${_perImgCss}. ` +
+            `For portrait images (phone screenshots): wrap in a centered flex container with overflow:hidden; never set height:100% on the container — let height:auto preserve the natural ratio. ` +
+            `For landscape images: wrap in a div with the matching aspect-ratio so the image fills it without distortion. ` +
+            `MANDATORY PLACEMENT — distribute them across the site: ` +
+            `${_pendingBuildImages.length >= 1 ? `__SNAP_IMG_${_imgOffset}__ = HERO section (full-bleed above the fold, the very first thing visitors see — make it large and prominent); ` : ''}` +
+            `${_pendingBuildImages.length >= 2 ? `__SNAP_IMG_${_imgOffset + 1}__ = FEATURES or HOW IT WORKS section (mid-page, showing the product in use); ` : ''}` +
+            `${_pendingBuildImages.length >= 3 ? `__SNAP_IMG_${_imgOffset + 2}__ = TESTIMONIAL, CTA, or CLOSING section (bottom of page, inspiring action); ` : ''}` +
+            `If there are more images, distribute them naturally across remaining sections. ` +
+            `CRITICAL: NEVER use any Pexels URLs. NEVER output actual base64 data — only placeholder strings. ` +
+            `NEVER remove any __SNAP_VID_N__, __SNAP_AUD_N__ placeholders.`;
+        }
       } else {
         // PATCH EDIT with user images: follow user's explicit placement instructions
         prompt += `\n\nIMAGE EMBED INSTRUCTION: The user attached ${imageParts.length} image(s). ` +
@@ -10434,11 +10500,13 @@ async function handleSend() {
 
       const _gameKeywords = /\b(game|platformer|arcade|puzzle|shooter|rpg|mario|zelda|dungeon|level|player|score|enemy|enemies|jump|shoot|sprite|tile|coin|boss)\b/i;
       const _presentationKeywords = /\b(presentation|slides|slideshow|powerpoint|pptx|pitch deck|slide deck|deck)\b/i;
+      const _shopKeywords = /\b(shop|store|buy|sell|product|price|payment|checkout|cart|e-?commerce|stripe|paypal|order|purchase|selling)\b/i;
       const _isGameBuild = _gameKeywords.test(prompt);
       const _isPresentationBuild = !_isGameBuild && _presentationKeywords.test(prompt);
+      const _isShopBuild = !_isGameBuild && !_isPresentationBuild && _shopKeywords.test(prompt);
 
       // Single status bubble for all agents
-      const _buildLabel = _isGameBuild ? 'game' : _isPresentationBuild ? 'presentation' : 'build';
+      const _buildLabel = _isGameBuild ? 'game' : _isPresentationBuild ? 'presentation' : _isShopBuild ? 'shop' : 'build';
       const _agentBubble = addBubble(
         `<div style="display:flex;align-items:center;gap:10px;color:rgba(255,255,255,0.65);font-size:13px;">` +
         `<span style="font-size:20px;">⚡</span>` +
@@ -10506,6 +10574,25 @@ async function handleSend() {
             `   addShape backgrounds are locked shapes that users cannot edit in PowerPoint's Format Background dialog.\n` +
             `   slide.background sets the real native PowerPoint background — fully editable, themeable, and replaceable.\n` +
             `RESULT: the user clicks "Download PowerPoint" and gets a real, fully-editable .pptx file where they can change backgrounds, themes, fonts, and layout in PowerPoint.`;
+        }
+
+        // Inject shop / payment-specific instructions
+        if (_isShopBuild) {
+          prompt +=
+            `\n\n⚡ SHOP BUILD — MANDATORY RULES (highest priority, override everything else):\n` +
+            `1. Use PROFILE S from the system prompt. Build a full e-commerce page, not just a landing page.\n` +
+            `2. PRODUCT GRID: 3–6 product cards — each card must have an image, name, description (2 lines), price (bold), "🛒 Add to Cart" + "Buy Now" buttons.\n` +
+            `3. CART SYSTEM: pure JS (no server). let cart = [{ name, price, qty }]. Floating cart icon top-right with item-count badge. Cart modal shows items, subtotal, Checkout button.\n` +
+            `4. PAYMENT BUTTONS — every "Buy Now" and "Checkout" must use Stripe Payment Links:\n` +
+            `   <a href="https://buy.stripe.com/REPLACE_WITH_YOUR_STRIPE_LINK" target="_blank" class="pay-btn">Buy Now — $XX</a>\n` +
+            `   <!-- To activate: go to dashboard.stripe.com → Payment Links → Create Link → copy the URL and replace the href above -->\n` +
+            `5. PAYPAL FALLBACK: add a secondary PayPal button under each Stripe button:\n` +
+            `   <a href="https://paypal.me/YOURUSERNAME/AMOUNT" target="_blank" class="paypal-btn">Pay with PayPal 💳</a>\n` +
+            `   <!-- Replace with your PayPal.me link: paypal.me/YourName/Amount -->\n` +
+            `6. TRUST ROW: a full-width strip that says "🔒 SSL Secured  ·  💳 Visa / Mastercard / PayPal  ·  🔄 Easy Returns"\n` +
+            `7. Every product must have a REAL price shown (invent realistic prices if not specified).\n` +
+            `8. NEVER build a fake cart that does nothing — add to cart MUST update the badge count.\n` +
+            `RESULT: the user downloads the HTML, replaces the Stripe/PayPal placeholder links with their real payment links, and has a working online shop.`;
         }
 
         // Update bubble to show results
