@@ -7555,8 +7555,9 @@ PROFILE P — PRESENTATION / SLIDE DECK (PowerPoint-style)
        pptx.layout = 'LAYOUT_WIDE';  // 16:9
        SLIDES.forEach(s => {
          const slide = pptx.addSlide();
-         // Dark background
-         slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{color:'0F172A'} });
+         // ✅ REAL slide background — editable in PowerPoint via Format Background
+         // NEVER use addShape for background — that creates a locked shape users cannot edit
+         slide.background = { color: '0F172A' };
          // Title
          slide.addText(s.title, { x:0.5, y:0.4, w:12, h:1.2, fontSize:36, bold:true, color:'FFFFFF', fontFace:'Calibri' });
          // Subtitle (if present)
@@ -7586,6 +7587,9 @@ PROFILE P — PRESENTATION / SLIDE DECK (PowerPoint-style)
   ✗ Omitting the Download PowerPoint button
   ✗ Hardcoding slide content as HTML — ALWAYS use the SLIDES array
   ✗ Using any other CDN for pptx — only pptxgenjs@3.12.0 from jsdelivr
+  ✗ Using addShape for slide backgrounds — ALWAYS use slide.background = { color: 'HEX' } instead.
+    addShape creates a locked rectangle shape that blocks Format Background in PowerPoint.
+    slide.background sets the real native slide background — fully editable and themeable.
 
 PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter
@@ -10419,7 +10423,10 @@ async function handleSend() {
             `5. Generate 10–15 content-rich slides based on the user's topic — do NOT use placeholder text.\n` +
             `6. Every slide must have: title (string), subtitle (optional string), bullets (string array), notes (string).\n` +
             `7. The generatePptx() function must iterate over the SLIDES array — never hardcode slide content in the function.\n` +
-            `RESULT: the user clicks "Download PowerPoint" and gets a real, openable presentation.pptx file.`;
+            `8. CRITICAL — slide background: use slide.background = { color: 'HEX' } — NEVER addShape for backgrounds.\n` +
+            `   addShape backgrounds are locked shapes that users cannot edit in PowerPoint's Format Background dialog.\n` +
+            `   slide.background sets the real native PowerPoint background — fully editable, themeable, and replaceable.\n` +
+            `RESULT: the user clicks "Download PowerPoint" and gets a real, fully-editable .pptx file where they can change backgrounds, themes, fonts, and layout in PowerPoint.`;
         }
 
         // Update bubble to show results
@@ -13712,6 +13719,22 @@ document.getElementById('buildToggleBtn')?.addEventListener('click', (e) => {
 // "Use my screenshots in build" checkbox
 document.getElementById('buildUseSnap')?.addEventListener('change', (e) => {
   _buildUseSnaps = e.target.checked;
+});
+
+// Build type quick-start pills — clicking pre-fills chatInput so users know
+// they can build sites, slides, PDFs, games, apps, etc.
+document.querySelectorAll('.build-type-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const prompt = btn.dataset.prompt || '';
+    const ci = document.getElementById('chatInput');
+    if (!ci) return;
+    ci.value = prompt;
+    ci.focus();
+    // Put cursor at the end so the user can type immediately
+    ci.setSelectionRange(ci.value.length, ci.value.length);
+    // Trigger input event so any auto-resize logic fires
+    ci.dispatchEvent(new Event('input', { bubbles: true }));
+  });
 });
 
 // Image replacer modal — close on X or backdrop click
