@@ -12099,6 +12099,8 @@ async function handleSend() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let sseBuffer = '';
+      let _buildChunkCount = 0;
+      let _buildLastRenderLen = 0;
       
       while (true) {
         const { done, value } = await reader.read();
@@ -12117,12 +12119,54 @@ async function handleSend() {
               const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
               if (text) {
                 fullText += text;
+                _buildChunkCount++;
                 // In Build Mode: don't stream raw HTML into the chat bubble —
                 // it confuses the user with thousands of lines of code.
-                // Show a "building…" indicator instead; the preview updates via renderLivePreview.
-                const _streamIsHtml = buildModeEnabled && fullText.trimStart().startsWith('<!') || (buildModeEnabled && /```html/i.test(fullText));
+                // Show a live progress indicator instead; preview updates via renderLivePreview.
+                const _streamIsHtml = buildModeEnabled && (fullText.trimStart().startsWith('<!') || /```html/i.test(fullText));
                 if (_streamIsHtml) {
-                  responseBubble.innerHTML = '<style>@keyframes _snap_pulse{0%,100%{opacity:.55}50%{opacity:1}}@keyframes _snap_dots{0%{content:""}33%{content:"."}66%{content:".."}100%{content:"..."}}.snap-building-dot::after{content:"";animation:_snap_dots 1.2s steps(1,end) infinite}</style><div style="display:flex;align-items:center;gap:10px;font-size:13px;animation:_snap_pulse 1.5s ease-in-out infinite;padding:2px 0;"><span style="font-size:20px;">🏗️</span><span>Building your site<span class="snap-building-dot"></span></span></div>';
+                  // Detect which section is currently being written
+                  const _ft = fullText;
+                  let _section = 'Starting…';
+                  if (/<\/html>/i.test(_ft))            _section = 'Finalising…';
+                  else if (/<footer/i.test(_ft))        _section = 'Writing footer…';
+                  else if (/<script/i.test(_ft))        _section = 'Adding interactions…';
+                  else if (((_ft.match(/<section/gi)||[]).length) >= 4) _section = 'Building sections…';
+                  else if (/<section/i.test(_ft))       _section = 'Building layout…';
+                  else if (/<body/i.test(_ft))          _section = 'Building structure…';
+                  else if (/<style/i.test(_ft))         _section = 'Writing styles…';
+                  else if (/<head/i.test(_ft))          _section = 'Setting up…';
+                  const _kbWritten = Math.round(_ft.length / 100) / 10;
+                  // Set up the card once; only update text nodes afterwards so the
+                  // CSS progress-bar animation doesn't restart on every chunk.
+                  if (!responseBubble.querySelector('._bld_card')) {
+                    responseBubble.innerHTML =
+                      '<style>' +
+                      '@keyframes _bld_pulse{0%,100%{opacity:.65}50%{opacity:1}}' +
+                      '@keyframes _bld_shimmer{0%{transform:translateX(-100%)}100%{transform:translateX(200%)}}' +
+                      '</style>' +
+                      '<div class="_bld_card" style="font-size:13px;padding:2px 0;">' +
+                        '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">' +
+                          '<span style="font-size:18px;animation:_bld_pulse 1.4s ease-in-out infinite;display:inline-block;">🏗️</span>' +
+                          '<span style="font-weight:600;">Building your site</span>' +
+                          '<span class="_bld_kb" style="color:#8899aa;font-size:11px;margin-left:auto;">0 KB</span>' +
+                        '</div>' +
+                        '<div style="background:rgba(255,255,255,0.07);border-radius:4px;height:5px;overflow:hidden;margin-bottom:7px;position:relative;">' +
+                          '<div style="position:absolute;inset:0;background:linear-gradient(90deg,#4a9eff,#a78bfa);border-radius:4px;animation:_bld_shimmer 1.8s ease-in-out infinite;width:40%;"></div>' +
+                        '</div>' +
+                        '<div class="_bld_section" style="color:#8899aa;font-size:11px;">Starting…</div>' +
+                      '</div>';
+                  }
+                  // Update just the live labels — no DOM rebuild, no animation reset
+                  const _kbEl = responseBubble.querySelector('._bld_kb');
+                  const _secEl = responseBubble.querySelector('._bld_section');
+                  if (_kbEl) _kbEl.textContent = _kbWritten + ' KB';
+                  if (_secEl) _secEl.textContent = _section;
+                  // Push partial HTML to preview every ~2000 chars of new content
+                  if (fullText.length - _buildLastRenderLen > 2000) {
+                    _buildLastRenderLen = fullText.length;
+                    renderLivePreview(fullText);
+                  }
                 } else {
                   try {
                     if (typeof marked !== 'undefined') {
