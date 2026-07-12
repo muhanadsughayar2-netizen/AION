@@ -10280,6 +10280,50 @@ async function handleSend() {
     }
   }
 
+  // ── PDF / document source-material handling in Build Mode ──────────────────
+  // When the user attaches a PDF in Build Mode (e.g. a textbook, report, or
+  // any document), Gemini reads it natively via inlineData. We inject an explicit
+  // instruction so the AI knows to treat the PDF as the PRIMARY source material
+  // and build the site/presentation/PDF from its content.
+  if (buildModeEnabled) {
+    const BUILD_PDF_BYTE_LIMIT = 15 * 1024 * 1024; // 15 MB raw (Gemini inline limit ~20 MB)
+    const pdfParts = filesQueue.filter(f => {
+      const m = (f.mimeType || '').toLowerCase();
+      return m === 'application/pdf' || f.name?.toLowerCase().endsWith('.pdf');
+    });
+    if (pdfParts.length > 0) {
+      const pdfTooBig = pdfParts.filter(f => Math.round((f.data.length * 3) / 4) > BUILD_PDF_BYTE_LIMIT);
+      const pdfFits   = pdfParts.filter(f => Math.round((f.data.length * 3) / 4) <= BUILD_PDF_BYTE_LIMIT);
+
+      if (pdfTooBig.length > 0) {
+        addBubble(
+          `⚠️ "${pdfTooBig.map(f => f.name).join(', ')}" is too large to send directly ` +
+          `(limit is ~15 MB for documents). Try splitting it into smaller sections, ` +
+          `or paste the key text directly into the chat.`,
+          'error'
+        );
+        pdfTooBig.forEach(f => { filesQueue = filesQueue.filter(q => q !== f); });
+        if (pdfFits.length === 0 && !prompt.trim()) return;
+      }
+
+      if (pdfFits.length > 0) {
+        const pdfNames = pdfFits.map(f => f.name).join(', ');
+        // Tell the AI to treat these PDFs as source material, not as assets to embed
+        prompt +=
+          `\n\n📄 SOURCE MATERIAL (PDF${pdfFits.length > 1 ? 's' : ''}): ` +
+          `The user has attached ${pdfFits.length > 1 ? 'these documents' : 'this document'}: "${pdfNames}". ` +
+          `MANDATORY: read the full content of the attached PDF${pdfFits.length > 1 ? 's' : ''} — ` +
+          `they are your PRIMARY source of information. ` +
+          `Extract all key topics, chapters, concepts, data, and important points. ` +
+          `Base ALL content in your output on what is actually written in the document — ` +
+          `do NOT invent or assume any content that is not in the PDF. ` +
+          `If the user asked for a presentation: create one slide per major topic or chapter found in the PDF. ` +
+          `If the user asked for a website: use the PDF content for all text, headings, and sections. ` +
+          `If the user asked for a PDF/report: reformat and present the document content clearly.`;
+      }
+    }
+  }
+
   // Image embedding — runs on FIRST builds AND patch edits (same as video above).
   // Previously gated behind _lastBuiltCode, which silently dropped user images
   // on fresh builds ("Start fresh" clears _lastBuiltCode before calling handleSend).
