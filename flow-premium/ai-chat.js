@@ -10302,25 +10302,60 @@ async function handleSend() {
       const placeholderList = _pendingBuildImages.map((_, i) => `__SNAP_IMG_${_imgOffset + i}__`).join(', ');
       const examplePlaceholder = `__SNAP_IMG_${_imgOffset}__`;
 
+      // Measure each screenshot's natural dimensions so the AI can size containers correctly
+      const _snapDims = await Promise.all(_pendingBuildImages.map(url => new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = () => resolve({ w: 0, h: 0 });
+        img.src = url;
+      })));
+      // Build a dimension hint string: "__SNAP_IMG_0__ = 1920×1080 (landscape)"
+      const _dimHints = _snapDims.map((d, i) => {
+        if (!d.w || !d.h) return null;
+        const orient = d.w > d.h ? 'landscape' : d.w < d.h ? 'portrait' : 'square';
+        return `__SNAP_IMG_${_imgOffset + i}__ = ${d.w}×${d.h}px (${orient})`;
+      }).filter(Boolean).join('; ');
+      // CSS helper: for each image build the correct style based on its orientation
+      // landscape/square → object-fit:cover works well in a 16:9 hero box
+      // portrait (phone screenshot) → preserve ratio with object-fit:contain so nothing is cut
+      const _perImgCss = _snapDims.map((d, i) => {
+        const key = `__SNAP_IMG_${_imgOffset + i}__`;
+        if (!d.w || !d.h) return `${key}: width:100%;height:auto;object-fit:contain;display:block;`;
+        const isPortrait = d.h > d.w * 1.1;
+        if (isPortrait) {
+          // Portrait: let natural height show, center in a flex wrapper
+          return `${key}: max-width:320px;width:100%;height:auto;object-fit:contain;display:block;margin:0 auto;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.4);`;
+        } else {
+          // Landscape/square: full width, fixed ratio container
+          const ratio = Math.round((d.h / d.w) * 100);
+          return `${key}: width:100%;aspect-ratio:${d.w}/${d.h};object-fit:cover;display:block;border-radius:8px;`;
+        }
+      }).join(' | ');
+
       // Different instruction depending on whether this is a fresh build or a patch edit
       if (!_lastBuiltCode) {
         // FRESH BUILD with user images: treat them as the primary product/brand visuals
-        prompt += `\n\nPRODUCT IMAGE INSTRUCTION (FRESH BUILD): The user has provided ${imageParts.length} real image(s) of their actual product, app, or brand. ` +
+        prompt += `\n\nPRODUCT IMAGE INSTRUCTION (FRESH BUILD): The user has provided ${imageParts.length} real screenshot(s) of their actual product, app, or brand. ` +
           `These are the PRIMARY visuals for the entire site — DO NOT use any Pexels stock photos at all. ` +
           `Use these exact placeholder strings as <img> src values: ${placeholderList}. ` +
+          ((_dimHints) ? `IMAGE DIMENSIONS (use these to size containers correctly — NEVER stretch or crop unexpectedly): ${_dimHints}. ` : '') +
+          `SIZING RULES — apply these exact styles per image: ${_perImgCss}. ` +
+          `For portrait images (phone screenshots): wrap in a centered flex container with overflow:hidden; never set height:100% on the container — let height:auto preserve the natural ratio. ` +
+          `For landscape images: wrap in a div with the matching aspect-ratio so the image fills it without distortion. ` +
           `MANDATORY PLACEMENT — distribute them across the site: ` +
           `${_pendingBuildImages.length >= 1 ? `__SNAP_IMG_${_imgOffset}__ = HERO section (full-bleed above the fold, the very first thing visitors see — make it large and prominent); ` : ''}` +
           `${_pendingBuildImages.length >= 2 ? `__SNAP_IMG_${_imgOffset + 1}__ = FEATURES or HOW IT WORKS section (mid-page, showing the product in use); ` : ''}` +
           `${_pendingBuildImages.length >= 3 ? `__SNAP_IMG_${_imgOffset + 2}__ = TESTIMONIAL, CTA, or CLOSING section (bottom of page, inspiring action); ` : ''}` +
           `If there are more images, distribute them naturally across remaining sections. ` +
-          `Style every image with: style="width:100%;height:100%;object-fit:cover;" ` +
           `CRITICAL: NEVER use any Pexels URLs. NEVER output actual base64 data — only placeholder strings. ` +
           `NEVER remove any __SNAP_VID_N__, __SNAP_AUD_N__ placeholders.`;
       } else {
         // PATCH EDIT with user images: follow user's explicit placement instructions
         prompt += `\n\nIMAGE EMBED INSTRUCTION: The user attached ${imageParts.length} image(s). ` +
-          `Use these exact placeholder strings as the src values: ${placeholderList} ` +
-          `(example: <img src="${examplePlaceholder}" alt="..." style="width:100%;height:100%;object-fit:cover;">). ` +
+          `Use these exact placeholder strings as the src values: ${placeholderList}. ` +
+          ((_dimHints) ? `IMAGE DIMENSIONS: ${_dimHints}. ` : '') +
+          `SIZING RULES: ${_perImgCss}. ` +
+          `NEVER use height:100% on an image or its container unless the container has an explicit fixed height — use height:auto to preserve the natural aspect ratio. ` +
           `CRITICAL RULES: ` +
           `(1) If the user said "replace", "change", "swap", or "update" an image — find that EXACT existing <img> tag and change ONLY its src attribute to the placeholder. Do NOT add a new img tag. ` +
           `(2) If the user said "add" or gave no specific target — place the image prominently above the fold: replace the hero image, or insert it as the first visual element after the headline. NEVER bury it at the bottom. ` +
