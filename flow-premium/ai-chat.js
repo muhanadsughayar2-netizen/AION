@@ -8169,14 +8169,15 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   For a CLOTHING shop: the actual garment being worn or laid flat.
   For a FOOD shop: the actual dish or ingredient.
 
-  CANDLE SHOP — USE THESE VERIFIED PEXELS PHOTO IDs (confirmed candle images):
-    Product 1: https://images.pexels.com/photos/3270223/pexels-photo-3270223.jpeg  (white pillar candle)
-    Product 2: https://images.pexels.com/photos/4207892/pexels-photo-4207892.jpeg  (luxury jar candle)
-    Product 3: https://images.pexels.com/photos/3270224/pexels-photo-3270224.jpeg  (group of candles)
-    Product 4: https://images.pexels.com/photos/9898025/pexels-photo-9898025.jpeg  (scented candle lit)
-    Product 5: https://images.pexels.com/photos/6707628/pexels-photo-6707628.jpeg  (dark aesthetic candle)
-    Hero:      https://images.pexels.com/photos/3270222/pexels-photo-3270222.jpeg  (candle lifestyle)
-    About:     https://images.pexels.com/photos/7330046/pexels-photo-7330046.jpeg  (candle making/pouring)
+  CANDLE SHOP — USE THESE VERIFIED PEXELS PHOTO IDs (confirmed candle images, tested and loading):
+    Product 1: https://images.pexels.com/photos/3270223/pexels-photo-3270223.jpeg  ✅ white pillar candle
+    Product 2: https://images.pexels.com/photos/6707628/pexels-photo-6707628.jpeg  ✅ dark jar candle
+    Product 3: https://images.pexels.com/photos/3270224/pexels-photo-3270224.jpeg  ✅ grouped candles
+    Product 4: https://images.pexels.com/photos/3270222/pexels-photo-3270222.jpeg  ✅ candle lifestyle
+    Product 5: https://images.pexels.com/photos/5765418/pexels-photo-5765418.jpeg  ✅ scented candle
+    Hero:      https://images.pexels.com/photos/4207892/pexels-photo-4207892.jpeg  ✅ candle/lifestyle hero
+    About:     https://images.pexels.com/photos/3270223/pexels-photo-3270223.jpeg  ✅ (reuse if needed)
+  ⛔ NEVER USE these IDs — they return blank/gradient (broken links): 9898025, 7330046, 7195133, 6634653, 3951746
   ALL Pexels URLs must include: ?auto=compress&cs=tinysrgb&w=800
   If any image fails to load, the onerror gradient should use warm amber: linear-gradient(135deg,#D98A70,#8B4513)
 
@@ -11198,7 +11199,18 @@ async function handleSend() {
         const aiText = proxyResult.text || 'No response';
         const proxyBubble = document.createElement('div');
         proxyBubble.className = 'chat-bubble ai';
-        if (typeof marked !== 'undefined') {
+
+        // In Build Mode: never show raw HTML in the chat bubble.
+        // Extract HTML → preview iframe; show a clean status chip instead.
+        const _proxyHasHtml = buildModeEnabled && /```html[\s\S]{200,}```/i.test(aiText);
+        if (_proxyHasHtml) {
+          const _isFirstBuild = !_lastBuiltCode;
+          proxyBubble.innerHTML =
+            '<div style="display:flex;align-items:center;gap:8px;font-size:13px;">' +
+            '<span style="font-size:18px;">' + (_isFirstBuild ? '🏗️' : '✅') + '</span>' +
+            '<span>' + (_isFirstBuild ? 'Your site is built! Check the preview below.' : 'Done — change applied to the preview.') + '</span>' +
+            '</div>';
+        } else if (typeof marked !== 'undefined') {
           const parsed = marked.parse(aiText);
           proxyBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsed) : parsed;
           proxyBubble.querySelectorAll('a').forEach(link => {
@@ -11982,19 +11994,27 @@ async function handleSend() {
               const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
               if (text) {
                 fullText += text;
-                try {
-                  if (typeof marked !== 'undefined') {
-                    const parsedHtml = marked.parse(fullText);
-                    responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
-                    responseBubble.querySelectorAll('a').forEach(link => {
-                      link.setAttribute('target', '_blank');
-                      link.setAttribute('rel', 'noopener noreferrer');
-                    });
-                  } else {
+                // In Build Mode: don't stream raw HTML into the chat bubble —
+                // it confuses the user with thousands of lines of code.
+                // Show a "building…" indicator instead; the preview updates via renderLivePreview.
+                const _streamIsHtml = buildModeEnabled && fullText.trimStart().startsWith('<!') || (buildModeEnabled && /```html/i.test(fullText));
+                if (_streamIsHtml) {
+                  responseBubble.innerHTML = '<div style="display:flex;align-items:center;gap:8px;font-size:13px;opacity:0.7;"><span>🏗️</span><span>Building your site…</span></div>';
+                } else {
+                  try {
+                    if (typeof marked !== 'undefined') {
+                      const parsedHtml = marked.parse(fullText);
+                      responseBubble.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsedHtml) : parsedHtml;
+                      responseBubble.querySelectorAll('a').forEach(link => {
+                        link.setAttribute('target', '_blank');
+                        link.setAttribute('rel', 'noopener noreferrer');
+                      });
+                    } else {
+                      responseBubble.textContent = fullText;
+                    }
+                  } catch (renderErr) {
                     responseBubble.textContent = fullText;
                   }
-                } catch (renderErr) {
-                  responseBubble.textContent = fullText;
                 }
                 thread.scrollTop = thread.scrollHeight;
               }
@@ -12008,9 +12028,21 @@ async function handleSend() {
       if (!fullText) {
         responseBubble.innerHTML = '<div style="color:#ff6b6b;">No response received. Please try again.</div>';
       }
-      
+
       renderLivePreview(fullText);
       addBubbleActions(responseBubble, fullText);
+
+      // After streaming ends: if we were showing "building…" (Build Mode HTML),
+      // replace with a clean done message now that the preview is ready.
+      const _finalIsHtml = buildModeEnabled && (fullText.trimStart().startsWith('<!') || /```html/i.test(fullText));
+      if (_finalIsHtml) {
+        const _wasFirst = !_lastBuiltCode || fullText.length > 5000;
+        responseBubble.innerHTML =
+          '<div style="display:flex;align-items:center;gap:8px;font-size:13px;">' +
+          '<span style="font-size:18px;">' + (_wasFirst ? '🏗️' : '✅') + '</span>' +
+          '<span>' + (_wasFirst ? 'Your site is built! Check the preview below.' : 'Done — change applied to the preview.') + '</span>' +
+          '</div>';
+      }
     }
     
     const userHistoryEntry = { role: 'user', text: prompt };
