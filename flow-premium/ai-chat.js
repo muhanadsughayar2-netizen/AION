@@ -10329,6 +10329,23 @@ async function handleSend() {
   _skipNewAppGuard = false; // consume the one-time bypass
   // ── End new-app guard ──────────────────────────────────────────────────────
 
+  // ── Shop Setup Panel intercept ─────────────────────────────────────────────
+  // When a fresh shop build is detected and the user hasn't provided real
+  // payment info yet, show a quick setup card to collect products + payment
+  // links BEFORE building. This means the built HTML works immediately with
+  // no manual placeholder editing needed.
+  const _earlyShopKw = /\b(shop|store|buy|sell|product|price|payment|checkout|cart|e-?commerce|stripe|paypal|order|purchase|selling)\b/i;
+  const _hasRealPayment = /paypal\.me\/\S+|buy\.stripe\.com\/\S+|stripe\.com\/pay\/\S+/i;
+  if (buildModeEnabled && !_lastBuiltCode && !_isContinuationSend && !_skipShopSetup && _earlyShopKw.test(prompt) && !_hasRealPayment.test(prompt)) {
+    input.value = '';
+    resetInputSize(input);
+    addBubble(prompt, 'user');
+    _showShopSetupPanel(prompt, input);
+    return;
+  }
+  _skipShopSetup = false;
+  // ── End shop setup intercept ───────────────────────────────────────────────
+
   // ── Build Mode conversation router ─────────────────────────────────────────
   // Fires whether or not a site has been built yet.
   // • No site yet  → chat gathers requirements; user says "build it" to start.
@@ -12899,6 +12916,105 @@ function _showNewAppConfirmation(prompt, input) {
   });
 }
 
+// ── Shop Setup Panel ───────────────────────────────────────────────────────
+// Shown before a fresh shop build when no real payment info is in the prompt.
+// Collects shop name, product list, and payment links — then triggers handleSend
+// with a fully-enriched prompt so the built HTML works immediately, no editing.
+function _showShopSetupPanel(originalPrompt, input) {
+  const thread = document.getElementById('chatThread');
+  const card = document.createElement('div');
+  card.className = 'shop-setup-panel';
+  card.id = 'shopSetupPanel';
+  card.innerHTML = `
+    <div class="ssp-title">🛒 Quick Shop Setup</div>
+    <div class="ssp-sub">Tell me your products and payment info — I'll build everything ready to use, no editing needed.</div>
+
+    <div class="ssp-section-label">Your products</div>
+    <div id="sspProductRows">
+      <div class="ssp-product-row">
+        <input class="ssp-input ssp-prod-name" placeholder="Product name (e.g. Handmade Candle)" />
+        <input class="ssp-input ssp-prod-price" placeholder="Price (e.g. 25)" type="number" min="0" step="0.01" style="width:90px;flex-shrink:0;" />
+      </div>
+      <div class="ssp-product-row">
+        <input class="ssp-input ssp-prod-name" placeholder="Product name" />
+        <input class="ssp-input ssp-prod-price" placeholder="Price" type="number" min="0" step="0.01" style="width:90px;flex-shrink:0;" />
+      </div>
+      <div class="ssp-product-row">
+        <input class="ssp-input ssp-prod-name" placeholder="Product name" />
+        <input class="ssp-input ssp-prod-price" placeholder="Price" type="number" min="0" step="0.01" style="width:90px;flex-shrink:0;" />
+      </div>
+    </div>
+    <button class="ssp-add-row" id="sspAddRow">+ Add another product</button>
+
+    <div class="ssp-section-label" style="margin-top:14px;">PayPal (recommended — free, instant)</div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <span style="color:#9aa0a6;font-size:13px;white-space:nowrap;">paypal.me/</span>
+      <input class="ssp-input" id="sspPaypal" placeholder="YourUsername" style="flex:1;" />
+    </div>
+
+    <div class="ssp-section-label" style="margin-top:12px;">Stripe Payment Link <span style="font-weight:400;color:#9aa0a6;font-size:11px;">(optional — create at dashboard.stripe.com → Payment Links)</span></div>
+    <input class="ssp-input" id="sspStripe" placeholder="https://buy.stripe.com/..." style="width:100%;box-sizing:border-box;" />
+
+    <div class="ssp-btns">
+      <button class="ssp-btn-build" id="sspBtnBuild">🚀 Build My Shop</button>
+      <button class="ssp-btn-skip" id="sspBtnSkip">Skip — build with placeholders</button>
+    </div>
+  `;
+  thread.appendChild(card);
+  thread.scrollTop = thread.scrollHeight;
+
+  document.getElementById('sspAddRow').addEventListener('click', () => {
+    const rows = document.getElementById('sspProductRows');
+    const row = document.createElement('div');
+    row.className = 'ssp-product-row';
+    row.innerHTML = `
+      <input class="ssp-input ssp-prod-name" placeholder="Product name" />
+      <input class="ssp-input ssp-prod-price" placeholder="Price" type="number" min="0" step="0.01" style="width:90px;flex-shrink:0;" />
+    `;
+    rows.appendChild(row);
+  });
+
+  document.getElementById('sspBtnBuild').addEventListener('click', () => {
+    const names  = [...document.querySelectorAll('#shopSetupPanel .ssp-prod-name')].map(i => i.value.trim()).filter(Boolean);
+    const prices = [...document.querySelectorAll('#shopSetupPanel .ssp-prod-price')].map(i => i.value.trim());
+    const paypal = (document.getElementById('sspPaypal').value || '').trim();
+    const stripe = (document.getElementById('sspStripe').value || '').trim();
+
+    const products = names.map((n, i) => {
+      const p = parseFloat(prices[i]);
+      return `  • ${n}${!isNaN(p) ? ` — $${p.toFixed(2)}` : ''}`;
+    }).join('\n');
+
+    let enriched = originalPrompt;
+    if (products) {
+      enriched += `\n\nSHOP SETUP — use EXACTLY these values (do not invent different ones):\nProducts:\n${products}`;
+    }
+    if (paypal) {
+      enriched += `\nPayPal: https://paypal.me/${paypal.replace(/^paypal\.me\//i, '')}`;
+      enriched += `\n— Use this exact PayPal URL on every "Pay with PayPal" button. No placeholder.`;
+    }
+    if (stripe && stripe.includes('stripe')) {
+      enriched += `\nStripe: ${stripe}`;
+      enriched += `\n— Use this exact Stripe link on every "Buy Now" and "Checkout" button. No placeholder.`;
+    }
+    if (!paypal && !stripe) {
+      enriched += `\n— No payment links provided yet. Use placeholder text but add clear instructions in HTML comments explaining how to replace them.`;
+    }
+
+    card.remove();
+    _skipShopSetup = true;
+    input.value = enriched;
+    handleSend();
+  });
+
+  document.getElementById('sspBtnSkip').addEventListener('click', () => {
+    card.remove();
+    _skipShopSetup = true;
+    input.value = originalPrompt;
+    handleSend();
+  });
+}
+
 // ── Build plan confirmation card ───────────────────────────────────────────
 // Shown before a build starts when conversationHistory has ≥ 2 full turns.
 // Makes one fast Gemini call to summarise the agreed plan as 2-3 bullet points,
@@ -13588,6 +13704,9 @@ let _committedMediaMap = {};
 // One-time flag: set by "Update current" button so handleSend() skips the new-app
 // guard exactly once (avoids the infinite dialog loop when the same prompt re-enters).
 let _skipNewAppGuard = false;
+// One-time flag: set by "Build anyway" in the shop setup panel so handleSend()
+// skips the shop setup intercept on the next call and goes straight to build.
+let _skipShopSetup = false;
 // One-time flag: set by the "Confirm" button in _showBuildConfirmation so the
 // next handleSend() call skips the plan-preview card and goes straight to build.
 let _skipBuildConfirmation = false;

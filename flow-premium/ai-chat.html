@@ -757,6 +757,95 @@
     .new-app-confirm-btn.update:hover { background: rgba(255,255,255,0.08); color: #eef0f3; }
     /* ── End new-app confirmation card ──────────────────────────────────── */
 
+    /* ── Shop Setup Panel ───────────────────────────────────────────────── */
+    .shop-setup-panel {
+      background: rgba(17,24,39,0.95);
+      border: 1px solid rgba(99,102,241,0.35);
+      border-radius: 14px;
+      padding: 18px 20px 16px;
+      margin: 10px 0;
+      box-shadow: 0 4px 32px rgba(0,0,0,0.4);
+    }
+    .ssp-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: #eef0f3;
+      margin-bottom: 5px;
+    }
+    .ssp-sub {
+      font-size: 12px;
+      color: #9aa0a6;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .ssp-section-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: rgba(99,102,241,0.9);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+    .ssp-product-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .ssp-input {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.10);
+      border-radius: 7px;
+      color: #eef0f3;
+      font-size: 12px;
+      padding: 7px 10px;
+      outline: none;
+      flex: 1;
+      transition: border-color 0.2s;
+    }
+    .ssp-input:focus { border-color: rgba(99,102,241,0.55); }
+    .ssp-input::placeholder { color: rgba(255,255,255,0.25); }
+    .ssp-add-row {
+      background: none;
+      border: none;
+      color: rgba(99,102,241,0.8);
+      font-size: 12px;
+      cursor: pointer;
+      padding: 2px 0;
+      margin-top: 2px;
+    }
+    .ssp-add-row:hover { color: #818cf8; }
+    .ssp-btns {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+      align-items: center;
+    }
+    .ssp-btn-build {
+      background: linear-gradient(135deg, #6366f1, #818cf8);
+      border: none;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 9px 20px;
+      cursor: pointer;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 2px 16px rgba(99,102,241,0.35);
+    }
+    .ssp-btn-build:hover { transform: scale(1.03); box-shadow: 0 4px 24px rgba(99,102,241,0.5); }
+    .ssp-btn-build:active { transform: scale(0.97); }
+    .ssp-btn-skip {
+      background: none;
+      border: none;
+      color: #9aa0a6;
+      font-size: 12px;
+      cursor: pointer;
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
+    .ssp-btn-skip:hover { color: #eef0f3; }
+    /* ── End Shop Setup Panel ────────────────────────────────────────────── */
+
     .chat-bubble.error {
       background: rgba(255, 82, 82, 0.2);
       color: #ff5252;
