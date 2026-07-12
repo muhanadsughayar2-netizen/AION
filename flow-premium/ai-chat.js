@@ -7327,6 +7327,15 @@ Every output must start with this exact <head> block:
 Icons: always use Lucide — call lucide.createIcons() in a <script> at bottom of body.
 Images: use real Pexels URLs. Always add onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#1f2937,#111827)'" on every <img>.
 JavaScript: all inline in a single <script> before </body>. Use IntersectionObserver for scroll-reveal animations.
+⚠️ CRITICAL IIFE RULE — every single build, no exceptions:
+Wrap ALL script logic in one IIFE: (function(){ ... })();
+Every function used by onclick/onchange/onsubmit MUST be attached to window INSIDE the IIFE:
+  window.toggleCart = function() { ... };
+  window.addToCart  = function(id) { ... };
+  window.openModal  = function(id) { ... };
+NEVER declare bare functions or top-level const/let — they cause "already declared" crashes in the live preview.
+NEVER write: function toggleCart() { ... }  ← this will break on every patch update.
+ALWAYS write: window.toggleCart = function() { ... }  ← this is the only safe pattern.
 
 EXCEPTION — CONTINUE_BUILD: If the user message starts with "CONTINUE_BUILD:", the previous
 response was cut off by token limits. Output ONLY the remaining HTML from where you stopped —
@@ -8213,6 +8222,18 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   Accent: brand color from user's request or default #6366F1 (indigo).
   "Buy Now" button: solid accent color, white text, 44px tall, border-radius:8px.
   Cart badge: red pill (background:#EF4444) over cart icon.
+
+  PROFILE S JAVASCRIPT — IIFE + WINDOW FUNCTIONS (mandatory, no exceptions):
+  ALL script logic must be inside ONE IIFE: (function(){ ... })();
+  Every cart function called by onclick MUST be window-attached inside the IIFE:
+    window.toggleCart  = function() { ... };
+    window.addToCart   = function(id, name, price) { ... };
+    window.removeItem  = function(id) { ... };
+    window.changeQty   = function(id, delta) { ... };
+    window.checkout    = function() { ... };
+    window.toggleMenu  = function() { ... };
+  NEVER declare: function toggleCart() { ... }  ← breaks on every patch.
+  ALWAYS declare: window.toggleCart = function() { ... }  ← only safe pattern.
 
   PROFILE S BANNED:
   ✗ Add to Cart button hidden behind hover — always visible on the card face
