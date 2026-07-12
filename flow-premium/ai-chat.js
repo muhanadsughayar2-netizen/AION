@@ -9810,7 +9810,7 @@ function initVoiceInput() {
 async function _determineBuildImageCount(buildPrompt, apiKey) {
   try {
     const r = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -9842,7 +9842,7 @@ async function _determineBuildImageCount(buildPrompt, apiKey) {
 // Each prompt is specific to WHERE in the site that image will appear.
 async function _deriveBuildImagePrompts(buildPrompt, count, apiKey) {
   try {
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`;
     const r = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
