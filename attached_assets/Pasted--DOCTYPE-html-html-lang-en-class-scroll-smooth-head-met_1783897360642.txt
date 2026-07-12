@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FitZone Pro — Transform Your Body</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { heading: ['Plus Jakarta Sans', 'sans-serif'], body: ['Inter', 'sans-serif'] },
+          colors: { accent: '#00FF88', dark: '#080808', surface: '#121212' }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root { --accent: #00FF88; --bg: #080808; }
+    body { background-color: var(--bg); color: #fff; font-family: 'Inter', sans-serif; overflow-x: hidden; }
+    .reveal { opacity: 0; transform: translateY(24px); }
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+    @keyframes revealUp { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: none; } }
+    
+    .nav-scrolled { background: rgba(8, 8, 8, 0.95); border-bottom: 1px solid rgba(0, 255, 136, 0.3); box-shadow: 0 0 20px rgba(0, 255, 136, 0.1); }
+    .glass { background: rgba(255, 255, 255, 0.03); backdrop-filter: blur(12px); border: 1px solid rgba(255, 255, 255, 0.08); }
+    .accent-glow { text-shadow: 0 0 15px rgba(0, 255, 136, 0.5); }
+    
+    /* Before/After Slider */
+    .ba-slider { position: relative; overflow: hidden; height: 400px; border-radius: 12px; }
+    .ba-after { position: absolute; top: 0; left: 0; height: 100%; width: 50%; overflow: hidden; border-right: 2px solid var(--accent); z-index: 2; }
+    .ba-slider img { width: 100%; height: 100%; object-fit: cover; display: block; pointer-events: none; }
+    .ba-handle { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 3; pointer-events: none; }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: #080808; }
+    ::-webkit-scrollbar-thumb { background: #1a1a1a; border-radius: 10px; }
+    ::-webkit-scrollbar-thumb:hover { background: #00FF88; }
+
+    .confetti { position: fixed; width: 10px; height: 10px; background: var(--accent); z-index: 10000; pointer-events: none; }
+    
+    /* Accordion */
+    .faq-content { max-height: 0; overflow: hidden; transition: max-height 0.3s ease-out; }
+    .faq-item.open .faq-content { max-height: 500px; padding-bottom: 1rem; }
+    .faq-item.open i { transform: rotate(45deg); }
+
+    /* Cart Drawer */
+    #cart-drawer { transform: translateX(100%); transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+    #cart-drawer.open { transform: translateX(0); }
+
+    /* Mobile Nav */
+    #mobile-menu { transform: translateY(-100%); transition: transform 0.4s ease; }
+    #mobile-menu.open { transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav id="main-nav" class="fixed top-0 left-0 w-full z-[100] transition-all duration-300 px-6 py-4 flex items-center justify-between">
+    <div class="flex items-center gap-2">
+      <span class="text-accent text-2xl font-black italic tracking-tighter flex items-center gap-2">
+        <i data-lucide="dumbbell"></i> FITZONE PRO
+      </span>
+    </div>
+    
+    <div class="hidden md:flex items-center gap-8 text-sm font-semibold tracking-wide uppercase">
+      <a href="#home" class="hover:text-accent transition-colors">Home</a>
+      <a href="#classes" class="hover:text-accent transition-colors">Classes</a>
+      <a href="#trainers" class="hover:text-accent transition-colors">Trainers</a>
+      <a href="#shop" class="hover:text-accent transition-colors">Shop</a>
+      <a href="#pricing" class="hover:text-accent transition-colors">Pricing</a>
+      <a href="#bmi" class="hover:text-accent transition-colors">BMI Tool</a>
+    </div>
+
+    <div class="flex items-center gap-6">
+      <button onclick="window.toggleCart()" class="relative p-2 hover:text-accent transition-colors">
+        <i data-lucide="shopping-cart" class="w-6 h-6"></i>
+        <span id="cart-badge" class="absolute -top-1 -right-1 bg-accent text-dark text-[10px] font-bold w-5 h-5 rounded-full flex items-center justify-center opacity-0 transition-opacity">0</span>
+      </button>
+      <button onclick="window.toggleMobileMenu()" class="md:hidden p-2">
+        <i data-lucide="menu" class="w-6 h-6"></i>
+      </button>
+      <a href="#pricing" class="hidden lg:block bg-accent text-dark px-6 py-2.5 rounded-full text-xs font-black uppercase tracking-widest hover:scale-105 active:scale-95 transition-all">Join Now</a>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu Overlay -->
+  <div id="mobile-menu" class="fixed inset-0 bg-dark z-[150] flex flex-col items-center justify-center gap-8 text-2xl font-bold uppercase pointer-events-none opacity-0 transition-all duration-300">
+    <button onclick="window.toggleMobileMenu()" class="absolute top-8 right-8"><i data-lucide="x" class="w-8 h-8"></i></button>
+    <a href="#home" onclick="window.toggleMobileMenu()">Home</a>
+    <a href="#classes" onclick="window.toggleMobileMenu()">Classes</a>
+    <a href="#trainers" onclick="window.toggleMobileMenu()">Trainers</a>
+    <a href="#shop" onclick="window.toggleMobileMenu()">Shop</a>
+    <a href="#pricing" onclick="window.toggleMobileMenu()">Pricing</a>
+    <a href="#bmi" onclick="window.toggleMobileMenu()">BMI Tool</a>
+  </div>
+
+  <!-- Hero Section -->
+  <section id="home" class="relative min-h-screen flex items-center pt-20 px-6 overflow-hidden">
+    <div class="absolute inset-0 z-0">
+      <img src="https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg?auto=compress&cs=tinysrgb&w=1400" 
+           alt="Gym Hero" 
+           class="w-full h-full object-cover opacity-30 grayscale"
+           onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#080808,#1a1a1a)'">
+      <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-dark"></div>
+    </div>
+
+    <div class="relative z-10 max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
+      <div class="reveal">
+        <div class="inline-flex items-center gap-2 bg-accent/10 border border-accent/20 px-4 py-1.5 rounded-full text-accent text-xs font-bold uppercase tracking-widest mb-6">
+          <span class="w-2 h-2 bg-accent rounded-full animate-pulse"></span> New: Elite Coaching
+        </div>
+        <h1 class="text-6xl md:text-8xl font-black tracking-tighter leading-[0.9] mb-8">
+          TRANSFORM YOUR <span class="text-accent italic accent-glow">BODY.</span><br>
+          ELEVATE YOUR <span class="text-accent italic accent-glow">LIFE.</span>
+        </h1>
+        <p class="text-lg text-white/60 max-w-lg mb-10 leading-relaxed">
+          The ultimate fitness destination. World-class equipment, expert coaching, and a community dedicated to your success. Start your journey today.
+        </p>
+        <div class="flex flex-wrap gap-4 mb-12">
+          <button onclick="window.openModal('checkoutModal')" class="bg-accent text-dark px-10 py-4 rounded-full font-black uppercase tracking-widest hover:shadow-[0_0_30px_rgba(0,255,136,0.4)] transition-all">Start Free Trial</button>
+          <button onclick="window.openVideoModal()" class="flex items-center gap-3 px-8 py-4 rounded-full font-bold uppercase tracking-widest border border-white/20 hover:bg-white/5 transition-all">
+            <i data-lucide="play-circle"></i> Watch Our Story
+          </button>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-8 border-t border-white/10 pt-8">
+          <div>
+            <div class="text-3xl font-black text-accent counter" data-target="10000">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-white/40 font-bold">Members</div>
+          </div>
+          <div>
+            <div class="text-3xl font-black text-accent counter" data-target="200">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-white/40 font-bold">Classes/Week</div>
+          </div>
+          <div>
+            <div class="text-3xl font-black text-accent counter" data-target="50">0</div>
+            <div class="text-[10px] uppercase tracking-widest text-white/40 font-bold">Expert Trainers</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hidden lg:flex flex-col items-end reveal">
+        <div class="glass p-10 rounded-3xl w-full max-w-sm border-accent/20">
+          <div class="text-accent text-xs font-black uppercase tracking-widest mb-4">Live Schedule</div>
+          <h3 class="text-2xl font-black mb-6">Next Class Starts In:</h3>
+          <div id="countdown" class="text-5xl font-black tracking-tighter text-white font-mono flex gap-2">
+            <span>00</span>:<span>00</span>:<span>00</span>
+          </div>
+          <div class="mt-8 pt-8 border-t border-white/10 flex items-center justify-between">
+            <div>
+              <div class="text-xs text-white/40 font-bold uppercase mb-1">Upcoming</div>
+              <div class="font-bold">Advanced Boxing</div>
+            </div>
+            <div class="bg-accent text-dark text-[10px] font-black px-3 py-1 rounded">2 SPOTS LEFT</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Filterable Classes -->
+  <section id="classes" class="py-32 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-16 reveal">
+        <div>
+          <h2 class="text-accent font-black uppercase tracking-[0.3em] text-sm mb-4">Class Schedule</h2>
+          <h3 class="text-5xl font-black tracking-tighter">FIND YOUR <span class="italic">RHYTHM.</span></h3>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button onclick="window.filterClasses('ALL', this)" class="class-tab active px-6 py-2 rounded-full border border-white/10 text-xs font-bold uppercase tracking-widest transition-all bg-accent text-dark">All</button>
+          <button onclick="window.filterClasses('HIIT', this)" class="class-tab px-6 py-2 rounded-full border border-white/10 text-xs font-bold uppercase tracking-widest transition-all">HIIT</button>
+          <button onclick="window.filterClasses('YOGA', this)" class="class-tab px-6 py-2 rounded-full border border-white/10 text-xs font-bold uppercase tracking-widest transition-all">Yoga</button>
+          <button onclick="window.filterClasses('SPIN', this)" class="class-tab px-6 py-2 rounded-full border border-white/10 text-xs font-bold uppercase tracking-widest transition-all">Spin</button>
+          <button onclick="window.filterClasses('BOXING', this)" class="class-tab px-6 py-2 rounded-full border border-white/10 text-xs font-bold uppercase tracking-widest transition-all">Boxing</button>
+        </div>
+      </div>
+
+      <div id="class-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 reveal">
+        <!-- JS will populate -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Membership Tiers -->
+  <section id="pricing" class="py-32 px-6 bg-surface">
+    <div class="max-w-6xl mx-auto text-center reveal">
+      <h2 class="text-accent font-black uppercase tracking-[0.3em] text-sm mb-4">Pricing Plans</h2>
+      <h3 class="text-5xl font-black tracking-tighter mb-12">CHOOSE YOUR <span class="italic">VIBE.</span></h3>
+      
+      <div class="flex items-center justify-center gap-4 mb-16">
+        <span class="text-sm font-bold opacity-50">Monthly</span>
+        <button onclick="window.toggleAnnual()" id="annual-toggle" class="w-14 h-8 bg-white/10 rounded-full relative p-1 transition-all">
+          <div class="w-6 h-6 bg-accent rounded-full transition-transform"></div>
+        </button>
+        <span class="text-sm font-bold">Annual <span class="text-accent">(20% OFF)</span></span>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Basic -->
+        <div class="glass p-10 rounded-3xl flex flex-col items-start text-left border-white/5 hover:border-accent/30 transition-all group">
+          <div class="text-sm font-black uppercase tracking-widest mb-2 opacity-50">Basic</div>
+          <div class="flex items-baseline gap-1 mb-8">
+            <span class="text-4xl font-black">$</span>
+            <span class="text-6xl font-black price-val" data-monthly="29" data-annual="23">29</span>
+            <span class="text-sm opacity-50 font-bold">/mo</span>
+          </div>
+          <ul class="space-y-4 mb-10 w-full">
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> Standard Gym Access</li>
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> 2 Group Classes/mo</li>
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> Locker Room Access</li>
+            <li class="flex items-center gap-3 text-sm opacity-30"><i data-lucide="x-circle" class="w-4 h-4"></i> Personal Training</li>
+            <li class="flex items-center gap-3 text-sm opacity-30"><i data-lucide="x-circle" class="w-4 h-4"></i> Sauna & Steam Room</li>
+            <li class="flex items-center gap-3 text-sm opacity-30"><i data-lucide="x-circle" class="w-4 h-4"></i> Nutrition Coaching</li>
+          </ul>
+          <button onclick="window.openCheckout('Basic')" class="w-full py-4 rounded-full border border-white/20 font-black uppercase tracking-widest hover:bg-white hover:text-dark transition-all">Get Started</button>
+        </div>
+        <!-- Pro -->
+        <div class="glass p-10 rounded-3xl flex flex-col items-start text-left border-accent/40 relative scale-105 shadow-[0_0_50px_rgba(0,255,136,0.1)]">
+          <div class="absolute -top-4 left-1/2 -translate-x-1/2 bg-accent text-dark text-[10px] font-black px-4 py-1.5 rounded-full uppercase tracking-tighter">Most Popular</div>
+          <div class="text-sm font-black uppercase tracking-widest mb-2 text-accent">Pro</div>
+          <div class="flex items-baseline gap-1 mb-8">
+            <span class="text-4xl font-black">$</span>
+            <span class="text-6xl font-black price-val" data-monthly="59" data-annual="47">59</span>
+            <span class="text-sm opacity-50 font-bold">/mo</span>
+          </div>
+          <ul class="space-y-4 mb-10 w-full">
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> 24/7 Premium Access</li>
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> Unlimited Classes</li>
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> Guest Passes (2/mo)</li>
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> Sauna & Steam Room</li>
+            <li class="flex items-center gap-3 text-sm opacity-30"><i data-lucide="x-circle" class="w-4 h-4"></i> Personal Training</li>
+            <li class="flex items-center gap-3 text-sm opacity-30"><i data-lucide="x-circle" class="w-4 h-4"></i> Nutrition Coaching</li>
+          </ul>
+          <button onclick="window.openCheckout('Pro')" class="w-full py-4 rounded-full bg-accent text-dark font-black uppercase tracking-widest hover:shadow-[0_0_30px_rgba(0,255,136,0.5)] transition-all">Get Started</button>
+        </div>
+        <!-- Elite -->
+        <div class="glass p-10 rounded-3xl flex flex-col items-start text-left border-white/5 hover:border-accent/30 transition-all group">
+          <div class="text-sm font-black uppercase tracking-widest mb-2 opacity-50">Elite</div>
+          <div class="flex items-baseline gap-1 mb-8">
+            <span class="text-4xl font-black">$</span>
+            <span class="text-6xl font-black price-val" data-monthly="99" data-annual="79">99</span>
+            <span class="text-sm opacity-50 font-bold">/mo</span>
+          </div>
+          <ul class="space-y-4 mb-10 w-full">
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> All Pro Features</li>
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> 1-on-1 PT (4 sessions/mo)</li>
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> Nutrition Plan</li>
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> Private Locker</li>
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> Monthly Body Scan</li>
+            <li class="flex items-center gap-3 text-sm"><i data-lucide="check-circle" class="w-4 h-4 text-accent"></i> Towel Service</li>
+          </ul>
+          <button onclick="window.openCheckout('Elite')" class="w-full py-4 rounded-full border border-white/20 font-black uppercase tracking-widest hover:bg-white hover:text-dark transition-all">Get Started</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Trainers -->
+  <section id="trainers" class="py-32 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="text-center mb-16 reveal">
+        <h2 class="text-accent font-black uppercase tracking-[0.3em] text-sm mb-4">Expert Coaches</h2>
+        <h3 class="text-5xl font-black tracking-tighter">MEET THE <span class="italic">ELITE.</span></h3>
+      </div>
+      <div id="trainer-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 reveal">
+        <!-- JS will populate -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Before & After Slider -->
+  <section class="py-32 px-6 bg-surface">
+    <div class="max-w-6xl mx-auto">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div class="reveal">
+          <h2 class="text-accent font-black uppercase tracking-[0.3em] text-sm mb-4">Success Stories</h2>
+          <h3 class="text-5xl font-black tracking-tighter mb-8 italic">REAL RESULTS.</h3>
+          <p class="text-white/60 mb-10 leading-relaxed">
+            Our members don't just work out; they transform. Slide through the stories of individuals who committed to the process and saw life-changing results.
+          </p>
+          <div class="space-y-6">
+            <div class="flex items-center gap-6 p-6 glass rounded-2xl">
+              <div class="text-4xl font-black text-accent italic">-24kg</div>
+              <div>
+                <div class="font-bold">David Miller</div>
+                <div class="text-xs opacity-50 uppercase font-black">6 Months Transformation</div>
+              </div>
+            </div>
+            <div class="flex items-center gap-6 p-6 glass rounded-2xl opacity-50">
+              <div class="text-4xl font-black text-accent italic">-12%</div>
+              <div>
+                <div class="font-bold">Sarah Jenkins</div>
+                <div class="text-xs opacity-50 uppercase font-black">Body Fat Reduction</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="reveal">
+          <div class="ba-slider group cursor-ew-resize" id="ba-container">
+            <img src="https://images.pexels.com/photos/2827392/pexels-photo-2827392.jpeg?auto=compress&cs=tinysrgb&w=800" alt="Before">
+            <div class="ba-after" id="ba-after">
+              <img src="https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg?auto=compress&cs=tinysrgb&w=800" alt="After">
+            </div>
+            <div class="ba-handle" id="ba-handle">
+              <div class="w-10 h-10 bg-accent rounded-full flex items-center justify-center shadow-[0_0_20px_rgba(0,255,136,0.5)]">
+                <i data-lucide="move-horizontal" class="text-dark w-5 h-5"></i>
+              </div>
+            </div>
+            <div class="absolute bottom-4 left-4 z-10 text-[10px] font-black uppercase tracking-widest bg-dark/80 px-3 py-1 rounded">Before</div>
+            <div class="absolute bottom-4 right-4 z-10 text-[10px] font-black uppercase tracking-widest bg-accent text-dark px-3 py-1 rounded">After</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Equipment Shop -->
+  <section id="shop" class="py-32 px-6">
+    <div class="max-w-6xl mx-auto">
+      <div class="flex items-end justify-between mb-16 reveal">
+        <div>
+          <h2 class="text-accent font-black uppercase tracking-[0.3em] text-sm mb-4">Gear Up</h2>
+          <h3 class="text-5xl font-black tracking-tighter italic">PRO SHOP.</h3>
+        </div>
+        <button onclick="window.toggleCart()" class="hidden md:flex items-center gap-2 text-xs font-black uppercase tracking-widest opacity-50 hover:opacity-100 transition-opacity">
+          View Cart <i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div id="shop-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 reveal">
+        <!-- JS will populate -->
+      </div>
+    </div>
+  </section>
+
+  <!-- BMI Calculator -->
+  <section id="bmi" class="py-32 px-6 bg-[#0d0d0d] text-white">
+    <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center">
+      <div class="reveal">
+        <h2 class="text-accent font-black uppercase tracking-[0.3em] text-sm mb-4 opacity-70">Health Tool</h2>
+        <h3 class="text-5xl font-black tracking-tighter mb-8 leading-none">CALCULATE YOUR <span class="italic underline">PROGRESS.</span></h3>
+        <p class="font-medium mb-10 opacity-80 leading-relaxed">
+          The Body Mass Index (BMI) is a simple tool that helps you understand if your weight is in a healthy range for your height. Use our calculator to get an instant baseline for your fitness journey.
+        </p>
+        <div class="flex gap-4">
+          <button onclick="window.setBmiUnit('metric')" id="bmi-metric" class="px-6 py-2 rounded-full border-2 border-accent text-accent font-black text-xs uppercase transition-all bg-transparent">Metric</button>
+          <button onclick="window.setBmiUnit('imperial')" id="bmi-imperial" class="px-6 py-2 rounded-full border-2 border-white/20 font-black text-xs uppercase transition-all">Imperial</button>
+        </div>
+      </div>
+      
+      <div class="reveal bg-[#121212] border border-accent/20 text-white p-10 rounded-3xl shadow-2xl">
+        <div class="grid grid-cols-2 gap-6 mb-8">
+          <div>
+            <label class="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Weight (<span id="unit-w">kg</span>)</label>
+            <input type="number" id="bmi-weight" placeholder="0" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-accent transition-all font-bold">
+          </div>
+          <div>
+            <label class="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Height (<span id="unit-h">cm</span>)</label>
+            <input type="number" id="bmi-height" placeholder="0" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-accent transition-all font-bold">
+          </div>
+        </div>
+        <button onclick="window.calculateBMI()" class="w-full bg-accent text-dark py-4 rounded-xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all mb-8">Calculate BMI</button>
+        
+        <div id="bmi-result-card" class="hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-sm font-bold text-white/40">Your BMI</span>
+            <span id="bmi-category" class="text-xs font-black uppercase tracking-widest text-accent">Normal</span>
+          </div>
+          <div class="text-6xl font-black mb-6" id="bmi-value">22.4</div>
+          <div class="w-full h-2 bg-white/10 rounded-full overflow-hidden mb-4">
+            <div id="bmi-bar" class="h-full bg-accent transition-all duration-1000" style="width: 50%"></div>
+          </div>
+          <p id="bmi-advice" class="text-sm text-white/60 italic">You're in a great spot! Maintain a balanced diet and regular exercise.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="py-32 px-6">
+    <div class="max-w-4xl mx-auto">
+      <div class="text-center mb-16 reveal">
+        <h2 class="text-accent font-black uppercase tracking-[0.3em] text-sm mb-4">Questions?</h2>
+        <h3 class="text-5xl font-black tracking-tighter">THE <span class="italic">ANSWERS.</span></h3>
+      </div>
+      <div id="faq-list" class="space-y-4 reveal">
+        <!-- JS will populate -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact -->
+  <section id="contact" class="py-32 px-6 bg-surface">
+    <div class="max-w-6xl mx-auto grid lg:grid-cols-2 gap-16">
+      <div class="reveal">
+        <h2 class="text-accent font-black uppercase tracking-[0.3em] text-sm mb-4">Get In Touch</h2>
+        <h3 class="text-5xl font-black tracking-tighter mb-8 italic">READY TO START?</h3>
+        <p class="text-white/60 mb-12 leading-relaxed">
+          Have questions about memberships, private coaching, or our facilities? Drop us a message and our team will get back to you within 24 hours.
+        </p>
+        <div class="space-y-8">
+          <div class="flex items-center gap-6">
+            <div class="w-12 h-12 bg-accent/10 border border-accent/20 rounded-full flex items-center justify-center text-accent">
+              <i data-lucide="mail"></i>
+            </div>
+            <div>
+              <div class="text-[10px] font-black uppercase tracking-widest opacity-40">Email Us</div>
+              <div class="font-bold">hello@fitzonepro.com</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-6">
+            <div class="w-12 h-12 bg-accent/10 border border-accent/20 rounded-full flex items-center justify-center text-accent">
+              <i data-lucide="phone"></i>
+            </div>
+            <div>
+              <div class="text-[10px] font-black uppercase tracking-widest opacity-40">Call Us</div>
+              <div class="font-bold">+1 (555) 012-3456</div>
+            </div>
+          </div>
+          <div class="flex items-center gap-6">
+            <div class="w-12 h-12 bg-accent/10 border border-accent/20 rounded-full flex items-center justify-center text-accent">
+              <i data-lucide="map-pin"></i>
+            </div>
+            <div>
+              <div class="text-[10px] font-black uppercase tracking-widest opacity-40">Visit Us</div>
+              <div class="font-bold">789 Iron St, Muscle Valley, CA</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="reveal glass p-10 rounded-3xl">
+        <form id="contact-form" onsubmit="window.handleContact(event)" class="space-y-6">
+          <div class="grid grid-cols-2 gap-6">
+            <div>
+              <label class="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Name</label>
+              <input type="text" required name="name" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-accent transition-all">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Email</label>
+              <input type="email" required name="email" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-accent transition-all">
+            </div>
+          </div>
+          <div>
+            <label class="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Enquiry Type</label>
+            <select name="type" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-accent transition-all appearance-none">
+              <option value="Membership">Membership</option>
+              <option value="PT">Personal Training</option>
+              <option value="General">General Inquiry</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Message</label>
+            <textarea name="message" rows="4" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:outline-none focus:border-accent transition-all"></textarea>
+          </div>
+          <button type="submit" class="w-full bg-accent text-dark py-4 rounded-xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all">Send Message</button>
+          <div id="contact-success" class="hidden p-4 bg-accent/20 border border-accent/40 text-accent text-sm font-bold rounded-xl text-center">
+            Message Sent! We'll be in touch within 24 hours.
+          </div>
+        </form>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="py-20 px-6 border-t border-white/5">
+    <div class="max-w-6xl mx-auto">
+      <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-16">
+        <div class="col-span-2">
+          <span class="text-accent text-3xl font-black italic tracking-tighter flex items-center gap-2 mb-6">
+            <i data-lucide="dumbbell"></i> FITZONE PRO
+          </span>
+          <p class="text-white/40 max-w-xs mb-8 text-sm leading-relaxed">
+            Leading the fitness revolution with cutting-edge technology and world-class expertise.
+          </p>
+          <div class="flex gap-4">
+            <a href="#" class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-accent hover:text-dark transition-all"><i data-lucide="instagram" class="w-4 h-4"></i></a>
+            <a href="#" class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-accent hover:text-dark transition-all"><i data-lucide="facebook" class="w-4 h-4"></i></a>
+            <a href="#" class="w-10 h-10 rounded-full border border-white/10 flex items-center justify-center hover:bg-accent hover:text-dark transition-all"><i data-lucide="twitter" class="w-4 h-4"></i></a>
+          </div>
+        </div>
+        <div>
+          <h4 class="text-xs font-black uppercase tracking-widest mb-6">Classes</h4>
+          <ul class="space-y-4 text-sm text-white/40">
+            <li><a href="#" class="hover:text-accent transition-colors">HIIT Training</a></li>
+            <li><a href="#" class="hover:text-accent transition-colors">Yoga Flow</a></li>
+            <li><a href="#" class="hover:text-accent transition-colors">Spin Master</a></li>
+            <li><a href="#" class="hover:text-accent transition-colors">Boxing Elite</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-xs font-black uppercase tracking-widest mb-6">Company</h4>
+          <ul class="space-y-4 text-sm text-white/40">
+            <li><a href="#" class="hover:text-accent transition-colors">Our Story</a></li>
+            <li><a href="#" class="hover:text-accent transition-colors">Trainers</a></li>
+            <li><a href="#" class="hover:text-accent transition-colors">Locations</a></li>
+            <li><a href="#" class="hover:text-accent transition-colors">Careers</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4 class="text-xs font-black uppercase tracking-widest mb-6">Legal</h4>
+          <ul class="space-y-4 text-sm text-white/40">
+            <li><a href="#" class="hover:text-accent transition-colors">Privacy Policy</a></li>
+            <li><a href="#" class="hover:text-accent transition-colors">Terms of Service</a></li>
+            <li><a href="#" class="hover:text-accent transition-colors">Membership Terms</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="flex flex-col md:flex-row justify-between items-center gap-8 pt-8 border-t border-white/5 text-[10px] font-black uppercase tracking-widest text-white/20">
+        <div>© <script>document.write(new Date().getFullYear())</script> FITZONE PRO. ALL RIGHTS RESERVED.</div>
+        <button onclick="window.scrollTo({top:0, behavior:'smooth'})" class="flex items-center gap-2 hover:text-accent transition-colors">Back to top <i data-lucide="chevron-up" class="w-4 h-4"></i></button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Modals & UI Overlays -->
+  <div id="cart-drawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-dark border-l border-white/10 z-[200] flex flex-col p-8">
+    <div class="flex items-center justify-between mb-12">
+      <h3 class="text-2xl font-black italic uppercase">Your Cart</h3>
+      <button onclick="window.toggleCart()"><i data-lucide="x" class="w-6 h-6"></i></button>
+    </div>
+    <div id="cart-items" class="flex-1 overflow-y-auto space-y-6"></div>
+    <div id="cart-footer" class="pt-8 border-t border-white/10">
+      <div class="flex justify-between mb-2 opacity-50 text-sm">
+        <span>Subtotal</span>
+        <span id="cart-subtotal">$0.00</span>
+      </div>
+      <div class="flex justify-between mb-6 font-black text-xl">
+        <span>Total</span>
+        <span id="cart-total" class="text-accent">$0.00</span>
+      </div>
+      <button onclick="window.checkoutCart()" class="w-full bg-accent text-dark py-4 rounded-full font-black uppercase tracking-widest hover:shadow-[0_0_30px_rgba(0,255,136,0.5)] transition-all">Checkout</button>
+    </div>
+  </div>
+
+  <div id="checkoutModal" class="fixed inset-0 bg-dark/95 z-[300] hidden items-center justify-center p-6">
+    <div class="glass p-10 rounded-3xl w-full max-w-lg relative">
+      <button onclick="window.closeModal('checkoutModal')" class="absolute top-6 right-6 opacity-50 hover:opacity-100"><i data-lucide="x"></i></button>
+      <h3 class="text-3xl font-black mb-2 uppercase italic">Join FitZone Pro</h3>
+      <p class="text-white/50 text-sm mb-8">Secure your spot in the elite fitness community.</p>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Full Name</label>
+          <input type="text" class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 focus:border-accent text-white">
+        </div>
+        <div>
+          <label class="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Card Details</label>
+          <div class="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white/20 italic">4444 4444 4444 4444</div>
+        </div>
+        <div class="pt-4">
+          <button onclick="window.confirmPurchase()" class="w-full bg-accent text-dark py-4 rounded-xl font-black uppercase tracking-widest hover:scale-[1.02] active:scale-95 transition-all">Confirm & Pay</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const CLASSES = [
+        { id: 1, name: 'Glute HIIT', type: 'HIIT', trainer: 'Alex Rivera', time: '08:00 AM', dur: '45m', diff: 'Intermediate', spots: 4 },
+        { id: 2, name: 'Zen Yoga', type: 'YOGA', trainer: 'Maya Sun', time: '09:30 AM', dur: '60m', diff: 'Beginner', spots: 12 },
+        { id: 3, name: 'Power Spin', type: 'SPIN', trainer: 'Chris Bolt', time: '10:00 AM', dur: '45m', diff: 'Advanced', spots: 2 },
+        { id: 4, name: 'Elite Boxing', type: 'BOXING', trainer: 'Sarah Tyson', time: '11:00 AM', dur: '50m', diff: 'Advanced', spots: 0 },
+        { id: 5, name: 'Morning Pilates', type: 'PILATES', trainer: 'Emma Flow', time: '07:00 AM', dur: '45m', diff: 'Beginner', spots: 8 },
+        { id: 6, name: 'Core Crusher', type: 'HIIT', trainer: 'Alex Rivera', time: '05:00 PM', dur: '30m', diff: 'Intermediate', spots: 5 },
+      ];
+
+      const TRAINERS = [
+        { name: 'Alex Rivera', specialty: 'HIIT & Conditioning', rating: 5, xp: 8, img: 'https://images.pexels.com/photos/1431282/pexels-photo-1431282.jpeg?auto=compress&cs=tinysrgb&w=600' },
+        { name: 'Maya Sun', specialty: 'Holistic Yoga', rating: 5, xp: 12, img: 'https://images.pexels.com/photos/3076509/pexels-photo-3076509.jpeg?auto=compress&cs=tinysrgb&w=600' },
+        { name: 'Chris Bolt', specialty: 'Cycling & Cardio', rating: 4, xp: 5, img: 'https://images.pexels.com/photos/2468339/pexels-photo-2468339.jpeg?auto=compress&cs=tinysrgb&w=600' },
+        { name: 'Sarah Tyson', specialty: 'Combat Sports', rating: 5, xp: 15, img: 'https://images.pexels.com/photos/4162489/pexels-photo-4162489.jpeg?auto=compress&cs=tinysrgb&w=600' },
+        { name: 'Emma Flow', specialty: 'Pilates Reformer', rating: 5, xp: 6, img: 'https://images.pexels.com/photos/1552106/pexels-photo-1552106.jpeg?auto=compress&cs=tinysrgb&w=600' },
+        { name: 'Marcus Steel', specialty: 'Bodybuilding', rating: 5, xp: 10, img: 'https://images.pexels.com/photos/3289711/pexels-photo-3289711.jpeg?auto=compress&cs=tinysrgb&w=600' },
+      ];
+
+      const PRODUCTS = [
+        { id: 101, name: 'Resistance Bands', price: 24, img: 'https://images.pexels.com/photos/4397840/pexels-photo-4397840.jpeg?auto=compress&cs=tinysrgb&w=400' },
+        { id: 102, name: 'Eco Yoga Mat', price: 45, img: 'https://images.pexels.com/photos/3822860/pexels-photo-3822860.jpeg?auto=compress&cs=tinysrgb&w=400' },
+        { id: 103, name: 'Dumbbell Set', price: 89, img: 'https://images.pexels.com/photos/4944970/pexels-photo-4944970.jpeg?auto=compress&cs=tinysrgb&w=400' },
+        { id: 104, name: 'Pro Jump Rope', price: 18, img: 'https://images.pexels.com/photos/4397841/pexels-photo-4397841.jpeg?auto=compress&cs=tinysrgb&w=400' },
+        { id: 105, name: 'Deep Foam Roller', price: 35, img: 'https://images.pexels.com/photos/4162489/pexels-photo-4162489.jpeg?auto=compress&cs=tinysrgb&w=400' },
+        { id: 106, name: 'Protein Shaker', price: 22, img: 'linear-gradient(135deg,#1a1a1a,#2a2a2a)' },
+      ];
+
+      const FAQS = [
+        { q: "What are your opening hours?", a: "We are open 24/7 for Pro and Elite members. Basic members can access the gym from 6:00 AM to 10:00 PM daily." },
+        { q: "Can I cancel my membership anytime?", a: "Yes, we offer flexible month-to-month contracts. Annual plans can be cancelled with a 30-day notice period." },
+        { q: "Are personal trainers included?", a: "Elite members receive 4 sessions per month. Other members can book individual sessions starting at $45/hour." },
+        { q: "Do you offer guest passes?", a: "Yes, Pro members get 2 guest passes per month and Elite members get 5. Additional passes are $15 each." },
+        { q: "Is there a parking facility?", a: "We have a secure, free parking lot for all members located directly behind the gym building." }
+      ];
+
+      const appState = {
+        cart: [],
+        bmiUnit: 'metric',
+        isAnnual: false,
+        activeFilter: 'ALL'
+      };
+
+      window.initUI = function() {
+        renderClasses();
+        renderTrainers();
+        renderShop();
+        renderFAQ();
+        initScrollEffects();
+        initCounters();
+        initCountdown();
+        initBeforeAfter();
+        lucide.createIcons();
+      };
+
+      function renderClasses() {
+        const grid = document.getElementById('class-grid');
+        const filtered = appState.activeFilter === 'ALL' ? CLASSES : CLASSES.filter(c => c.type === appState.activeFilter);
+        grid.innerHTML = filtered.map(c => `
+          <div class="glass p-6 rounded-2xl group hover:border-accent/30 transition-all">
+            <div class="flex justify-between items-start mb-6">
+              <div class="bg-accent/10 text-accent text-[10px] font-black px-3 py-1 rounded uppercase tracking-widest">${c.type}</div>
+              <div class="text-[10px] font-bold opacity-30 uppercase">${c.diff}</div>
+            </div>
+            <h4 class="text-xl font-black mb-1 group-hover:text-accent transition-colors">${c.name}</h4>
+            <div class="text-xs opacity-50 mb-6">with ${c.trainer}</div>
+            <div class="flex items-center justify-between py-4 border-t border-white/5">
+              <div class="flex items-center gap-2 text-xs font-bold">
+                <i data-lucide="clock" class="w-3 h-3 text-accent"></i> ${c.time} (${c.dur})
+              </div>
+              <div class="text-[10px] font-black ${c.spots === 0 ? 'text-red-500' : 'text-accent'}">${c.spots} SPOTS LEFT</div>
+            </div>
+            <button class="w-full mt-4 py-3 rounded-xl border border-white/10 text-xs font-black uppercase tracking-widest hover:bg-white hover:text-dark transition-all ${c.spots === 0 ? 'opacity-30 pointer-events-none' : ''}">Book Now</button>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      }
+
+      function renderTrainers() {
+        const grid = document.getElementById('trainer-grid');
+        grid.innerHTML = TRAINERS.map(t => `
+          <div class="group relative overflow-hidden rounded-3xl aspect-[3/4]">
+            <img src="${t.img}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 grayscale group-hover:grayscale-0">
+            <div class="absolute inset-0 bg-gradient-to-t from-dark via-transparent to-transparent"></div>
+            <div class="absolute bottom-0 left-0 w-full p-8 translate-y-4 group-hover:translate-y-0 transition-transform">
+              <div class="text-accent text-[10px] font-black uppercase tracking-widest mb-2">${t.specialty}</div>
+              <h4 class="text-2xl font-black mb-2">${t.name}</h4>
+              <div class="flex items-center justify-between">
+                <div class="flex text-accent"><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i></div>
+                <div class="text-[10px] font-bold opacity-50 uppercase">${t.xp} Years Exp.</div>
+              </div>
+            </div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      }
+
+      function renderShop() {
+        const grid = document.getElementById('shop-grid');
+        grid.innerHTML = PRODUCTS.map(p => `
+          <div class="glass p-4 rounded-3xl group">
+            <div class="aspect-square rounded-2xl overflow-hidden mb-6">
+              ${p.img.startsWith('http') ? `<img src="${p.img}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">` : `<div style="background:${p.img};width:100%;height:100%;" class="group-hover:scale-105 transition-transform"></div>`}
+            </div>
+            <div class="flex justify-between items-start mb-2">
+              <h4 class="font-bold">${p.name}</h4>
+              <span class="text-accent font-black">$${p.price}</span>
+            </div>
+            <div class="flex text-yellow-500 mb-6"><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i><i data-lucide="star" class="w-3 h-3 fill-current"></i></div>
+            <button onclick="window.addToCart(${p.id})" class="w-full py-4 rounded-2xl bg-white/5 border border-white/10 text-xs font-black uppercase tracking-widest hover:bg-accent hover:text-dark transition-all">Add to Cart</button>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      }
+
+      function renderFAQ() {
+        const list = document.getElementById('faq-list');
+        list.innerHTML = FAQS.map((f, i) => `
+          <div class="faq-item group border-b border-white/5">
+            <button onclick="window.toggleFaq(${i})" class="w-full py-8 flex items-center justify-between text-left">
+              <span class="text-xl font-bold group-hover:text-accent transition-colors">${f.q}</span>
+              <i data-lucide="plus" class="w-6 h-6 text-accent transition-transform"></i>
+            </button>
+            <div class="faq-content text-white/50 leading-relaxed text-sm">${f.a}</div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      }
+
+      window.filterClasses = function(type, btn) {
+        appState.activeFilter = type;
+        document.querySelectorAll('.class-tab').forEach(b => b.classList.remove('bg-accent', 'text-dark', 'active'));
+        btn.classList.add('bg-accent', 'text-dark', 'active');
+        renderClasses();
+      };
+
+      window.toggleAnnual = function() {
+        appState.isAnnual = !appState.isAnnual;
+        const toggle = document.getElementById('annual-toggle');
+        toggle.querySelector('div').style.transform = appState.isAnnual ? 'translateX(24px)' : 'translateX(0)';
+        document.querySelectorAll('.price-val').forEach(el => {
+          el.textContent = appState.isAnnual ? el.dataset.annual : el.dataset.monthly;
+        });
+      };
+
+      window.addToCart = function(id) {
+        const prod = PRODUCTS.find(p => p.id === id);
+        const existing = appState.cart.find(i => i.id === id);
+        if (existing) existing.qty++;
+        else appState.cart.push({...prod, qty: 1});
+        updateCartUI();
+        window.toggleCart(true);
+      };
+
+      function updateCartUI() {
+        const count = appState.cart.reduce((s, i) => s + i.qty, 0);
+        const badge = document.getElementById('cart-badge');
+        badge.textContent = count;
+        badge.style.opacity = count > 0 ? '1' : '0';
+        
+        const list = document.getElementById('cart-items');
+        if (appState.cart.length === 0) {
+          list.innerHTML = `<div class="h-full flex flex-col items-center justify-center opacity-30 italic text-sm"><i data-lucide="shopping-bag" class="w-12 h-12 mb-4"></i>Your cart is empty</div>`;
+        } else {
+          list.innerHTML = appState.cart.map(i => `
+            <div class="flex gap-4 items-center">
+              <div class="w-16 h-16 rounded-xl overflow-hidden">
+                ${i.img.startsWith('http') ? `<img src="${i.img}" class="w-full h-full object-cover">` : `<div style="background:${i.img};width:100%;height:100%;"></div>`}
+              </div>
+              <div class="flex-1">
+                <div class="font-bold text-sm text-white">${i.name}</div>
+                <div class="text-accent text-xs font-black">$${i.price}</div>
+              </div>
+              <div class="flex items-center gap-3">
+                <button onclick="window.changeQty(${i.id}, -1)" class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-white">-</button>
+                <span class="text-xs font-bold text-white">${i.qty}</span>
+                <button onclick="window.changeQty(${i.id}, 1)" class="w-6 h-6 rounded-full bg-white/5 flex items-center justify-center text-white">+</button>
+              </div>
+            </div>
+          `).join('');
+        }
+        
+        const sub = appState.cart.reduce((s, i) => s + (i.price * i.qty), 0);
+        document.getElementById('cart-subtotal').textContent = `$${sub.toFixed(2)}`;
+        document.getElementById('cart-total').textContent = `$${(sub * 1.2).toFixed(2)}`;
+        lucide.createIcons();
+      }
+
+      window.changeQty = function(id, delta) {
+        const item = appState.cart.find(i => i.id === id);
+        item.qty += delta;
+        if (item.qty <= 0) appState.cart = appState.cart.filter(i => i.id !== id);
+        updateCartUI();
+      };
+
+      window.toggleCart = function(forceOpen = null) {
+        const drawer = document.getElementById('cart-drawer');
+        const isOpen = forceOpen !== null ? forceOpen : !drawer.classList.contains('open');
+        drawer.classList.toggle('open', isOpen);
+      };
+
+      window.toggleMobileMenu = function() {
+        const menu = document.getElementById('mobile-menu');
+        const isOpen = !menu.classList.contains('open');
+        menu.classList.toggle('open', isOpen);
+        menu.classList.toggle('opacity-100', isOpen);
+        menu.classList.toggle('pointer-events-auto', isOpen);
+      };
+
+      window.toggleFaq = function(index) {
+        const items = document.querySelectorAll('.faq-item');
+        const target = items[index];
+        const wasOpen = target.classList.contains('open');
+        items.forEach(it => it.classList.remove('open'));
+        if (!wasOpen) target.classList.add('open');
+      };
+
+      window.calculateBMI = function() {
+        const w = parseFloat(document.getElementById('bmi-weight').value);
+        let h = parseFloat(document.getElementById('bmi-height').value);
+        if (!w || !h) return;
+
+        let bmi;
+        if (appState.bmiUnit === 'metric') {
+          bmi = w / ((h/100) * (h/100));
+        } else {
+          bmi = (w / (h * h)) * 703;
+        }
+
+        const resCard = document.getElementById('bmi-result-card');
+        const valEl = document.getElementById('bmi-value');
+        const catEl = document.getElementById('bmi-category');
+        const barEl = document.getElementById('bmi-bar');
+        const adviceEl = document.getElementById('bmi-advice');
+
+        resCard.classList.remove('hidden');
+        valEl.textContent = bmi.toFixed(1);
+
+        let cat, color, advice, perc;
+        if (bmi < 18.5) { cat = 'Underweight'; color = '#3b82f6'; perc = 25; advice = "Time to fuel up! Focus on nutrient-dense meals and strength training."; }
+        else if (bmi < 25) { cat = 'Normal'; color = '#00FF88'; perc = 50; advice = "Perfect balance! Keep doing what you're doing."; }
+        else if (bmi < 30) { cat = 'Overweight'; color = '#fbbf24'; perc = 75; advice = "Let's kick it up a notch. Try adding more HIIT to your routine."; }
+        else { cat = 'Obese'; color = '#ef4444'; perc = 100; advice = "Don't discourage! Consistency is key. Our trainers can help you build a safe plan."; }
+
+        catEl.textContent = cat;
+        catEl.style.color = color;
+        barEl.style.backgroundColor = color;
+        barEl.style.width = perc + '%';
+        adviceEl.textContent = advice;
+      };
+
+      window.setBmiUnit = function(unit) {
+        appState.bmiUnit = unit;
+        document.getElementById('bmi-metric').classList.toggle('bg-dark', unit === 'metric');
+        document.getElementById('bmi-metric').classList.toggle('text-accent', unit === 'metric');
+        document.getElementById('bmi-metric').classList.toggle('border-accent', unit === 'metric');
+        document.getElementById('bmi-metric').classList.toggle('border-white/20', unit !== 'metric');
+        
+        document.getElementById('bmi-imperial').classList.toggle('bg-dark', unit === 'imperial');
+        document.getElementById('bmi-imperial').classList.toggle('text-accent', unit === 'imperial');
+        document.getElementById('bmi-imperial').classList.toggle('border-accent', unit === 'imperial');
+        document.getElementById('bmi-imperial').classList.toggle('border-white/20', unit !== 'imperial');
+
+        document.getElementById('unit-w').textContent = unit === 'metric' ? 'kg' : 'lbs';
+        document.getElementById('unit-h').textContent = unit === 'metric' ? 'cm' : 'in';
+      };
+
+      window.handleContact = function(e) {
+        e.preventDefault();
+        const success = document.getElementById('contact-success');
+        success.classList.remove('hidden');
+        e.target.reset();
+        setTimeout(() => success.classList.add('hidden'), 5000);
+      };
+
+      window.openModal = function(id) {
+        document.getElementById(id).style.display = 'flex';
+      };
+
+      window.closeModal = function(id) {
+        document.getElementById(id).style.display = 'none';
+      };
+
+      window.openCheckout = function(plan) {
+        window.openModal('checkoutModal');
+      };
+
+      window.confirmPurchase = function() {
+        spawnConfetti();
+        window.closeModal('checkoutModal');
+        alert("Welcome to the team! Check your email for next steps.");
+      };
+
+      function initScrollEffects() {
+        const nav = document.getElementById('main-nav');
+        window.addEventListener('scroll', () => {
+          nav.classList.toggle('nav-scrolled', window.scrollY > 50);
+        });
+        const io = new IntersectionObserver(entries => {
+          entries.forEach(e => {
+            if (e.isIntersecting) {
+              e.target.classList.add('visible');
+              io.unobserve(e.target);
+            }
+          });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+      }
+
+      function initCounters() {
+        const counters = document.querySelectorAll('.counter');
+        const io = new IntersectionObserver(entries => {
+          entries.forEach(e => {
+            if (e.isIntersecting) {
+              const target = +e.target.dataset.target;
+              let current = 0;
+              const step = target / 50;
+              const timer = setInterval(() => {
+                current += step;
+                if (current >= target) {
+                  e.target.textContent = target.toLocaleString() + '+';
+                  clearInterval(timer);
+                } else {
+                  e.target.textContent = Math.floor(current).toLocaleString() + '+';
+                }
+              }, 30);
+              io.unobserve(e.target);
+            }
+          });
+        });
+        counters.forEach(c => io.observe(c));
+      }
+
+      function initCountdown() {
+        const el = document.getElementById('countdown');
+        let seconds = 3600 * 2.5; 
+        setInterval(() => {
+          seconds--;
+          if (seconds < 0) seconds = 3600 * 2.5;
+          const h = Math.floor(seconds / 3600);
+          const m = Math.floor((seconds % 3600) / 60);
+          const s = seconds % 60;
+          el.innerHTML = `<span>${String(h).padStart(2,'0')}</span>:<span>${String(m).padStart(2,'0')}</span>:<span>${String(s).padStart(2,'0')}</span>`;
+        }, 1000);
+      }
+
+      function initBeforeAfter() {
+        const container = document.getElementById('ba-container');
+        const after = document.getElementById('ba-after');
+        const handle = document.getElementById('ba-handle');
+        if (!container) return;
+        container.addEventListener('mousemove', (e) => {
+          const rect = container.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const perc = Math.max(0, Math.min(100, (x / rect.width) * 100));
+          after.style.width = perc + '%';
+          handle.style.left = perc + '%';
+        });
+      }
+
+      function spawnConfetti() {
+        for(let i=0; i<100; i++) {
+          const c = document.createElement('div');
+          c.className = 'confetti';
+          c.style.left = Math.random() * 100 + 'vw';
+          c.style.top = '-10px';
+          c.style.backgroundColor = Math.random() > 0.5 ? '#00FF88' : '#fff';
+          c.style.transform = `rotate(${Math.random()*360}deg)`;
+          document.body.appendChild(c);
+          const destX = (Math.random() - 0.5) * 500;
+          const destY = window.innerHeight + 100;
+          c.animate([
+            { transform: `translate(0, 0) rotate(0deg)`, opacity: 1 },
+            { transform: `translate(${destX}px, ${destY}px) rotate(720deg)`, opacity: 0 }
+          ], { duration: 2000 + Math.random()*1000, easing: 'cubic-bezier(0,0,0.2,1)' }).onfinish = () => c.remove();
+        }
+      }
+
+      window.openVideoModal = function() {
+        alert("Feature Demo: This would open a full-screen YouTube player modal.");
+      }
+
+      window.initUI();
+    })();
+  </script>
+</body>
+</html>
