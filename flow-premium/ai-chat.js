@@ -8148,39 +8148,65 @@ PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
 
 PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   Use for: ANY request containing shop, store, buy, sell, product, price, payment, checkout, cart, e-commerce, Stripe, PayPal, order, purchase.
-  ⚠️  This profile builds a fully-functional static shop with real payment links — not a fake demo.
+  ⚠️  This profile builds a fully-functional static shop — not a fake demo.
 
   ══════════════════════════════════════════════════════════════
   MANDATORY ARCHITECTURE — include every section below
   ══════════════════════════════════════════════════════════════
 
-  1. HEADER — logo left + site name, navigation (Products · About · Cart), floating cart icon with item-count badge.
+  1. HEADER / NAVBAR — MANDATORY requirements:
+     • Add <link rel="icon" type="image/png" href=""> in <head> (leave href empty — user will upload their icon).
+     • Include a logo <img> element: <img id="site-logo" src="" alt="logo" style="height:36px;width:auto;object-fit:contain;display:none;"> — hide it when src is empty; show it when a logo image is uploaded.
+     • Site name text next to the logo img.
+     • Navigation links: Products · About · Contact
+     • Floating cart icon (top-right) with item-count badge.
+     • MOBILE HAMBURGER MENU — mandatory:
+       A ☰ button visible on mobile (hidden on desktop), toggles a mobile nav drawer. Every nav link must be reachable on phone.
 
-  2. HERO — bold headline + one-sentence value prop + primary CTA button ("Shop Now" or "Browse Products").
+  2. HERO — bold headline + tagline + primary CTA button.
+     • Use Pexels photos that MATCH the product category. For jewellery: search terms like "jewellery", "rings", "necklace", "handmade jewelry". For clothing: "fashion", "outfit". For food: matching cuisine. NEVER use random interior/shelf photos.
 
   3. PRODUCT GRID — 3–6 product cards in a responsive CSS grid (auto-fill, minmax(260px,1fr)).
      Each card MUST have:
-       • Product image (Pexels photo or user screenshot)
+       • Product image (Pexels photo relevant to the specific product)
        • Product name (bold, 1.1rem)
-       • Short description (2 lines max)
-       • Price displayed prominently (e.g. $29.99)
-       • "🛒 Add to Cart" button (adds to JS cart) AND a "Buy Now" button (opens payment link directly)
+       • Short description (2 lines, relevant to the product)
+       • Price displayed prominently using .toFixed(2) format: $29.99
+       • "🛒 Add to Cart" button — ALWAYS VISIBLE, not hover-only. Mobile users cannot hover.
+       • "Buy Now" button that opens payment link directly.
 
-  4. CART SYSTEM — pure JS, no server:
-     • A JS array (let cart = []) tracks items: { name, price, qty }
-     • Floating cart button (top-right) shows badge with item count
-     • Cart drawer/modal: lists items, shows subtotal, has "Checkout" button
-     • "Checkout" button opens the Stripe Payment Link in a new tab
+  4. CART SYSTEM — use appState pattern (NOT a bare let cart = []):
+     • appState.cart = [] tracks { id, name, price, qty }
+     • saveAndRender() writes to localStorage key specific to this shop (e.g. "shop_cart_[brandname]")
+     • ON FIRST LOAD: clear any stale cart — start fresh every page load: localStorage.removeItem('shop_cart_[brandname]')
+     • Cart drawer: lists items, quantity controls (+ / −), shows subtotal with .toFixed(2)
+     • "Checkout" button opens PayPal/Stripe link in new tab
+     • Empty cart state: centered cart icon + "Your cart is empty" + "Start Shopping" button.
 
-  5. PAYMENT BUTTONS — use Stripe Payment Links (no server, just a URL):
-     • Every "Buy Now" and "Checkout" must use: href="https://buy.stripe.com/REPLACE_WITH_YOUR_STRIPE_LINK"
-     • Add HTML comment on each: <!-- Create your link at dashboard.stripe.com → Payment Links, then replace the URL above -->
-     • Also offer a PayPal fallback button: <a href="https://paypal.me/YOURUSERNAME/AMOUNT">Pay with PayPal 💳</a>
-     • Add comment: <!-- Replace with your PayPal.me link, e.g. paypal.me/YourName/29 -->
+  5. PAYMENT BUTTONS:
+     • If the user provided a real PayPal.me URL — use it EXACTLY on every checkout button. Format: href="https://paypal.me/USERNAME/AMOUNT" where AMOUNT is the cart total (update dynamically via JS).
+     • If the user provided a real Stripe link — use it EXACTLY on every Buy Now button.
+     • If no payment link provided: href="https://paypal.me/YOURUSERNAME" with HTML comment: <!-- Replace YOURUSERNAME with your PayPal username -->
+     • NEVER use paypal.me/YOURUSERNAME/0 — amount must be dynamic or left out.
 
-  6. TRUST SECTION — "Safe & Secure Checkout" row with: 🔒 SSL Secured · 💳 Visa / Mastercard / PayPal · 🔄 Easy Returns
+  6. CONTACT SECTION — a real contact block, NOT a newsletter form:
+     • Heading: "Get in Touch" or "Contact Us"
+     • Show: 📧 [email placeholder] · 📱 [phone placeholder] · 📍 [location placeholder]
+     • Optional: a simple contact form (name, email, message) with a mailto: action.
+     • If the user provided a real email address — use it. Otherwise use: hello@[brandname].com as the placeholder.
 
-  7. FOOTER — links, social icons, payment method badges (text-based), copyright.
+  7. TRUST SECTION — "Safe & Secure Checkout" row: 🔒 SSL Secured · 💳 PayPal / Visa / Mastercard · 🔄 Easy Returns
+
+  8. FOOTER — social icons, links, copyright via JS: <span id="yr"></span> + script: document.getElementById('yr').textContent = new Date().getFullYear();
+     • Instagram: <a href="https://instagram.com/[brandname]"> — use a real Instagram URL pattern.
+     • TikTok: Since Lucide has no TikTok icon, use this inline SVG:
+       <a href="https://tiktok.com/@[brandname]"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.17 8.17 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg></a>
+     • Copyright: &copy; <span id="yr"></span> [Brand Name]. All rights reserved.
+
+  REVEAL ANIMATION — mandatory correct pattern:
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  .reveal.visible { opacity: 1; transform: translateY(0); }
+  IntersectionObserver adds class="visible" when element enters viewport. NO setTimeout fallback that overrides this.
 
   PROFILE S VISUAL STYLE:
   Clean, modern, light background (#FAFAFA), product cards with subtle shadow + hover lift.
@@ -8189,12 +8215,19 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   Cart badge: red pill (background:#EF4444) over cart icon.
 
   PROFILE S BANNED:
-  ✗ Fake "Add to Cart" that does nothing — must update cart array + badge count
+  ✗ Add to Cart button hidden behind hover — always visible on the card face
   ✗ Missing prices on any product card
-  ✗ "Click here" or "Learn more" as the CTA — always use action + price: "Buy Now — $29"
-  ✗ No payment method listed anywhere on the page
-  ✗ Placeholder text like "Product description here" — write real copy based on the user's topic
-  ✗ A server-side checkout — everything must work as a static HTML file (Stripe links open in new tab)
+  ✗ "Click here" or "Learn more" — use action + price: "Buy Now — $29"
+  ✗ No payment method listed anywhere
+  ✗ Placeholder text like "Product description here" — write real copy
+  ✗ Server-side checkout — everything must work as a static HTML file
+  ✗ Newsletter form in place of a contact section
+  ✗ let cart = [] bare global — always use appState pattern
+  ✗ paypal.me/SOMEONE/0 — never hardcode amount as 0
+  ✗ TikTok shown as music-2 Lucide icon — use the SVG above
+  ✗ .reveal { opacity: 1 } — always start hidden
+  ✗ Copyright year hardcoded — always use new Date().getFullYear()
+  ✗ No mobile hamburger menu — required on every build
 
   ══════════════════════════════════════════════════════════════
   PROFILE S-ADMIN — AMAZON-STYLE OWNER-MANAGED SHOP
@@ -12780,15 +12813,7 @@ function _isNewBuildIntent(prompt) {
 function _isBuildInstruction(prompt, hasFiles) {
   const raw = prompt.toLowerCase().trim();
 
-  // ── Confirmation-only gate ────────────────────────────────────────────────
-  // ONLY explicit short confirmations trigger a build or patch.
-  // Everything else — including descriptive instructions like "change the icon",
-  // "add a pricing section", or "build me a landing page" — routes to chat first
-  // so the AI can discuss, clarify, and confirm the plan before touching the site.
-  //
-  // This applies on FIRST builds (no site yet) AND post-build updates:
-  //  • First build: user describes idea → AI discusses → user says "build it" → builds
-  //  • Post-build:  user says "change the banner" → AI confirms → user says "do it" → patches
+  // ── 1. Explicit short confirmations ───────────────────────────────────────
   const confirmRe = /^(yes|yeah|yep|yup|ok|okay|sure|go|do it|build it|make it|go ahead|confirm|correct|right|exactly|perfect|sounds good|do that|apply|apply it|yes please|please do|let'?s go|do it now|build now|build that|build this|go for it|proceed|approved|ship it|that works|looks good)[\s!.,]*$/;
   if (confirmRe.test(raw)) return true;
 
@@ -12798,12 +12823,36 @@ function _isBuildInstruction(prompt, hasFiles) {
   const prefixRe = /^(please|pls|plz|hey|ok|okay|yes|yeah|yep|yup|sure|alright|yo|so|now|also|and then|and|then|can you|could you|would you|will you|i want you to|i want to|i'?d like you to|i'?d like to|i would like to|i'?d love to|lets|let'?s|go ahead and|i need you to|i need to|i'?m gonna|gonna|just)[\s,]+/i;
   let _prev;
   do { _prev = p; p = p.replace(prefixRe, '').trim(); } while (p !== _prev);
-
-  // Re-check after stripping ("sure, do that" → "do that" → build).
   if (confirmRe.test(p)) return true;
 
-  // Anything else — questions, action verbs, descriptions, image uploads —
-  // goes to chat. The AI will discuss and prompt the user for explicit confirmation.
+  // ── 2. Direct build / create verbs at the start ───────────────────────────
+  // "build me a shop", "create a landing page", "make me a portfolio", etc.
+  // These are unambiguous — the user wants it built, not discussed.
+  const directBuildRe = /^(build|create|make|design|generate|develop|code|write)\b.{5,}/i;
+  if (directBuildRe.test(raw)) return true;
+
+  // ── 3. Detailed spec prompt — has bullet points / dashes with real content ─
+  // A prompt with 3+ lines starting with - or • is a specification, not a question.
+  const bulletLines = (prompt.match(/^[\s]*[-•*]\s+.+/mg) || []).length;
+  if (bulletLines >= 3) return true;
+
+  // ── 4. Prompt contains price/product patterns (shop spec) ─────────────────
+  // e.g. "Silver Moon Ring — $35" or "Product: $29.99"
+  const hasPriceSpec = /\$\d+|\d+\s*(?:usd|gbp|eur)/i.test(prompt);
+  if (hasPriceSpec && prompt.length > 80) return true;
+
+  // ── 5. Post-build patch commands — clear action verbs on an existing site ──
+  // These should always patch directly without requiring "build it" confirmation.
+  const patchVerbRe = /^(change|update|replace|swap|add|remove|delete|fix|make|set|turn|switch|link|move|hide|show|rename|reorder|increase|decrease|adjust|edit|modify|put|use|apply|insert|convert|connect|enable|disable)\b/i;
+  if (patchVerbRe.test(p) && p.length > 10) return true;
+
+  // ── 6. Specific single-command patches ────────────────────────────────────
+  const singlePatchRe = /\b(favicon|logo|background|color|colour|font|email|instagram|tiktok|twitter|facebook|paypal|stripe|price|button|menu|navbar|footer|hero|section|mobile|responsive|animation|copyright|social|link|icon)\b/i;
+  if (singlePatchRe.test(raw) && p.length > 8 && p.length < 200) return true;
+
+  // ── 7. Image attached — always treat as a build/patch action ──────────────
+  if (hasFiles) return true;
+
   return false;
 }
 
