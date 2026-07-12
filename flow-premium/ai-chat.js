@@ -8184,7 +8184,21 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   JEWELLERY SHOP — verified Pexels IDs: 1457801, 2735970, 1458867, 1191531, 3812433
   CLOTHING SHOP — verified Pexels IDs: 1536619, 2220316, 2220329, 3622608, 996329
   FOOD SHOP — use photos matching the specific dish name.
-  ANY OTHER shop — pick Pexels photos by searching the product name. NEVER use citrus, fruit, plants, furniture, or abstract textures as product images.
+
+  CAR DEALERSHIP / AUTO SITE — USE THESE VERIFIED PEXELS PHOTO IDs (confirmed car images, tested and loading):
+    Car 1 slot: https://images.pexels.com/photos/112460/pexels-photo-112460.jpeg   ✅ silver sports car (front)
+    Car 2 slot: https://images.pexels.com/photos/1149831/pexels-photo-1149831.jpeg ✅ yellow/gold sports car
+    Car 3 slot: https://images.pexels.com/photos/170811/pexels-photo-170811.jpeg   ✅ red sports car (side)
+    Car 4 slot: https://images.pexels.com/photos/244206/pexels-photo-244206.jpeg   ✅ luxury car (dark)
+    Car 5 slot: https://images.pexels.com/photos/3764958/pexels-photo-3764958.jpeg ✅ modern sedan
+    Hero:       https://images.pexels.com/photos/1035108/pexels-photo-1035108.jpeg ✅ car on road (wide)
+    About/Interior: https://images.pexels.com/photos/210019/pexels-photo-210019.jpeg ✅ showroom / interior
+  ⛔ NEVER USE these IDs for a car site — they show wrong content: 10065134 (sunset), 7330046, 5765418
+  onerror fallback gradient for cars: linear-gradient(135deg,#1a1a2e,#16213e)
+
+  ANY OTHER shop — pick Pexels photos by searching the product name. NEVER use citrus, fruit, plants, furniture, scrabble tiles, or abstract textures as product images.
+
+  ABOUT SECTION IMAGES (non-shop, non-candle, non-car): For restaurant/cafe about: 1640777. For beauty/spa: 3997991. For tech/agency: 3861958. For fitness: 416778. For generic professional: 3182812. NEVER use scrabble tiles, Scrabble letters, word blocks, or letter cubes. NEVER use unrelated lifestyle images for about sections.
 
   ══════════════════════════════════════════════════════════════
   MANDATORY ARCHITECTURE — include every section below
@@ -11999,7 +12013,7 @@ async function handleSend() {
                 // Show a "building…" indicator instead; the preview updates via renderLivePreview.
                 const _streamIsHtml = buildModeEnabled && fullText.trimStart().startsWith('<!') || (buildModeEnabled && /```html/i.test(fullText));
                 if (_streamIsHtml) {
-                  responseBubble.innerHTML = '<div style="display:flex;align-items:center;gap:8px;font-size:13px;opacity:0.7;"><span>🏗️</span><span>Building your site…</span></div>';
+                  responseBubble.innerHTML = '<style>@keyframes _snap_pulse{0%,100%{opacity:.55}50%{opacity:1}}@keyframes _snap_dots{0%{content:""}33%{content:"."}66%{content:".."}100%{content:"..."}}.snap-building-dot::after{content:"";animation:_snap_dots 1.2s steps(1,end) infinite}</style><div style="display:flex;align-items:center;gap:10px;font-size:13px;animation:_snap_pulse 1.5s ease-in-out infinite;padding:2px 0;"><span style="font-size:20px;">🏗️</span><span>Building your site<span class="snap-building-dot"></span></span></div>';
                 } else {
                   try {
                     if (typeof marked !== 'undefined') {

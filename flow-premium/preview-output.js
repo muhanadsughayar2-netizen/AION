@@ -1,7 +1,6 @@
 let _code = '';
 let _codeVisible = false;
-let _sandboxReady = false;
-let _pendingCode = null;
+let _blobUrl = null;
 
 function hideLoader() {
   const overlay = document.getElementById('loadingOverlay');
@@ -59,49 +58,25 @@ function sanitizeForPreview(code) {
   return fixed + safetyScript;
 }
 
-function sendToSandbox(safeCode) {
-  const frame = document.getElementById('previewFrame');
-  if (frame && frame.contentWindow) {
-    // isFinal: true is required — sandbox.html only runs scripts and
-    // initializes Lucide icons when isFinal is truthy. Without it,
-    // all JS (tabs, icons, animations) is silently skipped.
-    frame.contentWindow.postMessage({ htmlCode: safeCode, isFinal: true }, '*');
-  }
-}
-
+// Load the site into the iframe via a blob URL.
+// This is the same approach as "Open Standalone" and is the ONLY reliable
+// method — the previous sandbox.html+postMessage approach had a fatal timing
+// bug where Tailwind CDN initialised before the generated tailwind.config was
+// injected, so all custom utility classes (bg-brand-black, text-accent, etc.)
+// produced no CSS and the page appeared blank.
 function loadPreview(code) {
+  const frame = document.getElementById('previewFrame');
+  if (!frame) return;
+
   const safeCode = sanitizeForPreview(code);
-  if (_sandboxReady) {
-    sendToSandbox(safeCode);
-  } else {
-    // Queue it — will be sent once sandboxReady fires
-    _pendingCode = safeCode;
-  }
+
+  // Revoke the previous blob URL so the browser can garbage-collect it
+  if (_blobUrl) { try { URL.revokeObjectURL(_blobUrl); } catch (_) {} }
+
+  const blob = new Blob([safeCode], { type: 'text/html' });
+  _blobUrl = URL.createObjectURL(blob);
+  frame.src = _blobUrl;
 }
-
-// Listen for sandboxReady handshake from sandbox.html iframe
-window.addEventListener('message', (event) => {
-  if (event.data && event.data.sandboxReady) {
-    _sandboxReady = true;
-    if (_pendingCode !== null) {
-      sendToSandbox(_pendingCode);
-      _pendingCode = null;
-    }
-    hideLoader();
-  }
-});
-
-// Safety net — if CDNs are slow or sandbox fails to handshake within 5s,
-// force-send queued code and dismiss the spinner anyway
-setTimeout(() => {
-  if (!_sandboxReady) {
-    if (_pendingCode !== null) {
-      sendToSandbox(_pendingCode);
-      _pendingCode = null;
-    }
-    hideLoader();
-  }
-}, 5000);
 
 chrome.storage.local.get('snaptoai_built_code', (res) => {
   const code = res.snaptoai_built_code || '';
@@ -116,6 +91,7 @@ chrome.storage.local.get('snaptoai_built_code', (res) => {
   document.getElementById('titleSub').textContent = '— ready';
   document.getElementById('codePre').textContent = code;
   loadPreview(code);
+  hideLoader();
 });
 
 document.getElementById('copyBtn').addEventListener('click', () => {
@@ -145,7 +121,6 @@ document.getElementById('newTabBtn').addEventListener('click', () => {
   if (!_code) return;
   const blob = new Blob([_code], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
-  // chrome.tabs.create is more reliable than window.open from extension pages
   if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create) {
     chrome.tabs.create({ url });
   } else {

@@ -1,0 +1,641 @@
+🏗️ Aion AI Build Preview
+— ready
+👁 View Preview
+Copy Code
+⬇ Download Site
+🔗 Open Standalone
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DriveElite Motors | Luxury Automotive Curators</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=Karla:wght@300;400;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              black: '#000000',
+              dark: '#0A0A0A',
+              surface: '#121212'
+            },
+            accent: {
+              DEFAULT: '#DC2626',
+              light: '#EF4444',
+              dark: '#991B1B'
+            }
+          },
+          fontFamily: {
+            heading: ['Cormorant Garamond', 'serif'],
+            sans: ['Karla', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #000000;
+      --text: #F8F9FA;
+      --accent: #DC2626;
+    }
+    body { background-color: var(--bg); color: var(--text); font-family: 'Karla', sans-serif; }
+    
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp { 
+      from { opacity: 0; transform: translateY(30px); } 
+      to { opacity: 1; transform: translateY(0); } 
+    }
+
+    .car-card {
+      transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+      border: 1px solid rgba(220, 38, 38, 0.1);
+    }
+    .car-card:hover {
+      transform: translateY(-8px);
+      border-color: var(--accent);
+      box-shadow: 0 20px 40px rgba(220, 38, 38, 0.1);
+    }
+
+    .accent-gradient {
+      background: linear-gradient(135deg, #DC2626 0%, #991B1B 100%);
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #000000; }
+    ::-webkit-scrollbar-thumb { background: #DC2626; border-radius: 10px; }
+
+    .sidebar-transition {
+      transition: transform 0.5s cubic-bezier(0.77, 0, 0.175, 1);
+    }
+    
+    #toast {
+      transform: translateX(120%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    #toast.show { transform: translateX(0); }
+
+    /* Video Overlay Effect */
+    .video-overlay {
+      background: linear-gradient(to bottom, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.8) 100%);
+      pointer-events: none;
+    }
+    .scanlines {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.02), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.02));
+      background-size: 100% 3px, 3px 100%;
+      z-index: 5;
+      opacity: 0.3;
+    }
+  </style>
+</head>
+<body class="antialiased overflow-x-hidden pt-[120px]">
+
+  <!-- Special Offers Banner -->
+  <div class="fixed top-0 w-full z-[100] bg-accent text-white py-3 text-center text-xs font-bold uppercase tracking-[0.3em] shadow-lg">
+    0% Finance Available This Month
+  </div>
+
+  <!-- Navigation -->
+  <nav class="fixed top-10 w-full z-50 bg-brand-black/80 backdrop-blur-lg border-b border-white/5 h-[80px] flex items-center px-6 lg:px-12 justify-between">
+    <div class="flex items-center gap-2">
+      <div class="w-10 h-10 accent-gradient flex items-center justify-center rounded-sm rotate-45 shadow-[0_0_15px_rgba(220,38,38,0.4)]">
+        <i data-lucide="crown" class="w-6 h-6 text-white -rotate-45"></i>
+      </div>
+      <span class="font-heading text-2xl font-semibold tracking-wider uppercase ml-2">DriveElite<span class="text-accent">.</span></span>
+    </div>
+
+    <div class="hidden lg:flex items-center gap-10 text-sm font-semibold tracking-widest uppercase text-white/70">
+      <a href="#inventory" class="hover:text-accent transition-colors">Inventory</a>
+      <a href="#about" class="hover:text-accent transition-colors">Heritage</a>
+      <a href="#contact" class="hover:text-accent transition-colors">Concierge</a>
+      <button onclick="window.toggleWishlist()" class="relative group">
+        <i data-lucide="heart" class="w-5 h-5 group-hover:text-accent transition-colors"></i>
+        <span id="wishlist-badge" class="absolute -top-2 -right-2 bg-accent text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center opacity-0 transition-opacity">0</span>
+      </button>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <button onclick="window.toggleMobileMenu()" class="lg:hidden text-white">
+        <i data-lucide="menu" class="w-6 h-6"></i>
+      </button>
+      <a href="#contact" class="hidden lg:block border border-accent px-6 py-2 text-xs font-bold uppercase tracking-widest hover:bg-accent hover:text-white transition-all">Request Quote</a>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu -->
+  <div id="mobile-menu" class="fixed inset-0 z-[60] bg-brand-black flex-col items-center justify-center gap-8 hidden">
+    <button onclick="window.toggleMobileMenu()" class="absolute top-20 right-8 text-white">
+      <i data-lucide="x" class="w-8 h-8"></i>
+    </button>
+    <a href="#inventory" onclick="window.toggleMobileMenu()" class="font-heading text-4xl text-white hover:text-accent">Inventory</a>
+    <a href="#about" onclick="window.toggleMobileMenu()" class="font-heading text-4xl text-white hover:text-accent">Heritage</a>
+    <a href="#contact" onclick="window.toggleMobileMenu()" class="font-heading text-4xl text-white hover:text-accent">Concierge</a>
+  </div>
+
+  <!-- Hero Section -->
+  <section class="relative min-h-[115vh] flex items-center overflow-hidden -mt-[120px]">
+    <div class="absolute inset-0 z-0">
+      <video autoplay muted loop playsinline class="w-full h-full object-cover brightness-[0.35]">
+        <source src="https://assets.mixkit.co/videos/preview/mixkit-fast-car-moving-on-a-highway-34531-large.mp4" type="video/mp4">
+      </video>
+      <div class="absolute inset-0 video-overlay z-10"></div>
+      <div class="scanlines"></div>
+    </div>
+    
+    <div class="relative z-20 container mx-auto px-6 lg:px-12">
+      <div class="max-w-3xl reveal">
+        <p class="text-accent font-semibold tracking-[0.3em] uppercase text-sm mb-6">Excellence in Motion</p>
+        <h1 class="font-heading text-6xl md:text-8xl leading-tight mb-8 italic">Your Dream Car <br><span class="text-accent not-italic">Awaits</span></h1>
+        <p class="text-lg text-white/60 mb-10 max-w-lg leading-relaxed">Curating the world's most prestigious automotive masterpieces for the discerning collector.</p>
+        <div class="flex flex-wrap gap-6">
+          <a href="#inventory" class="accent-gradient px-10 py-4 text-white font-bold uppercase tracking-widest text-sm hover:scale-105 transition-transform shadow-[0_0_20px_rgba(220,38,38,0.3)]">Browse Cars</a>
+          <a href="#contact" class="border border-white/20 px-10 py-4 text-white font-bold uppercase tracking-widest text-sm hover:bg-white hover:text-brand-black transition-all">Book a Test Drive</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="absolute bottom-10 left-1/2 -translate-x-1/2 animate-bounce opacity-40 z-20">
+      <i data-lucide="chevron-down" class="w-8 h-8"></i>
+    </div>
+  </section>
+
+  <!-- Inventory Section -->
+  <section id="inventory" class="py-24 bg-brand-black">
+    <div class="container mx-auto px-6 lg:px-12">
+      <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6 reveal">
+        <div>
+          <h2 class="font-heading text-5xl mb-4 italic">The Collection</h2>
+          <p class="text-white/40 uppercase tracking-widest text-xs">Current Featured Stock · 2024 Inventory</p>
+        </div>
+        <div class="h-[1px] flex-grow mx-12 bg-accent/20 hidden md:block"></div>
+        <div class="flex gap-4">
+          <button class="p-3 border border-white/10 hover:border-accent transition-colors"><i data-lucide="sliders-horizontal" class="w-5 h-5"></i></button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8" id="car-grid">
+        <!-- Car 1 -->
+        <div class="car-card bg-brand-surface p-4 reveal">
+          <div class="aspect-[16/10] overflow-hidden mb-6 relative">
+            <img src="https://images.pexels.com/photos/10065134/pexels-photo-10065134.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="2024 BMW M4" class="w-full h-full object-cover"
+                 onerror="this.style.display='none';this.parentElement.style.background='#121212'">
+            <div class="absolute top-4 right-4 bg-brand-black/80 backdrop-blur px-3 py-1 text-xs font-bold text-accent">$72,000</div>
+          </div>
+          <h3 class="font-heading text-2xl mb-2">2024 BMW M4</h3>
+          <p class="text-white/40 text-xs tracking-widest uppercase mb-6">3.0L I6 · 503hp · RWD</p>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="window.addToWishlist('bmw-m4', '2024 BMW M4', 72000, 'https://images.pexels.com/photos/10065134/pexels-photo-10065134.jpeg?auto=compress&cs=tinysrgb&w=400')" class="flex items-center justify-center gap-2 border border-white/10 py-3 text-[10px] font-bold uppercase tracking-widest hover:border-accent transition-colors">
+              <i data-lucide="heart" class="w-3 h-3"></i> Wishlist
+            </button>
+            <button onclick="window.openBooking('2024 BMW M4')" class="accent-gradient py-3 text-white text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all">Book Test</button>
+          </div>
+        </div>
+
+        <!-- Car 2 -->
+        <div class="car-card bg-brand-surface p-4 reveal">
+          <div class="aspect-[16/10] overflow-hidden mb-6 relative">
+            <img src="https://images.pexels.com/photos/112460/pexels-photo-112460.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="2024 Mercedes C-Class" class="w-full h-full object-cover"
+                 onerror="this.style.display='none';this.parentElement.style.background='#121212'">
+            <div class="absolute top-4 right-4 bg-brand-black/80 backdrop-blur px-3 py-1 text-xs font-bold text-accent">$55,000</div>
+          </div>
+          <h3 class="font-heading text-2xl mb-2">2024 Mercedes C-Class</h3>
+          <p class="text-white/40 text-xs tracking-widest uppercase mb-6">2.0L I4 · 255hp · AWD</p>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="window.addToWishlist('merc-c', '2024 Mercedes C-Class', 55000, 'https://images.pexels.com/photos/112460/pexels-photo-112460.jpeg?auto=compress&cs=tinysrgb&w=400')" class="flex items-center justify-center gap-2 border border-white/10 py-3 text-[10px] font-bold uppercase tracking-widest hover:border-accent transition-colors">
+              <i data-lucide="heart" class="w-3 h-3"></i> Wishlist
+            </button>
+            <button onclick="window.openBooking('2024 Mercedes C-Class')" class="accent-gradient py-3 text-white text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all">Book Test</button>
+          </div>
+        </div>
+
+        <!-- Car 3 -->
+        <div class="car-card bg-brand-surface p-4 reveal">
+          <div class="aspect-[16/10] overflow-hidden mb-6 relative">
+            <img src="https://images.pexels.com/photos/1149831/pexels-photo-1149831.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="2024 Audi Q8" class="w-full h-full object-cover"
+                 onerror="this.style.display='none';this.parentElement.style.background='#121212'">
+            <div class="absolute top-4 right-4 bg-brand-black/80 backdrop-blur px-3 py-1 text-xs font-bold text-accent">$79,000</div>
+          </div>
+          <h3 class="font-heading text-2xl mb-2">2024 Audi Q8</h3>
+          <p class="text-white/40 text-xs tracking-widest uppercase mb-6">3.0L V6 · 335hp · AWD</p>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="window.addToWishlist('audi-q8', '2024 Audi Q8', 79000, 'https://images.pexels.com/photos/1149831/pexels-photo-1149831.jpeg?auto=compress&cs=tinysrgb&w=400')" class="flex items-center justify-center gap-2 border border-white/10 py-3 text-[10px] font-bold uppercase tracking-widest hover:border-accent transition-colors">
+              <i data-lucide="heart" class="w-3 h-3"></i> Wishlist
+            </button>
+            <button onclick="window.openBooking('2024 Audi Q8')" class="accent-gradient py-3 text-white text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all">Book Test</button>
+          </div>
+        </div>
+
+        <!-- Car 4 -->
+        <div class="car-card bg-brand-surface p-4 reveal">
+          <div class="aspect-[16/10] overflow-hidden mb-6 relative">
+            <img src="https://images.pexels.com/photos/1545743/pexels-photo-1545743.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="2024 Porsche Cayenne" class="w-full h-full object-cover"
+                 onerror="this.style.display='none';this.parentElement.style.background='#121212'">
+            <div class="absolute top-4 right-4 bg-brand-black/80 backdrop-blur px-3 py-1 text-xs font-bold text-accent">$89,000</div>
+          </div>
+          <h3 class="font-heading text-2xl mb-2">2024 Porsche Cayenne</h3>
+          <p class="text-white/40 text-xs tracking-widest uppercase mb-6">3.0L V6 · 348hp · AWD</p>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="window.addToWishlist('porsche-c', '2024 Porsche Cayenne', 89000, 'https://images.pexels.com/photos/1545743/pexels-photo-1545743.jpeg?auto=compress&cs=tinysrgb&w=400')" class="flex items-center justify-center gap-2 border border-white/10 py-3 text-[10px] font-bold uppercase tracking-widest hover:border-accent transition-colors">
+              <i data-lucide="heart" class="w-3 h-3"></i> Wishlist
+            </button>
+            <button onclick="window.openBooking('2024 Porsche Cayenne')" class="accent-gradient py-3 text-white text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all">Book Test</button>
+          </div>
+        </div>
+
+        <!-- Car 5 -->
+        <div class="car-card bg-brand-surface p-4 reveal">
+          <div class="aspect-[16/10] overflow-hidden mb-6 relative">
+            <img src="https://images.pexels.com/photos/11139550/pexels-photo-11139550.jpeg?auto=compress&cs=tinysrgb&w=800" 
+                 alt="2024 Tesla Model S" class="w-full h-full object-cover"
+                 onerror="this.style.display='none';this.parentElement.style.background='#121212'">
+            <div class="absolute top-4 right-4 bg-brand-black/80 backdrop-blur px-3 py-1 text-xs font-bold text-accent">$94,000</div>
+          </div>
+          <h3 class="font-heading text-2xl mb-2">2024 Tesla Model S</h3>
+          <p class="text-white/40 text-xs tracking-widest uppercase mb-6">Dual Motor · 670hp · AWD</p>
+          <div class="grid grid-cols-2 gap-3">
+            <button onclick="window.addToWishlist('tesla-s', '2024 Tesla Model S', 94000, 'https://images.pexels.com/photos/11139550/pexels-photo-11139550.jpeg?auto=compress&cs=tinysrgb&w=400')" class="flex items-center justify-center gap-2 border border-white/10 py-3 text-[10px] font-bold uppercase tracking-widest hover:border-accent transition-colors">
+              <i data-lucide="heart" class="w-3 h-3"></i> Wishlist
+            </button>
+            <button onclick="window.openBooking('2024 Tesla Model S')" class="accent-gradient py-3 text-white text-[10px] font-bold uppercase tracking-widest hover:brightness-110 transition-all">Book Test</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="py-32 bg-brand-surface relative overflow-hidden">
+    <div class="container mx-auto px-6 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+      <div class="reveal">
+        <p class="text-accent font-bold uppercase tracking-[0.3em] text-xs mb-6">Established 1984</p>
+        <h2 class="font-heading text-5xl italic mb-10">A Legacy of <br>Automotive <span class="text-accent not-italic">Refinement</span></h2>
+        <div class="space-y-6 text-white/70 leading-relaxed max-w-lg">
+          <p>DriveElite Motors began with a singular vision: to connect the world's most exceptional automobiles with owners who truly appreciate the art of driving. For over four decades, we have served as curators of performance, luxury, and heritage.</p>
+          <p>Our commitment extends beyond the showroom. Every vehicle in our collection undergoes a rigorous 200-point inspection by factory-trained artisans, ensuring that your acquisition is nothing short of perfect.</p>
+        </div>
+        <div class="mt-12 flex gap-10">
+          <div>
+            <div class="text-3xl font-heading text-accent mb-1">40+</div>
+            <div class="text-[10px] uppercase tracking-widest text-white/40">Years Experience</div>
+          </div>
+          <div>
+            <div class="text-3xl font-heading text-accent mb-1">12k+</div>
+            <div class="text-[10px] uppercase tracking-widest text-white/40">Vehicles Sold</div>
+          </div>
+        </div>
+      </div>
+      <div class="relative reveal">
+        <div class="aspect-[4/5] relative z-10">
+          <img src="https://images.pexels.com/photos/1591060/pexels-photo-1591060.jpeg?auto=compress&cs=tinysrgb&w=800" 
+               alt="Luxury showroom" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#0A0A0A'">
+        </div>
+        <div class="absolute -bottom-10 -right-10 w-full h-full border border-accent/20 -z-0"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="py-24 bg-brand-black">
+    <div class="container mx-auto px-6 lg:px-12">
+      <div class="bg-brand-surface p-8 lg:p-20 reveal border border-white/5">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-20">
+          <div>
+            <h2 class="font-heading text-5xl mb-8 italic">Elite Concierge</h2>
+            <p class="text-white/50 mb-12">Schedule a private viewing, request a bespoke acquisition, or inquire about our current collection.</p>
+            
+            <div class="space-y-8">
+              <div class="flex gap-6 items-start">
+                <i data-lucide="map-pin" class="w-6 h-6 text-accent"></i>
+                <div>
+                  <h4 class="font-bold uppercase tracking-widest text-xs mb-1">Atelier Location</h4>
+                  <p class="text-white/60">722 Elite Boulevard, Newport Beach, CA 92660</p>
+                </div>
+              </div>
+              <div class="flex gap-6 items-start">
+                <i data-lucide="phone" class="w-6 h-6 text-accent"></i>
+                <div>
+                  <h4 class="font-bold uppercase tracking-widest text-xs mb-1">Direct Line</h4>
+                  <p class="text-white/60">+1 (800) DRIVE-ELITE</p>
+                </div>
+              </div>
+              <div class="flex gap-6 items-start">
+                <i data-lucide="mail" class="w-6 h-6 text-accent"></i>
+                <div>
+                  <h4 class="font-bold uppercase tracking-widest text-xs mb-1">Electronic Mail</h4>
+                  <p class="text-white/60">concierge@driveelite.com</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <form onsubmit="window.handleContact(event)" class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest text-white/40">Full Name</label>
+                <input type="text" required class="w-full bg-brand-black border border-white/10 px-4 py-3 focus:border-accent outline-none transition-colors">
+              </div>
+              <div class="space-y-2">
+                <label class="text-[10px] uppercase tracking-widest text-white/40">Email Address</label>
+                <input type="email" required class="w-full bg-brand-black border border-white/10 px-4 py-3 focus:border-accent outline-none transition-colors">
+              </div>
+            </div>
+            <div class="space-y-2">
+              <label class="text-[10px] uppercase tracking-widest text-white/40">Interest</label>
+              <select class="w-full bg-brand-black border border-white/10 px-4 py-3 focus:border-accent outline-none transition-colors text-white">
+                <option>General Inquiry</option>
+                <option>Booking a Test Drive</option>
+                <option>Financing Options</option>
+                <option>Sell Your Vehicle</option>
+              </select>
+            </div>
+            <div class="space-y-2">
+              <label class="text-[10px] uppercase tracking-widest text-white/40">Your Message</label>
+              <textarea rows="4" class="w-full bg-brand-black border border-white/10 px-4 py-3 focus:border-accent outline-none transition-colors"></textarea>
+            </div>
+            <button type="submit" class="w-full accent-gradient py-4 text-white font-bold uppercase tracking-widest text-sm hover:brightness-110 transition-all shadow-[0_0_20px_rgba(220,38,38,0.2)]">Send Inquiry</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Wishlist Sidebar -->
+  <div id="wishlist-overlay" onclick="window.toggleWishlist()" class="fixed inset-0 bg-black/80 z-[70] hidden backdrop-blur-md"></div>
+  <aside id="wishlist-panel" class="fixed top-0 right-0 h-full w-full max-w-md bg-brand-black z-[80] sidebar-transition translate-x-full border-l border-white/5 flex flex-col">
+    <div class="p-8 border-b border-white/5 flex justify-between items-center">
+      <h2 class="font-heading text-3xl italic">Your Wishlist</h2>
+      <button onclick="window.toggleWishlist()" class="hover:text-accent transition-colors">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+    </div>
+    
+    <div id="wishlist-items" class="flex-grow overflow-y-auto p-8 space-y-6">
+      <div class="h-full flex flex-col items-center justify-center text-center opacity-40">
+        <i data-lucide="heart" class="w-12 h-12 mb-4"></i>
+        <p class="font-heading text-xl">Your wishlist is empty</p>
+        <p class="text-xs uppercase tracking-widest mt-2">Discover your next masterpiece</p>
+      </div>
+    </div>
+
+    <div class="p-8 border-t border-white/5 bg-brand-surface">
+      <div class="flex justify-between items-center mb-6">
+        <span class="text-xs uppercase tracking-widest text-white/40">Total Estimated Value</span>
+        <span id="wishlist-total" class="text-xl font-heading text-accent">$0</span>
+      </div>
+      <button onclick="window.requestCallback()" class="w-full accent-gradient py-4 text-white font-bold uppercase tracking-widest text-sm hover:brightness-110 transition-all mb-4">Request Callback</button>
+      <button onclick="window.toggleWishlist()" class="w-full text-center text-[10px] uppercase tracking-widest text-white/40 hover:text-white transition-colors">Continue Browsing</button>
+    </div>
+  </aside>
+
+  <!-- Legal Modal -->
+  <div id="legalModal" class="fixed inset-0 bg-black/90 z-[9000] hidden items-center justify-center p-6">
+    <div class="bg-brand-dark max-w-2xl w-full max-h-[80vh] overflow-y-auto p-12 relative border border-accent/20">
+      <button onclick="window.closeLegal()" class="absolute top-6 right-6 hover:text-accent">
+        <i data-lucide="x" class="w-6 h-6"></i>
+      </button>
+      <h2 id="legalTitle" class="font-heading text-4xl mb-8 italic"></h2>
+      <div id="legalBody" class="text-white/60 leading-relaxed space-y-4"></div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-8 right-8 z-[100] bg-accent text-white px-6 py-4 font-bold uppercase tracking-widest text-xs flex items-center gap-3 shadow-2xl">
+    <i data-lucide="check-circle" class="w-4 h-4"></i>
+    <span id="toast-msg">Item Added to Wishlist</span>
+  </div>
+
+  <!-- Footer -->
+  <footer class="bg-brand-black pt-24 pb-12 border-t border-white/5">
+    <div class="container mx-auto px-6 lg:px-12">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-20">
+        <div class="space-y-6">
+          <div class="flex items-center gap-2">
+            <div class="w-8 h-8 accent-gradient flex items-center justify-center rounded-sm rotate-45">
+              <i data-lucide="crown" class="w-5 h-5 text-white -rotate-45"></i>
+            </div>
+            <span class="font-heading text-xl font-semibold tracking-wider uppercase ml-2">DriveElite.</span>
+          </div>
+          <p class="text-white/40 text-sm leading-relaxed">The premier destination for automotive excellence. Curating rarity and performance since 1984.</p>
+          <div class="flex gap-4">
+            <a href="https://instagram.com/driveelite" target="_blank" rel="noopener noreferrer" class="w-10 h-10 border border-white/10 flex items-center justify-center hover:border-accent hover:text-accent transition-all"><i data-lucide="instagram" class="w-4 h-4"></i></a>
+            <a href="https://facebook.com/driveelite" target="_blank" rel="noopener noreferrer" class="w-10 h-10 border border-white/10 flex items-center justify-center hover:border-accent hover:text-accent transition-all"><i data-lucide="facebook" class="w-4 h-4"></i></a>
+            <a href="https://tiktok.com/@driveelite" target="_blank" rel="noopener noreferrer" class="w-10 h-10 border border-white/10 flex items-center justify-center hover:border-accent hover:text-accent transition-all">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.17 8.17 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+            </a>
+          </div>
+        </div>
+        
+        <div>
+          <h4 class="text-accent font-bold uppercase tracking-widest text-[10px] mb-8">Showroom</h4>
+          <ul class="space-y-4 text-sm text-white/60">
+            <li><a href="#inventory" class="hover:text-accent transition-colors">New Arrivals</a></li>
+            <li><a href="#inventory" class="hover:text-accent transition-colors">Pre-Owned Classics</a></li>
+            <li><a href="#inventory" class="hover:text-accent transition-colors">Electric Performance</a></li>
+            <li><a href="#inventory" class="hover:text-accent transition-colors">Bespoke Orders</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-accent font-bold uppercase tracking-widest text-[10px] mb-8">Support</h4>
+          <ul class="space-y-4 text-sm text-white/60">
+            <li><a href="javascript:void(0)" onclick="window.openLegal('Acquisition Guide', 'Our guide to acquiring a luxury vehicle through DriveElite Motors. We handle all logistics and paperwork.')" class="hover:text-accent transition-colors">Acquisition Guide</a></li>
+            <li><a href="javascript:void(0)" onclick="window.openLegal('Financing', 'Exclusive financing options for qualified collectors. Competitive rates and flexible terms.')" class="hover:text-accent transition-colors">Financing</a></li>
+            <li><a href="javascript:void(0)" onclick="window.openLegal('Global Logistics', 'White-glove delivery to any location worldwide. Secure, insured, and tracked.')" class="hover:text-accent transition-colors">Global Delivery</a></li>
+            <li><a href="javascript:void(0)" onclick="window.openLegal('Privacy Policy', 'Your privacy is paramount. We never disclose client details or collections without express consent.')" class="hover:text-accent transition-colors">Privacy Policy</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <h4 class="text-accent font-bold uppercase tracking-widest text-[10px] mb-8">Newsletter</h4>
+          <p class="text-white/40 text-xs mb-6">Join our Inner Circle for first access to off-market arrivals.</p>
+          <div class="flex">
+            <input type="email" placeholder="Email Address" class="bg-brand-surface border border-white/10 px-4 py-3 text-xs outline-none focus:border-accent w-full text-white">
+            <button class="accent-gradient px-4 hover:brightness-110"><i data-lucide="arrow-right" class="w-4 h-4 text-white"></i></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-[0.2em] text-white/30">
+        <p>&copy; <script>document.write(new Date().getFullYear())</script> DriveElite Motors. All Rights Reserved.</p>
+        <p>Curated by Hand in California</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    (function() {
+      const appState = {
+        wishlist: [],
+        ui: {
+          wishlistOpen: false,
+          mobileMenuOpen: false
+        }
+      };
+
+      lucide.createIcons();
+
+      const _io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add('visible');
+            _io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+      document.querySelectorAll('.reveal').forEach(el => _io.observe(el));
+
+      window.toggleWishlist = function() {
+        const panel = document.getElementById('wishlist-panel');
+        const overlay = document.getElementById('wishlist-overlay');
+        appState.ui.wishlistOpen = !appState.ui.wishlistOpen;
+        
+        if (appState.ui.wishlistOpen) {
+          panel.classList.remove('translate-x-full');
+          overlay.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+        } else {
+          panel.classList.add('translate-x-full');
+          overlay.classList.add('hidden');
+          document.body.style.overflow = 'auto';
+        }
+      };
+
+      window.toggleMobileMenu = function() {
+        const menu = document.getElementById('mobile-menu');
+        appState.ui.mobileMenuOpen = !appState.ui.mobileMenuOpen;
+        menu.classList.toggle('hidden', !appState.ui.mobileMenuOpen);
+        menu.classList.toggle('flex', appState.ui.mobileMenuOpen);
+        document.body.style.overflow = appState.ui.mobileMenuOpen ? 'hidden' : 'auto';
+      };
+
+      window.addToWishlist = function(id, name, price, img) {
+        if (appState.wishlist.find(item => item.id === id)) {
+          window.showToast("Already in Wishlist");
+          return;
+        }
+        appState.wishlist.push({ id, name, price, img });
+        window.updateWishlistUI();
+        window.showToast(`${name} Added`);
+      };
+
+      window.removeFromWishlist = function(id) {
+        appState.wishlist = appState.wishlist.filter(item => item.id !== id);
+        window.updateWishlistUI();
+      };
+
+      window.updateWishlistUI = function() {
+        const container = document.getElementById('wishlist-items');
+        const badge = document.getElementById('wishlist-badge');
+        const totalEl = document.getElementById('wishlist-total');
+        
+        if (appState.wishlist.length === 0) {
+          container.innerHTML = `
+            <div class="h-full flex flex-col items-center justify-center text-center opacity-40">
+              <i data-lucide="heart" class="w-12 h-12 mb-4"></i>
+              <p class="font-heading text-xl">Your wishlist is empty</p>
+              <p class="text-xs uppercase tracking-widest mt-2">Discover your next masterpiece</p>
+            </div>
+          `;
+          badge.classList.add('opacity-0');
+          totalEl.textContent = '$0';
+        } else {
+          badge.textContent = appState.wishlist.length;
+          badge.classList.remove('opacity-0');
+          
+          let total = 0;
+          container.innerHTML = appState.wishlist.map(item => {
+            total += item.price;
+            return `
+              <div class="flex gap-4 items-center animate-fadeIn">
+                <img src="${item.img}" class="w-20 h-16 object-cover rounded-sm border border-white/10">
+                <div class="flex-grow">
+                  <h4 class="font-heading text-lg">${item.name}</h4>
+                  <p class="text-accent text-xs font-bold">$${item.price.toLocaleString()}</p>
+                </div>
+                <button onclick="window.removeFromWishlist('${item.id}')" class="text-white/20 hover:text-red-500 transition-colors">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            `;
+          }).join('');
+          totalEl.textContent = '$' + total.toLocaleString();
+        }
+        lucide.createIcons();
+      };
+
+      window.showToast = function(msg) {
+        const t = document.getElementById('toast');
+        document.getElementById('toast-msg').textContent = msg;
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
+      };
+
+      window.openBooking = function(carName) {
+        window.openLegal('Book Test Drive', `
+          <p>You are requesting a private test drive for the <strong>${carName}</strong>.</p>
+          <p>Please provide your contact details below or use our concierge form. A representative will contact you within 2 business hours to verify credentials and schedule your appointment.</p>
+          <div class="mt-8 pt-8 border-t border-white/10">
+            <a href="#contact" onclick="window.closeLegal()" class="accent-gradient px-8 py-3 text-white text-xs font-bold uppercase tracking-widest inline-block">Go to Concierge Form</a>
+          </div>
+        `);
+      };
+
+      window.handleContact = function(e) {
+        e.preventDefault();
+        window.showToast("Inquiry Sent Successfully");
+        e.target.reset();
+      };
+
+      window.requestCallback = function() {
+        if (appState.wishlist.length === 0) {
+          window.showToast("Wishlist is empty");
+          return;
+        }
+        window.showToast("Concierge Request Received");
+        setTimeout(() => window.toggleWishlist(), 500);
+      };
+
+      window.openLegal = function(title, body) {
+        document.getElementById('legalTitle').textContent = title;
+        document.getElementById('legalBody').innerHTML = body;
+        document.getElementById('legalModal').style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+      };
+
+      window.closeLegal = function() {
+        document.getElementById('legalModal').style.display = 'none';
+        document.body.style.overflow = 'auto';
+      };
+
+      document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener('click', function(e) {
+          e.preventDefault();
+          const target = document.querySelector(this.getAttribute('href'));
+          if (target) {
+            window.scrollTo({
+              top: target.getBoundingClientRect().top + window.pageYOffset - 120,
+              behavior: 'smooth'
+            });
+          }
+        });
+      });
+
+    })();
+  </script>
+</body>
+</html>
