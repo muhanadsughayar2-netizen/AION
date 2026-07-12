@@ -8185,6 +8185,21 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   CLOTHING SHOP — verified Pexels IDs: 1536619, 2220316, 2220329, 3622608, 996329
   FOOD SHOP — use photos matching the specific dish name.
 
+  GYM / FITNESS SITE — USE THESE VERIFIED PEXELS PHOTO IDs (confirmed gym/fitness images):
+    Hero (gym interior): https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg  ✅ gym weights/interior
+    Hero (alt):          https://images.pexels.com/photos/4115155/pexels-photo-4115155.jpeg  ✅ person working out
+    Trainer (male):      https://images.pexels.com/photos/1431282/pexels-photo-1431282.jpeg  ✅ male fitness trainer
+    Trainer (female):    https://images.pexels.com/photos/3076509/pexels-photo-3076509.jpeg  ✅ female trainer
+    Trainer (boxer):     https://images.pexels.com/photos/2468339/pexels-photo-2468339.jpeg  ✅ boxing trainer
+    Trainer (yoga):      https://images.pexels.com/photos/4162489/pexels-photo-4162489.jpeg  ✅ yoga instructor
+    Trainer (coach):     https://images.pexels.com/photos/1552106/pexels-photo-1552106.jpeg  ✅ fitness coach
+    Trainer (strength):  https://images.pexels.com/photos/3289711/pexels-photo-3289711.jpeg  ✅ strength trainer
+    Action shot:         https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg    ✅ person exercising
+    Equipment:           https://images.pexels.com/photos/4944970/pexels-photo-4944970.jpeg  ✅ dumbbells/weights
+  ⚠️ CRITICAL FOR GYM/FITNESS SITES: NEVER use a solid green (#00FF88) background for entire sections.
+     Use green ONLY as: text colour, button colour, border, icon, small accent. Section backgrounds must be #080808 or #121212.
+  ⚠️ ALL Pexels URLs must include: ?auto=compress&cs=tinysrgb&w=800
+
   CAR DEALERSHIP / AUTO SITE — USE THESE VERIFIED PEXELS PHOTO IDs (confirmed car images, tested and loading):
     Car 1 slot: https://images.pexels.com/photos/112460/pexels-photo-112460.jpeg   ✅ silver sports car (front)
     Car 2 slot: https://images.pexels.com/photos/1149831/pexels-photo-1149831.jpeg ✅ yellow/gold sports car
