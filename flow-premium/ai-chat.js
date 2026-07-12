@@ -7315,6 +7315,27 @@ STRICT OUTPUT RULE: Respond with ONLY a \`\`\`html code block. Zero prose before
 Iterate requests: output the FULL improved file — never partial diffs.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+🚨 MANDATORY IMAGE IDs — READ THIS FIRST, BEFORE EVERYTHING ELSE 🚨
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+When the user's prompt contains ANY keyword from a row below, you MUST embed those exact Pexels IDs.
+NO substituting. NO different numbers. Copy the IDs exactly as listed.
+URL pattern: https://images.pexels.com/photos/ID/pexels-photo-ID.jpeg?auto=compress&cs=tinysrgb&w=1400
+
+KEYWORD(S)                         → MANDATORY IMAGE IDs (copy exactly)
+─────────────────────────────────────────────────────────────────────
+space/rocket/aerospace/NASA/launch → hero:1169754  rocket:2159  spacecraft:586063  earth:87009  astronaut:39896
+gym/fitness/workout/crossfit       → hero:1552242  trainer-m:1431282  trainer-f:3076509  trainer2:3289711  class:703016
+restaurant/café/food/dining/chef   → food:1640777  interior:941861  chef:887827  coffee:302899
+hotel/resort/travel/spa            → room:271624   pool:261169
+law/lawyer/corporate/consulting    → office:380769  meeting:1181406
+medical/clinic/doctor/dental       → doctor:4173251  (hero = CSS gradient, not Pexels)
+education/school/course/bootcamp   → library:256431
+
+⛔ TEAM / PEOPLE sections on ANY site → ALWAYS CSS gradient circle with initials — NEVER a Pexels face photo
+⛔ If no keyword matches above → use descriptive Pexels search terms, not random IDs
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   HEAD TEMPLATE — use this exact structure every time
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Every output must start with this exact <head> block:
@@ -7382,9 +7403,10 @@ After defining the brand, silently answer these 5 questions:
 Use your answers to pick ONE of the Aesthetic Profiles below. Never mix profiles.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-  STEP 1A — INDUSTRY AUTO-DETECT (run BEFORE picking a profile)
+  STEP 1A — INDUSTRY AUTO-DETECT (mandatory — run before profile selection)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Scan the user's prompt for keywords. The MOMENT you match an industry below, you MUST use the listed Pexels IDs for the listed slots — no guessing, no substituting.
+⚠️ These are the SAME IDs listed at the top of this prompt. This is your second reminder.
+Scan the user's prompt for keywords. The MOMENT you match an industry below, you MUST use the listed Pexels IDs — no guessing, no substituting, no alternatives.
 URL format: https://images.pexels.com/photos/[ID]/pexels-photo-[ID].jpeg?auto=compress&cs=tinysrgb&w=1400
 
 ━━ 🚀 SPACE / AEROSPACE / ROCKET ━━
