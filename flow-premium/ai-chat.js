@@ -8190,6 +8190,40 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   ✗ Placeholder text like "Product description here" — write real copy based on the user's topic
   ✗ A server-side checkout — everything must work as a static HTML file (Stripe links open in new tab)
 
+  ══════════════════════════════════════════════════════════════
+  PROFILE S-ADMIN — AMAZON-STYLE OWNER-MANAGED SHOP
+  Activate when user says: "add products", "manage products", "admin panel", "Amazon style",
+  "edit price", "delete product", "create offer", "my own products", "admin dashboard".
+  ══════════════════════════════════════════════════════════════
+
+  Build a DUAL-MODE site — customer storefront + owner admin panel — all in one HTML file.
+  Products are stored in localStorage as JSON, so the owner's catalog persists in their browser.
+
+  ADMIN PANEL (hidden by default, revealed by clicking the logo 3× or pressing Alt+A):
+  1. Simple password gate (default password: "admin123" — shown in the panel so owner can change it).
+  2. "Add Product" form — fields: Product Name, Price ($), Original Price (for sale badge), Description, Image URL or 📁 Upload Image button (FileReader → base64 into localStorage).
+  3. Product list table — rows show: thumbnail, name, price, offer%. Each row has:
+       • ✏️ Edit (inline edit of name, price, offer%)
+       • 🗑️ Delete (removes from localStorage, re-renders storefront)
+       • 🏷️ Set Offer % (e.g. 20 → shows "SALE −20%" red badge on the card, crossed-out original price)
+  4. "Preview Store" button that closes admin and shows the storefront.
+  5. Save button writes the products array to localStorage key "snap_products".
+
+  STOREFRONT (customer view):
+  • On load, read products from localStorage key "snap_products".
+  • If localStorage is empty, show a starter set of 3 demo products so the store never looks empty.
+  • Product cards: image, name, offer badge (if any), crossed-out original price + sale price, "🛒 Add to Cart" + "Buy Now" buttons.
+  • Cart drawer and Stripe/PayPal checkout as in standard PROFILE S.
+
+  DATA SCHEMA (store in localStorage["snap_products"] as JSON array):
+  [{ id, name, price, originalPrice, offerPct, description, imageData, stripeLink, paypalLink }]
+
+  PROFILE S-ADMIN BANNED:
+  ✗ Requiring a server or database — everything lives in the browser localStorage
+  ✗ Admin panel visible to customers without the secret gesture/shortcut
+  ✗ Image uploads that fail silently — show a preview thumbnail after upload
+  ✗ More than 100 products (localStorage has ~5MB limit; warn the owner at 80 products)
+
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   STEP 2 — UNIVERSAL QUALITY RULES (ALL profiles)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -8448,6 +8482,20 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
    • CSS custom properties (--accent, --bg, --text, --font-heading) set in :root
    • At least 2 elements use CSS transitions or animations beyond just scroll reveal
    • All photography feels editorial and curated — never generic stock
+
+⑩ MOBILE-FIRST RESPONSIVE — mandatory for ALL profiles, every single build:
+   • <meta name="viewport" content="width=device-width, initial-scale=1"> in <head> — ALWAYS.
+   • Base styles written for mobile (small screen) first; desktop via @media (min-width:768px) and @media (min-width:1024px).
+   • Navigation: on mobile (<768px), the top nav links MUST collapse into a hamburger menu (☰) that opens a full-width dropdown. No horizontal nav overflow.
+   • Product grids, card rows, feature columns: single column on mobile, multi-column on desktop using grid auto-fill or Flexbox wrap.
+   • Touch targets: every clickable element (buttons, links, tabs, cart icon) must be at least 44×44px — never smaller on mobile.
+   • Font sizes: body min 16px on mobile; headings use clamp() so they scale gracefully.
+   • No fixed-width elements wider than 100vw — no horizontal scroll on mobile.
+   • Images: max-width:100%; height:auto — never overflow their container.
+   • The site must look great and be fully usable on a 375px-wide phone screen (iPhone SE / Android mid-range).
+   BANNED: • overflow-x:hidden as the only "fix" for horizontal scroll — fix the root cause instead.
+            • Fixed pixel widths (e.g. width:800px) without a max-width:100% fallback.
+            • Tiny text (< 12px) or overlapping elements at 375px viewport width.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
   STEP 3 — ANTI-PATTERN BLACKLIST
@@ -10501,9 +10549,13 @@ async function handleSend() {
       const _gameKeywords = /\b(game|platformer|arcade|puzzle|shooter|rpg|mario|zelda|dungeon|level|player|score|enemy|enemies|jump|shoot|sprite|tile|coin|boss)\b/i;
       const _presentationKeywords = /\b(presentation|slides|slideshow|powerpoint|pptx|pitch deck|slide deck|deck)\b/i;
       const _shopKeywords = /\b(shop|store|buy|sell|product|price|payment|checkout|cart|e-?commerce|stripe|paypal|order|purchase|selling)\b/i;
+      const _adminShopKeywords = /\b(admin|manage products|add products|delete product|edit price|amazon style|owner panel|product manager|create offer|my own products|admin dashboard|admin panel)\b/i;
+      const _mobileKeywords = /\b(mobile|phone|responsive|iphone|android|smartphone|tablet|works on mobile|mobile view|mobile friendly|mobile-first)\b/i;
       const _isGameBuild = _gameKeywords.test(prompt);
       const _isPresentationBuild = !_isGameBuild && _presentationKeywords.test(prompt);
       const _isShopBuild = !_isGameBuild && !_isPresentationBuild && _shopKeywords.test(prompt);
+      const _isAdminShopBuild = _isShopBuild && _adminShopKeywords.test(prompt);
+      const _isMobileRequested = _mobileKeywords.test(prompt);
 
       // Single status bubble for all agents
       const _buildLabel = _isGameBuild ? 'game' : _isPresentationBuild ? 'presentation' : _isShopBuild ? 'shop' : 'build';
@@ -10593,6 +10645,48 @@ async function handleSend() {
             `7. Every product must have a REAL price shown (invent realistic prices if not specified).\n` +
             `8. NEVER build a fake cart that does nothing — add to cart MUST update the badge count.\n` +
             `RESULT: the user downloads the HTML, replaces the Stripe/PayPal placeholder links with their real payment links, and has a working online shop.`;
+        }
+
+        // Inject admin shop (owner CMS) instructions — overrides basic shop rules with full product management
+        if (_isAdminShopBuild) {
+          prompt +=
+            `\n\n⚡ ADMIN SHOP BUILD — MANDATORY RULES (override basic shop rules, highest priority):\n` +
+            `This is an Amazon-style owner-managed shop. Build a DUAL-MODE single HTML file:\n` +
+            `MODE 1 — CUSTOMER STOREFRONT (what shoppers see):\n` +
+            `  • On load, read products from localStorage key "snap_products" (JSON array).\n` +
+            `  • If no saved products yet, pre-load 3 realistic demo products so the store is never empty.\n` +
+            `  • Product cards: image, product name, SALE badge if offerPct > 0 (red "−20% OFF"), crossed-out original price, current price, "🛒 Add to Cart" + "Buy Now" (Stripe link).\n` +
+            `  • Full cart drawer, subtotal, Stripe Payment Link checkout + PayPal fallback.\n` +
+            `  • Trust row: "🔒 SSL Secured · 💳 Visa / Mastercard / PayPal · 🔄 Easy Returns".\n` +
+            `MODE 2 — OWNER ADMIN PANEL (hidden, revealed by: clicking the site logo 3 times quickly, OR pressing Alt+A):\n` +
+            `  • Password gate — default "admin123" — show it in a visible hint so owner knows it.\n` +
+            `  • "➕ Add Product" form with fields: Name, Price ($), Original Price (blank = no sale badge), Description, Image — TWO options:\n` +
+            `      (a) Paste image URL  (b) 📁 Upload from device (FileReader → base64 → stored in localStorage)\n` +
+            `      Show a live thumbnail preview after upload/URL entry.\n` +
+            `  • Product management table — one row per product with columns: [Thumbnail | Name | Price | Original Price | Offer % | Actions].\n` +
+            `      Actions per row: ✏️ Edit (inline — click to edit any field, Enter to save), 🏷️ Set Offer % (input 0–99), 🗑️ Delete.\n` +
+            `  • Changes auto-save to localStorage["snap_products"] immediately on every edit/delete/add.\n` +
+            `  • "👀 Preview Store" button closes admin and refreshes storefront.\n` +
+            `  • Warn owner in the panel when product count reaches 80 (localStorage limit).\n` +
+            `DATA SCHEMA stored in localStorage["snap_products"]:\n` +
+            `  [{ id (uuid), name, price (number), originalPrice (number|null), offerPct (number 0-99), description, imageData (url or base64), stripeLink, paypalLink }]\n` +
+            `RESULT: the owner opens the HTML file, presses Alt+A, logs in, adds their products with real images and prices, sets sale offers — and customers see a live, beautiful shop.`;
+        }
+
+        // Inject mobile-first / responsive instructions when user explicitly asks for mobile support
+        if (_isMobileRequested) {
+          prompt +=
+            `\n\n⚡ MOBILE-FIRST BUILD — MANDATORY EXTRA RULES (user specifically asked for mobile support):\n` +
+            `1. Write ALL base CSS for a 375px screen first. Add desktop enhancements via @media (min-width:768px).\n` +
+            `2. Navigation: hamburger menu (☰) on mobile — clicking it slides down the nav links. No horizontal overflow ever.\n` +
+            `3. Every card grid: single column on mobile, 2 columns at 600px, 3+ columns at 900px+.\n` +
+            `4. All buttons and tap targets: minimum 44×44px, comfortable thumb spacing (gap:16px minimum).\n` +
+            `5. Hero headline: clamp(1.8rem,5vw,4rem) — never too large to fit on a 375px screen.\n` +
+            `6. Product images: width:100%; height:220px; object-fit:cover — consistent card heights on mobile.\n` +
+            `7. Cart icon and floating elements: position:fixed, top:16px, right:16px, z-index:999 — always visible.\n` +
+            `8. Footer: single column, centered text on mobile.\n` +
+            `9. Test mentally at 375px and 768px before finalising the layout — no element should overflow, overlap, or be unreachable.\n` +
+            `RESULT: the site looks and works perfectly on any phone, tablet, or desktop without the user doing anything extra.`;
         }
 
         // Update bubble to show results
