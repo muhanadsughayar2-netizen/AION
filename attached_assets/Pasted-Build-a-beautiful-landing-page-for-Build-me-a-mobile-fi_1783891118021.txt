@@ -1,0 +1,1115 @@
+Build a beautiful landing page for Build me a mobile-first online shop called "Bloom & Co" selling handmade candles. Products: Lavender Dream Candle — $24 Sandalwood Noir Candle — $32 Rose Petal Candle — $28 Vanilla Sky Candle — $26 Include a hero, product grid with Add to Cart, working cart drawer, PayPal checkout at paypal.me/bloomandco, contact section with email hello@bloomandco.com, Instagram at instagram.com/bloomandco, TikTok at tiktok.com/@bloomandco, smooth fade-in animations, fully mobile responsive with hamburger menu, and sticky navbar with logo and cart icon. [BUILD-SEED:8206266 TIME:2026-07-12 21:13] This is a completely fresh build — you MUST pick brand-new Pexels photo IDs not used in any previous response. Do not reuse IDs you have used before. The seed guarantees uniqueness: treat it as a creative direction token.
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloom & Co | Artisanal Handmade Candles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Playfair Display', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              bg: '#FDFBF7',
+              text: '#2D4739',
+              accent: '#D98A70',
+              sage: '#76A08A',
+              dark: '#1A2A22'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #FDFBF7;
+      --text: #2D4739;
+      --accent: #D98A70;
+    }
+    body { background-color: var(--bg); color: var(--text); }
+    
+    .cart-drawer {
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cart-drawer.open { transform: translateX(0); }
+    
+    .mobile-menu {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .mobile-menu.open { opacity: 1; pointer-events: auto; }
+
+    .reveal { opacity: 1; } /* Initial state for JS-off */
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .product-card:hover img { transform: scale(1.05); }
+    .product-card img { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #FDFBF7; }
+    ::-webkit-scrollbar-thumb { background: #D98A70; border-radius: 10px; }
+  </style>
+</head>
+<body class="font-sans antialiased">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 w-full z-50 bg-brand-bg/80 backdrop-blur-md border-b border-brand-text/5">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <a href="#" class="font-heading text-2xl font-bold tracking-tight text-brand-text">Bloom & Co.</a>
+        <div class="hidden md:flex gap-6 text-sm font-medium uppercase tracking-widest text-brand-text/70">
+          <a href="#products" class="hover:text-brand-accent transition-colors">Shop</a>
+          <a href="#about" class="hover:text-brand-accent transition-colors">Our Story</a>
+          <a href="#contact" class="hover:text-brand-accent transition-colors">Contact</a>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <button onclick="window.toggleCart()" class="relative p-2 hover:bg-brand-text/5 rounded-full transition-colors" aria-label="Open Cart">
+          <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+          <span id="cart-count" class="absolute top-0 right-0 bg-brand-accent text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">0</span>
+        </button>
+        <button onclick="window.toggleMenu()" class="md:hidden p-2 hover:bg-brand-text/5 rounded-full transition-colors" aria-label="Menu">
+          <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu Overlay -->
+  <div id="mobile-nav" class="mobile-menu fixed inset-0 z-[60] bg-brand-dark text-brand-bg p-10 flex flex-col justify-center items-center gap-8 text-center">
+    <button onclick="window.toggleMenu()" class="absolute top-8 right-8 p-2" aria-label="Close Menu">
+      <i data-lucide="x" class="w-8 h-8"></i>
+    </button>
+    <a href="#products" onclick="window.toggleMenu()" class="font-heading text-4xl">Shop Collection</a>
+    <a href="#about" onclick="window.toggleMenu()" class="font-heading text-4xl">Our Story</a>
+    <a href="#contact" onclick="window.toggleMenu()" class="font-heading text-4xl">Get in Touch</a>
+    <div class="mt-12 flex gap-6">
+      <a href="https://instagram.com/bloomandco" class="opacity-70 hover:opacity-100"><i data-lucide="instagram"></i></a>
+      <a href="https://tiktok.com/@bloomandco" class="opacity-70 hover:opacity-100">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.17 8.17 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <header class="relative min-h-screen flex items-center pt-20">
+    <div class="absolute inset-0 z-0">
+      <img src="https://images.pexels.com/photos/6707631/pexels-photo-6707631.jpeg?auto=compress&cs=tinysrgb&w=1600" 
+           alt="Handmade candle burning softly" 
+           class="w-full h-full object-cover brightness-[0.85]"
+           onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#2D4739,#1A2A22)'">
+    </div>
+    <div class="relative z-10 max-w-7xl mx-auto px-6 w-full">
+      <div class="max-w-2xl reveal">
+        <span class="inline-block text-brand-bg/80 text-sm font-semibold tracking-[0.3em] uppercase mb-6">Artisanal & Hand-Poured</span>
+        <h1 class="font-heading text-6xl md:text-8xl text-white leading-[1.1] mb-8">Light for your<br><i class="font-normal">quietest</i> moments.</h1>
+        <p class="text-white/80 text-lg md:text-xl font-light leading-relaxed mb-10 max-w-lg">
+          Small-batch candles crafted from sustainable soy wax and therapeutic-grade essential oils. Designed to transform your space into a sanctuary.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <a href="#products" class="bg-brand-accent hover:bg-brand-accent/90 text-white px-10 py-4 rounded-sm font-medium transition-all transform active:scale-95">Explore Collection</a>
+          <a href="#about" class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-10 py-4 rounded-sm font-medium transition-all">Our Process</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Featured Grid -->
+  <section id="products" class="py-32 px-6 max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6 reveal">
+      <div>
+        <h2 class="font-heading text-4xl md:text-5xl mb-4">The Essential Collection</h2>
+        <p class="text-brand-text/60 max-w-md">Each scent is a story, hand-poured in our coastal studio to bring warmth and intention to your home.</p>
+      </div>
+      <div class="flex gap-4">
+        <span class="text-sm font-bold uppercase tracking-widest text-brand-accent border-b-2 border-brand-accent pb-1">Shop All</span>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+      <!-- Product 1 -->
+      <div class="product-card reveal group">
+        <div class="relative aspect-[4/5] overflow-hidden bg-brand-text/5 mb-6 rounded-sm">
+          <img src="https://images.pexels.com/photos/7195133/pexels-photo-7195133.jpeg?auto=compress&cs=tinysrgb&w=800" 
+               alt="Lavender Dream Candle" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#e5e7eb'">
+          <button onclick="window.addToCart(1, 'Lavender Dream', 24)" 
+                  class="absolute bottom-4 left-4 right-4 bg-white text-brand-text py-3 text-sm font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl">
+            Quick Add — $24
+          </button>
+        </div>
+        <h3 class="font-heading text-xl mb-1">Lavender Dream</h3>
+        <p class="text-brand-text/50 text-sm mb-4">Calming · Floral · French Lavender</p>
+        <p class="font-semibold text-brand-accent">$24.00</p>
+      </div>
+
+      <!-- Product 2 -->
+      <div class="product-card reveal group" style="animation-delay: 0.1s;">
+        <div class="relative aspect-[4/5] overflow-hidden bg-brand-text/5 mb-6 rounded-sm">
+          <img src="https://images.pexels.com/photos/6707628/pexels-photo-6707628.jpeg?auto=compress&cs=tinysrgb&w=800" 
+               alt="Sandalwood Noir Candle" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#e5e7eb'">
+          <button onclick="window.addToCart(2, 'Sandalwood Noir', 32)" 
+                  class="absolute bottom-4 left-4 right-4 bg-white text-brand-text py-3 text-sm font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl">
+            Quick Add — $32
+          </button>
+        </div>
+        <h3 class="font-heading text-xl mb-1">Sandalwood Noir</h3>
+        <p class="text-brand-text/50 text-sm mb-4">Deep · Smoky · Aged Wood</p>
+        <p class="font-semibold text-brand-accent">$32.00</p>
+      </div>
+
+      <!-- Product 3 -->
+      <div class="product-card reveal group" style="animation-delay: 0.2s;">
+        <div class="relative aspect-[4/5] overflow-hidden bg-brand-text/5 mb-6 rounded-sm">
+          <img src="https://images.pexels.com/photos/6634653/pexels-photo-6634653.jpeg?auto=compress&cs=tinysrgb&w=800" 
+               alt="Rose Petal Candle" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#e5e7eb'">
+          <button onclick="window.addToCart(3, 'Rose Petal', 28)" 
+                  class="absolute bottom-4 left-4 right-4 bg-white text-brand-text py-3 text-sm font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl">
+            Quick Add — $28
+          </button>
+        </div>
+        <h3 class="font-heading text-xl mb-1">Rose Petal</h3>
+        <p class="text-brand-text/50 text-sm mb-4">Soft · Romantic · Wild Rose</p>
+        <p class="font-semibold text-brand-accent">$28.00</p>
+      </div>
+
+      <!-- Product 4 -->
+      <div class="product-card reveal group" style="animation-delay: 0.3s;">
+        <div class="relative aspect-[4/5] overflow-hidden bg-brand-text/5 mb-6 rounded-sm">
+          <img src="https://images.pexels.com/photos/3951746/pexels-photo-3951746.jpeg?auto=compress&cs=tinysrgb&w=800" 
+               alt="Vanilla Sky Candle" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#e5e7eb'">
+          <button onclick="window.addToCart(4, 'Vanilla Sky', 26)" 
+                  class="absolute bottom-4 left-4 right-4 bg-white text-brand-text py-3 text-sm font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl">
+            Quick Add — $26
+          </button>
+        </div>
+        <h3 class="font-heading text-xl mb-1">Vanilla Sky</h3>
+        <p class="text-brand-text/50 text-sm mb-4">Warm · Creamy · Bourbon Vanilla</p>
+        <p class="font-semibold text-brand-accent">$26.00</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Editorial Section -->
+  <section id="about" class="bg-brand-text py-32 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+      <div class="relative reveal">
+        <div class="aspect-[3/4] rounded-sm overflow-hidden">
+          <img src="https://images.pexels.com/photos/6707629/pexels-photo-6707629.jpeg?auto=compress&cs=tinysrgb&w=1200" 
+               alt="Candle making process" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#1A2A22'">
+        </div>
+        <div class="absolute -bottom-10 -right-10 bg-brand-accent p-12 hidden md:block">
+          <p class="text-white font-heading text-3xl italic">"Crafted with<br>patience & light."</p>
+        </div>
+      </div>
+      <div class="text-brand-bg reveal">
+        <span class="text-brand-accent text-sm font-bold uppercase tracking-[.3em] mb-6 block">Our Philosophy</span>
+        <h2 class="font-heading text-5xl md:text-6xl mb-8 leading-tight">Slow-burn living for the modern home.</h2>
+        <p class="text-brand-bg/70 text-lg leading-relaxed mb-10">
+          At Bloom & Co, we believe that the objects we surround ourselves with should be meaningful. Our candles are hand-poured in small batches using 100% natural soy wax, lead-free cotton wicks, and phthalate-free fragrances. No shortcuts, just pure, clean light.
+        </p>
+        <ul class="space-y-6 mb-12">
+          <li class="flex items-start gap-4">
+            <span class="w-6 h-6 rounded-full border border-brand-accent flex items-center justify-center mt-1"><i data-lucide="check" class="w-3 h-3 text-brand-accent"></i></span>
+            <div>
+              <p class="font-bold uppercase tracking-widest text-xs mb-1">Sustainable Sourcing</p>
+              <p class="text-brand-bg/50 text-sm">Every ingredient is ethically sourced and vegan friendly.</p>
+            </div>
+          </li>
+          <li class="flex items-start gap-4">
+            <span class="w-6 h-6 rounded-full border border-brand-accent flex items-center justify-center mt-1"><i data-lucide="check" class="w-3 h-3 text-brand-accent"></i></span>
+            <div>
+              <p class="font-bold uppercase tracking-widest text-xs mb-1">Longer Burn Time</p>
+              <p class="text-brand-bg/50 text-sm">Our soy blend ensures a cleaner, longer burn of up to 60 hours.</p>
+            </div>
+          </li>
+        </ul>
+        <a href="#products" class="inline-block border-b-2 border-brand-accent pb-2 font-bold uppercase tracking-widest text-sm hover:text-brand-accent transition-colors">Shop the collection</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section -->
+  <section id="contact" class="py-32 px-6 max-w-7xl mx-auto text-center">
+    <div class="max-w-3xl mx-auto reveal">
+      <i data-lucide="mail" class="w-12 h-12 mx-auto mb-8 text-brand-accent"></i>
+      <h2 class="font-heading text-5xl mb-6">Let's stay in touch.</h2>
+      <p class="text-brand-text/60 text-lg mb-12 leading-relaxed">
+        Have questions about our scents or wholesale inquiries? We'd love to hear from you. Reach out and we'll get back to you within 24 hours.
+      </p>
+      <div class="flex flex-col md:flex-row justify-center gap-10">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-brand-text/40 mb-2">Email Us</p>
+          <a href="mailto:hello@bloomandco.com" class="text-xl font-heading hover:text-brand-accent transition-colors">hello@bloomandco.com</a>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-brand-text/40 mb-2">Socials</p>
+          <div class="flex gap-6 justify-center">
+            <a href="https://instagram.com/bloomandco" class="hover:text-brand-accent transition-all"><i data-lucide="instagram"></i></a>
+            <a href="https://tiktok.com/@bloomandco" class="hover:text-brand-accent transition-all">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.17 8.17 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-brand-bg border-t border-brand-text/5 py-20 px-6">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
+      <div class="max-w-sm">
+        <a href="#" class="font-heading text-3xl font-bold tracking-tight text-brand-text mb-6 block">Bloom & Co.</a>
+        <p class="text-brand-text/50 text-sm leading-relaxed mb-8">
+          Crafting artisanal light and scent to inspire moments of stillness and peace in your daily life.
+        </p>
+        <div class="flex gap-4">
+          <i data-lucide="shield-check" class="text-brand-sage w-5 h-5"></i>
+          <span class="text-[10px] uppercase tracking-widest font-bold text-brand-text/40">Secure Payments via PayPal</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-12 text-sm uppercase tracking-widest font-bold text-brand-text/60">
+        <div class="flex flex-col gap-4">
+          <p class="text-brand-text/30 text-xs mb-2">Shop</p>
+          <a href="#products" class="hover:text-brand-accent">Best Sellers</a>
+          <a href="#products" class="hover:text-brand-accent">New Arrivals</a>
+          <a href="#products" class="hover:text-brand-accent">Bundles</a>
+        </div>
+        <div class="flex flex-col gap-4">
+          <p class="text-brand-text/30 text-xs mb-2">Support</p>
+          <button onclick="window.openLegal('Shipping Policy', 'We ship all orders within 2-3 business days via carbon-neutral carriers. Free shipping on orders over $75.')" class="text-left hover:text-brand-accent">Shipping</button>
+          <button onclick="window.openLegal('Returns', 'Unused candles can be returned within 30 days for a full refund or exchange. Customer pays return shipping.')" class="text-left hover:text-brand-accent">Returns</button>
+          <button onclick="window.openLegal('Privacy Policy', 'Your data is safe with us. We never sell your information and only use it to process your beautiful orders.')" class="text-left hover:text-brand-accent">Privacy</button>
+        </div>
+        <div class="hidden md:flex flex-col gap-4">
+          <p class="text-brand-text/30 text-xs mb-2">Join Us</p>
+          <p class="text-[10px] normal-case font-normal text-brand-text/40 mb-2">Sign up for scent drops and special offers.</p>
+          <div class="flex border-b border-brand-text/20 pb-2">
+            <input type="email" placeholder="Your Email" class="bg-transparent text-xs w-full focus:outline-none">
+            <button class="text-brand-accent">Join</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto mt-20 pt-8 border-t border-brand-text/5 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-widest font-bold text-brand-text/30">
+      <p>&copy; <span id="yr"></span> Bloom & Co. All Rights Reserved.</p>
+      <p>Hand-poured with love in our coastal studio.</p>
+    </div>
+  </footer>
+
+  <!-- Cart Drawer -->
+  <div id="cart-overlay" onclick="window.toggleCart()" class="fixed inset-0 bg-brand-dark/20 backdrop-blur-sm z-[100] hidden"></div>
+  <div id="cart-drawer" class="cart-drawer fixed top-0 right-0 h-full w-full max-w-md bg-brand-bg shadow-2xl z-[101] flex flex-col">
+    <div class="p-8 border-b border-brand-text/5 flex items-center justify-between">
+      <h2 class="font-heading text-2xl">Your Bag</h2>
+      <button onclick="window.toggleCart()" class="p-2 hover:bg-brand-text/5 rounded-full"><i data-lucide="x"></i></button>
+    </div>
+    
+    <div id="cart-items" class="flex-1 overflow-y-auto p-8 space-y-6">
+      <!-- Cart items injected here -->
+      <div class="flex flex-col items-center justify-center h-full text-center py-20 opacity-40">
+        <i data-lucide="shopping-bag" class="w-12 h-12 mb-4"></i>
+        <p class="text-sm uppercase tracking-widest font-bold">Your bag is empty</p>
+      </div>
+    </div>
+    
+    <div class="p-8 bg-brand-text/5 border-t border-brand-text/5">
+      <div class="flex justify-between items-center mb-6">
+        <span class="text-sm uppercase tracking-widest font-bold text-brand-text/60">Subtotal</span>
+        <span id="cart-total" class="font-heading text-2xl">$0.00</span>
+      </div>
+      <button onclick="window.checkout()" class="w-full bg-brand-accent text-white py-5 rounded-sm font-bold uppercase tracking-[0.2em] text-sm shadow-lg shadow-brand-accent/20 hover:brightness-110 transition-all active:scale-[0.98]">
+        Checkout via PayPal
+      </button>
+      <p class="text-[10px] text-center text-brand-text/40 mt-4 uppercase tracking-widest">Secure checkout · Sustainable shipping</p>
+    </div>
+  </div>
+
+  <!-- Legal Modal -->
+  <div id="legalModal" class="fixed inset-0 bg-brand-dark/80 backdrop-blur-md z-[200] hidden items-center justify-center p-6">
+    <div class="bg-brand-bg max-w-2xl w-full max-h-[80vh] overflow-y-auto p-12 relative rounded-sm shadow-2xl">
+      <button onclick="window.closeLegal()" class="absolute top-6 right-6 p-2 hover:bg-brand-text/5 rounded-full"><i data-lucide="x"></i></button>
+      <h2 id="legalTitle" class="font-heading text-4xl mb-8"></h2>
+      <div id="legalBody" class="text-brand-text/70 leading-relaxed space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      // Global State
+      const appState = {
+        cart: [],
+        isCartOpen: false,
+        isMenuOpen: false,
+        products: [
+          { id: 1, name: 'Lavender Dream', price: 24 },
+          { id: 2, name: 'Sandalwood Noir', price: 32 },
+          { id: 3, name: 'Rose Petal', price: 28 },
+          { id: 4, name: 'Vanilla Sky', price: 26 }
+        ]
+      };
+
+      // UI Helpers
+      window.toggleCart = function() {
+        const drawer = document.getElementById('cart-drawer');
+        const overlay = document.getElementById('cart-overlay');
+        appState.isCartOpen = !appState.isCartOpen;
+        
+        if (appState.isCartOpen) {
+          drawer.classList.add('open');
+          overlay.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+        } else {
+          drawer.classList.remove('open');
+          overlay.classList.add('hidden');
+          document.body.style.overflow = '';
+        }
+      };
+
+      window.toggleMenu = function() {
+        const menu = document.getElementById('mobile-nav');
+        appState.isMenuOpen = !appState.isMenuOpen;
+        menu.classList.toggle('open', appState.isMenuOpen);
+        document.body.style.overflow = appState.isMenuOpen ? 'hidden' : '';
+      };
+
+      window.addToCart = function(id, name, price) {
+        const existing = appState.cart.find(item => item.id === id);
+        if (existing) {
+          existing.qty++;
+        } else {
+          appState.cart.push({ id, name, price, qty: 1 });
+        }
+        renderCart();
+        if(!appState.isCartOpen) window.toggleCart();
+        showToast(`Added ${name} to bag`);
+      };
+
+      window.updateQty = function(id, delta) {
+        const item = appState.cart.find(item => item.id === id);
+        if (item) {
+          item.qty += delta;
+          if (item.qty <= 0) {
+            appState.cart = appState.cart.filter(i => i.id !== id);
+          }
+        }
+        renderCart();
+      };
+
+      window.checkout = function() {
+        if (appState.cart.length === 0) return showToast("Your bag is empty");
+        const total = appState.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const paypalUrl = `https://paypal.me/bloomandco/${total.toFixed(2)}`;
+        window.open(paypalUrl, '_blank');
+      };
+
+      window.openLegal = function(title, content) {
+        document.getElementById('legalTitle').textContent = title;
+        document.getElementById('legalBody').innerHTML = `<p>${content}</p>`;
+        document.getElementById('legalModal').style.display = 'flex';
+      };
+
+      window.closeLegal = function() {
+        document.getElementById('legalModal').style.display = 'none';
+      };
+
+      function renderCart() {
+        const container = document.getElementById('cart-items');
+        const countBadge = document.getElementById('cart-count');
+        const totalEl = document.getElementById('cart-total');
+        
+        const totalItems = appState.cart.reduce((sum, item) => sum + item.qty, 0);
+        const totalPrice = appState.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        
+        countBadge.textContent = totalItems;
+        totalEl.textContent = `$${totalPrice.toFixed(2)}`;
+        
+        if (appState.cart.length === 0) {
+          container.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-center py-20 opacity-40">
+              <i data-lucide="shopping-bag" class="w-12 h-12 mb-4"></i>
+              <p class="text-sm uppercase tracking-widest font-bold">Your bag is empty</p>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+        
+        container.innerHTML = appState.cart.map(item => `
+          <div class="flex gap-4 items-center group">
+            <div class="w-20 h-24 bg-brand-text/5 rounded-sm overflow-hidden flex-shrink-0">
+              <img src="https://images.pexels.com/photos/${getImageId(item.id)}/pexels-photo-${getImageId(item.id)}.jpeg?auto=compress&cs=tinysrgb&w=200" 
+                   class="w-full h-full object-cover" onerror="this.style.display='none'">
+            </div>
+            <div class="flex-1">
+              <h4 class="font-heading text-lg mb-1">${item.name}</h4>
+              <p class="text-brand-text/40 text-xs uppercase tracking-widest mb-3">$${item.price.toFixed(2)}</p>
+              <div class="flex items-center gap-4">
+                <div class="flex items-center border border-brand-text/10 rounded-full px-3 py-1">
+                  <button onclick="window.updateQty(${item.id}, -1)" class="hover:text-brand-accent transition-colors"><i data-lucide="minus" class="w-3 h-3"></i></button>
+                  <span class="mx-4 text-xs font-bold">${item.qty}</span>
+                  <button onclick="window.updateQty(${item.id}, 1)" class="hover:text-brand-accent transition-colors"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-sm">$${(item.price * item.qty).toFixed(2)}</p>
+            </div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      }
+
+      function getImageId(id) {
+        const ids = { 1: 7195133, 2: 6707628, 3: 6634653, 4: 3951746 };
+        return ids[id] || 6707631;
+      }
+
+      function showToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-8 left-1/2 -translate-x-1/2 bg-brand-dark text-white px-6 py-3 rounded-sm text-xs font-bold uppercase tracking-widest shadow-2xl z-[200] animate-bounce';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+      }
+
+      // Initial Setup
+      document.getElementById('yr').textContent = new Date().getFullYear();
+      lucide.createIcons();
+      
+      // Reveal Animation
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+      
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+      
+      // Safety net for reveal
+      setTimeout(() => {
+        document.querySelectorAll('.reveal:not(.visible)').forEach(el => {
+          el.classList.add('visible');
+        });
+      }, 1500);
+
+    })();
+  </script>
+</body>
+</html>
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
+Paste each one separately, after the build loads: 1. Add a new product: add a new product called Midnight Oud Candle for $38 2. Change the color: change the accent color to burnt orange 3. Change a price: change the Lavender Dream Candle price to $29 4. Add a discount badge: add a SALE badge on the Sandalwood Noir Candle showing 20% off 5. Change the font: change the heading font to Cormorant Garamond 6. Update the email: add my contact email orders@bloomandco.com 7. Add a WhatsApp button: add a WhatsApp contact button linking to wa.me/441234567890 8. Update PayPal: make the checkout button link to paypal.me/bloomco 9. Add a testimonials section: add a testimonials section with 3 customer reviews 10. Fix mobile: make the product grid show 1 column on mobile
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bloom & Co | Artisanal Handmade Candles</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            heading: ['Cormorant Garamond', 'serif'],
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              bg: '#FDFBF7',
+              text: '#2D4739',
+              accent: '#C85A3C', // Changed to Burnt Orange
+              sage: '#76A08A',
+              dark: '#1A2A22'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    :root {
+      --bg: #FDFBF7;
+      --text: #2D4739;
+      --accent: #C85A3C; /* Changed to Burnt Orange */
+    }
+    body { background-color: var(--bg); color: var(--text); }
+    
+    .cart-drawer {
+      transform: translateX(100%);
+      transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .cart-drawer.open { transform: translateX(0); }
+    
+    .mobile-menu {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+    .mobile-menu.open { opacity: 1; pointer-events: auto; }
+
+    .reveal { opacity: 1; }
+    .reveal.visible { animation: revealUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes revealUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .product-card:hover img { transform: scale(1.05); }
+    .product-card img { transition: transform 0.6s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #FDFBF7; }
+    ::-webkit-scrollbar-thumb { background: #C85A3C; border-radius: 10px; }
+  </style>
+</head>
+<body class="font-sans antialiased">
+
+  <!-- Navigation -->
+  <nav class="fixed top-0 w-full z-50 bg-brand-bg/80 backdrop-blur-md border-b border-brand-text/5">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
+      <div class="flex items-center gap-8">
+        <a href="#" class="font-heading text-3xl font-bold tracking-tight text-brand-text">Bloom & Co.</a>
+        <div class="hidden md:flex gap-6 text-sm font-medium uppercase tracking-widest text-brand-text/70">
+          <a href="#products" class="hover:text-brand-accent transition-colors">Shop</a>
+          <a href="#about" class="hover:text-brand-accent transition-colors">Our Story</a>
+          <a href="#contact" class="hover:text-brand-accent transition-colors">Contact</a>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-4">
+        <button onclick="window.toggleCart()" class="relative p-2 hover:bg-brand-text/5 rounded-full transition-colors" aria-label="Open Cart">
+          <i data-lucide="shopping-bag" class="w-6 h-6"></i>
+          <span id="cart-count" class="absolute top-0 right-0 bg-brand-accent text-white text-[10px] font-bold w-4 h-4 flex items-center justify-center rounded-full">0</span>
+        </button>
+        <button onclick="window.toggleMenu()" class="md:hidden p-2 hover:bg-brand-text/5 rounded-full transition-colors" aria-label="Menu">
+          <i data-lucide="menu" class="w-6 h-6"></i>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Mobile Menu Overlay -->
+  <div id="mobile-nav" class="mobile-menu fixed inset-0 z-[60] bg-brand-dark text-brand-bg p-10 flex flex-col justify-center items-center gap-8 text-center">
+    <button onclick="window.toggleMenu()" class="absolute top-8 right-8 p-2" aria-label="Close Menu">
+      <i data-lucide="x" class="w-8 h-8"></i>
+    </button>
+    <a href="#products" onclick="window.toggleMenu()" class="font-heading text-4xl">Shop Collection</a>
+    <a href="#about" onclick="window.toggleMenu()" class="font-heading text-4xl">Our Story</a>
+    <a href="#contact" onclick="window.toggleMenu()" class="font-heading text-4xl">Get in Touch</a>
+    <div class="mt-12 flex gap-6">
+      <a href="https://instagram.com/bloomandco" class="opacity-70 hover:opacity-100"><i data-lucide="instagram"></i></a>
+      <a href="https://tiktok.com/@bloomandco" class="opacity-70 hover:opacity-100">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.17 8.17 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <!-- Hero Section -->
+  <header class="relative min-h-screen flex items-center pt-20">
+    <div class="absolute inset-0 z-0">
+      <img src="https://images.pexels.com/photos/6707631/pexels-photo-6707631.jpeg?auto=compress&cs=tinysrgb&w=1600" 
+           alt="Handmade candle burning softly" 
+           class="w-full h-full object-cover brightness-[0.85]"
+           onerror="this.style.display='none';this.parentElement.style.background='linear-gradient(135deg,#2D4739,#1A2A22)'">
+    </div>
+    <div class="relative z-10 max-w-7xl mx-auto px-6 w-full">
+      <div class="max-w-2xl reveal">
+        <span class="inline-block text-brand-bg/80 text-sm font-semibold tracking-[0.3em] uppercase mb-6">Artisanal & Hand-Poured</span>
+        <h1 class="font-heading text-6xl md:text-8xl text-white leading-[1.1] mb-8">Light for your<br><i class="font-normal">quietest</i> moments.</h1>
+        <p class="text-white/80 text-lg md:text-xl font-light leading-relaxed mb-10 max-w-lg">
+          Small-batch candles crafted from sustainable soy wax and therapeutic-grade essential oils. Designed to transform your space into a sanctuary.
+        </p>
+        <div class="flex flex-wrap gap-4">
+          <a href="#products" class="bg-brand-accent hover:bg-brand-accent/90 text-white px-10 py-4 rounded-sm font-medium transition-all transform active:scale-95">Explore Collection</a>
+          <a href="#about" class="bg-white/10 hover:bg-white/20 backdrop-blur-md text-white border border-white/30 px-10 py-4 rounded-sm font-medium transition-all">Our Process</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Featured Grid -->
+  <section id="products" class="py-32 px-6 max-w-7xl mx-auto">
+    <div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-6 reveal">
+      <div>
+        <h2 class="font-heading text-4xl md:text-5xl mb-4">The Essential Collection</h2>
+        <p class="text-brand-text/60 max-w-md">Each scent is a story, hand-poured in our coastal studio to bring warmth and intention to your home.</p>
+      </div>
+      <div class="flex gap-4">
+        <span class="text-sm font-bold uppercase tracking-widest text-brand-accent border-b-2 border-brand-accent pb-1">Shop All</span>
+      </div>
+    </div>
+
+    <!-- Product grid updated to 1 col on mobile -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-8">
+      <!-- Product 1 (Price Updated) -->
+      <div class="product-card reveal group">
+        <div class="relative aspect-[4/5] overflow-hidden bg-brand-text/5 mb-6 rounded-sm">
+          <img src="https://images.pexels.com/photos/7195133/pexels-photo-7195133.jpeg?auto=compress&cs=tinysrgb&w=800" 
+               alt="Lavender Dream Candle" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#e5e7eb'">
+          <button onclick="window.addToCart(1, 'Lavender Dream', 29)" 
+                  class="absolute bottom-4 left-4 right-4 bg-white text-brand-text py-3 text-sm font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl">
+            Quick Add — $29
+          </button>
+        </div>
+        <h3 class="font-heading text-xl mb-1">Lavender Dream</h3>
+        <p class="text-brand-text/50 text-sm mb-4">Calming · Floral · French Lavender</p>
+        <p class="font-semibold text-brand-accent">$29.00</p>
+      </div>
+
+      <!-- Product 2 (Sale Badge Added) -->
+      <div class="product-card reveal group" style="animation-delay: 0.1s;">
+        <div class="relative aspect-[4/5] overflow-hidden bg-brand-text/5 mb-6 rounded-sm">
+          <div class="absolute top-4 right-4 bg-brand-accent text-white text-[10px] font-bold uppercase tracking-widest px-3 py-1 z-10 rounded-full">20% OFF</div>
+          <img src="https://images.pexels.com/photos/6707628/pexels-photo-6707628.jpeg?auto=compress&cs=tinysrgb&w=800" 
+               alt="Sandalwood Noir Candle" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#e5e7eb'">
+          <button onclick="window.addToCart(2, 'Sandalwood Noir', 32)" 
+                  class="absolute bottom-4 left-4 right-4 bg-white text-brand-text py-3 text-sm font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl">
+            Quick Add — $32
+          </button>
+        </div>
+        <h3 class="font-heading text-xl mb-1">Sandalwood Noir</h3>
+        <p class="text-brand-text/50 text-sm mb-4">Deep · Smoky · Aged Wood</p>
+        <p class="font-semibold text-brand-accent">$32.00</p>
+      </div>
+
+      <!-- Product 3 -->
+      <div class="product-card reveal group" style="animation-delay: 0.2s;">
+        <div class="relative aspect-[4/5] overflow-hidden bg-brand-text/5 mb-6 rounded-sm">
+          <img src="https://images.pexels.com/photos/6634653/pexels-photo-6634653.jpeg?auto=compress&cs=tinysrgb&w=800" 
+               alt="Rose Petal Candle" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#e5e7eb'">
+          <button onclick="window.addToCart(3, 'Rose Petal', 28)" 
+                  class="absolute bottom-4 left-4 right-4 bg-white text-brand-text py-3 text-sm font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl">
+            Quick Add — $28
+          </button>
+        </div>
+        <h3 class="font-heading text-xl mb-1">Rose Petal</h3>
+        <p class="text-brand-text/50 text-sm mb-4">Soft · Romantic · Wild Rose</p>
+        <p class="font-semibold text-brand-accent">$28.00</p>
+      </div>
+
+      <!-- Product 4 -->
+      <div class="product-card reveal group" style="animation-delay: 0.3s;">
+        <div class="relative aspect-[4/5] overflow-hidden bg-brand-text/5 mb-6 rounded-sm">
+          <img src="https://images.pexels.com/photos/3951746/pexels-photo-3951746.jpeg?auto=compress&cs=tinysrgb&w=800" 
+               alt="Vanilla Sky Candle" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#e5e7eb'">
+          <button onclick="window.addToCart(4, 'Vanilla Sky', 26)" 
+                  class="absolute bottom-4 left-4 right-4 bg-white text-brand-text py-3 text-sm font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl">
+            Quick Add — $26
+          </button>
+        </div>
+        <h3 class="font-heading text-xl mb-1">Vanilla Sky</h3>
+        <p class="text-brand-text/50 text-sm mb-4">Warm · Creamy · Bourbon Vanilla</p>
+        <p class="font-semibold text-brand-accent">$26.00</p>
+      </div>
+
+      <!-- Product 5 (New Product) -->
+      <div class="product-card reveal group" style="animation-delay: 0.4s;">
+        <div class="relative aspect-[4/5] overflow-hidden bg-brand-text/5 mb-6 rounded-sm">
+          <img src="https://images.pexels.com/photos/4464482/pexels-photo-4464482.jpeg?auto=compress&cs=tinysrgb&w=800" 
+               alt="Midnight Oud Candle" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#e5e7eb'">
+          <button onclick="window.addToCart(5, 'Midnight Oud', 38)" 
+                  class="absolute bottom-4 left-4 right-4 bg-white text-brand-text py-3 text-sm font-bold uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300 shadow-xl">
+            Quick Add — $38
+          </button>
+        </div>
+        <h3 class="font-heading text-xl mb-1">Midnight Oud</h3>
+        <p class="text-brand-text/50 text-sm mb-4">Mysterious · Exotic · Arabian Oud</p>
+        <p class="font-semibold text-brand-accent">$38.00</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Editorial Section -->
+  <section id="about" class="bg-brand-text py-32 overflow-hidden">
+    <div class="max-w-7xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-20 items-center">
+      <div class="relative reveal">
+        <div class="aspect-[3/4] rounded-sm overflow-hidden">
+          <img src="https://images.pexels.com/photos/6707629/pexels-photo-6707629.jpeg?auto=compress&cs=tinysrgb&w=1200" 
+               alt="Candle making process" class="w-full h-full object-cover"
+               onerror="this.style.display='none';this.parentElement.style.background='#1A2A22'">
+        </div>
+        <div class="absolute -bottom-10 -right-10 bg-brand-accent p-12 hidden md:block">
+          <p class="text-white font-heading text-4xl italic">"Crafted with<br>patience & light."</p>
+        </div>
+      </div>
+      <div class="text-brand-bg reveal">
+        <span class="text-brand-accent text-sm font-bold uppercase tracking-[.3em] mb-6 block">Our Philosophy</span>
+        <h2 class="font-heading text-5xl md:text-7xl mb-8 leading-tight">Slow-burn living for the modern home.</h2>
+        <p class="text-brand-bg/70 text-lg leading-relaxed mb-10">
+          At Bloom & Co, we believe that the objects we surround ourselves with should be meaningful. Our candles are hand-poured in small batches using 100% natural soy wax, lead-free cotton wicks, and phthalate-free fragrances. No shortcuts, just pure, clean light.
+        </p>
+        <ul class="space-y-6 mb-12">
+          <li class="flex items-start gap-4">
+            <span class="w-6 h-6 rounded-full border border-brand-accent flex items-center justify-center mt-1"><i data-lucide="check" class="w-3 h-3 text-brand-accent"></i></span>
+            <div>
+              <p class="font-bold uppercase tracking-widest text-xs mb-1">Sustainable Sourcing</p>
+              <p class="text-brand-bg/50 text-sm">Every ingredient is ethically sourced and vegan friendly.</p>
+            </div>
+          </li>
+          <li class="flex items-start gap-4">
+            <span class="w-6 h-6 rounded-full border border-brand-accent flex items-center justify-center mt-1"><i data-lucide="check" class="w-3 h-3 text-brand-accent"></i></span>
+            <div>
+              <p class="font-bold uppercase tracking-widest text-xs mb-1">Longer Burn Time</p>
+              <p class="text-brand-bg/50 text-sm">Our soy blend ensures a cleaner, longer burn of up to 60 hours.</p>
+            </div>
+          </li>
+        </ul>
+        <a href="#products" class="inline-block border-b-2 border-brand-accent pb-2 font-bold uppercase tracking-widest text-sm hover:text-brand-accent transition-colors">Shop the collection</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section (New) -->
+  <section class="py-32 px-6 bg-brand-bg">
+    <div class="max-w-7xl mx-auto text-center reveal">
+      <span class="text-brand-accent text-sm font-bold uppercase tracking-[.3em] mb-6 block">Kind Words</span>
+      <h2 class="font-heading text-5xl mb-16">What our community says</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+        <div class="p-10 bg-white border border-brand-text/5 rounded-sm">
+          <div class="flex justify-center mb-6 text-brand-accent">
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+          </div>
+          <p class="italic text-brand-text/70 mb-6">"The scent throw is incredible. My whole house smells like a spa within minutes of lighting it."</p>
+          <p class="text-xs font-bold uppercase tracking-widest">— Sarah M.</p>
+        </div>
+        <div class="p-10 bg-white border border-brand-text/5 rounded-sm">
+          <div class="flex justify-center mb-6 text-brand-accent">
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+          </div>
+          <p class="italic text-brand-text/70 mb-6">"Beautiful packaging and even better products. The Sandalwood Noir is my absolute favorite scent."</p>
+          <p class="text-xs font-bold uppercase tracking-widest">— James L.</p>
+        </div>
+        <div class="p-10 bg-white border border-brand-text/5 rounded-sm">
+          <div class="flex justify-center mb-6 text-brand-accent">
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+            <i data-lucide="star" class="fill-current w-4 h-4"></i>
+          </div>
+          <p class="italic text-brand-text/70 mb-6">"The cleanest burning candles I've ever found. No black soot and they last forever. Highly recommend."</p>
+          <p class="text-xs font-bold uppercase tracking-widest">— Elena R.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Section (Email Updated) -->
+  <section id="contact" class="py-32 px-6 max-w-7xl mx-auto text-center">
+    <div class="max-w-3xl mx-auto reveal">
+      <i data-lucide="mail" class="w-12 h-12 mx-auto mb-8 text-brand-accent"></i>
+      <h2 class="font-heading text-5xl mb-6">Let's stay in touch.</h2>
+      <p class="text-brand-text/60 text-lg mb-12 leading-relaxed">
+        Have questions about our scents or wholesale inquiries? We'd love to hear from you. Reach out and we'll get back to you within 24 hours.
+      </p>
+      <div class="flex flex-col md:flex-row justify-center gap-10">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-brand-text/40 mb-2">Email Us</p>
+          <a href="mailto:orders@bloomandco.com" class="text-xl font-heading hover:text-brand-accent transition-colors">orders@bloomandco.com</a>
+        </div>
+        <div>
+          <p class="text-xs font-bold uppercase tracking-widest text-brand-text/40 mb-2">Socials</p>
+          <div class="flex gap-6 justify-center">
+            <a href="https://instagram.com/bloomandco" class="hover:text-brand-accent transition-all"><i data-lucide="instagram"></i></a>
+            <a href="https://tiktok.com/@bloomandco" class="hover:text-brand-accent transition-all">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.17 8.17 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+            </a>
+            <a href="https://wa.me/441234567890" class="hover:text-brand-accent transition-all"><i data-lucide="message-circle"></i></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-brand-bg border-t border-brand-text/5 py-20 px-6">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-start gap-12">
+      <div class="max-w-sm">
+        <a href="#" class="font-heading text-4xl font-bold tracking-tight text-brand-text mb-6 block">Bloom & Co.</a>
+        <p class="text-brand-text/50 text-sm leading-relaxed mb-8">
+          Crafting artisanal light and scent to inspire moments of stillness and peace in your daily life.
+        </p>
+        <div class="flex gap-4">
+          <i data-lucide="shield-check" class="text-brand-sage w-5 h-5"></i>
+          <span class="text-[10px] uppercase tracking-widest font-bold text-brand-text/40">Secure Payments via PayPal</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 md:grid-cols-3 gap-12 text-sm uppercase tracking-widest font-bold text-brand-text/60">
+        <div class="flex flex-col gap-4">
+          <p class="text-brand-text/30 text-xs mb-2">Shop</p>
+          <a href="#products" class="hover:text-brand-accent">Best Sellers</a>
+          <a href="#products" class="hover:text-brand-accent">New Arrivals</a>
+          <a href="#products" class="hover:text-brand-accent">Bundles</a>
+        </div>
+        <div class="flex flex-col gap-4">
+          <p class="text-brand-text/30 text-xs mb-2">Support</p>
+          <button onclick="window.openLegal('Shipping Policy', 'We ship all orders within 2-3 business days via carbon-neutral carriers. Free shipping on orders over $75.')" class="text-left hover:text-brand-accent">Shipping</button>
+          <button onclick="window.openLegal('Returns', 'Unused candles can be returned within 30 days for a full refund or exchange. Customer pays return shipping.')" class="text-left hover:text-brand-accent">Returns</button>
+          <button onclick="window.openLegal('Privacy Policy', 'Your data is safe with us. We never sell your information and only use it to process your beautiful orders.')" class="text-left hover:text-brand-accent">Privacy</button>
+        </div>
+        <div class="hidden md:flex flex-col gap-4">
+          <p class="text-brand-text/30 text-xs mb-2">Join Us</p>
+          <p class="text-[10px] normal-case font-normal text-brand-text/40 mb-2">Sign up for scent drops and special offers.</p>
+          <div class="flex border-b border-brand-text/20 pb-2">
+            <input type="email" placeholder="Your Email" class="bg-transparent text-xs w-full focus:outline-none">
+            <button class="text-brand-accent">Join</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="max-w-7xl mx-auto mt-20 pt-8 border-t border-brand-text/5 flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] uppercase tracking-widest font-bold text-brand-text/30">
+      <p>&copy; <span id="yr"></span> Bloom & Co. All Rights Reserved.</p>
+      <p>Hand-poured with love in our coastal studio.</p>
+    </div>
+  </footer>
+
+  <!-- Floating WhatsApp Button -->
+  <a href="https://wa.me/441234567890" target="_blank" class="fixed bottom-6 right-6 z-40 bg-brand-accent text-white w-14 h-14 rounded-full flex items-center justify-center shadow-2xl hover:scale-110 transition-transform md:hidden">
+    <i data-lucide="message-circle" class="w-6 h-6"></i>
+  </a>
+
+  <!-- Cart Drawer -->
+  <div id="cart-overlay" onclick="window.toggleCart()" class="fixed inset-0 bg-brand-dark/20 backdrop-blur-sm z-[100] hidden"></div>
+  <div id="cart-drawer" class="cart-drawer fixed top-0 right-0 h-full w-full max-w-md bg-brand-bg shadow-2xl z-[101] flex flex-col">
+    <div class="p-8 border-b border-brand-text/5 flex items-center justify-between">
+      <h2 class="font-heading text-3xl">Your Bag</h2>
+      <button onclick="window.toggleCart()" class="p-2 hover:bg-brand-text/5 rounded-full"><i data-lucide="x"></i></button>
+    </div>
+    
+    <div id="cart-items" class="flex-1 overflow-y-auto p-8 space-y-6">
+      <div class="flex flex-col items-center justify-center h-full text-center py-20 opacity-40">
+        <i data-lucide="shopping-bag" class="w-12 h-12 mb-4"></i>
+        <p class="text-sm uppercase tracking-widest font-bold">Your bag is empty</p>
+      </div>
+    </div>
+    
+    <div class="p-8 bg-brand-text/5 border-t border-brand-text/5">
+      <div class="flex justify-between items-center mb-6">
+        <span class="text-sm uppercase tracking-widest font-bold text-brand-text/60">Subtotal</span>
+        <span id="cart-total" class="font-heading text-3xl">$0.00</span>
+      </div>
+      <button onclick="window.checkout()" class="w-full bg-brand-accent text-white py-5 rounded-sm font-bold uppercase tracking-[0.2em] text-sm shadow-lg shadow-brand-accent/20 hover:brightness-110 transition-all active:scale-[0.98]">
+        Checkout via PayPal
+      </button>
+      <p class="text-[10px] text-center text-brand-text/40 mt-4 uppercase tracking-widest">Secure checkout · Sustainable shipping</p>
+    </div>
+  </div>
+
+  <!-- Legal Modal -->
+  <div id="legalModal" class="fixed inset-0 bg-brand-dark/80 backdrop-blur-md z-[200] hidden items-center justify-center p-6">
+    <div class="bg-brand-bg max-w-2xl w-full max-h-[80vh] overflow-y-auto p-12 relative rounded-sm shadow-2xl">
+      <button onclick="window.closeLegal()" class="absolute top-6 right-6 p-2 hover:bg-brand-text/5 rounded-full"><i data-lucide="x"></i></button>
+      <h2 id="legalTitle" class="font-heading text-5xl mb-8"></h2>
+      <div id="legalBody" class="text-brand-text/70 leading-relaxed space-y-4"></div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const appState = {
+        cart: [],
+        isCartOpen: false,
+        isMenuOpen: false,
+        products: [
+          { id: 1, name: 'Lavender Dream', price: 29 }, // Updated price
+          { id: 2, name: 'Sandalwood Noir', price: 32 },
+          { id: 3, name: 'Rose Petal', price: 28 },
+          { id: 4, name: 'Vanilla Sky', price: 26 },
+          { id: 5, name: 'Midnight Oud', price: 38 } // Added product
+        ]
+      };
+
+      window.toggleCart = function() {
+        const drawer = document.getElementById('cart-drawer');
+        const overlay = document.getElementById('cart-overlay');
+        appState.isCartOpen = !appState.isCartOpen;
+        
+        if (appState.isCartOpen) {
+          drawer.classList.add('open');
+          overlay.classList.remove('hidden');
+          document.body.style.overflow = 'hidden';
+        } else {
+          drawer.classList.remove('open');
+          overlay.classList.add('hidden');
+          document.body.style.overflow = '';
+        }
+      };
+
+      window.toggleMenu = function() {
+        const menu = document.getElementById('mobile-nav');
+        appState.isMenuOpen = !appState.isMenuOpen;
+        menu.classList.toggle('open', appState.isMenuOpen);
+        document.body.style.overflow = appState.isMenuOpen ? 'hidden' : '';
+      };
+
+      window.addToCart = function(id, name, price) {
+        const existing = appState.cart.find(item => item.id === id);
+        if (existing) {
+          existing.qty++;
+        } else {
+          appState.cart.push({ id, name, price, qty: 1 });
+        }
+        renderCart();
+        if(!appState.isCartOpen) window.toggleCart();
+        showToast(`Added ${name} to bag`);
+      };
+
+      window.updateQty = function(id, delta) {
+        const item = appState.cart.find(item => item.id === id);
+        if (item) {
+          item.qty += delta;
+          if (item.qty <= 0) {
+            appState.cart = appState.cart.filter(i => i.id !== id);
+          }
+        }
+        renderCart();
+      };
+
+      window.checkout = function() {
+        if (appState.cart.length === 0) return showToast("Your bag is empty");
+        const total = appState.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        const paypalUrl = `https://paypal.me/bloomco/${total.toFixed(2)}`; // Updated PayPal link
+        window.open(paypalUrl, '_blank');
+      };
+
+      window.openLegal = function(title, content) {
+        document.getElementById('legalTitle').textContent = title;
+        document.getElementById('legalBody').innerHTML = `<p>${content}</p>`;
+        document.getElementById('legalModal').style.display = 'flex';
+      };
+
+      window.closeLegal = function() {
+        document.getElementById('legalModal').style.display = 'none';
+      };
+
+      function renderCart() {
+        const container = document.getElementById('cart-items');
+        const countBadge = document.getElementById('cart-count');
+        const totalEl = document.getElementById('cart-total');
+        
+        const totalItems = appState.cart.reduce((sum, item) => sum + item.qty, 0);
+        const totalPrice = appState.cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+        
+        countBadge.textContent = totalItems;
+        totalEl.textContent = `$${totalPrice.toFixed(2)}`;
+        
+        if (appState.cart.length === 0) {
+          container.innerHTML = `
+            <div class="flex flex-col items-center justify-center h-full text-center py-20 opacity-40">
+              <i data-lucide="shopping-bag" class="w-12 h-12 mb-4"></i>
+              <p class="text-sm uppercase tracking-widest font-bold">Your bag is empty</p>
+            </div>
+          `;
+          lucide.createIcons();
+          return;
+        }
+        
+        container.innerHTML = appState.cart.map(item => `
+          <div class="flex gap-4 items-center group">
+            <div class="w-20 h-24 bg-brand-text/5 rounded-sm overflow-hidden flex-shrink-0">
+              <img src="https://images.pexels.com/photos/${getImageId(item.id)}/pexels-photo-${getImageId(item.id)}.jpeg?auto=compress&cs=tinysrgb&w=200" 
+                   class="w-full h-full object-cover" onerror="this.style.display='none'">
+            </div>
+            <div class="flex-1">
+              <h4 class="font-heading text-xl mb-1">${item.name}</h4>
+              <p class="text-brand-text/40 text-xs uppercase tracking-widest mb-3">$${item.price.toFixed(2)}</p>
+              <div class="flex items-center gap-4">
+                <div class="flex items-center border border-brand-text/10 rounded-full px-3 py-1">
+                  <button onclick="window.updateQty(${item.id}, -1)" class="hover:text-brand-accent transition-colors"><i data-lucide="minus" class="w-3 h-3"></i></button>
+                  <span class="mx-4 text-xs font-bold">${item.qty}</span>
+                  <button onclick="window.updateQty(${item.id}, 1)" class="hover:text-brand-accent transition-colors"><i data-lucide="plus" class="w-3 h-3"></i></button>
+                </div>
+              </div>
+            </div>
+            <div class="text-right">
+              <p class="font-bold text-sm">$${(item.price * item.qty).toFixed(2)}</p>
+            </div>
+          </div>
+        `).join('');
+        lucide.createIcons();
+      }
+
+      function getImageId(id) {
+        const ids = { 1: 7195133, 2: 6707628, 3: 6634653, 4: 3951746, 5: 4464482 };
+        return ids[id] || 6707631;
+      }
+
+      function showToast(msg) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed bottom-8 left-1/2 -translate-x-1/2 bg-brand-dark text-white px-6 py-3 rounded-sm text-xs font-bold uppercase tracking-widest shadow-2xl z-[200] animate-bounce';
+        toast.textContent = msg;
+        document.body.appendChild(toast);
+        setTimeout(() => toast.remove(), 2500);
+      }
+
+      document.getElementById('yr').textContent = new Date().getFullYear();
+      lucide.createIcons();
+      
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.1 });
+      
+      document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+      
+      setTimeout(() => {
+        document.querySelectorAll('.reveal:not(.visible)').forEach(el => {
+          el.classList.add('visible');
+        });
+      }, 1500);
+
+    })();
+  </script>
+</body>
+</html>

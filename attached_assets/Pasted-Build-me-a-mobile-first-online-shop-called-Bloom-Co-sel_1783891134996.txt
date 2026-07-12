@@ -1,0 +1,119 @@
+Build me a mobile-first online shop called "Bloom & Co" selling handmade candles.
+Products:
+- Lavender Dream Candle — $24
+- Sandalwood Noir Candle — $32
+- Rose Petal Candle — $28
+- Vanilla Sky Candle — $26
+Include a hero, product grid with Add to Cart, working cart drawer, PayPal checkout at paypal.me/bloomandco, contact section with email hello@bloomandco.com, Instagram at instagram.com/bloomandco, TikTok at tiktok.com/@bloomandco, smooth fade-in animations, fully mobile responsive with hamburger menu, and sticky navbar with logo and cart icon.
+
+What this single prompt tests:
+
+Bug fixed	What to check in the result
+✅ Router fix	Builds IMMEDIATELY — no "Luna Studio sounds like a dream..." chat first
+✅ Favicon	<link rel="icon"> present in <head> (view source)
+✅ Logo img tag	<img id="site-logo"> in navbar (so you can patch it later)
+✅ Hamburger menu	On mobile, a ☰ button opens the nav
+✅ Add to Cart visible	Buttons show on the card face, not hidden behind hover
+✅ Real PayPal link	paypal.me/bloomandco used — not a placeholder
+✅ Real email	hello@bloomandco.com in contact section — not .example
+✅ Instagram linked	instagram.com/bloomandco — not href="#"
+✅ TikTok correct	Real TikTok SVG icon, not music-2
+✅ Copyright year	Shows 2026 via new Date().getFullYear()
+✅ Candle images	Pexels photos of candles — not random shelves
+✅ Fade-in works	Elements start invisible and fade in on scroll
+✅ Cart total	$0.00 format using .toFixed(2)
+✅ Fresh cart	Cart starts empty, no old items from previous tests
+Then test one patch (no "build it" needed):
+
+change the accent color to warm amber
+
+That single patch should apply immediately with no chat-back.
+
+now give me a chat back tosee if we want to fix things what happens thansk
+
+Jul 12, 2026, 11:58 PM
+
+1 message & 1 action
+
+Published your app
+19 minutes ago
+no you did not understand me first prot you gave is the build now ask it to add more things to see if there is a fucntion and it works pelase again Here's your single test prompt — paste it directly into Build Mode, no "build it" needed:
+
+Build me a mobile-first online shop called "Bloom & Co" selling handmade candles.
+Products:
+
+Lavender Dream Candle — $24
+Sandalwood Noir Candle — $32
+Rose Petal Candle — $28
+Vanilla Sky Candle — $26
+Include a hero, product grid with Add to Cart, working cart drawer, PayPal checkout at paypal.me/bloomandco, contact section with email hello@bloomandco.com, Instagram at instagram.com/bloomandco, TikTok at tiktok.com/@bloomandco, smooth fade-in animations, fully mobile responsive with hamburger menu, and sticky navbar with logo and cart icon.Here's your single test prompt — paste it directly into Build Mode, no "build it" needed:
+Build me a mobile-first online shop called "Bloom & Co" selling handmade candles.
+Products:
+
+Lavender Dream Candle — $24
+Sandalwood Noir Candle — $32
+Rose Petal Candle — $28
+Vanilla Sky Candle — $26
+Include a hero, product grid with Add to Cart, working cart drawer, PayPal checkout at paypal.me/bloomandco, contact section with email hello@bloomandco.com, Instagram at instagram.com/bloomandco, TikTok at tiktok.com/@bloomandco, smooth fade-in animations, fully mobile responsive with hamburger menu, and sticky navbar with logo and cart icon.
+Jul 13, 2026, 12:00 AM
+
+Show less
+
+Planning patch test prompts generation
+Got it — you've built Bloom & Co, now here are the patch prompts to test one by one on that same site:
+
+Paste each one separately, after the build loads:
+
+1. Add a new product:
+
+add a new product called Midnight Oud Candle for $38
+
+2. Change the color:
+
+change the accent color to burnt orange
+
+3. Change a price:
+
+change the Lavender Dream Candle price to $29
+
+4. Add a discount badge:
+
+add a SALE badge on the Sandalwood Noir Candle showing 20% off
+
+5. Change the font:
+
+change the heading font to Cormorant Garamond
+
+6. Update the email:
+
+add my contact email orders@bloomandco.com
+
+7. Add a WhatsApp button:
+
+add a WhatsApp contact button linking to wa.me/441234567890
+
+8. Update PayPal:
+
+make the checkout button link to paypal.me/bloomco
+
+9. Add a testimonials section:
+
+add a testimonials section with 3 customer reviews
+
+10. Fix mobile:
+
+make the product grid show 1 column on mobile
+
+What each one tests:
+
+Prompt	Tests
+1	Product added without rebuild
+2	Accent color patched throughout
+3	Price text replaced correctly
+4	Sale badge added to one card only
+5	Font swapped, nothing else changes
+6	Email replaced, not a newsletter
+7	New button added in right place
+8	PayPal href updated on checkout button
+9	New section added matching the design
+10	Mobile CSS grid-template-columns: 1fr

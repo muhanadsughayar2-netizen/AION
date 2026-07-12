@@ -8160,95 +8160,131 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   ⚠️  This profile builds a fully-functional static shop — not a fake demo.
 
   ══════════════════════════════════════════════════════════════
+  PRODUCT IMAGE RULE — THE MOST IMPORTANT RULE IN THIS PROFILE
+  ══════════════════════════════════════════════════════════════
+  Every product image MUST show the actual product being sold.
+  For a CANDLE shop: every product photo must show a candle or wax. Not lemons. Not fruit. Not plants. Not armchairs. Not abstract textures. Not food. CANDLES ONLY.
+  For a JEWELLERY shop: rings, necklaces, bracelets. Not random lifestyle photos.
+  For a CLOTHING shop: the actual garment being worn or laid flat.
+  For a FOOD shop: the actual dish or ingredient.
+
+  CANDLE SHOP — USE THESE VERIFIED PEXELS PHOTO IDs (confirmed candle images):
+    Product 1: https://images.pexels.com/photos/3270223/pexels-photo-3270223.jpeg  (white pillar candle)
+    Product 2: https://images.pexels.com/photos/4207892/pexels-photo-4207892.jpeg  (luxury jar candle)
+    Product 3: https://images.pexels.com/photos/3270224/pexels-photo-3270224.jpeg  (group of candles)
+    Product 4: https://images.pexels.com/photos/9898025/pexels-photo-9898025.jpeg  (scented candle lit)
+    Product 5: https://images.pexels.com/photos/6707628/pexels-photo-6707628.jpeg  (dark aesthetic candle)
+    Hero:      https://images.pexels.com/photos/3270222/pexels-photo-3270222.jpeg  (candle lifestyle)
+    About:     https://images.pexels.com/photos/7330046/pexels-photo-7330046.jpeg  (candle making/pouring)
+  ALL Pexels URLs must include: ?auto=compress&cs=tinysrgb&w=800
+  If any image fails to load, the onerror gradient should use warm amber: linear-gradient(135deg,#D98A70,#8B4513)
+
+  JEWELLERY SHOP — verified Pexels IDs: 1457801, 2735970, 1458867, 1191531, 3812433
+  CLOTHING SHOP — verified Pexels IDs: 1536619, 2220316, 2220329, 3622608, 996329
+  FOOD SHOP — use photos matching the specific dish name.
+  ANY OTHER shop — pick Pexels photos by searching the product name. NEVER use citrus, fruit, plants, furniture, or abstract textures as product images.
+
+  ══════════════════════════════════════════════════════════════
   MANDATORY ARCHITECTURE — include every section below
   ══════════════════════════════════════════════════════════════
 
-  1. HEADER / NAVBAR — MANDATORY requirements:
-     • Add <link rel="icon" type="image/png" href=""> in <head> (leave href empty — user will upload their icon).
-     • Include a logo <img> element: <img id="site-logo" src="" alt="logo" style="height:36px;width:auto;object-fit:contain;display:none;"> — hide it when src is empty; show it when a logo image is uploaded.
-     • Site name text next to the logo img.
-     • Navigation links: Products · About · Contact
-     • Floating cart icon (top-right) with item-count badge.
-     • MOBILE HAMBURGER MENU — mandatory:
-       A ☰ button visible on mobile (hidden on desktop), toggles a mobile nav drawer. Every nav link must be reachable on phone.
+  1. HEAD — MANDATORY first three lines inside <head>:
+     <link rel="icon" type="image/png" href="">
+     <link rel="preconnect" href="https://fonts.googleapis.com">
+     (the href="" favicon is intentionally empty — user uploads their icon via patch)
 
-  2. HERO — bold headline + tagline + primary CTA button.
-     • Use Pexels photos that MATCH the product category. For jewellery: search terms like "jewellery", "rings", "necklace", "handmade jewelry". For clothing: "fashion", "outfit". For food: matching cuisine. NEVER use random interior/shelf photos.
+  2. HEADER / NAVBAR — MANDATORY structure:
+     <nav> contains:
+       LEFT: <img id="site-logo" src="" alt="logo" style="height:36px;width:auto;object-fit:contain;display:none"> then <span class="brand-name">[Brand Name]</span>
+       RIGHT: cart button with badge + hamburger button (visible only on mobile)
+     MOBILE NAV DRAWER: hidden by default, slides in when hamburger clicked. Contains all nav links.
+     Cart badge: <span id="cart-count">0</span> — updated by JS every time cart changes.
 
-  3. PRODUCT GRID — 3–6 product cards in a responsive CSS grid (auto-fill, minmax(260px,1fr)).
-     Each card MUST have:
-       • Product image (Pexels photo relevant to the specific product)
-       • Product name (bold, 1.1rem)
-       • Short description (2 lines, relevant to the product)
-       • Price displayed prominently using .toFixed(2) format: $29.99
-       • "🛒 Add to Cart" button — ALWAYS VISIBLE, not hover-only. Mobile users cannot hover.
-       • "Buy Now" button that opens payment link directly.
+  3. HERO — product-relevant background image (see image rules above).
+     Headline + tagline + TWO buttons: "Shop Now" (→ #products) and "Our Story" (→ #about).
 
-  4. CART SYSTEM — use appState pattern (NOT a bare let cart = []):
-     • appState.cart = [] tracks { id, name, price, qty }
-     • saveAndRender() writes to localStorage key specific to this shop (e.g. "shop_cart_[brandname]")
-     • ON FIRST LOAD: clear any stale cart — start fresh every page load: localStorage.removeItem('shop_cart_[brandname]')
-     • Cart drawer: lists items, quantity controls (+ / −), shows subtotal with .toFixed(2)
-     • "Checkout" button opens PayPal/Stripe link in new tab
-     • Empty cart state: centered cart icon + "Your cart is empty" + "Start Shopping" button.
+  4. PRODUCT GRID — CSS grid, auto-fill, minmax(260px,1fr). Each card has:
+     ┌─────────────────────────────────────────────┐
+     │  [Product image — always shows actual item] │
+     │  Product Name          $29.00               │
+     │  Short description (2 lines max)            │
+     │  [🛒 Add to Cart]  [Buy Now →]              │  ← BOTH buttons ALWAYS VISIBLE
+     └─────────────────────────────────────────────┘
+     "Add to Cart" → onclick="window.addToCart(id, name, price)"
+     "Buy Now" → opens PayPal/Stripe link directly in new tab
+     BOTH buttons are ALWAYS VISIBLE — never hidden behind hover.
+     WRONG: class="opacity-0 group-hover:opacity-100"  ← FORBIDDEN
+     RIGHT:  class="w-full py-3 bg-accent text-white rounded"  ← always visible
 
-  5. PAYMENT BUTTONS:
-     • If the user provided a real PayPal.me URL — use it EXACTLY on every checkout button. Format: href="https://paypal.me/USERNAME/AMOUNT" where AMOUNT is the cart total (update dynamically via JS).
-     • If the user provided a real Stripe link — use it EXACTLY on every Buy Now button.
-     • If no payment link provided: href="https://paypal.me/YOURUSERNAME" with HTML comment: <!-- Replace YOURUSERNAME with your PayPal username -->
-     • NEVER use paypal.me/YOURUSERNAME/0 — amount must be dynamic or left out.
+  5. CART SYSTEM — appState pattern:
+     const appState = { cart: [] };
+     localStorage.removeItem('cart_[brandname]');  // clear stale cart on EVERY page load
+     window.addToCart = function(id, name, price) { ... appState.cart ... renderCart(); updateBadge(); };
+     window.toggleCart = function() { ... show/hide drawer ... };
+     window.removeItem = function(id) { ... };
+     window.changeQty = function(id, delta) { ... };
+     window.checkout = function() {
+       const total = appState.cart.reduce((s,i) => s + i.price*i.qty, 0);
+       window.open('https://paypal.me/USERNAME/' + total.toFixed(2), '_blank');
+     };
+     Cart drawer shows: item list + subtotal ($X.XX) + "Checkout" button + "Continue Shopping" link.
+     Empty state: "🛒 Your cart is empty" centred in drawer.
 
-  6. CONTACT SECTION — a real contact block, NOT a newsletter form:
-     • Heading: "Get in Touch" or "Contact Us"
-     • Show: 📧 [email placeholder] · 📱 [phone placeholder] · 📍 [location placeholder]
-     • Optional: a simple contact form (name, email, message) with a mailto: action.
-     • If the user provided a real email address — use it. Otherwise use: hello@[brandname].com as the placeholder.
+  6. CONTACT SECTION — real contact info, NOT a newsletter or email subscription form:
+     Heading: "Get in Touch"
+     Three info blocks: 📧 Email · 📱 Phone · 📍 Location
+     Use the real email/phone if provided. Otherwise: hello@[brandname].com / +1 (555) 000-0000 / [City, Country]
+     Optional simple mailto: form below the info blocks.
+     NEVER show a "Subscribe to our newsletter" input here.
 
-  7. TRUST SECTION — "Safe & Secure Checkout" row: 🔒 SSL Secured · 💳 PayPal / Visa / Mastercard · 🔄 Easy Returns
+  7. TRUST ROW — one line: 🔒 SSL Secured · 💳 PayPal / Visa / Mastercard · 🔄 Easy Returns · ⭐ 5-Star Reviews
 
-  8. FOOTER — social icons, links, copyright via JS: <span id="yr"></span> + script: document.getElementById('yr').textContent = new Date().getFullYear();
-     • Instagram: <a href="https://instagram.com/[brandname]"> — use a real Instagram URL pattern.
-     • TikTok: Since Lucide has no TikTok icon, use this inline SVG:
-       <a href="https://tiktok.com/@[brandname]"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.17 8.17 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg></a>
-     • Copyright: &copy; <span id="yr"></span> [Brand Name]. All rights reserved.
+  8. FOOTER:
+     Social row: Instagram <a href="https://instagram.com/[brandname]"><i data-lucide="instagram"></i></a>
+                 TikTok  <a href="https://tiktok.com/@[brandname]">[TikTok SVG below]</a>
+     TikTok SVG: <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.17 8.17 0 0 0 4.78 1.52V6.76a4.85 4.85 0 0 1-1.01-.07z"/></svg>
+     Copyright: <script>document.write('© ' + new Date().getFullYear() + ' [Brand]. All rights reserved.');</script>
 
-  REVEAL ANIMATION — mandatory correct pattern:
-  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.7s ease, transform 0.7s ease; }
+  REVEAL ANIMATION — CORRECT pattern (copy exactly):
+  /* CSS */
+  .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
   .reveal.visible { opacity: 1; transform: translateY(0); }
-  IntersectionObserver adds class="visible" when element enters viewport. NO setTimeout fallback that overrides this.
+  /* JS inside IIFE */
+  const io = new IntersectionObserver(function(entries) {
+    entries.forEach(function(e) { if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); } });
+  }, { threshold: 0.1 });
+  document.querySelectorAll('.reveal').forEach(function(el) { io.observe(el); });
+  NEVER write: .reveal { opacity: 1; }  ← elements start visible, animation never runs.
+
+  PROFILE S JAVASCRIPT — IIFE + WINDOW FUNCTIONS (mandatory):
+  ALL script logic inside ONE IIFE: (function(){ ... })();
+  Every onclick function on window: window.toggleCart = function() { ... };
+  NEVER: function toggleCart() { ... }  ← breaks on patch updates.
 
   PROFILE S VISUAL STYLE:
-  Clean, modern, light background (#FAFAFA), product cards with subtle shadow + hover lift.
-  Accent: brand color from user's request or default #6366F1 (indigo).
-  "Buy Now" button: solid accent color, white text, 44px tall, border-radius:8px.
-  Cart badge: red pill (background:#EF4444) over cart icon.
+  Light background (#FAFAFA), product cards: white, 1px border, 8px radius, shadow-sm, hover lift.
+  Accent: brand color from request or default #D97706 (warm amber).
+  Add to Cart: full-width, solid accent, white text, 44px height.
+  Buy Now: full-width, outline/ghost style, same accent color, 44px height.
+  Cart badge: red circle (#EF4444) top-right of cart icon.
 
-  PROFILE S JAVASCRIPT — IIFE + WINDOW FUNCTIONS (mandatory, no exceptions):
-  ALL script logic must be inside ONE IIFE: (function(){ ... })();
-  Every cart function called by onclick MUST be window-attached inside the IIFE:
-    window.toggleCart  = function() { ... };
-    window.addToCart   = function(id, name, price) { ... };
-    window.removeItem  = function(id) { ... };
-    window.changeQty   = function(id, delta) { ... };
-    window.checkout    = function() { ... };
-    window.toggleMenu  = function() { ... };
-  NEVER declare: function toggleCart() { ... }  ← breaks on every patch.
-  ALWAYS declare: window.toggleCart = function() { ... }  ← only safe pattern.
-
-  PROFILE S BANNED:
-  ✗ Add to Cart button hidden behind hover — always visible on the card face
-  ✗ Missing prices on any product card
-  ✗ "Click here" or "Learn more" — use action + price: "Buy Now — $29"
-  ✗ No payment method listed anywhere
-  ✗ Placeholder text like "Product description here" — write real copy
-  ✗ Server-side checkout — everything must work as a static HTML file
-  ✗ Newsletter form in place of a contact section
-  ✗ let cart = [] bare global — always use appState pattern
-  ✗ paypal.me/SOMEONE/0 — never hardcode amount as 0
-  ✗ TikTok shown as music-2 Lucide icon — use the SVG above
-  ✗ .reveal { opacity: 1 } — always start hidden
-  ✗ Copyright year hardcoded — always use new Date().getFullYear()
-  ✗ No mobile hamburger menu — required on every build
+  PROFILE S BANNED — ZERO TOLERANCE:
+  ✗ Product images that don't show the actual product (fruit for candles, chairs for candles, etc.)
+  ✗ Hero or About section images unrelated to the product category
+  ✗ Add to Cart hidden behind hover: opacity-0 group-hover:opacity-100 — FORBIDDEN
+  ✗ Only one button per product — need both Add to Cart AND Buy Now, both always visible
+  ✗ Cart badge hardcoded in HTML ("0") without JS updating it
+  ✗ let cart = [] bare global — use appState pattern
+  ✗ paypal.me/SOMEONE/0 — amount must be dynamic via JS total.toFixed(2)
+  ✗ .reveal { opacity: 1 } — always start at opacity: 0
+  ✗ @keyframes animation that conflicts with IntersectionObserver opacity:0 start
+  ✗ Newsletter / email subscription form in contact section
+  ✗ Copyright year hardcoded as any number — always use new Date().getFullYear()
+  ✗ No favicon <link rel="icon"> in head
+  ✗ No <img id="site-logo"> in navbar
+  ✗ No mobile hamburger menu
+  ✗ TikTok shown as Lucide music-2 icon — use the SVG path above
+  ✗ localStorage not cleared on load — always clear stale cart on every page load
 
   ══════════════════════════════════════════════════════════════
   PROFILE S-ADMIN — AMAZON-STYLE OWNER-MANAGED SHOP
