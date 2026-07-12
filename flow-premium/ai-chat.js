@@ -8768,6 +8768,84 @@ STRICT RULES:
 • YOUTUBE EMBEDS: When the user pastes any YouTube URL (youtube.com/watch?v=, youtu.be/, or youtube.com/embed/), ALWAYS embed it as a plain responsive iframe. NEVER build a custom video player, input box, or Upload & Play button. Extract the video ID, strip all tracking params (?si=, &feature=, etc.), and use this exact pattern: <div style="position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:12px;"><iframe src="https://www.youtube.com/embed/VIDEO_ID" style="position:absolute;top:0;left:0;width:100%;height:100%;border:0;" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>
 • UPLOADED VIDEO FILES: When the prompt contains __SNAP_VID_0__ (or __SNAP_VID_1__, __SNAP_VID_2__ etc.), the user has attached a real mp4/webm video file. Embed it using this EXACT pattern — it includes a 🔇/🔊 unmute button and a hover overlay to replace the video in the downloaded file: <div style="position:relative;border-radius:12px;overflow:hidden;aspect-ratio:16/9;"><video id="snapVid0" src="__SNAP_VID_0__" autoplay muted loop playsinline style="width:100%;height:100%;object-fit:cover;display:block;"></video><div onclick="document.getElementById('snapUpload0').click()" style="position:absolute;inset:0;background:rgba(0,0,0,0.55);opacity:0;transition:opacity .3s;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;" onmouseenter="this.style.opacity='1'" onmouseleave="this.style.opacity='0'"><div style="width:44px;height:44px;border-radius:50%;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);display:flex;align-items:center;justify-content:center;font-size:20px;">🔄</div><span style="color:#fff;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;">Replace video</span></div><button onclick="var v=document.getElementById('snapVid0');v.muted=!v.muted;this.textContent=v.muted?'🔇':'🔊';" style="position:absolute;bottom:10px;right:10px;background:rgba(0,0,0,0.6);border:1px solid rgba(255,255,255,0.3);border-radius:50%;width:36px;height:36px;cursor:pointer;font-size:16px;color:#fff;z-index:10;padding:0;line-height:1;">🔇</button><input type="file" id="snapUpload0" accept="video/*" style="display:none" onchange="(function(i,v){if(i.files[0]){var r=new FileReader();r.onload=function(e){document.getElementById(v).src=e.target.result;};r.readAsDataURL(i.files[0]);}})(this,'snapVid0')"></div> — adjust id/for numbering for VID_1, VID_2 etc. Do NOT ask for a URL or build a custom player.
 • UPLOADED AUDIO FILES: When the prompt contains __SNAP_AUD_0__ (or __SNAP_AUD_1__ etc.), the user has attached a real mp3/wav/ogg audio file. Embed it directly using an HTML5 audio tag — do NOT build a custom player or ask for a URL: <audio src="__SNAP_AUD_0__" controls style="width:100%;border-radius:8px;margin:12px 0;"></audio>. Place it in the section the user specified, or the most fitting section if not specified.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  PLAIN-ENGLISH COMMAND DICTIONARY
+  Understand these everyday instructions and act immediately.
+  Never ask for clarification — just do the closest right thing.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+FAVICON / TAB ICON:
+  "make this the favicon" / "set as favicon" / "use as tab icon" / "put image as favicon" / "image as favicon"
+  → Add/update <link rel="icon" type="image/png" href="__SNAP_IMG_0__"> in <head>. Also update navbar logo <img> src if one exists. Do NOT place the image in the page body.
+
+LOGO:
+  "change the logo" / "use this as logo" / "replace logo" / "update logo"
+  → Set navbar/header logo <img> src to __SNAP_IMG_0__ with style="height:36px;width:auto;object-fit:contain;display:block;". Also update <link rel="icon"> in <head> to match.
+
+BACKGROUND IMAGE:
+  "use this as background" / "set as background" / "background image"
+  → Set hero section: background-image:url('__SNAP_IMG_0__');background-size:cover;background-position:center; Add a semi-transparent overlay so text stays readable.
+  "change background color to X" / "make background X" → Update background-color on the relevant section.
+
+COLORS:
+  "change color to X" / "make it X color" / "use X as accent" → Replace the main accent/CTA color with the exact color named.
+  "make it darker" → Darken the main background ~20%, boost contrast.
+  "make it lighter" → Lighten the background, soften contrast.
+  "change text color to X" → Update the primary text color.
+
+FONTS:
+  "change font to X" / "use X font" → Add Google Fonts <link> for that font, update font-family on headings or body.
+  "make text bigger" / "increase font size" → Increase font-size ~20% on the specified element.
+  "make text smaller" → Decrease font-size ~20%.
+
+TEXT / CONTENT:
+  "change X to Y" / "replace X with Y" → Find that exact text and replace it. Keep all surrounding tags/styles.
+  "add my email [address]" → Replace any placeholder email with the address provided.
+  "add my phone [number]" → Replace placeholder phone with the number provided.
+  "add my address [address]" → Replace placeholder address text with the address provided.
+  "change [section] text to [new copy]" → Find that section and update the copy inside it.
+
+SOCIAL LINKS:
+  "add my Instagram [handle/url]" / "link Instagram to [url]" → Find Instagram link and set href to https://instagram.com/[handle] or the URL. If no social section exists, add one in the footer with Lucide icons.
+  Same pattern for Facebook, Twitter/X, TikTok, LinkedIn, YouTube, Pinterest, WhatsApp.
+
+BUTTONS / CTAs:
+  "change button text to X" → Update text inside the <a> or <button>.
+  "change button color to X" → Update background-color on that button.
+  "button should go to [url]" / "make button link to [url]" → Set the button href to the URL.
+  "add a button that says X" → Add a styled button matching the existing design, with text X.
+  "remove the button" → Delete that button element.
+
+SECTIONS:
+  "add a [name] section" → Add a new section matching existing design (same colors, fonts, radius).
+  "remove the [name] section" → Delete that entire <section> block.
+  "move [section] up/down" → Reorder sections in the HTML.
+  "hide the [section]" → Add display:none to that section.
+
+LAYOUT / SPACING:
+  "center [element]" → Add text-align:center or margin:0 auto as appropriate.
+  "add more space/padding" → Increase padding on the specified area.
+  "reduce spacing" / "tighten it up" → Reduce padding/margin on the specified area.
+  "make it two columns" / "add a grid" → Apply display:grid;grid-template-columns:1fr 1fr;gap:40px;
+  "make hero taller" / "make it full screen" → Set min-height:100vh on the hero section.
+
+ANIMATIONS:
+  "add animation" / "add fade in" / "make it animate" → Add CSS @keyframes fadeIn and apply to hero or specified element.
+  "remove animation" → Remove transition/animation CSS from the specified element.
+
+MOBILE / RESPONSIVE:
+  "make it mobile friendly" / "fix mobile layout" / "fix on phone" / "make it responsive"
+  → Add @media (max-width:768px): single-column grid, reduced font-sizes, full-width buttons.
+
+SHOP / PAYMENT (text edits, no image attached):
+  "change price to $X" / "set price to X" → Find the price text and replace with the new amount.
+  "add PayPal button" / "link PayPal to [url]" → Add/update a PayPal button href to the paypal.me URL.
+  "set checkout to [url]" / "add Stripe link [url]" → Add/update Buy Now button href to the Stripe URL.
+  "add product [name] for $[price]" → Add a new product card matching the existing shop design.
+
+GENERAL RULE: If the instruction doesn't match any command above, make the smallest targeted change that achieves what the user described. Never redesign anything that wasn't asked about.
+
 • Output: ONLY a single \`\`\`html code block. Zero prose before or after.`;
 
 const L_UPDATE_PROMPT = `You are surgically updating one section of a website.
@@ -10572,17 +10650,39 @@ async function handleSend() {
         }
       } else {
         // PATCH EDIT with user images: follow user's explicit placement instructions
-        prompt += `\n\nIMAGE EMBED INSTRUCTION: The user attached ${imageParts.length} image(s). ` +
-          `Use these exact placeholder strings as the src values: ${placeholderList}. ` +
-          ((_dimHints) ? `IMAGE DIMENSIONS: ${_dimHints}. ` : '') +
-          `SIZING RULES: ${_perImgCss}. ` +
-          `NEVER use height:100% on an image or its container unless the container has an explicit fixed height — use height:auto to preserve the natural aspect ratio. ` +
-          `CRITICAL RULES: ` +
-          `(1) If the user said "replace", "change", "swap", or "update" an image — find that EXACT existing <img> tag and change ONLY its src attribute to the placeholder. Do NOT add a new img tag. ` +
-          `(2) If the user said "add" or gave no specific target — place the image prominently above the fold: replace the hero image, or insert it as the first visual element after the headline. NEVER bury it at the bottom. ` +
-          `(3) NEVER output any actual base64 data — only use the placeholder strings. ` +
-          `(4) Keep all other design and content completely unchanged. ` +
-          `(5) NEVER remove or replace any existing __SNAP_VID_N__, __SNAP_AUD_N__, or other __SNAP_*__ placeholder strings — they are live media references managed by the app.`;
+        const _patchIsFavicon = /\b(favicon|tab[\s-]?icon|browser[\s-]?icon|site[\s-]?icon|page[\s-]?icon)\b/i.test(prompt);
+        const _patchIsLogo    = /\b(logo|navbar[\s-]?logo|brand[\s-]?logo|header[\s-]?logo|nav[\s-]?logo)\b/i.test(prompt);
+        const _patchIsIconOrLogo = _isIconBuild || _patchIsFavicon || _patchIsLogo;
+
+        if (_patchIsFavicon) {
+          prompt += `\n\nFAVICON PATCH INSTRUCTION: The user wants to set the attached image as the browser tab favicon. ` +
+            `Use placeholder: ${placeholderList}. ` +
+            `(1) Find the existing <link rel="icon"> in <head> (or add one if missing) and set href="${examplePlaceholder}". ` +
+            `(2) Also update the navbar/header logo <img> src to "${examplePlaceholder}" if one exists. ` +
+            `(3) Do NOT place this image anywhere else in the page body. ` +
+            `(4) NEVER output base64 data — only the placeholder string. ` +
+            `(5) Keep every other part of the site unchanged.`;
+        } else if (_patchIsLogo) {
+          prompt += `\n\nLOGO PATCH INSTRUCTION: The user wants to replace the site logo with the attached image. ` +
+            `Use placeholder: ${placeholderList}. ` +
+            `(1) Find the navbar/header logo element and set its src to "${examplePlaceholder}" with style="height:36px;width:auto;object-fit:contain;display:block;". ` +
+            `(2) Also update <link rel="icon" href="${examplePlaceholder}"> in <head> so the favicon matches. ` +
+            `(3) Do NOT place this image as a hero or background. ` +
+            `(4) NEVER output base64 data — only the placeholder string. ` +
+            `(5) Keep every other part of the site unchanged.`;
+        } else {
+          prompt += `\n\nIMAGE EMBED INSTRUCTION: The user attached ${imageParts.length} image(s). ` +
+            `Use these exact placeholder strings as the src values: ${placeholderList}. ` +
+            ((_dimHints) ? `IMAGE DIMENSIONS: ${_dimHints}. ` : '') +
+            `SIZING RULES: ${_perImgCss}. ` +
+            `NEVER use height:100% on an image or its container unless the container has an explicit fixed height — use height:auto to preserve the natural aspect ratio. ` +
+            `CRITICAL RULES: ` +
+            `(1) If the user said "replace", "change", "swap", or "update" an image — find that EXACT existing <img> tag and change ONLY its src attribute to the placeholder. Do NOT add a new img tag. ` +
+            `(2) If the user said "add" or gave no specific target — place the image prominently above the fold: replace the hero image, or insert it as the first visual element after the headline. NEVER bury it at the bottom. ` +
+            `(3) NEVER output any actual base64 data — only use the placeholder strings. ` +
+            `(4) Keep all other design and content completely unchanged. ` +
+            `(5) NEVER remove or replace any existing __SNAP_VID_N__, __SNAP_AUD_N__, or other __SNAP_*__ placeholder strings — they are live media references managed by the app.`;
+        }
       }
     }
 
