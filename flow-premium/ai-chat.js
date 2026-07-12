@@ -8185,6 +8185,16 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   CLOTHING SHOP — verified Pexels IDs: 1536619, 2220316, 2220329, 3622608, 996329
   FOOD SHOP — use photos matching the specific dish name.
 
+  SPACE / AEROSPACE / ROCKET COMPANY SITE — VISUALLY-VERIFIED PEXELS IDs (each confirmed by opening the actual Pexels page):
+    Hero / stars background:  1169754  ✅ Milky Way galaxy, thousands of stars, deep blue/dark sky — STUNNING hero
+    Rocket launch:            2159     ✅ Space shuttle launching with massive fire & smoke trail — dramatic
+    Spacecraft in orbit:      586063   ✅ SpaceX Dragon capsule orbiting above Earth's surface — real space photo (uploaded by SpaceX)
+    Earth from moon:          87009    ✅ Earth rising over the lunar surface — iconic NASA Earthrise style
+    Astronaut on moon:        39896    ✅ Astronaut in spacesuit on moon surface with American flag and lunar module
+  ⚠️ DO NOT use Pexels for "team member" cards on a space/tech site — use CSS gradient avatar cards with initials instead
+  ⚠️ Colour palette for space sites: background #000000 or #05050f, accent white #ffffff, secondary #4a9eff (electric blue) or #e8340d (rocket red)
+  ⚠️ ALL Pexels URLs must end with: ?auto=compress&cs=tinysrgb&w=1400 for hero, w=800 for cards
+
   GYM / FITNESS SITE — USE THESE VISUALLY-VERIFIED PEXELS PHOTO IDs (each one confirmed by visual inspection):
     Hero background:        1552242  ✅ real gym interior with weights and equipment racks
     Trainer — male barbell: 1431282  ✅ B&W muscular man holding barbell (intense, dark background)
