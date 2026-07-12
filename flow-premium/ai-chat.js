@@ -8185,20 +8185,23 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   CLOTHING SHOP — verified Pexels IDs: 1536619, 2220316, 2220329, 3622608, 996329
   FOOD SHOP — use photos matching the specific dish name.
 
-  GYM / FITNESS SITE — USE THESE VERIFIED PEXELS PHOTO IDs (confirmed gym/fitness images):
-    Hero (gym interior): https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg  ✅ gym weights/interior
-    Hero (alt):          https://images.pexels.com/photos/4115155/pexels-photo-4115155.jpeg  ✅ person working out
-    Trainer (male):      https://images.pexels.com/photos/1431282/pexels-photo-1431282.jpeg  ✅ male fitness trainer
-    Trainer (female):    https://images.pexels.com/photos/3076509/pexels-photo-3076509.jpeg  ✅ female trainer
-    Trainer (boxer):     https://images.pexels.com/photos/2468339/pexels-photo-2468339.jpeg  ✅ boxing trainer
-    Trainer (yoga):      https://images.pexels.com/photos/4162489/pexels-photo-4162489.jpeg  ✅ yoga instructor
-    Trainer (coach):     https://images.pexels.com/photos/1552106/pexels-photo-1552106.jpeg  ✅ fitness coach
-    Trainer (strength):  https://images.pexels.com/photos/3289711/pexels-photo-3289711.jpeg  ✅ strength trainer
-    Action shot:         https://images.pexels.com/photos/416778/pexels-photo-416778.jpeg    ✅ person exercising
-    Equipment:           https://images.pexels.com/photos/4944970/pexels-photo-4944970.jpeg  ✅ dumbbells/weights
-  ⚠️ CRITICAL FOR GYM/FITNESS SITES: NEVER use a solid green (#00FF88) background for entire sections.
-     Use green ONLY as: text colour, button colour, border, icon, small accent. Section backgrounds must be #080808 or #121212.
-  ⚠️ ALL Pexels URLs must include: ?auto=compress&cs=tinysrgb&w=800
+  GYM / FITNESS SITE — USE THESE VISUALLY-VERIFIED PEXELS PHOTO IDs (each one confirmed by visual inspection):
+    Hero background:        1552242  ✅ real gym interior with weights and equipment racks
+    Trainer — male barbell: 1431282  ✅ B&W muscular man holding barbell (intense, dark background)
+    Trainer — female yoga:  3076509  ✅ woman stretching on mat, orange leggings, warm light
+    Trainer — male dumbbell:3289711  ✅ bearded man curling dumbbell, gym background
+    Trainer — male pullup:  4162489  ✅ B&W man doing pull-ups on bar in gym
+    Trainer — male squat:   1552106  ✅ shirtless man barbell squat in dark gym
+    Trainer — rope climb:   2468339  ✅ man climbing rope in CrossFit gym (dramatic)
+    Action — female abs:    416778   ✅ blonde woman doing crunches on blue mat, studio
+    Action — cardio:        4944970  ✅ woman's legs running on treadmill, gym background
+  ⚠️ CRITICAL — SECTION BACKGROUNDS: NEVER use a solid green (#00FF88) background for entire sections.
+     Green is ONLY for: text colour, button fill, border colour, icon, small accent chip. Section BG must be #080808 or #121212.
+  ⚠️ ALL Pexels URLs must end with: ?auto=compress&cs=tinysrgb&w=800
+  ⛔ NEVER USE these IDs on gym sites — visually confirmed WRONG:
+     3822860 = a pink rose on a book (NOT a yoga mat!)
+     4397840 = lifestyle flatlay with "WAKE UP & WORKOUT" text sign (has visible text in image)
+     4397841 = wrong content, do not use
 
   CAR DEALERSHIP / AUTO SITE — USE THESE VERIFIED PEXELS PHOTO IDs (confirmed car images, tested and loading):
     Car 1 slot: https://images.pexels.com/photos/112460/pexels-photo-112460.jpeg   ✅ silver sports car (front)
@@ -8211,7 +8214,17 @@ PROFILE S — SHOP / PRODUCT STORE / E-COMMERCE
   ⛔ NEVER USE these IDs for a car site — they show wrong content: 10065134 (sunset), 7330046, 5765418
   onerror fallback gradient for cars: linear-gradient(135deg,#1a1a2e,#16213e)
 
-  ANY OTHER shop — pick Pexels photos by searching the product name. NEVER use citrus, fruit, plants, furniture, scrabble tiles, or abstract textures as product images.
+  ⛔ PRODUCT SHOP CARDS — CRITICAL RULE (applies to ALL shop/product card sections on ANY type of site):
+  Pexels is a LIFESTYLE photography site. It has NO clean product shots. If you use a random Pexels ID for a
+  "Resistance Bands" or "Yoga Mat" product, you will get a random lifestyle photo or (worse) a pink rose.
+  INSTEAD, for every product card image, generate a styled CSS gradient placeholder like this:
+    <div style="width:100%;aspect-ratio:1;border-radius:12px;background:linear-gradient(135deg,#1a1a2e,#16213e);
+         display:flex;align-items:center;justify-content:center;font-size:48px;">🏋️</div>
+  Pick the emoji to match the product: 🏋️ weights, 🧘 yoga, 🥊 boxing, 👟 shoes, 💊 supplements, 🩱 clothing etc.
+  The gradient + emoji looks clean, professional, and never shows wrong content.
+  ONLY exception: if the user's prompt explicitly provides a Pexels URL for a specific product, use that URL.
+
+  ANY OTHER lifestyle/background image — pick Pexels photos matching the site industry. NEVER use citrus, fruit, plants, furniture, scrabble tiles, or abstract textures as background or about-section images.
 
   ABOUT SECTION IMAGES (non-shop, non-candle, non-car): For restaurant/cafe about: 1640777. For beauty/spa: 3997991. For tech/agency: 3861958. For fitness: 416778. For generic professional: 3182812. NEVER use scrabble tiles, Scrabble letters, word blocks, or letter cubes. NEVER use unrelated lifestyle images for about sections.
 
