@@ -4,12 +4,13 @@
    MV3 compliant: no inline handlers */
 'use strict';
 
-// ── Models ────────────────────────────────────────────────────────────────────
+// ── Models — mirror MODELS constant from ai-chat.js ──────────────────────────
 const M = {
-  chat:   'gemini-2.5-flash',
-  tts:    'gemini-2.5-flash-preview-tts',
-  imgGen: 'gemini-2.0-flash-preview-image-generation',
-  veo:    'veo-3.1-generate-preview',
+  chat:       'gemini-3-flash-preview',
+  tts:        'gemini-2.5-flash-preview-tts',
+  ttsFallback:'gemini-2.5-pro-preview-tts',
+  imgChain:  ['gemini-3.1-flash-image','gemini-2.5-flash-image','gemini-3-pro-image-preview'],
+  veo:        'veo-3.1-generate-preview',
 };
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
 const url  = (model, method = 'generateContent') =>
@@ -208,64 +209,63 @@ async function callConversational(userMsg) {
   const historyText = chatHistory.slice(-6)
     .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join('\n');
 
-  const systemInstruction = `You are SnapToAI Study — a powerful AI learning assistant with access to ALL these capabilities. Understand the user's intent and respond with the best action.
-
-CAPABILITIES:
-- "flashcards" → create flip cards to memorize content
-- "quiz" → multiple-choice questions with answers and explanations
-- "broadcast" → 3-host podcast/talk show script (ZEPHYR=host, KORE=expert, FENRIR=energetic commentator)
-- "explain" → clear explanation with optional language and voice
-- "tts" → speak text aloud using a Gemini AI voice
-- "video" → generate a tutorial video using Veo AI
-- "build" → create a full website, presentation, or game
-- "image" → generate an AI illustration of the topic
-- "none" → just have a friendly conversation
-
-INTENT DETECTION:
-- "flashcards", "flash cards", "cards", "memorize" → action: "flashcards"
-- "quiz", "test me", "questions" → action: "quiz"
-- "broadcast", "podcast", "talk show", "radio", "episode" → action: "broadcast"
-- "explain", "teach me", "tell me about" → action: "explain"
-- "read aloud", "speak", "voice", "listen", "audio" → action: "tts"
-- "video", "tutorial video", "make a video" → action: "video"
-- "build", "website", "site", "presentation", "game" → action: "build"
-- "illustrate", "draw", "generate image", "picture" → action: "image"
+  const systemInstruction = `You are AI Tutor — an unlimited AI learning assistant. Your job is to understand what the user wants and create it, no matter how much or how little. There are NO limits on quantity, length, or language.
 
 RECENT CONVERSATION:
 ${historyText}${fileSection}
 
-RESPONSE FORMAT — always return valid JSON, no markdown fences:
+ACTIONS — pick the one that best matches what the user is asking for:
+- "flashcards" → flip cards to memorize content. Create EXACTLY as many as requested. If the user says 100, make 100. If they say 5, make 5.
+- "quiz" → multiple-choice questions. Create EXACTLY as many as the user asks. No limit.
+- "broadcast" → 3-host podcast/talk show. ZEPHYR=warm host, KORE=expert, FENRIR=energetic. Scale to the requested duration.
+- "explain" → thorough explanation in ANY language the user requests (Arabic, French, Spanish, Hindi, etc). Write as much or as little as asked.
+- "tts" → speak text aloud with a Gemini AI voice. Use this when user says "read aloud", "speak", "listen", "voice".
+- "video" → generate a Veo AI tutorial video. Create a detailed cinematic prompt.
+- "image" → generate an AI illustration with Imagen.
+- "none" → conversational reply only (use when user is asking a question, not requesting content creation).
+
+INTENT SIGNALS:
+flashcards → "flashcards", "flash cards", "cards", "memorize", "study cards"
+quiz → "quiz", "test me", "questions", "multiple choice", "exam"
+broadcast → "broadcast", "podcast", "talk show", "radio show", "episode", "host"
+explain → "explain", "teach me", "what is", "describe", "in [language]", "tell me about"
+tts → "read", "speak", "voice", "listen", "audio", "read aloud", "say this"
+video → "video", "tutorial video", "make a video", "veo"
+image → "illustrate", "draw", "image", "picture", "generate", "visualize", "diagram"
+
+RESPONSE FORMAT — return ONLY valid JSON (no markdown fences, no extra text):
 {
-  "reply": "Short friendly message (1-2 sentences, MAX 40 words). Confirm what you're creating.",
-  "action": "none|flashcards|quiz|broadcast|explain|tts|video|build|image",
+  "reply": "Short friendly confirmation of what you are creating (1-2 sentences max).",
+  "action": "none|flashcards|quiz|broadcast|explain|tts|video|image",
   "payload": { ... }
 }
 
-PAYLOAD SCHEMAS:
-flashcards → { "topic":"...", "cards":[{"front":"term or question","back":"answer or definition"}] }
-  - Create as many cards as requested (default 10, max 100)
+PAYLOAD SCHEMAS — follow these exactly:
 
-quiz → { "topic":"...", "questions":[{"q":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answer":"A) ...","explanation":"..."}] }
-  - Default 10 questions, create as many as requested
+flashcards:
+{ "topic": "Topic name", "cards": [{ "front": "question or term", "back": "answer or definition" }] }
+→ Generate EXACTLY the number of cards requested. No default limit. Comprehensive coverage.
 
-broadcast → { "title":"...", "format":"talkshow", "lines":[{"speaker":"ZEPHYR|KORE|FENRIR","text":"..."}] }
-  - ZEPHYR: warm host, KORE: curious expert, FENRIR: energetic commentator
-  - 1 min = ~8 exchanges, 3 min = ~20 exchanges, 5 min = ~30 exchanges
-  - Default to 3 minutes unless user specifies
+quiz:
+{ "topic": "Topic name", "questions": [{ "q": "Question?", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "answer": "A) ...", "explanation": "Why this is correct." }] }
+→ Generate EXACTLY the number of questions requested. No limit.
 
-explain → { "language":"English", "title":"...", "text":"Full explanation (300-600 words)...", "voice":"Zephyr" }
-  - Use the language the user requests. Voice: Zephyr, Kore, Puck, Fenrir, Aoede, Charon
+broadcast:
+{ "title": "Episode title", "lines": [{ "speaker": "ZEPHYR|KORE|FENRIR", "text": "What they say" }] }
+→ 1 min ≈ 8 exchanges, 3 min ≈ 20, 5 min ≈ 30, 10 min ≈ 55. Scale to user's request.
 
-tts → { "text":"Text to speak aloud (keep under 300 words)...", "voice":"Zephyr" }
+explain:
+{ "language": "English|Arabic|French|Spanish|...", "title": "Topic", "text": "Full explanation — as long as the user requests. Write in the requested language throughout.", "voice": "Zephyr" }
+→ Use EXACTLY the language the user requests. Write the ENTIRE explanation in that language.
 
-video → { "title":"...", "prompt":"Detailed cinematic Veo video prompt for a tutorial video about this topic. Describe visuals, narration style, shots. Be specific and cinematic.", "durationSeconds": 8 }
+tts:
+{ "text": "The text to speak. Can be any length.", "voice": "Zephyr|Kore|Puck|Fenrir|Aoede|Charon" }
 
-build → { "type":"site|presentation|game", "title":"...", "buildPrompt":"Full build instruction for the AI — e.g. Build a beautiful landing page about [topic] with..." }
-  - type "site" → website
-  - type "presentation" → PowerPoint-style slides
-  - type "game" → browser game
+video:
+{ "title": "Video title", "prompt": "Detailed cinematic Veo prompt describing visuals, narration, camera angles, lighting. Be specific.", "durationSeconds": 8 }
 
-image → { "title":"...", "imagePrompt":"Detailed Imagen prompt — educational illustration of [topic]. Style: clean, modern, labeled diagram. Bright colors." }`;
+image:
+{ "title": "Image title", "imagePrompt": "Detailed Imagen prompt. Educational illustration of [topic]. Clean, labeled diagram style. Bright, modern colors." }`;
 
   const body = {
     system_instruction: { parts: [{ text: systemInstruction }] },
@@ -294,7 +294,6 @@ async function executeAction(action, payload, userMsg) {
     case 'explain':    renderExplain(payload); break;
     case 'tts':        await speakText(payload.text || userMsg, payload.voice || 'Zephyr'); break;
     case 'video':      await renderVideo(payload); break;
-    case 'build':      await renderBuild(payload); break;
     case 'image':      await renderImage(payload); break;
     default: break;
   }
@@ -486,9 +485,10 @@ async function speakText(text, voice = 'Zephyr') {
 
 async function speakGemini(text, voiceName = 'Zephyr') {
   if (!GEMINI_KEY) { speakFallback(text); return; }
+  for (const ttsModel of [M.tts, M.ttsFallback]) {
   try {
     const res = await fetch(
-      `${BASE}${M.tts}:generateContent?key=${GEMINI_KEY}`,
+      `${BASE}${ttsModel}:generateContent?key=${GEMINI_KEY}`,
       {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -502,7 +502,7 @@ async function speakGemini(text, voiceName = 'Zephyr') {
     );
     const d = await res.json();
     const part = d?.candidates?.[0]?.content?.parts?.[0]?.inline_data;
-    if (!part?.data) { speakFallback(text); return; }
+    if (!part?.data) throw new Error('no audio data');
     const pcm  = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
     const mime = (part.mime_type || '').toLowerCase();
     let blob;
@@ -513,11 +513,12 @@ async function speakGemini(text, voiceName = 'Zephyr') {
     }
     const audioURL = URL.createObjectURL(blob);
     const audio = new Audio(audioURL);
-    audio.onended = () => URL.revokeObjectURL(audioURL);
     await audio.play();
-    // Wait for it to finish before resolving (for broadcast sequential playback)
     await new Promise(resolve => { audio.onended = () => { URL.revokeObjectURL(audioURL); resolve(); }; });
-  } catch (e) { speakFallback(text); }
+    return; // success — exit the model loop
+  } catch (e) { /* try next model */ }
+  } // end model loop
+  speakFallback(text);
 }
 
 function speakFallback(text) {
@@ -612,65 +613,7 @@ async function renderVideo(p) {
   }
 }
 
-// ── Build (Site / Presentation / Game) ───────────────────────────────────────
-async function renderBuild(p) {
-  const card = makeContentCard(`🏗️ Building ${p.type || 'site'}: ${p.title || ''}`);
-  const body = card.querySelector('.content-card-body');
-  const statusEl = el('div','video-status'); statusEl.textContent = '⚙️ Gemini is generating your ' + (p.type || 'site') + '…';
-  body.appendChild(statusEl);
-  appendCard(card);
-
-  try {
-    // Use the build system prompt from ai-chat
-    const buildPromptMap = {
-      site:         'Build a beautiful, professional landing page / website',
-      presentation: 'Create a stunning PowerPoint-style HTML presentation with slide navigation',
-      game:         'Build a fun, playable browser game using HTML canvas',
-    };
-    const base = buildPromptMap[p.type] || buildPromptMap.site;
-    const fullPrompt = `${base} about: ${p.buildPrompt || p.title || 'the topic'}.
-
-CRITICAL RULES:
-- Return ONLY raw HTML (no markdown fences, no explanation)
-- Complete self-contained HTML page with all CSS inline
-- Beautiful, modern design with animations
-- No external CDN links except Google Fonts
-- Mobile responsive`;
-
-    const res = await fetch(url(M.chat)(GEMINI_KEY), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
-        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
-      })
-    });
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `API ${res.status}`); }
-    const d = await res.json();
-    const html = (d?.candidates?.[0]?.content?.parts?.[0]?.text || '')
-      .replace(/^```html\s*/,'').replace(/\s*```$/,'').trim();
-
-    statusEl.remove();
-    const blob = new Blob([html], { type: 'text/html' });
-    const blobUrl = URL.createObjectURL(blob);
-    const iframe = document.createElement('iframe');
-    iframe.src = blobUrl; iframe.className = 'build-result-frame';
-    body.appendChild(iframe);
-
-    // Download button
-    const dlBtn = el('button','bc-btn'); dlBtn.style.marginTop = '10px';
-    dlBtn.textContent = '⬇ Download HTML';
-    dlBtn.addEventListener('click', () => {
-      const a = document.createElement('a');
-      a.href = blobUrl; a.download = (p.title || 'page').replace(/\s+/g,'-').toLowerCase() + '.html';
-      a.click();
-    });
-    body.appendChild(dlBtn);
-  } catch (err) {
-    statusEl.textContent = '⚠ Build error: ' + err.message;
-  }
-}
-
-// ── Image generation ──────────────────────────────────────────────────────────
+// ── Image generation — tries model chain identical to ai-chat.js ──────────────
 async function renderImage(p) {
   const card = makeContentCard(`🖼️ ${p.title || 'Illustration'}`);
   const body = card.querySelector('.content-card-body');
@@ -678,26 +621,34 @@ async function renderImage(p) {
   body.appendChild(statusEl);
   appendCard(card);
 
-  try {
-    const res = await fetch(url(M.imgGen)(GEMINI_KEY), {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: p.imagePrompt || 'Educational illustration about: ' + p.title }] }],
-        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
-      })
-    });
-    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `API ${res.status}`); }
-    const d = await res.json();
-    const imgPart = d?.candidates?.[0]?.content?.parts?.find(pt => pt.inline_data?.mime_type?.startsWith('image/'));
-    if (!imgPart) throw new Error('No image returned');
-    statusEl.remove();
-    const imgEl = document.createElement('img');
-    imgEl.src = `data:${imgPart.inline_data.mime_type};base64,${imgPart.inline_data.data}`;
-    imgEl.className = 'gen-image';
-    body.appendChild(imgEl);
-  } catch (err) {
-    statusEl.textContent = '⚠ Image error: ' + err.message;
+  const prompt = p.imagePrompt || `Educational illustration: ${p.title}`;
+  let lastErr = null;
+
+  for (const model of M.imgChain) {
+    try {
+      statusEl.textContent = `🎨 Trying ${model}…`;
+      const res = await fetch(`${BASE}${model}:generateContent?key=${GEMINI_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+        })
+      });
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
+      const d = await res.json();
+      const imgPart = d?.candidates?.[0]?.content?.parts?.find(pt => pt.inline_data?.mime_type?.startsWith('image/'));
+      if (!imgPart?.data) throw new Error('No image in response');
+      statusEl.remove();
+      const imgEl = document.createElement('img');
+      imgEl.src = `data:${imgPart.inline_data.mime_type};base64,${imgPart.inline_data.data}`;
+      imgEl.className = 'gen-image'; imgEl.alt = p.title || '';
+      body.appendChild(imgEl);
+      return; // success
+    } catch (err) {
+      lastErr = err;
+    }
   }
+  statusEl.textContent = '⚠ Image error: ' + (lastErr?.message || 'All models failed');
 }
 
 // ── UI helpers ────────────────────────────────────────────────────────────────

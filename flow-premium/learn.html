@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SnapToAI Study</title>
+<title>AI Tutor</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -135,7 +135,7 @@ body.dragging #dropOverlay{display:flex}
 
 <div id="hdr">
   <img id="hdrLogo" src="icons/agent-avatar.png" alt="">
-  <span id="hdrTitle">📚 SnapToAI Study</span>
+  <span id="hdrTitle">🎓 AI Tutor</span>
   <span id="hdrCtx" title="Click to clear file">📄 <span id="ctxName"></span></span>
   <button id="fileDropBtn">📎 Add File</button>
   <span id="keyBadge">⚠ No Key</span>
@@ -144,16 +144,16 @@ body.dragging #dropOverlay{display:flex}
 
 <div id="chatArea">
   <div id="welcome">
-    <h2>What do you want to learn today?</h2>
-    <p>Just ask in plain English. Upload a file or type a topic — then tell me what to create.</p>
+    <h2>What do you want to create today?</h2>
+    <p>Just ask in plain English — no limits. Upload a file and ask anything, or start with a topic.</p>
     <div class="example-prompts">
-      <div class="example-chip" data-msg="Make 10 flashcards about photosynthesis">📚 10 flashcards on photosynthesis</div>
-      <div class="example-chip" data-msg="Quiz me with 15 questions on World War 2">❓ Quiz me on WW2</div>
-      <div class="example-chip" data-msg="Create a talk show about black holes with 3 hosts">🎙 Talk show on black holes</div>
+      <div class="example-chip" data-msg="Make 50 flashcards about photosynthesis">📚 50 flashcards on photosynthesis</div>
+      <div class="example-chip" data-msg="Quiz me with 30 questions on World War 2">❓ 30-question quiz on WW2</div>
+      <div class="example-chip" data-msg="Create a 5-minute talk show about black holes">🎙 Talk show on black holes</div>
       <div class="example-chip" data-msg="Make a tutorial video about the water cycle">🎬 Tutorial video on water cycle</div>
-      <div class="example-chip" data-msg="Explain quantum entanglement in simple terms in Spanish">🌍 Explain in Spanish</div>
-      <div class="example-chip" data-msg="Build a beautiful website about climate change">🌐 Build a website</div>
-      <div class="example-chip" data-msg="Read me a lesson on the French Revolution in Zephyr voice">🔊 Read me a lesson</div>
+      <div class="example-chip" data-msg="Explain quantum entanglement in Arabic">🌍 Explain in Arabic</div>
+      <div class="example-chip" data-msg="Explain this topic deeply in simple English">📖 Deep plain-English explanation</div>
+      <div class="example-chip" data-msg="Read me a full lesson in Zephyr's voice">🔊 Read me a full lesson</div>
       <div class="example-chip" data-msg="Generate an illustration of the solar system">🖼 Illustrate the solar system</div>
     </div>
     <div class="upload-hint" id="uploadHintBtn">
@@ -164,14 +164,14 @@ body.dragging #dropOverlay{display:flex}
 </div>
 
 <div id="chipsBar">
-  <span class="quick-chip" data-msg="Make 10 flashcards">📚 Flashcards</span>
-  <span class="quick-chip" data-msg="Quiz me with 10 questions">❓ Quiz</span>
-  <span class="quick-chip" data-msg="Create a 3-minute talk show broadcast">🎙 Broadcast</span>
+  <span class="quick-chip" data-msg="Make flashcards — how many do you want?">📚 Flashcards</span>
+  <span class="quick-chip" data-msg="Quiz me — how many questions?">❓ Quiz</span>
+  <span class="quick-chip" data-msg="Create a talk show broadcast about this topic">🎙 Broadcast</span>
   <span class="quick-chip" data-msg="Make a tutorial video">🎬 Video</span>
-  <span class="quick-chip" data-msg="Build a beautiful website about this">🌐 Build Site</span>
-  <span class="quick-chip" data-msg="Explain this clearly with an audio reading">🔊 Read Aloud</span>
+  <span class="quick-chip" data-msg="Explain this with an audio reading in Zephyr's voice">🔊 Read Aloud</span>
   <span class="quick-chip" data-msg="Generate an illustration of this topic">🖼 Illustrate</span>
-  <span class="quick-chip" data-msg="Explain this in French">🌍 Translate</span>
+  <span class="quick-chip" data-msg="What language do you want me to explain this in?">🌍 Any Language</span>
+  <span class="quick-chip" data-msg="Explain this topic deeply and thoroughly">📖 Deep Explain</span>
 </div>
 
 <div id="inputBar">
