@@ -7476,6 +7476,8 @@ URL format: https://images.pexels.com/photos/[ID]/pexels-photo-[ID].jpeg?auto=co
 
 PROFILE SELECTION RULES — READ BEFORE CHOOSING (follow this order top to bottom, stop at first match):
 
+  -1. INTERACTIVE LEARNING PORTAL / COURSE / STUDY APP: request contains "interactive lesson", "learning portal", "flashcard", "quiz me", "teach me", "create a course", "course from", "study guide", "study app", "interactive course", "learning app", "make it interactive to learn", "explain and quiz", "learn this" → Profile L. Always. No exceptions.
+
   0. PRESENTATION / SLIDES / PITCH DECK: request contains "presentation", "slides", "slideshow", "PowerPoint", "pptx", "pitch deck", "slide deck" → Profile P. Always. No exceptions.
 
   0.5. SHOP / STORE / E-COMMERCE: request contains shop, store, buy, sell, product, price, payment, checkout, cart, e-commerce, Stripe, PayPal, order, purchase → Profile S. Always. No exceptions.
@@ -7701,6 +7703,123 @@ PROFILE P — PRESENTATION / SLIDE DECK (PowerPoint-style)
   ✗ Using addShape for slide backgrounds — ALWAYS use slide.background = { color: 'HEX' } instead.
     addShape creates a locked rectangle shape that blocks Format Background in PowerPoint.
     slide.background sets the real native slide background — fully editable and themeable.
+
+PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-style)
+  Use for: ANY request containing "interactive lesson", "learning portal", "flashcard", "quiz", "teach me", "create a course", "course from", "study guide", "study app", "interactive course", "learning app", "explain and quiz".
+  ⚠️  This profile replaces ALL website rules. A learning portal is NOT a scrolling website — it is a structured interactive app with lessons, flashcards, quizzes, and audio.
+
+  ══════════════════════════════════════════════════════════════
+  MANDATORY ARCHITECTURE — copy this exact pattern every time
+  ══════════════════════════════════════════════════════════════
+
+  1. DEFINE all course content as a JS object at the top of your <script>:
+     const COURSE = {
+       title: "Course Title",
+       description: "What this course teaches in one sentence",
+       lessons: [
+         {
+           id: 1,
+           title: "Lesson 1 Title",
+           summary: "One-sentence overview of this lesson",
+           concepts: [
+             { term: "Key Term", definition: "Clear plain-English definition. Use an analogy.", emoji: "🔑" }
+           ],
+           examples: [
+             { title: "Example title", body: "Concrete 2-3 sentence real-world example a student can relate to." }
+           ],
+           flashcards: [
+             { front: "Question or term?", back: "Answer or definition" }
+           ],
+           quiz: [
+             { q: "Question text?", options: ["Option A", "Option B", "Option C", "Option D"], answer: 0, explanation: "Why this answer is correct." }
+           ]
+         }
+         // Minimum 5 lessons. Per lesson: 3+ concepts, 3+ examples, 5+ flashcards, 4+ quiz questions.
+       ]
+     };
+
+  2. LAYOUT — two-column side-by-side:
+     LEFT SIDEBAR (260px fixed, bg #0F172A, text #E2E8F0):
+       • Course title at top (bold, white)
+       • Scrollable lesson list — each row: number + title + status icon (○ not started / ⟳ in progress / ✓ done)
+       • Clicking a row loads that lesson into the main panel
+       • Progress bar at bottom: "4 / 7 lessons complete" + filled bar
+     RIGHT MAIN PANEL (flex-1, bg #F8FAFC):
+       • Lesson title + summary at top
+       • 4 tab pills: [📖 Learn] [💡 Examples] [🎴 Flashcards] [❓ Quiz]
+       • Tab content area below the pills
+       • Prev Lesson / Next Lesson buttons at very bottom
+
+  3. LEARN TAB — concept cards:
+     Each concept = a white card (rounded-xl, shadow) containing:
+       • Large emoji + bold term as heading
+       • Definition in readable body text (font-size 16px)
+       • 🔊 button top-right → calls speak(definition)
+     Cards stacked vertically, gap 16px.
+
+  4. EXAMPLES TAB — example cards:
+     Each example = amber-accented card (left border 4px #F59E0B):
+       • Bold title
+       • Body paragraph
+       • 🔊 button → calls speak(title + '. ' + body)
+     Numbered 1, 2, 3…
+
+  5. FLASHCARDS TAB — flip card deck:
+     • One card centered, 340×200px, perspective 1000px
+     • Click card → CSS 3D flip: rotateY(180deg), 0.5s ease transition
+     • Front face: indigo bg (#6366F1), white text, shows "front" text
+     • Back face: white bg, indigo text, shows "back" text
+     • Below: ← Prev card | Card 3 of 8 | Next card → | 🔀 Shuffle
+     • Track seen cards; show ✓ on cards the user has flipped
+
+  6. QUIZ TAB — one question at a time:
+     • Question in large bold text (20px)
+     • 4 option buttons (A B C D), full width, rounded
+     • On click: correct = green bg + ✓ icon; wrong = red bg + ✗ icon; show explanation text
+     • "Next Question →" button appears after answering
+     • Final screen: "🎉 You got 7 / 10!" + breakdown + Retry button
+     • Save best score per lesson to localStorage key "lp_score_[lessonId]"
+     • Show "🏆 Best: 9/10" below final score
+
+  7. PROGRESS — save to localStorage:
+     Key "lp_progress" = JSON object mapping lessonId → { learnDone, examplesDone, flashcardsDone, quizScore }
+     A lesson is complete when all 4 tabs have been visited.
+     On 100% completion → full-screen celebration overlay (confetti CSS animation, "🎓 Course Complete!" message).
+
+  8. AUDIO — browser SpeechSynthesis (no API key, works offline):
+     function speak(text) {
+       const u = new SpeechSynthesisUtterance(text);
+       u.rate = 0.92; u.pitch = 1.05;
+       window.speechSynthesis.cancel();
+       window.speechSynthesis.speak(u);
+     }
+     • Global 🔇 Mute toggle in the top-right header — when muted, speak() is a no-op.
+
+  9. RESPONSIVE — on screens < 768px:
+     Sidebar collapses to a top dropdown (<select> of lesson titles).
+     Tab pills scroll horizontally.
+     Flashcard shrinks to full width.
+
+  PROFILE L VISUAL DESIGN:
+  Sidebar: #0F172A bg · #E2E8F0 text · #6366F1 active lesson highlight
+  Main panel: #F8FAFC bg · white cards with box-shadow 0 2px 12px rgba(0,0,0,0.08)
+  Learn tab accent: #6366F1 (indigo)
+  Examples tab accent: #F59E0B (amber)
+  Flashcard front: #6366F1 · Flashcard back: #FFFFFF
+  Quiz correct: #10B981 (green) · Quiz wrong: #EF4444 (red)
+  Font: Inter (Google Fonts, weights 400 + 600 + 700)
+  Active tab pill: solid #6366F1 bg, white text · Inactive: transparent, #64748B text
+  Progress bar fill: linear-gradient(90deg, #6366F1, #8B5CF6)
+
+  PROFILE L BANNED:
+  ✗ Scrolling landing-page layout — MUST use sidebar + tab architecture
+  ✗ Hardcoding lesson content as HTML — ALWAYS use the COURSE JS object
+  ✗ Showing all lessons at once — one lesson visible at a time in the main panel
+  ✗ Pexels images for content — use CSS illustrations, SVG diagrams, or emojis
+  ✗ Quiz without instant feedback + explanation — ALWAYS show why the answer is right/wrong
+  ✗ Missing 🔊 audio buttons — every concept card and example card MUST have one
+  ✗ Missing localStorage persistence — progress and quiz scores MUST save and restore on refresh
+  ✗ Fewer than 5 lessons or fewer than 4 quiz questions per lesson
 
 PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter
