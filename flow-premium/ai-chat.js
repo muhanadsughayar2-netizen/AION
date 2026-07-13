@@ -7782,7 +7782,10 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
        • Progress bar at bottom: "4 / 7 lessons complete" + filled bar
      RIGHT MAIN PANEL (flex-1, bg #F8FAFC):
        • Lesson title + summary at top
-       • 6 tab pills: [📖 Learn] [💡 Examples] [🎴 Flashcards] [❓ Quiz] [🎙️ Broadcast] [🎬 Video]
+       • Row below title: 6 tab pills [📖 Learn] [💡 Examples] [🎴 Flashcards] [❓ Quiz] [🎙️ Broadcast] [🎬 Video]
+         + a FIXED "🤖 Ask Tutor" button on the RIGHT end of that same row (margin-left:auto).
+         Style: indigo bg #6366F1, white text, border-radius 20px, padding 8px 16px, font-weight 700.
+         Clicking it calls expandTutorPanel() — always visible, always works, no hunting for the panel.
        • Tab content area below the pills
        • Prev Lesson / Next Lesson buttons at very bottom
      AI TUTOR PANEL (320px, right side, collapsible, bg #FFFFFF, border-left 1px solid #E2E8F0):
