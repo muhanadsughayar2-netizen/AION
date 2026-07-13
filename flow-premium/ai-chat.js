@@ -15492,26 +15492,10 @@ document.querySelectorAll('.build-type-pill').forEach(btn => {
   });
 });
 
-// "More ▾" dropdown — toggle on button click, close when a menu item is chosen,
-// close on outside click. All handlers live here (MV3 CSP bans inline onclick).
-(function () {
-  const moreBtn  = document.getElementById('buildMoreBtn');
-  const moreMenu = document.getElementById('buildMoreMenu');
-  if (moreBtn && moreMenu) {
-    moreBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      moreMenu.style.display = moreMenu.style.display === 'flex' ? 'none' : 'flex';
-    });
-    document.querySelectorAll('.build-more-item').forEach(item => {
-      item.addEventListener('click', () => { moreMenu.style.display = 'none'; });
-    });
-    document.addEventListener('click', (e) => {
-      if (!moreMenu.contains(e.target) && !moreBtn.contains(e.target)) {
-        moreMenu.style.display = 'none';
-      }
-    });
-  }
-})();
+// Study portal button — opens learn.html as a new extension tab
+document.getElementById('studyToggleBtn')?.addEventListener('click', () => {
+  chrome.tabs.create({ url: chrome.runtime.getURL('learn.html') });
+});
 
 // Image replacer modal — close on X or backdrop click
 document.getElementById('closeImageReplacer')?.addEventListener('click', () => {
