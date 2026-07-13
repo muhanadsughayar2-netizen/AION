@@ -7732,9 +7732,27 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
            ],
            quiz: [
              { q: "Question text?", options: ["Option A", "Option B", "Option C", "Option D"], answer: 0, explanation: "Why this answer is correct." }
+           ],
+           broadcast: [
+             { speaker: "ZEPHYR", text: "Welcome everyone! Today we're diving into [Lesson Title]. Let's start with the big picture." },
+             { speaker: "KORE",   text: "I've always wondered about this — where do we even begin?" },
+             { speaker: "ZEPHYR", text: "Great question. Think of it like [memorable analogy tied to the concept]..." },
+             { speaker: "FENRIR", text: "In the real world, this shows up when [concrete real-world application]. I see this all the time." },
+             { speaker: "KORE",   text: "Oh that makes so much sense now! So the key takeaway is...?" },
+             { speaker: "ZEPHYR", text: "Exactly — [core principle restated simply]. Remember that and you've got it." }
+             // 8-12 lines total per lesson. Alternate speakers naturally — ZEPHYR explains, KORE asks curious questions, FENRIR adds real-world context.
+           ],
+           videoSteps: [
+             { type: "title",   text: "Lesson Title",          emoji: "📖", color: "#6366F1", duration: 2200 },
+             { type: "concept", label: "Key Term 1",           emoji: "🔑", color: "#6366F1", body: "One-line plain definition", duration: 3500 },
+             { type: "concept", label: "Key Term 2",           emoji: "💡", color: "#F59E0B", body: "One-line plain definition", duration: 3500 },
+             { type: "arrow",   label: "leads to",                                            duration: 1200 },
+             { type: "concept", label: "Outcome / Big Idea",   emoji: "🎯", color: "#10B981", body: "What it all means", duration: 3500 },
+             { type: "end",     text:  "Quiz yourself on the next tab!", emoji: "❓",          duration: 2500 }
+             // 5-8 steps per lesson. Mix title → concept → arrow → concept → end. Keep each step ≤ 8 words.
            ]
          }
-         // Minimum 5 lessons. Per lesson: 3+ concepts, 3+ examples, 5+ flashcards, 4+ quiz questions.
+         // Minimum 5 lessons. Per lesson: 3+ concepts, 3+ examples, 5+ flashcards, 4+ quiz questions, 8+ broadcast lines, 5+ videoSteps.
        ]
      };
 
@@ -7746,7 +7764,7 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
        • Progress bar at bottom: "4 / 7 lessons complete" + filled bar
      RIGHT MAIN PANEL (flex-1, bg #F8FAFC):
        • Lesson title + summary at top
-       • 4 tab pills: [📖 Learn] [💡 Examples] [🎴 Flashcards] [❓ Quiz]
+       • 6 tab pills: [📖 Learn] [💡 Examples] [🎴 Flashcards] [❓ Quiz] [🎙️ Broadcast] [🎬 Video]
        • Tab content area below the pills
        • Prev Lesson / Next Lesson buttons at very bottom
 
@@ -7775,30 +7793,166 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
   6. QUIZ TAB — one question at a time:
      • Question in large bold text (20px)
      • 4 option buttons (A B C D), full width, rounded
-     • On click: correct = green bg + ✓ icon; wrong = red bg + ✗ icon; show explanation text
+     • On click: correct = green bg (#10B981) + ✓ icon; wrong = red bg (#EF4444) + ✗ icon; show explanation text below
      • "Next Question →" button appears after answering
-     • Final screen: "🎉 You got 7 / 10!" + breakdown + Retry button
+     • Final screen: "🎉 You got 7 / 10!" + stars visual + Retry button
      • Save best score per lesson to localStorage key "lp_score_[lessonId]"
      • Show "🏆 Best: 9/10" below final score
 
-  7. PROGRESS — save to localStorage:
-     Key "lp_progress" = JSON object mapping lessonId → { learnDone, examplesDone, flashcardsDone, quizScore }
-     A lesson is complete when all 4 tabs have been visited.
-     On 100% completion → full-screen celebration overlay (confetti CSS animation, "🎓 Course Complete!" message).
+  7. BROADCAST TAB — AI talk-show episode for this lesson:
+     ══ UI LAYOUT ══
+     • Dark studio panel: bg #0D1117, rounded-2xl, full height of tab area
+     • Three character cards at the TOP in a row:
+         ZEPHYR 🎙️  (teal #2DD4BF)  — "Host & Instructor"
+         KORE   🎓  (violet #A78BFA) — "Curious Student"
+         FENRIR ⚡  (orange #F97316) — "Real-World Expert"
+       Each card: avatar circle with emoji, name, role badge. Inactive = dim (opacity 0.4). Active speaker = full brightness + glowing border matching their color + subtle pulse animation.
+     • Below the character cards: scrollable transcript panel (dark bg, monospace-ish, line-height 1.8):
+         Each line = speaker color dot + bold speaker name + text.
+         Currently-speaking line = highlighted with a soft bg glow.
+         Auto-scrolls to keep the active line visible.
+     • Controls bar at the bottom:
+         [▶ Play Episode]  [⏸ Pause]  [⏹ Stop]  — centered, pill buttons
+         Progress bar showing how far through the episode (current line / total lines)
+         Speed selector: 0.75× · 1× · 1.25× · 1.5×
 
-  8. AUDIO — browser SpeechSynthesis (no API key, works offline):
+     ══ IMPLEMENTATION ══
+     Use the lesson's broadcast array from COURSE data. Define three voice profiles:
+       const BC_VOICES = {
+         ZEPHYR: { rate: 0.88, pitch: 1.00, color: '#2DD4BF', emoji: '🎙️', role: 'Host & Instructor' },
+         KORE:   { rate: 1.05, pitch: 1.18, color: '#A78BFA', emoji: '🎓', role: 'Curious Student'   },
+         FENRIR: { rate: 0.93, pitch: 0.85, color: '#F97316', emoji: '⚡', role: 'Real-World Expert'  }
+       };
+     Playback engine using SpeechSynthesis:
+       let bcLine = 0, bcPaused = false, bcSpeed = 1.0;
+       function bcPlay(script) {
+         if (bcLine >= script.length) { bcLine = 0; updateBCProgress(); return; }
+         const line = script[bcLine];
+         const v = BC_VOICES[line.speaker];
+         const u = new SpeechSynthesisUtterance(line.text);
+         u.rate  = v.rate * bcSpeed;
+         u.pitch = v.pitch;
+         u.onend = () => { if (!bcPaused) { bcLine++; updateBCProgress(); bcPlay(script); } };
+         highlightBCSpeaker(line.speaker);
+         highlightBCLine(bcLine);
+         window.speechSynthesis.cancel();
+         window.speechSynthesis.speak(u);
+       }
+       function bcPauseToggle() { bcPaused = !bcPaused; if (!bcPaused) bcPlay(currentBroadcast); else window.speechSynthesis.cancel(); }
+       function bcStop() { bcPaused=true; bcLine=0; window.speechSynthesis.cancel(); resetBCHighlights(); }
+     When the user switches lessons, call bcStop() so the old episode stops.
+
+  8. VIDEO TAB — animated explainer video (Canvas + MediaRecorder):
+     ══ UI LAYOUT ══
+     • 16:9 canvas (max 640px wide) centered in the tab, dark bg #0D1117, rounded-xl
+     • Below canvas: [▶ Play] [⏹ Stop] [⬇ Download .webm]
+     • A progress bar beneath shows current step / total steps
+     • Small step thumbnails row below (colored dots, active = bright)
+
+     ══ ANIMATION ENGINE ══
+     Use lesson.videoSteps array. Render each step onto the canvas with smooth transitions:
+
+     function runVideoStep(ctx, step, w, h, onDone) {
+       ctx.clearRect(0,0,w,h);
+       // dark bg
+       ctx.fillStyle = '#0D1117'; ctx.fillRect(0,0,w,h);
+
+       if (step.type === 'title') {
+         // Large centered emoji + lesson title, fade in
+         ctx.fillStyle = step.color || '#6366F1';
+         ctx.font = 'bold ' + Math.round(h*0.12) + 'px Inter, sans-serif';
+         ctx.textAlign = 'center';
+         ctx.fillText(step.emoji + '  ' + step.text, w/2, h*0.45);
+         // subtitle bar fade in below
+         ctx.fillStyle = 'rgba(255,255,255,0.35)';
+         ctx.font = Math.round(h*0.055) + 'px Inter, sans-serif';
+         ctx.fillText('Lesson Overview', w/2, h*0.6);
+       }
+
+       else if (step.type === 'concept') {
+         // Colored pill / badge with emoji + label
+         const bw = w*0.72, bh = h*0.22;
+         const bx = (w-bw)/2, by = h*0.28;
+         ctx.fillStyle = step.color + '22'; // translucent fill
+         roundRect(ctx, bx, by, bw, bh, 18); ctx.fill();
+         ctx.strokeStyle = step.color; ctx.lineWidth = 2.5;
+         roundRect(ctx, bx, by, bw, bh, 18); ctx.stroke();
+         // emoji
+         ctx.font = Math.round(h*0.13)+'px serif';
+         ctx.fillStyle = '#FFFFFF';
+         ctx.textAlign = 'center';
+         ctx.fillText(step.emoji, w/2, by + bh*0.52);
+         // label
+         ctx.font = 'bold '+Math.round(h*0.072)+'px Inter,sans-serif';
+         ctx.fillStyle = step.color;
+         ctx.fillText(step.label, w/2, by + bh + h*0.1);
+         // body
+         ctx.font = Math.round(h*0.048)+'px Inter,sans-serif';
+         ctx.fillStyle = 'rgba(255,255,255,0.7)';
+         ctx.fillText(step.body, w/2, by + bh + h*0.2);
+       }
+
+       else if (step.type === 'arrow') {
+         // Animated arrow drawn from left to right
+         ctx.strokeStyle = '#6366F1'; ctx.lineWidth = 3;
+         ctx.beginPath(); ctx.moveTo(w*0.18, h/2); ctx.lineTo(w*0.82, h/2); ctx.stroke();
+         // arrowhead
+         ctx.beginPath(); ctx.moveTo(w*0.82,h/2-10); ctx.lineTo(w*0.82+18,h/2); ctx.lineTo(w*0.82,h/2+10); ctx.fill();
+         ctx.fillStyle='rgba(255,255,255,0.55)'; ctx.font=Math.round(h*0.05)+'px Inter,sans-serif';
+         ctx.textAlign='center'; ctx.fillText(step.label||'', w/2, h/2 - h*0.07);
+       }
+
+       else if (step.type === 'end') {
+         ctx.fillStyle = '#10B981';
+         ctx.font='bold '+Math.round(h*0.13)+'px serif'; ctx.textAlign='center';
+         ctx.fillText(step.emoji||'🎓', w/2, h*0.4);
+         ctx.fillStyle='#FFFFFF'; ctx.font='bold '+Math.round(h*0.07)+'px Inter,sans-serif';
+         ctx.fillText(step.text, w/2, h*0.6);
+       }
+
+       // Helper — draw rounded rectangle path
+       function roundRect(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.lineTo(x+w-r,y);c.quadraticCurveTo(x+w,y,x+w,y+r);c.lineTo(x+w,y+h-r);c.quadraticCurveTo(x+w,y+h,x+w-r,y+h);c.lineTo(x+r,y+h);c.quadraticCurveTo(x,y+h,x,y+h-r);c.lineTo(x,y+r);c.quadraticCurveTo(x,y,x+r,y);c.closePath();}
+
+       setTimeout(onDone, step.duration || 3000);
+     }
+
+     Playback loop: iterate steps sequentially, call runVideoStep for each, update progress bar.
+     SpeechSynthesis narration: speak() the step label/text while the step is displayed (so audio matches visual).
+
+     MediaRecorder recording:
+       const stream = canvas.captureStream(30);
+       const rec = new MediaRecorder(stream, { mimeType: 'video/webm;codecs=vp9' });
+       const chunks = [];
+       rec.ondataavailable = e => chunks.push(e.data);
+       rec.onstop = () => {
+         const blob = new Blob(chunks, { type:'video/webm' });
+         const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+         a.download = 'lesson-video.webm'; a.click();
+       };
+       // Start recording when ▶ Play is clicked, stop when animation ends.
+       // Show "Recording…" red dot while capturing.
+
+  9. PROGRESS — save to localStorage:
+     Key "lp_progress" = JSON object mapping lessonId → { learnDone, examplesDone, flashcardsDone, quizScore, broadcastDone, videoDone }
+     A lesson is complete when all 6 tabs have been visited.
+     On 100% completion → full-screen celebration overlay (confetti CSS keyframes, "🎓 Course Complete!" message, show total score across all quizzes).
+
+  10. AUDIO — browser SpeechSynthesis (no API key, works offline):
      function speak(text) {
+       if (globalMuted) return;
        const u = new SpeechSynthesisUtterance(text);
        u.rate = 0.92; u.pitch = 1.05;
        window.speechSynthesis.cancel();
        window.speechSynthesis.speak(u);
      }
-     • Global 🔇 Mute toggle in the top-right header — when muted, speak() is a no-op.
+     • Global 🔇 Mute toggle in top-right header — sets globalMuted = true, disables ALL speech including Broadcast.
 
-  9. RESPONSIVE — on screens < 768px:
+  11. RESPONSIVE — on screens < 768px:
      Sidebar collapses to a top dropdown (<select> of lesson titles).
      Tab pills scroll horizontally.
      Flashcard shrinks to full width.
+     Broadcast character cards stack vertically (3 rows).
+     Video canvas is 100% width.
 
   PROFILE L VISUAL DESIGN:
   Sidebar: #0F172A bg · #E2E8F0 text · #6366F1 active lesson highlight
@@ -7807,6 +7961,8 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
   Examples tab accent: #F59E0B (amber)
   Flashcard front: #6366F1 · Flashcard back: #FFFFFF
   Quiz correct: #10B981 (green) · Quiz wrong: #EF4444 (red)
+  Broadcast studio bg: #0D1117 · ZEPHYR: #2DD4BF · KORE: #A78BFA · FENRIR: #F97316
+  Video canvas bg: #0D1117 · step colors per videoSteps array
   Font: Inter (Google Fonts, weights 400 + 600 + 700)
   Active tab pill: solid #6366F1 bg, white text · Inactive: transparent, #64748B text
   Progress bar fill: linear-gradient(90deg, #6366F1, #8B5CF6)
@@ -7820,6 +7976,10 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
   ✗ Missing 🔊 audio buttons — every concept card and example card MUST have one
   ✗ Missing localStorage persistence — progress and quiz scores MUST save and restore on refresh
   ✗ Fewer than 5 lessons or fewer than 4 quiz questions per lesson
+  ✗ Missing Broadcast tab — ALWAYS include the full ZEPHYR/KORE/FENRIR broadcast engine
+  ✗ Missing Video tab — ALWAYS include the Canvas animated explainer with Download button
+  ✗ Empty broadcast array — every lesson MUST have 8-12 broadcast dialogue lines
+  ✗ Empty videoSteps array — every lesson MUST have 5-8 video animation steps
 
 PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter
