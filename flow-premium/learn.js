@@ -513,12 +513,18 @@ async function speakGemini(text, voiceName = 'Zephyr') {
     }
     const audioURL = URL.createObjectURL(blob);
     const audio = new Audio(audioURL);
-    await audio.play();
-    await new Promise(resolve => { audio.onended = () => { URL.revokeObjectURL(audioURL); resolve(); }; });
+    await new Promise((resolve) => {
+      const done = () => { URL.revokeObjectURL(audioURL); resolve(); };
+      audio.onended  = done;
+      audio.onerror  = done;
+      // safety timeout: 150ms per char + 4s buffer
+      const t = setTimeout(done, text.length * 150 + 4000);
+      audio.play().catch(() => { clearTimeout(t); done(); });
+    });
     return; // success — exit the model loop
   } catch (e) { /* try next model */ }
   } // end model loop
-  speakFallback(text);
+  await speakFallback(text);
 }
 
 function speakFallback(text) {
@@ -613,7 +619,9 @@ async function renderVideo(p) {
   }
 }
 
-// ── Image generation — tries model chain identical to ai-chat.js ──────────────
+// ── Image generation ──────────────────────────────────────────────────────────
+// Strategy A: Imagen 4 via predict endpoint (correct endpoint for generation)
+// Strategy B: Gemini generateContent with responseModalities fallback
 async function renderImage(p) {
   const card = makeContentCard(`🖼️ ${p.title || 'Illustration'}`);
   const body = card.querySelector('.content-card-body');
@@ -621,12 +629,38 @@ async function renderImage(p) {
   body.appendChild(statusEl);
   appendCard(card);
 
-  const prompt = p.imagePrompt || `Educational illustration: ${p.title}`;
-  let lastErr = null;
+  const prompt = p.imagePrompt || `Educational illustration, clean labeled diagram: ${p.title}`;
 
-  for (const model of M.imgChain) {
+  // ── Strategy A: Imagen 4 predict endpoint ───────────────────────────────────
+  for (const model of ['imagen-4.0-generate-001', 'imagen-4.0-fast-generate-001']) {
     try {
-      statusEl.textContent = `🎨 Trying ${model}…`;
+      statusEl.textContent = `🎨 Generating with ${model}…`;
+      const res = await fetch(`${BASE}${model}:predict?key=${GEMINI_KEY}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instances: [{ prompt }],
+          parameters: { sampleCount: 1, aspectRatio: '1:1' }
+        })
+      });
+      if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
+      const d = await res.json();
+      const pred = d?.predictions?.[0];
+      const b64  = pred?.bytesBase64Encoded;
+      const mime = pred?.mimeType || 'image/png';
+      if (!b64) throw new Error('No image data');
+      statusEl.remove();
+      const imgEl = document.createElement('img');
+      imgEl.src = `data:${mime};base64,${b64}`;
+      imgEl.className = 'gen-image'; imgEl.alt = p.title || '';
+      body.appendChild(imgEl);
+      return;
+    } catch (err) { /* try next */ }
+  }
+
+  // ── Strategy B: Gemini generateContent + responseModalities ────────────────
+  for (const model of ['gemini-2.0-flash', M.chat]) {
+    try {
+      statusEl.textContent = `🎨 Generating with ${model}…`;
       const res = await fetch(`${BASE}${model}:generateContent?key=${GEMINI_KEY}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -637,18 +671,17 @@ async function renderImage(p) {
       if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `HTTP ${res.status}`); }
       const d = await res.json();
       const imgPart = d?.candidates?.[0]?.content?.parts?.find(pt => pt.inline_data?.mime_type?.startsWith('image/'));
-      if (!imgPart?.data) throw new Error('No image in response');
+      if (!imgPart?.data) throw new Error('no image part');
       statusEl.remove();
       const imgEl = document.createElement('img');
       imgEl.src = `data:${imgPart.inline_data.mime_type};base64,${imgPart.inline_data.data}`;
       imgEl.className = 'gen-image'; imgEl.alt = p.title || '';
       body.appendChild(imgEl);
-      return; // success
-    } catch (err) {
-      lastErr = err;
-    }
+      return;
+    } catch (err) { /* try next */ }
   }
-  statusEl.textContent = '⚠ Image error: ' + (lastErr?.message || 'All models failed');
+
+  statusEl.textContent = '⚠ Image generation not available with your current API key tier. Try generating a video or broadcast instead.';
 }
 
 // ── UI helpers ────────────────────────────────────────────────────────────────
