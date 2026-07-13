@@ -10,199 +10,175 @@
 body{font-family:'Inter',sans-serif;background:#0F172A;color:#E2E8F0;height:100vh;display:flex;flex-direction:column;overflow:hidden}
 
 /* ── Header ── */
-#header{display:flex;align-items:center;gap:12px;padding:12px 20px;background:#0F172A;border-bottom:1px solid rgba(255,255,255,0.08);flex-shrink:0}
-#header img{width:28px;height:28px;border-radius:50%}
-#header h1{font-size:16px;font-weight:700;color:#fff;flex:1}
-#keyStatus{font-size:11px;padding:4px 10px;border-radius:20px;background:rgba(99,102,241,0.15);color:#818CF8;border:1px solid rgba(99,102,241,0.3)}
-#newStudyBtn{font-size:12px;padding:6px 14px;border-radius:20px;background:rgba(255,255,255,0.08);color:#94A3B8;border:none;cursor:pointer;font-weight:500}
-#newStudyBtn:hover{background:rgba(255,255,255,0.14)}
+#hdr{display:flex;align-items:center;gap:10px;padding:10px 16px;background:rgba(15,23,42,0.95);border-bottom:1px solid rgba(255,255,255,0.07);flex-shrink:0;backdrop-filter:blur(8px)}
+#hdrLogo{width:28px;height:28px;border-radius:50%;object-fit:cover}
+#hdrTitle{font-size:15px;font-weight:700;color:#fff;flex:1}
+#hdrCtx{font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(99,102,241,0.15);color:#818CF8;border:1px solid rgba(99,102,241,0.25);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;cursor:pointer;display:none}
+#fileDropBtn{font-size:12px;padding:5px 12px;border-radius:20px;background:rgba(255,255,255,0.07);color:#94A3B8;border:1px solid rgba(255,255,255,0.1);cursor:pointer;white-space:nowrap;flex-shrink:0;transition:all 0.15s}
+#fileDropBtn:hover{background:rgba(99,102,241,0.2);color:#A5B4FC;border-color:rgba(99,102,241,0.35)}
+#keyBadge{font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid rgba(239,68,68,0.3);background:rgba(239,68,68,0.1);color:#FCA5A5;white-space:nowrap;flex-shrink:0}
+#keyBadge.ok{background:rgba(16,185,129,0.12);border-color:rgba(16,185,129,0.3);color:#6EE7B7}
+#fileInputHidden{display:none}
 
-/* ── Upload Screen ── */
-#uploadScreen{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;padding:40px}
-#uploadBox{width:100%;max-width:520px;border:2px dashed rgba(99,102,241,0.4);border-radius:20px;padding:48px 32px;text-align:center;cursor:pointer;transition:all 0.2s;background:rgba(99,102,241,0.04)}
-#uploadBox:hover,#uploadBox.drag-over{border-color:#6366F1;background:rgba(99,102,241,0.10)}
-#uploadBox svg{margin-bottom:16px;opacity:0.5}
-#uploadBox h2{font-size:18px;font-weight:700;color:#fff;margin-bottom:8px}
-#uploadBox p{font-size:13px;color:#64748B;margin-bottom:20px}
-#fileInput{display:none}
-#uploadBtn{background:#6366F1;color:#fff;border:none;border-radius:12px;padding:12px 28px;font-size:14px;font-weight:700;cursor:pointer;transition:background 0.2s}
-#uploadBtn:hover{background:#4F46E5}
-.file-types{display:flex;gap:8px;justify-content:center;margin-top:16px}
-.file-type-badge{font-size:11px;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,0.06);color:#64748B}
-#noKeyWarning{display:none;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:12px;padding:12px 20px;font-size:13px;color:#FCA5A5;text-align:center;max-width:520px;width:100%}
+/* ── Chat area ── */
+#chatArea{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+#chatArea::-webkit-scrollbar{width:4px}#chatArea::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);border-radius:2px}
 
-/* ── Processing Screen ── */
-#processingScreen{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;gap:20px}
-.spinner{width:48px;height:48px;border:3px solid rgba(99,102,241,0.2);border-top-color:#6366F1;border-radius:50%;animation:spin 0.8s linear infinite}
-@keyframes spin{to{transform:rotate(360deg)}}
-#processingMsg{font-size:15px;color:#94A3B8;text-align:center}
-#processingFile{font-size:12px;color:#475569}
+/* Welcome state */
+#welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;gap:20px;text-align:center;padding:20px}
+#welcome h2{font-size:22px;font-weight:700;color:#fff}
+#welcome p{font-size:14px;color:#64748B;line-height:1.7;max-width:480px}
+.example-prompts{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;max-width:520px}
+.example-chip{background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.25);color:#A5B4FC;border-radius:20px;padding:7px 14px;font-size:12px;cursor:pointer;transition:all 0.15s;white-space:nowrap}
+.example-chip:hover{background:rgba(99,102,241,0.25);border-color:rgba(99,102,241,0.5)}
+.upload-hint{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px dashed rgba(255,255,255,0.12);border-radius:14px;padding:14px 20px;font-size:13px;color:#64748B;cursor:pointer;transition:all 0.15s}
+.upload-hint:hover{border-color:rgba(99,102,241,0.5);background:rgba(99,102,241,0.06);color:#A5B4FC}
+.upload-hint svg{flex-shrink:0;opacity:0.5}
 
-/* ── Study Screen ── */
-#studyScreen{display:none;flex:1;overflow:hidden;flex-direction:row}
+/* Messages */
+.msg-row{display:flex;gap:10px;align-items:flex-start}
+.msg-row.user{flex-direction:row-reverse}
+.msg-avatar{width:28px;height:28px;border-radius:50%;flex-shrink:0;object-fit:cover}
+.msg-avatar.user-av{background:linear-gradient(135deg,#6366F1,#8B5CF6);display:flex;align-items:center;justify-content:center;font-size:13px}
+.msg-bubble{max-width:75%;padding:10px 14px;border-radius:16px;font-size:14px;line-height:1.6}
+.msg-bubble.ai{background:#1E293B;color:#CBD5E1;border-radius:4px 16px 16px 16px}
+.msg-bubble.user{background:linear-gradient(135deg,#6366F1,#7C3AED);color:#fff;border-radius:16px 4px 16px 16px}
+.msg-bubble.system{background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.2);color:#FCD34D;font-size:12px;border-radius:10px}
+.msg-thinking{display:flex;align-items:center;gap:8px;color:#64748B;font-size:13px;font-style:italic;padding:8px 0}
+.dot-pulse span{display:inline-block;width:5px;height:5px;border-radius:50%;background:#6366F1;animation:dp 1.2s ease-in-out infinite}
+.dot-pulse span:nth-child(2){animation-delay:0.2s}.dot-pulse span:nth-child(3){animation-delay:0.4s}
+@keyframes dp{0%,60%,100%{opacity:0.2;transform:scale(0.8)}30%{opacity:1;transform:scale(1)}}
 
-/* Sidebar */
-#lessonSidebar{width:240px;background:#0F172A;border-right:1px solid rgba(255,255,255,0.08);display:flex;flex-direction:column;overflow:hidden;flex-shrink:0}
-#courseTitle{padding:16px;font-size:13px;font-weight:700;color:#fff;border-bottom:1px solid rgba(255,255,255,0.06)}
-#lessonList{flex:1;overflow-y:auto;padding:8px}
-.lesson-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;font-size:13px;color:#94A3B8;transition:all 0.15s;margin-bottom:2px}
-.lesson-item:hover{background:rgba(255,255,255,0.06);color:#E2E8F0}
-.lesson-item.active{background:rgba(99,102,241,0.2);color:#A5B4FC;font-weight:600}
-.lesson-status{font-size:10px;margin-left:auto;opacity:0.6}
-#sidebarProgress{padding:12px 16px;border-top:1px solid rgba(255,255,255,0.06);font-size:11px;color:#475569}
-#progressBar{height:3px;background:rgba(255,255,255,0.08);border-radius:2px;margin-top:6px}
-#progressFill{height:100%;background:linear-gradient(90deg,#6366F1,#8B5CF6);border-radius:2px;transition:width 0.4s}
-
-/* Main panel */
-#mainPanel{flex:1;display:flex;flex-direction:column;background:#F8FAFC;overflow:hidden}
-#lessonHeader{padding:20px 24px 0;background:#fff;border-bottom:1px solid #E2E8F0}
-#lessonTitle{font-size:20px;font-weight:700;color:#0F172A;margin-bottom:4px}
-#lessonSummary{font-size:13px;color:#64748B;margin-bottom:14px}
-#tabRow{display:flex;align-items:center;gap:6px}
-.tab-pill{background:transparent;border:none;padding:8px 16px;font-size:13px;font-weight:500;color:#64748B;cursor:pointer;border-bottom:2px solid transparent;border-radius:0;transition:all 0.15s;font-family:inherit}
-.tab-pill.active{color:#6366F1;border-bottom-color:#6366F1;font-weight:700}
-#askTutorBtn{margin-left:auto;display:flex;align-items:center;gap:8px;background:#6366F1;color:#fff;border:none;border-radius:20px;padding:7px 16px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;flex-shrink:0}
-#askTutorBtn img{width:20px;height:20px;border-radius:50%;object-fit:cover}
-#tabContent{flex:1;overflow-y:auto;padding:24px}
-
-/* Cards */
-.concept-card{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:flex;align-items:flex-start;gap:14px}
-.concept-emoji{font-size:28px;flex-shrink:0}
-.concept-body{flex:1}
-.concept-term{font-size:15px;font-weight:700;color:#0F172A;margin-bottom:4px}
-.concept-def{font-size:14px;color:#475569;line-height:1.6}
-.speak-btn{background:none;border:1px solid #E2E8F0;border-radius:8px;padding:4px 8px;font-size:12px;cursor:pointer;color:#94A3B8;flex-shrink:0;transition:all 0.15s}
-.speak-btn:hover{background:#F1F5F9;color:#6366F1;border-color:#6366F1}
-
-.example-card{background:#fff;border-radius:14px;padding:18px 20px;margin-bottom:12px;border-left:4px solid #F59E0B;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-.example-title{font-size:14px;font-weight:700;color:#0F172A;margin-bottom:6px}
-.example-body{font-size:14px;color:#475569;line-height:1.6}
+/* Inline content cards */
+.content-card{background:#1E293B;border-radius:14px;overflow:hidden;margin-top:4px;border:1px solid rgba(255,255,255,0.07)}
+.content-card-header{display:flex;align-items:center;gap:8px;padding:12px 16px;background:rgba(255,255,255,0.04);border-bottom:1px solid rgba(255,255,255,0.06);font-size:13px;font-weight:700;color:#E2E8F0}
+.content-card-body{padding:16px}
 
 /* Flashcards */
-#flashcardArea{display:flex;flex-direction:column;align-items:center;gap:20px}
-.flip-card{width:360px;height:200px;perspective:1000px;cursor:pointer}
-.flip-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.5s ease}
-.flip-card.flipped .flip-inner{transform:rotateY(180deg)}
-.flip-face{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:16px;display:flex;align-items:center;justify-content:center;padding:24px;text-align:center;font-size:17px;font-weight:600;line-height:1.5}
-.flip-front{background:#6366F1;color:#fff}
-.flip-back{background:#fff;color:#0F172A;border:2px solid #E2E8F0;transform:rotateY(180deg)}
-#cardNav{display:flex;align-items:center;gap:16px;font-size:14px;color:#64748B}
-#cardNav button{background:#fff;border:1px solid #E2E8F0;border-radius:10px;padding:8px 18px;cursor:pointer;font-size:13px;font-weight:600;color:#374151;transition:all 0.15s}
-#cardNav button:hover{background:#6366F1;color:#fff;border-color:#6366F1}
+.flashcard-set{display:flex;flex-direction:column;gap:12px;align-items:center}
+.flip-wrap{perspective:800px;width:100%;max-width:360px;height:160px;cursor:pointer}
+.flip-inner{width:100%;height:100%;position:relative;transform-style:preserve-3d;transition:transform 0.45s ease}
+.flip-wrap.flipped .flip-inner{transform:rotateY(180deg)}
+.flip-face{position:absolute;inset:0;backface-visibility:hidden;border-radius:12px;display:flex;align-items:center;justify-content:center;padding:20px;text-align:center;font-size:15px;font-weight:600}
+.flip-front{background:linear-gradient(135deg,#6366F1,#7C3AED);color:#fff}
+.flip-back{background:#fff;color:#1E293B;transform:rotateY(180deg);border:2px solid #E2E8F0}
+.fc-nav{display:flex;align-items:center;gap:12px}
+.fc-nav button{background:rgba(99,102,241,0.15);border:1px solid rgba(99,102,241,0.3);border-radius:8px;padding:6px 14px;color:#A5B4FC;font-size:12px;cursor:pointer;transition:all 0.15s}
+.fc-nav button:hover{background:rgba(99,102,241,0.3)}
+.fc-counter{font-size:12px;color:#64748B}
 
 /* Quiz */
-.quiz-question{background:#fff;border-radius:14px;padding:22px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06)}
-.quiz-q{font-size:15px;font-weight:600;color:#0F172A;margin-bottom:14px}
-.quiz-options{display:flex;flex-direction:column;gap:8px}
-.quiz-opt{background:#F8FAFC;border:1.5px solid #E2E8F0;border-radius:10px;padding:10px 16px;font-size:14px;cursor:pointer;text-align:left;color:#374151;transition:all 0.15s;font-family:inherit}
-.quiz-opt:hover:not(:disabled){background:#EEF2FF;border-color:#6366F1;color:#4338CA}
-.quiz-opt.correct{background:#ECFDF5;border-color:#10B981;color:#065F46}
-.quiz-opt.wrong{background:#FEF2F2;border-color:#EF4444;color:#991B1B}
-.quiz-explanation{margin-top:12px;padding:12px;background:#F0FDF4;border-radius:10px;font-size:13px;color:#166534;display:none;line-height:1.5}
-#quizScore{background:#fff;border-radius:14px;padding:20px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,0.06);display:none}
+.quiz-q-block{margin-bottom:12px}
+.quiz-q-text{font-size:14px;font-weight:600;color:#E2E8F0;margin-bottom:10px}
+.quiz-opts{display:flex;flex-direction:column;gap:6px}
+.quiz-opt-btn{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:9px 14px;font-size:13px;color:#CBD5E1;cursor:pointer;text-align:left;transition:all 0.15s;font-family:inherit}
+.quiz-opt-btn:hover:not(:disabled){background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.4);color:#A5B4FC}
+.quiz-opt-btn.correct{background:rgba(16,185,129,0.15);border-color:rgba(16,185,129,0.5);color:#6EE7B7}
+.quiz-opt-btn.wrong{background:rgba(239,68,68,0.12);border-color:rgba(239,68,68,0.4);color:#FCA5A5}
+.quiz-expl{margin-top:8px;padding:10px 12px;background:rgba(16,185,129,0.06);border-left:3px solid #10B981;border-radius:0 8px 8px 0;font-size:12px;color:#6EE7B7;display:none;line-height:1.5}
+.quiz-score{text-align:center;padding:12px;font-size:15px;font-weight:700;color:#A5B4FC;display:none}
 
-/* AI Tutor Panel */
-#tutorPanel{width:0;background:#fff;border-left:1px solid #E2E8F0;display:flex;flex-direction:column;overflow:hidden;transition:width 0.3s ease;flex-shrink:0}
-#tutorPanel.open{width:300px}
-#tutorHeader{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid #E2E8F0;flex-shrink:0}
-#tutorHeader img{width:28px;height:28px;border-radius:50%;object-fit:cover}
-#tutorHeader span{font-size:14px;font-weight:700;color:#0F172A;flex:1}
-#closeTutorBtn{background:none;border:none;font-size:18px;cursor:pointer;color:#94A3B8;padding:2px 6px;border-radius:6px}
-#closeTutorBtn:hover{background:#F1F5F9;color:#374151}
-#tutorMessages{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px}
-.tutor-msg-student{align-self:flex-end;background:#6366F1;color:#fff;border-radius:14px 14px 4px 14px;padding:10px 14px;font-size:13px;max-width:85%;line-height:1.5}
-.tutor-msg-thinking{align-self:flex-start;color:#94A3B8;font-size:13px;font-style:italic}
-.tutor-msg-error{align-self:flex-start;color:#EF4444;font-size:12px;background:#FEF2F2;padding:8px 12px;border-radius:10px;max-width:90%}
-.tutor-response-card{background:#F8FAFC;border-left:3px solid #6366F1;border-radius:0 10px 10px 0;padding:12px;display:flex;flex-direction:column;gap:8px;max-width:95%}
-.tutor-feedback{font-size:12px;color:#64748B;line-height:1.5}
-.tutor-explanation{font-size:12px;color:#4338CA;line-height:1.5}
-.tutor-question{font-size:13px;font-weight:700;color:#D97706;line-height:1.5;display:flex;align-items:flex-start;gap:6px}
-#tutorInputArea{padding:10px;border-top:1px solid #E2E8F0;display:flex;gap:6px;flex-shrink:0}
-#tutorInput{flex:1;border:1px solid #E2E8F0;border-radius:10px;padding:8px 10px;font-size:13px;resize:none;font-family:inherit;color:#0F172A;outline:none}
-#tutorInput:focus{border-color:#6366F1}
-#tutorSendBtn{background:#6366F1;color:#fff;border:none;border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer}
+/* Broadcast */
+.bc-script{display:flex;flex-direction:column;gap:0}
+.bc-line{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.05)}
+.bc-speaker{font-size:11px;font-weight:700;min-width:60px;padding-top:2px;flex-shrink:0}
+.bc-text{font-size:13px;color:#CBD5E1;line-height:1.6;flex:1}
+.bc-controls{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.bc-btn{display:flex;align-items:center;gap:6px;background:rgba(45,212,191,0.12);border:1px solid rgba(45,212,191,0.3);color:#2DD4BF;border-radius:20px;padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;font-family:inherit}
+.bc-btn:hover{background:rgba(45,212,191,0.22)}
+.bc-btn:disabled{opacity:0.4;cursor:default}
 
-/* Scrollbar */
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:rgba(0,0,0,0.15);border-radius:2px}
+/* Explanation */
+.explain-body{font-size:14px;color:#CBD5E1;line-height:1.8;white-space:pre-wrap}
+.speak-row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.speak-voice-btn{display:flex;align-items:center;gap:6px;background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.3);color:#C4B5FD;border-radius:20px;padding:6px 14px;font-size:12px;cursor:pointer;font-family:inherit;transition:all 0.15s}
+.speak-voice-btn:hover{background:rgba(139,92,246,0.22)}
+
+/* Video */
+.video-wrap{display:flex;flex-direction:column;gap:10px}
+.video-wrap video{width:100%;border-radius:10px;background:#000}
+.video-status{font-size:12px;color:#94A3B8;text-align:center;padding:8px}
+.video-gen-btn{display:flex;align-items:center;gap:8px;background:rgba(239,68,68,0.12);border:1px solid rgba(239,68,68,0.3);color:#FCA5A5;border-radius:20px;padding:8px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;justify-content:center;transition:all 0.15s}
+.video-gen-btn:hover{background:rgba(239,68,68,0.22)}
+
+/* Build */
+.build-result-frame{width:100%;height:360px;border:none;border-radius:10px;background:#fff}
+
+/* Image */
+.gen-image{width:100%;border-radius:10px}
+
+/* ── Quick chips bar ── */
+#chipsBar{display:flex;gap:6px;padding:8px 14px;flex-wrap:wrap;border-top:1px solid rgba(255,255,255,0.06);flex-shrink:0;background:#0F172A}
+.quick-chip{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:20px;padding:5px 12px;font-size:11px;color:#94A3B8;cursor:pointer;white-space:nowrap;transition:all 0.15s}
+.quick-chip:hover{background:rgba(99,102,241,0.15);border-color:rgba(99,102,241,0.35);color:#A5B4FC}
+
+/* ── Input bar ── */
+#inputBar{display:flex;align-items:flex-end;gap:8px;padding:10px 14px;border-top:1px solid rgba(255,255,255,0.07);background:#0F172A;flex-shrink:0}
+#msgInput{flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:10px 14px;font-size:14px;color:#E2E8F0;resize:none;font-family:inherit;outline:none;min-height:44px;max-height:120px;line-height:1.5;transition:border 0.15s}
+#msgInput::placeholder{color:#475569}
+#msgInput:focus{border-color:rgba(99,102,241,0.5)}
+#sendBtn{width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#6366F1,#7C3AED);border:none;color:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s}
+#sendBtn:hover{transform:scale(1.06)}
+#sendBtn:disabled{opacity:0.4;transform:none;cursor:default}
+
+/* Drop overlay */
+#dropOverlay{display:none;position:fixed;inset:0;background:rgba(99,102,241,0.18);border:3px dashed rgba(99,102,241,0.6);border-radius:0;z-index:999;align-items:center;justify-content:center;font-size:18px;font-weight:700;color:#A5B4FC;flex-direction:column;gap:10px;backdrop-filter:blur(4px)}
+body.dragging #dropOverlay{display:flex}
 </style>
 </head>
 <body>
 
-<!-- Header -->
-<div id="header">
-  <img id="headerAvatar" src="icons/agent-avatar.png" alt="">
-  <h1>📚 SnapToAI Study</h1>
-  <span id="keyStatus">No API key</span>
-  <button id="newStudyBtn" style="display:none">+ New Study</button>
+<div id="dropOverlay">
+  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+  Drop your file to study it
 </div>
 
-<!-- Upload Screen -->
-<div id="uploadScreen">
-  <div id="noKeyWarning">⚠️ No Gemini API key found. Open SnapToAI and add your key via the 🔑 button first.</div>
-  <div id="uploadBox">
-    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-    <h2>Upload your study material</h2>
-    <p>Drop a PDF, image, or text file and the AI will generate<br>lessons, flashcards, a quiz, and a live tutor — instantly.</p>
-    <input type="file" id="fileInput" accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.md">
-    <button id="uploadBtn">Choose File</button>
-    <div class="file-types">
-      <span class="file-type-badge">PDF</span>
-      <span class="file-type-badge">PNG / JPG</span>
-      <span class="file-type-badge">TXT / MD</span>
+<div id="hdr">
+  <img id="hdrLogo" src="icons/agent-avatar.png" alt="">
+  <span id="hdrTitle">📚 SnapToAI Study</span>
+  <span id="hdrCtx" title="Click to clear file">📄 <span id="ctxName"></span></span>
+  <button id="fileDropBtn">📎 Add File</button>
+  <span id="keyBadge">⚠ No Key</span>
+  <input type="file" id="fileInputHidden" accept=".pdf,.png,.jpg,.jpeg,.webp,.txt,.md">
+</div>
+
+<div id="chatArea">
+  <div id="welcome">
+    <h2>What do you want to learn today?</h2>
+    <p>Just ask in plain English. Upload a file or type a topic — then tell me what to create.</p>
+    <div class="example-prompts">
+      <div class="example-chip" data-msg="Make 10 flashcards about photosynthesis">📚 10 flashcards on photosynthesis</div>
+      <div class="example-chip" data-msg="Quiz me with 15 questions on World War 2">❓ Quiz me on WW2</div>
+      <div class="example-chip" data-msg="Create a talk show about black holes with 3 hosts">🎙 Talk show on black holes</div>
+      <div class="example-chip" data-msg="Make a tutorial video about the water cycle">🎬 Tutorial video on water cycle</div>
+      <div class="example-chip" data-msg="Explain quantum entanglement in simple terms in Spanish">🌍 Explain in Spanish</div>
+      <div class="example-chip" data-msg="Build a beautiful website about climate change">🌐 Build a website</div>
+      <div class="example-chip" data-msg="Read me a lesson on the French Revolution in Zephyr voice">🔊 Read me a lesson</div>
+      <div class="example-chip" data-msg="Generate an illustration of the solar system">🖼 Illustrate the solar system</div>
+    </div>
+    <div class="upload-hint" id="uploadHintBtn">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+      Or drop a PDF, image, or text file and ask about it
     </div>
   </div>
 </div>
 
-<!-- Processing Screen -->
-<div id="processingScreen">
-  <div class="spinner"></div>
-  <div id="processingMsg">Gemini is reading your material…</div>
-  <div id="processingFile"></div>
+<div id="chipsBar">
+  <span class="quick-chip" data-msg="Make 10 flashcards">📚 Flashcards</span>
+  <span class="quick-chip" data-msg="Quiz me with 10 questions">❓ Quiz</span>
+  <span class="quick-chip" data-msg="Create a 3-minute talk show broadcast">🎙 Broadcast</span>
+  <span class="quick-chip" data-msg="Make a tutorial video">🎬 Video</span>
+  <span class="quick-chip" data-msg="Build a beautiful website about this">🌐 Build Site</span>
+  <span class="quick-chip" data-msg="Explain this clearly with an audio reading">🔊 Read Aloud</span>
+  <span class="quick-chip" data-msg="Generate an illustration of this topic">🖼 Illustrate</span>
+  <span class="quick-chip" data-msg="Explain this in French">🌍 Translate</span>
 </div>
 
-<!-- Study Screen -->
-<div id="studyScreen">
-  <!-- Sidebar -->
-  <div id="lessonSidebar">
-    <div id="courseTitle">My Course</div>
-    <div id="lessonList"></div>
-    <div id="sidebarProgress">
-      <span id="progressLabel">0 / 0 lessons done</span>
-      <div id="progressBar"><div id="progressFill" style="width:0%"></div></div>
-    </div>
-  </div>
-
-  <!-- Main Content -->
-  <div id="mainPanel">
-    <div id="lessonHeader">
-      <div id="lessonTitle">Lesson Title</div>
-      <div id="lessonSummary">Summary</div>
-      <div id="tabRow">
-        <button class="tab-pill active" data-tab="learn">📖 Learn</button>
-        <button class="tab-pill" data-tab="flashcards">🎴 Flashcards</button>
-        <button class="tab-pill" data-tab="quiz">❓ Quiz</button>
-        <button id="askTutorBtn">
-          <img src="icons/agent-avatar.png" alt="">
-          Ask Tutor
-        </button>
-      </div>
-    </div>
-    <div id="tabContent"></div>
-  </div>
-
-  <!-- AI Tutor Panel -->
-  <div id="tutorPanel">
-    <div id="tutorHeader">
-      <img src="icons/agent-avatar.png" alt="">
-      <span>AI Tutor</span>
-      <button id="closeTutorBtn">✕</button>
-    </div>
-    <div id="tutorMessages"></div>
-    <div id="tutorInputArea">
-      <textarea id="tutorInput" rows="2" placeholder="Ask your tutor anything…"></textarea>
-      <button id="tutorSendBtn">→</button>
-    </div>
-  </div>
+<div id="inputBar">
+  <textarea id="msgInput" placeholder="Ask anything… make flashcards, create a broadcast, explain in French, build a site…" rows="1"></textarea>
+  <button id="sendBtn" title="Send">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+  </button>
 </div>
 
 <script src="learn.js"></script>

@@ -1,563 +1,789 @@
-/* learn.js — SnapToAI Native Study Portal
-   MV3 compliant: no inline handlers, all listeners via addEventListener
-   API key read from chrome.storage.sync.geminiApiKey */
-
+/* learn.js — SnapToAI Conversational Study Portal
+   All APIs: Gemini text, Gemini TTS (voices), Gemini image, Veo video, Broadcast, Build
+   API key: chrome.storage.sync.geminiApiKey
+   MV3 compliant: no inline handlers */
 'use strict';
 
-// ── State ────────────────────────────────────────────────────────────────────
-let GEMINI_KEY = '';
-let COURSE = null;
-let currentLessonIdx = 0;
-let currentTab = 'learn';
-let currentCardIdx = 0;
-let quizAnswered = {};
-let completedLessons = new Set();
-let tutorOpen = false;
-let tutorContext = '';
+// ── Models ────────────────────────────────────────────────────────────────────
+const M = {
+  chat:   'gemini-2.5-flash',
+  tts:    'gemini-2.5-flash-preview-tts',
+  imgGen: 'gemini-2.0-flash-preview-image-generation',
+  veo:    'veo-3.1-generate-preview',
+};
+const BASE = 'https://generativelanguage.googleapis.com/v1beta/models/';
+const url  = (model, method = 'generateContent') =>
+  k => `${BASE}${model}:${method}?key=${k}`;
 
-const GEMINI_URL = key =>
-  `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${key}`;
+// ── State ─────────────────────────────────────────────────────────────────────
+let GEMINI_KEY   = '';
+let fileCtx      = '';   // extracted text from uploaded file
+let fileData     = null; // { base64, mimeType } — kept for image/PDF re-sends
+let chatHistory  = [];   // [{role,text}] shown in UI
+let isBusy       = false;
 
-// ── Boot ─────────────────────────────────────────────────────────────────────
+// Broadcast playback state
+let bcLines = [];
+let bcIdx   = 0;
+let bcPlaying = false;
+let bcAbort  = false;
+const BC_VOICES = {
+  ZEPHYR: { role: 'Host',    geminiVoice: 'Zephyr', color: '#2DD4BF', icon: '🎙️' },
+  KORE:   { role: 'Expert',  geminiVoice: 'Kore',   color: '#A78BFA', icon: '🎓' },
+  FENRIR: { role: 'Creative',geminiVoice: 'Puck',   color: '#F97316', icon: '⚡' },
+};
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', () => {
-  loadApiKey();
-  bindUploadHandlers();
-  bindStudyHandlers();
-  bindTutorHandlers();
+  loadKey();
+  bindAll();
 });
 
-function loadApiKey() {
+function loadKey() {
   chrome.storage.sync.get(['geminiApiKey'], res => {
     GEMINI_KEY = res.geminiApiKey || '';
-    const keyStatus = document.getElementById('keyStatus');
-    const noKeyWarning = document.getElementById('noKeyWarning');
+    const badge = document.getElementById('keyBadge');
     if (GEMINI_KEY) {
-      keyStatus.textContent = '🔑 Key ready';
-      keyStatus.style.background = 'rgba(16,185,129,0.15)';
-      keyStatus.style.color = '#6EE7B7';
-      keyStatus.style.borderColor = 'rgba(16,185,129,0.35)';
-      noKeyWarning.style.display = 'none';
+      badge.textContent = '🔑 Key ready';
+      badge.className = 'ok';
     } else {
-      keyStatus.textContent = '⚠️ No key';
-      noKeyWarning.style.display = '';
+      badge.textContent = '⚠ No Key — open SnapToAI and save your Gemini key first';
+      badge.className = '';
     }
   });
 }
 
-// ── Upload ────────────────────────────────────────────────────────────────────
-function bindUploadHandlers() {
-  const uploadBtn = document.getElementById('uploadBtn');
-  const fileInput = document.getElementById('fileInput');
-  const uploadBox = document.getElementById('uploadBox');
+// ── Bind all events ───────────────────────────────────────────────────────────
+function bindAll() {
+  // Send button
+  document.getElementById('sendBtn').addEventListener('click', handleSend);
 
-  uploadBtn.addEventListener('click', () => fileInput.click());
-
-  fileInput.addEventListener('change', e => {
-    if (e.target.files[0]) startProcessing(e.target.files[0]);
+  // Enter to send (Shift+Enter = newline)
+  document.getElementById('msgInput').addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); }
   });
 
-  uploadBox.addEventListener('dragover', e => {
-    e.preventDefault();
-    uploadBox.classList.add('drag-over');
+  // Auto-resize textarea
+  document.getElementById('msgInput').addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
   });
-  uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('drag-over'));
-  uploadBox.addEventListener('drop', e => {
+
+  // Quick chips
+  document.querySelectorAll('.quick-chip, .example-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      const msg = chip.dataset.msg;
+      if (msg) { sendMessage(msg); }
+    });
+  });
+
+  // File buttons
+  document.getElementById('fileDropBtn').addEventListener('click', () =>
+    document.getElementById('fileInputHidden').click());
+  document.getElementById('uploadHintBtn')?.addEventListener('click', () =>
+    document.getElementById('fileInputHidden').click());
+  document.getElementById('fileInputHidden').addEventListener('change', e => {
+    if (e.target.files[0]) handleFile(e.target.files[0]);
+  });
+  document.getElementById('hdrCtx').addEventListener('click', clearFile);
+
+  // Drag & drop anywhere on page
+  document.addEventListener('dragover', e => { e.preventDefault(); document.body.classList.add('dragging'); });
+  document.addEventListener('dragleave', e => {
+    if (!e.relatedTarget || e.relatedTarget === document.body) document.body.classList.remove('dragging');
+  });
+  document.addEventListener('drop', e => {
     e.preventDefault();
-    uploadBox.classList.remove('drag-over');
+    document.body.classList.remove('dragging');
     const file = e.dataTransfer?.files[0];
-    if (file) startProcessing(file);
+    if (file) handleFile(file);
   });
-
-  document.getElementById('newStudyBtn').addEventListener('click', resetToUpload);
 }
 
-async function startProcessing(file) {
-  if (!GEMINI_KEY) { alert('No Gemini API key found. Open SnapToAI and save your key first.'); return; }
-
-  const allowed = ['application/pdf','image/png','image/jpeg','image/webp','image/gif','text/plain','text/markdown'];
+// ── File handling ─────────────────────────────────────────────────────────────
+async function handleFile(file) {
+  if (!GEMINI_KEY) { appendSystem('No API key — save your key in SnapToAI first.'); return; }
+  const allowed = ['application/pdf','image/png','image/jpeg','image/webp','text/plain','text/markdown'];
   const mime = file.type || 'text/plain';
   if (!allowed.includes(mime) && !file.name.endsWith('.md')) {
-    alert('Please upload a PDF, image (PNG/JPG/WEBP), or text/markdown file.');
-    return;
+    appendSystem('Please use a PDF, PNG, JPG, WEBP, or TXT/MD file.'); return;
   }
 
-  showScreen('processing');
-  document.getElementById('processingFile').textContent = file.name;
-
+  appendSystem(`📎 Reading "${file.name}"…`);
   try {
-    const base64 = await fileToBase64(file);
-    const course = await generateCourse(base64, mime, file.name);
-    COURSE = course;
-    renderCourse();
-    showScreen('study');
+    const b64 = await fileToBase64(file);
+    fileData = { base64: b64, mimeType: mime };
+
+    if (mime.startsWith('text/') || file.name.endsWith('.md')) {
+      fileCtx = atob(b64).slice(0, 12000);
+    } else {
+      // Extract text context from image/PDF using Gemini vision
+      const res = await fetch(url(M.chat)(GEMINI_KEY), {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [
+            { text: 'Extract all text content and key information from this file. Return plain text, comprehensive.' },
+            { inline_data: { mime_type: mime, data: b64 } }
+          ]}],
+          generationConfig: { temperature: 0.1, maxOutputTokens: 6000 }
+        })
+      });
+      const d = await res.json();
+      fileCtx = d?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    }
+
+    // Update header context indicator
+    document.getElementById('hdrCtx').style.display = '';
+    document.getElementById('ctxName').textContent = file.name;
+    hideWelcome();
+    appendSystem(`✅ File loaded: "${file.name}". Now tell me what to create — flashcards, quiz, broadcast, video, and more.`);
   } catch (err) {
-    showScreen('upload');
-    alert('Could not generate course: ' + (err.message || err));
+    appendSystem('Error reading file: ' + err.message);
+    fileCtx = ''; fileData = null;
   }
+}
+
+function clearFile() {
+  fileCtx = ''; fileData = null;
+  document.getElementById('hdrCtx').style.display = 'none';
+  document.getElementById('fileInputHidden').value = '';
+  appendSystem('File cleared. You can upload a new one anytime.');
 }
 
 function fileToBase64(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = reader.result;
-      const b64 = result.split(',')[1];
-      resolve(b64);
-    };
-    reader.onerror = reject;
-    reader.readAsDataURL(file);
+  return new Promise((res, rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result.split(',')[1]);
+    r.onerror = rej;
+    r.readAsDataURL(file);
   });
 }
 
-// ── Gemini — Course Extraction ────────────────────────────────────────────────
-async function generateCourse(base64, mimeType, fileName) {
-  const isText = mimeType.startsWith('text/') || fileName.endsWith('.md');
-
-  const systemPrompt = `You are an expert curriculum designer. Analyse the provided study material and extract it into a structured course JSON.
-
-Return ONLY valid JSON that matches this schema exactly:
-{
-  "title": "Short course title (max 8 words)",
-  "lessons": [
-    {
-      "id": "lesson-1",
-      "title": "Lesson title",
-      "summary": "One-sentence summary of this lesson",
-      "concepts": [
-        { "emoji": "🔬", "term": "Term or concept", "definition": "Clear, concise definition (2-3 sentences)" }
-      ],
-      "examples": [
-        { "title": "Example title", "body": "Concrete real-world example with explanation" }
-      ],
-      "flashcards": [
-        { "front": "Question or term", "back": "Answer or definition" }
-      ],
-      "quiz": [
-        { "q": "Question?", "options": ["A) ...", "B) ...", "C) ...", "D) ..."], "answer": "A) ...", "explanation": "Why this answer is correct" }
-      ]
-    }
-  ]
-}
-
-Rules:
-- Create 2-5 lessons based on the material (more for longer content)
-- Each lesson: 3-8 concepts, 2-4 examples, 5-10 flashcards, 5-8 quiz questions
-- Quiz answers must exactly match one of the 4 options
-- Use emojis that visually represent each concept
-- Return only JSON, no markdown fences or extra text`;
-
-  let parts;
-  if (isText) {
-    const textContent = atob(base64);
-    parts = [
-      { text: systemPrompt },
-      { text: 'Study material:\n\n' + textContent }
-    ];
-  } else {
-    parts = [
-      { text: systemPrompt },
-      { inline_data: { mime_type: mimeType, data: base64 } }
-    ];
-  }
-
-  const body = {
-    contents: [{ role: 'user', parts }],
-    generationConfig: {
-      temperature: 0.4,
-      maxOutputTokens: 8192,
-      responseMimeType: 'application/json'
-    }
-  };
-
-  const res = await fetch(GEMINI_URL(GEMINI_KEY), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err?.error?.message || `API error ${res.status}`);
-  }
-
-  const data = await res.json();
-  const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-  const cleaned = raw.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
-  return JSON.parse(cleaned);
-}
-
-// ── Render Course ─────────────────────────────────────────────────────────────
-function renderCourse() {
-  document.getElementById('courseTitle').textContent = COURSE.title || 'My Course';
-  document.getElementById('newStudyBtn').style.display = '';
-
-  const list = document.getElementById('lessonList');
-  list.innerHTML = '';
-  COURSE.lessons.forEach((lesson, i) => {
-    const item = document.createElement('div');
-    item.className = 'lesson-item' + (i === 0 ? ' active' : '');
-    item.dataset.idx = i;
-    item.innerHTML = `<span>${i + 1}.</span><span style="flex:1">${lesson.title}</span><span class="lesson-status" id="ls-${i}"></span>`;
-    item.addEventListener('click', () => selectLesson(i));
-    list.appendChild(item);
-  });
-
-  selectLesson(0);
-  updateProgress();
-}
-
-function selectLesson(idx) {
-  currentLessonIdx = idx;
-  currentTab = 'learn';
-  currentCardIdx = 0;
-  quizAnswered = {};
-
-  document.querySelectorAll('.lesson-item').forEach((el, i) => {
-    el.classList.toggle('active', i === idx);
-  });
-
-  const lesson = COURSE.lessons[idx];
-  document.getElementById('lessonTitle').textContent = lesson.title;
-  document.getElementById('lessonSummary').textContent = lesson.summary || '';
-
-  document.querySelectorAll('.tab-pill').forEach(p => p.classList.toggle('active', p.dataset.tab === 'learn'));
-
-  tutorContext = `Current lesson: "${lesson.title}". Summary: ${lesson.summary}. Key concepts: ${lesson.concepts.map(c => c.term).join(', ')}.`;
-  renderTab('learn');
-}
-
-function renderTab(tab) {
-  currentTab = tab;
-  document.querySelectorAll('.tab-pill').forEach(p => p.classList.toggle('active', p.dataset.tab === tab));
-  const lesson = COURSE.lessons[currentLessonIdx];
-  const area = document.getElementById('tabContent');
-  area.innerHTML = '';
-
-  if (tab === 'learn') renderLearnTab(lesson, area);
-  else if (tab === 'flashcards') renderFlashcardsTab(lesson, area);
-  else if (tab === 'quiz') renderQuizTab(lesson, area);
-}
-
-// Learn tab
-function renderLearnTab(lesson, area) {
-  const conceptsDiv = document.createElement('div');
-  conceptsDiv.innerHTML = `<h3 style="font-size:15px;font-weight:700;color:#0F172A;margin-bottom:14px">📌 Key Concepts</h3>`;
-  (lesson.concepts || []).forEach(c => {
-    const card = document.createElement('div');
-    card.className = 'concept-card';
-    card.innerHTML = `
-      <div class="concept-emoji">${c.emoji || '💡'}</div>
-      <div class="concept-body">
-        <div class="concept-term">${escHtml(c.term)}</div>
-        <div class="concept-def">${escHtml(c.definition)}</div>
-      </div>
-      <button class="speak-btn" data-text="${escAttr(c.term + '. ' + c.definition)}" title="Read aloud">🔊</button>`;
-    card.querySelector('.speak-btn').addEventListener('click', e => {
-      speakText(e.currentTarget.dataset.text);
-    });
-    conceptsDiv.appendChild(card);
-  });
-  area.appendChild(conceptsDiv);
-
-  if (lesson.examples?.length) {
-    const exDiv = document.createElement('div');
-    exDiv.style.marginTop = '20px';
-    exDiv.innerHTML = `<h3 style="font-size:15px;font-weight:700;color:#0F172A;margin-bottom:14px">🧩 Examples</h3>`;
-    lesson.examples.forEach(ex => {
-      const card = document.createElement('div');
-      card.className = 'example-card';
-      card.innerHTML = `<div class="example-title">${escHtml(ex.title)}</div><div class="example-body">${escHtml(ex.body)}</div>`;
-      exDiv.appendChild(card);
-    });
-    area.appendChild(exDiv);
-  }
-
-  markLessonDone(currentLessonIdx);
-}
-
-// Flashcards tab
-function renderFlashcardsTab(lesson, area) {
-  const cards = lesson.flashcards || [];
-  if (!cards.length) { area.innerHTML = '<p style="color:#94A3B8;text-align:center;margin-top:40px">No flashcards for this lesson.</p>'; return; }
-
-  const wrapper = document.createElement('div');
-  wrapper.id = 'flashcardArea';
-
-  const flipCard = document.createElement('div');
-  flipCard.className = 'flip-card';
-  flipCard.innerHTML = `<div class="flip-inner"><div class="flip-face flip-front" id="cardFront">${escHtml(cards[0].front)}</div><div class="flip-face flip-back" id="cardBack">${escHtml(cards[0].back)}</div></div>`;
-  flipCard.addEventListener('click', () => flipCard.classList.toggle('flipped'));
-  wrapper.appendChild(flipCard);
-
-  const counter = document.createElement('div');
-  counter.id = 'cardCounter';
-  counter.style.cssText = 'font-size:13px;color:#94A3B8';
-  counter.textContent = `1 / ${cards.length}`;
-  wrapper.appendChild(counter);
-
-  const nav = document.createElement('div');
-  nav.id = 'cardNav';
-  const prevBtn = document.createElement('button'); prevBtn.textContent = '← Prev';
-  const nextBtn = document.createElement('button'); nextBtn.textContent = 'Next →';
-
-  prevBtn.addEventListener('click', () => {
-    if (currentCardIdx > 0) { currentCardIdx--; updateCard(); }
-  });
-  nextBtn.addEventListener('click', () => {
-    if (currentCardIdx < cards.length - 1) { currentCardIdx++; updateCard(); }
-  });
-  nav.appendChild(prevBtn);
-  nav.appendChild(counter);
-  nav.appendChild(nextBtn);
-  wrapper.appendChild(nav);
-
-  function updateCard() {
-    flipCard.classList.remove('flipped');
-    setTimeout(() => {
-      document.getElementById('cardFront').textContent = cards[currentCardIdx].front;
-      document.getElementById('cardBack').textContent = cards[currentCardIdx].back;
-      counter.textContent = `${currentCardIdx + 1} / ${cards.length}`;
-    }, 150);
-  }
-
-  const hint = document.createElement('p');
-  hint.style.cssText = 'font-size:12px;color:#94A3B8';
-  hint.textContent = 'Click card to flip';
-  wrapper.appendChild(hint);
-
-  area.appendChild(wrapper);
-}
-
-// Quiz tab
-function renderQuizTab(lesson, area) {
-  const questions = lesson.quiz || [];
-  if (!questions.length) { area.innerHTML = '<p style="color:#94A3B8;text-align:center;margin-top:40px">No quiz for this lesson.</p>'; return; }
-
-  questions.forEach((q, qi) => {
-    const card = document.createElement('div');
-    card.className = 'quiz-question';
-    card.innerHTML = `<div class="quiz-q">${qi + 1}. ${escHtml(q.q)}</div><div class="quiz-options"></div><div class="quiz-explanation" id="qexpl-${qi}">${escHtml(q.explanation || '')}</div>`;
-
-    const optionsDiv = card.querySelector('.quiz-options');
-    q.options.forEach(opt => {
-      const btn = document.createElement('button');
-      btn.className = 'quiz-opt';
-      btn.textContent = opt;
-      btn.addEventListener('click', () => {
-        if (quizAnswered[qi]) return;
-        quizAnswered[qi] = opt;
-        const isCorrect = opt === q.answer;
-        btn.classList.add(isCorrect ? 'correct' : 'wrong');
-        if (!isCorrect) {
-          optionsDiv.querySelectorAll('.quiz-opt').forEach(b => {
-            if (b.textContent === q.answer) b.classList.add('correct');
-          });
-          openTutor();
-          appendTutorMessage('student', `I got question ${qi + 1} wrong. The question was: "${q.q}" I chose: "${opt}"`);
-          askTutor(`I answered question "${q.q}" with "${opt}" but the correct answer is "${q.answer}". Help me understand.`);
-        }
-        optionsDiv.querySelectorAll('.quiz-opt').forEach(b => b.disabled = true);
-        document.getElementById(`qexpl-${qi}`).style.display = '';
-        checkQuizComplete(questions.length);
-      });
-      optionsDiv.appendChild(btn);
-    });
-    area.appendChild(card);
-  });
-
-  const scoreEl = document.createElement('div');
-  scoreEl.id = 'quizScore';
-  scoreEl.innerHTML = `<div style="font-size:28px">🎉</div><div style="font-size:18px;font-weight:700;color:#0F172A;margin:8px 0" id="scoreText"></div><div style="font-size:13px;color:#64748B">Complete!</div>`;
-  area.appendChild(scoreEl);
-}
-
-function checkQuizComplete(total) {
-  if (Object.keys(quizAnswered).length < total) return;
-  const correct = Object.entries(quizAnswered).filter(([qi, ans]) => ans === COURSE.lessons[currentLessonIdx].quiz[qi].answer).length;
-  const scoreEl = document.getElementById('quizScore');
-  if (scoreEl) {
-    scoreEl.style.display = '';
-    document.getElementById('scoreText').textContent = `${correct} / ${total} correct`;
-  }
-  markLessonDone(currentLessonIdx);
-}
-
-// ── Progress ───────────────────────────────────────────────────────────────────
-function markLessonDone(idx) {
-  completedLessons.add(idx);
-  updateProgress();
-}
-
-function updateProgress() {
-  if (!COURSE) return;
-  const total = COURSE.lessons.length;
-  const done = completedLessons.size;
-  document.getElementById('progressLabel').textContent = `${done} / ${total} lessons done`;
-  document.getElementById('progressFill').style.width = `${(done / total) * 100}%`;
-  COURSE.lessons.forEach((_, i) => {
-    const statusEl = document.getElementById(`ls-${i}`);
-    if (statusEl) statusEl.textContent = completedLessons.has(i) ? '✓' : '';
-  });
-}
-
-// ── Tutor ─────────────────────────────────────────────────────────────────────
-function bindStudyHandlers() {
-  document.querySelectorAll('.tab-pill').forEach(pill => {
-    pill.addEventListener('click', () => renderTab(pill.dataset.tab));
-  });
-  document.getElementById('askTutorBtn').addEventListener('click', openTutor);
-}
-
-function bindTutorHandlers() {
-  document.getElementById('closeTutorBtn').addEventListener('click', closeTutor);
-  document.getElementById('tutorSendBtn').addEventListener('click', sendTutorMessage);
-  document.getElementById('tutorInput').addEventListener('keydown', e => {
-    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendTutorMessage(); }
-  });
-}
-
-function openTutor() {
-  tutorOpen = true;
-  document.getElementById('tutorPanel').classList.add('open');
-}
-
-function closeTutor() {
-  tutorOpen = false;
-  document.getElementById('tutorPanel').classList.remove('open');
-}
-
-function sendTutorMessage() {
-  const input = document.getElementById('tutorInput');
+// ── Message send ──────────────────────────────────────────────────────────────
+function handleSend() {
+  const input = document.getElementById('msgInput');
   const msg = input.value.trim();
-  if (!msg) return;
+  if (!msg || isBusy) return;
   input.value = '';
-  appendTutorMessage('student', msg);
-  askTutor(msg);
+  input.style.height = '';
+  sendMessage(msg);
 }
 
-function appendTutorMessage(type, text) {
-  const msgs = document.getElementById('tutorMessages');
-  const el = document.createElement('div');
-  if (type === 'student') {
-    el.className = 'tutor-msg-student';
-    el.textContent = text;
-  } else if (type === 'thinking') {
-    el.className = 'tutor-msg-thinking';
-    el.id = 'tutorThinking';
-    el.textContent = '✦ Thinking…';
-  } else if (type === 'error') {
-    el.className = 'tutor-msg-error';
-    el.textContent = '⚠ ' + text;
-  } else if (type === 'response') {
-    el.className = 'tutor-response-card';
-    if (text.feedback) {
-      const fb = document.createElement('div');
-      fb.className = 'tutor-feedback';
-      fb.textContent = text.feedback;
-      el.appendChild(fb);
-    }
-    if (text.explanation) {
-      const exp = document.createElement('div');
-      exp.className = 'tutor-explanation';
-      exp.textContent = '💡 ' + text.explanation;
-      el.appendChild(exp);
-    }
-    if (text.socratic_question) {
-      const sq = document.createElement('div');
-      sq.className = 'tutor-question';
-      sq.innerHTML = `<span>🤔</span><span>${escHtml(text.socratic_question)}</span>`;
-      el.appendChild(sq);
-    }
+async function sendMessage(msg) {
+  if (isBusy) return;
+  if (!GEMINI_KEY) { appendSystem('No API key. Open SnapToAI and add your Gemini key via the 🔑 button.'); return; }
+
+  hideWelcome();
+  appendUserMsg(msg);
+  chatHistory.push({ role: 'user', text: msg });
+
+  setBusy(true);
+  const thinkEl = appendThinking();
+
+  try {
+    const response = await callConversational(msg);
+    thinkEl.remove();
+
+    // Show conversational reply
+    if (response.reply) appendAIMsg(response.reply);
+
+    // Execute action
+    await executeAction(response.action, response.payload, msg);
+
+    chatHistory.push({ role: 'ai', text: response.reply || '' });
+  } catch (err) {
+    thinkEl.remove();
+    appendSystem('Error: ' + (err.message || 'Something went wrong'));
+  } finally {
+    setBusy(false);
   }
-  msgs.appendChild(el);
-  msgs.scrollTop = msgs.scrollHeight;
-  return el;
 }
 
-async function askTutor(userMessage) {
-  if (!GEMINI_KEY) { appendTutorMessage('error', 'No API key. Save your key in SnapToAI first.'); return; }
+// ── Core conversational Gemini call ──────────────────────────────────────────
+async function callConversational(userMsg) {
+  const fileSection = fileCtx
+    ? `\n\nUPLOADED STUDY MATERIAL (use this as the topic unless the user specifies otherwise):\n"""\n${fileCtx.slice(0,8000)}\n"""`
+    : '';
 
-  openTutor();
-  appendTutorMessage('thinking', '');
+  const historyText = chatHistory.slice(-6)
+    .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${m.text}`).join('\n');
 
-  const systemInstruction = `You are a warm, encouraging Socratic AI tutor. Your role is to guide students to understanding through questions, never just giving answers.
+  const systemInstruction = `You are SnapToAI Study — a powerful AI learning assistant with access to ALL these capabilities. Understand the user's intent and respond with the best action.
 
-Context about what the student is currently studying:
-${tutorContext}
+CAPABILITIES:
+- "flashcards" → create flip cards to memorize content
+- "quiz" → multiple-choice questions with answers and explanations
+- "broadcast" → 3-host podcast/talk show script (ZEPHYR=host, KORE=expert, FENRIR=energetic commentator)
+- "explain" → clear explanation with optional language and voice
+- "tts" → speak text aloud using a Gemini AI voice
+- "video" → generate a tutorial video using Veo AI
+- "build" → create a full website, presentation, or game
+- "image" → generate an AI illustration of the topic
+- "none" → just have a friendly conversation
 
-You MUST respond with valid JSON matching exactly:
+INTENT DETECTION:
+- "flashcards", "flash cards", "cards", "memorize" → action: "flashcards"
+- "quiz", "test me", "questions" → action: "quiz"
+- "broadcast", "podcast", "talk show", "radio", "episode" → action: "broadcast"
+- "explain", "teach me", "tell me about" → action: "explain"
+- "read aloud", "speak", "voice", "listen", "audio" → action: "tts"
+- "video", "tutorial video", "make a video" → action: "video"
+- "build", "website", "site", "presentation", "game" → action: "build"
+- "illustrate", "draw", "generate image", "picture" → action: "image"
+
+RECENT CONVERSATION:
+${historyText}${fileSection}
+
+RESPONSE FORMAT — always return valid JSON, no markdown fences:
 {
-  "feedback": "Brief, warm acknowledgment (1-2 sentences). Praise effort, not just correctness.",
-  "explanation": "Clear explanation of the concept (2-4 sentences). Use an analogy if helpful.",
-  "socratic_question": "One open-ended Socratic question that leads the student to think deeper. Do NOT answer it — let them think."
-}`;
+  "reply": "Short friendly message (1-2 sentences, MAX 40 words). Confirm what you're creating.",
+  "action": "none|flashcards|quiz|broadcast|explain|tts|video|build|image",
+  "payload": { ... }
+}
+
+PAYLOAD SCHEMAS:
+flashcards → { "topic":"...", "cards":[{"front":"term or question","back":"answer or definition"}] }
+  - Create as many cards as requested (default 10, max 100)
+
+quiz → { "topic":"...", "questions":[{"q":"...","options":["A) ...","B) ...","C) ...","D) ..."],"answer":"A) ...","explanation":"..."}] }
+  - Default 10 questions, create as many as requested
+
+broadcast → { "title":"...", "format":"talkshow", "lines":[{"speaker":"ZEPHYR|KORE|FENRIR","text":"..."}] }
+  - ZEPHYR: warm host, KORE: curious expert, FENRIR: energetic commentator
+  - 1 min = ~8 exchanges, 3 min = ~20 exchanges, 5 min = ~30 exchanges
+  - Default to 3 minutes unless user specifies
+
+explain → { "language":"English", "title":"...", "text":"Full explanation (300-600 words)...", "voice":"Zephyr" }
+  - Use the language the user requests. Voice: Zephyr, Kore, Puck, Fenrir, Aoede, Charon
+
+tts → { "text":"Text to speak aloud (keep under 300 words)...", "voice":"Zephyr" }
+
+video → { "title":"...", "prompt":"Detailed cinematic Veo video prompt for a tutorial video about this topic. Describe visuals, narration style, shots. Be specific and cinematic.", "durationSeconds": 8 }
+
+build → { "type":"site|presentation|game", "title":"...", "buildPrompt":"Full build instruction for the AI — e.g. Build a beautiful landing page about [topic] with..." }
+  - type "site" → website
+  - type "presentation" → PowerPoint-style slides
+  - type "game" → browser game
+
+image → { "title":"...", "imagePrompt":"Detailed Imagen prompt — educational illustration of [topic]. Style: clean, modern, labeled diagram. Bright colors." }`;
 
   const body = {
     system_instruction: { parts: [{ text: systemInstruction }] },
-    contents: [{ role: 'user', parts: [{ text: userMessage }] }],
-    generationConfig: {
-      temperature: 0.7,
-      maxOutputTokens: 512,
-      responseMimeType: 'application/json'
-    }
+    contents: [{ role: 'user', parts: [{ text: userMsg }] }],
+    generationConfig: { temperature: 0.6, maxOutputTokens: 8192, responseMimeType: 'application/json' }
   };
 
-  try {
-    const res = await fetch(GEMINI_URL(GEMINI_KEY), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
+  const res = await fetch(url(M.chat)(GEMINI_KEY), {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) { const e = await res.json().catch(() => ({})); throw new Error(e?.error?.message || `API ${res.status}`); }
+  const d = await res.json();
+  const raw = d?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+  return JSON.parse(raw.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim());
+}
+
+// ── Action Router ─────────────────────────────────────────────────────────────
+async function executeAction(action, payload, userMsg) {
+  if (!payload || action === 'none' || !action) return;
+
+  switch (action) {
+    case 'flashcards': renderFlashcards(payload); break;
+    case 'quiz':       renderQuiz(payload); break;
+    case 'broadcast':  renderBroadcast(payload); break;
+    case 'explain':    renderExplain(payload); break;
+    case 'tts':        await speakText(payload.text || userMsg, payload.voice || 'Zephyr'); break;
+    case 'video':      await renderVideo(payload); break;
+    case 'build':      await renderBuild(payload); break;
+    case 'image':      await renderImage(payload); break;
+    default: break;
+  }
+}
+
+// ── Flashcards ────────────────────────────────────────────────────────────────
+function renderFlashcards(p) {
+  const cards = p.cards || [];
+  if (!cards.length) return;
+  let idx = 0;
+
+  const card = makeContentCard(`🎴 Flashcards — ${p.topic || ''} (${cards.length} cards)`);
+  const body = card.querySelector('.content-card-body');
+
+  const wrap = el('div','flashcard-set');
+  const flipWrap = el('div','flip-wrap');
+  flipWrap.innerHTML = `<div class="flip-inner"><div class="flip-face flip-front" id="fcFront">${escH(cards[0].front)}</div><div class="flip-face flip-back" id="fcBack">${escH(cards[0].back)}</div></div>`;
+  flipWrap.addEventListener('click', () => flipWrap.classList.toggle('flipped'));
+
+  const counter = el('div','fc-counter'); counter.textContent = `1 / ${cards.length}`;
+
+  const nav = el('div','fc-nav');
+  const prev = btn('← Prev','fc-nav'); const next = btn('Next →','fc-nav');
+  prev.addEventListener('click', () => { if (idx > 0) { idx--; updateCard(); } });
+  next.addEventListener('click', () => { if (idx < cards.length-1) { idx++; updateCard(); } });
+  nav.append(prev, counter, next);
+
+  function updateCard() {
+    flipWrap.classList.remove('flipped');
+    setTimeout(() => {
+      document.getElementById('fcFront').textContent = cards[idx].front;
+      document.getElementById('fcBack').textContent  = cards[idx].back;
+      counter.textContent = `${idx+1} / ${cards.length}`;
+    }, 180);
+  }
+
+  const hint = el('p'); hint.style.cssText='font-size:11px;color:#475569'; hint.textContent='Tap card to flip';
+  wrap.append(flipWrap, nav, hint);
+  body.appendChild(wrap);
+  appendCard(card);
+}
+
+// ── Quiz ──────────────────────────────────────────────────────────────────────
+function renderQuiz(p) {
+  const qs = p.questions || [];
+  if (!qs.length) return;
+  const answered = {};
+
+  const card = makeContentCard(`❓ Quiz — ${p.topic || ''} (${qs.length} questions)`);
+  const body = card.querySelector('.content-card-body');
+
+  qs.forEach((q, qi) => {
+    const block = el('div','quiz-q-block');
+    const qText = el('div','quiz-q-text'); qText.textContent = `${qi+1}. ${q.q}`;
+    const opts  = el('div','quiz-opts');
+    const expl  = el('div','quiz-expl'); expl.textContent = q.explanation || '';
+
+    q.options.forEach(opt => {
+      const b = el('button','quiz-opt-btn'); b.textContent = opt;
+      b.addEventListener('click', () => {
+        if (answered[qi]) return;
+        answered[qi] = opt;
+        const correct = opt === q.answer;
+        b.classList.add(correct ? 'correct' : 'wrong');
+        opts.querySelectorAll('.quiz-opt-btn').forEach(ob => {
+          if (ob.textContent === q.answer) ob.classList.add('correct');
+          ob.disabled = true;
+        });
+        expl.style.display = '';
+        // wrong answer → auto-ask tutor inline
+        if (!correct) {
+          const tutorNote = el('div'); tutorNote.style.cssText='margin-top:8px;font-size:12px;color:#F59E0B';
+          tutorNote.textContent = '💡 Ask your tutor about this by typing below!';
+          block.appendChild(tutorNote);
+          // Pre-fill the input with a tutor question
+          document.getElementById('msgInput').value =
+            `I got question "${q.q}" wrong. I chose "${opt}" but the answer is "${q.answer}". Can you explain why?`;
+        }
+        checkScore();
+      });
+      opts.appendChild(b);
     });
 
-    document.getElementById('tutorThinking')?.remove();
+    block.append(qText, opts, expl);
+    body.appendChild(block);
+  });
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err?.error?.message || `API ${res.status}`);
-    }
+  const scoreEl = el('div','quiz-score');
+  body.appendChild(scoreEl);
 
-    const data = await res.json();
-    const raw = data?.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
-    const cleaned = raw.replace(/^```json\s*/,'').replace(/\s*```$/,'').trim();
-    const parsed = JSON.parse(cleaned);
-    appendTutorMessage('response', parsed);
-  } catch (err) {
-    document.getElementById('tutorThinking')?.remove();
-    appendTutorMessage('error', err.message);
+  function checkScore() {
+    if (Object.keys(answered).length < qs.length) return;
+    const correct = qs.filter((q,i) => answered[i] === q.answer).length;
+    scoreEl.textContent = `🎉 ${correct} / ${qs.length} correct!`;
+    scoreEl.style.display = '';
   }
+
+  appendCard(card);
+}
+
+// ── Broadcast ─────────────────────────────────────────────────────────────────
+function renderBroadcast(p) {
+  bcLines = p.lines || [];
+  bcIdx = 0; bcPlaying = false; bcAbort = false;
+
+  const card = makeContentCard(`🎙️ ${p.title || 'Broadcast'}`);
+  const body = card.querySelector('.content-card-body');
+
+  // Script display
+  const scriptEl = el('div','bc-script');
+  bcLines.forEach((line, i) => {
+    const spk = BC_VOICES[line.speaker] || BC_VOICES.ZEPHYR;
+    const row = el('div','bc-line'); row.id = `bc-line-${i}`;
+    const spkEl = el('div','bc-speaker');
+    spkEl.style.color = spk.color;
+    spkEl.textContent = `${spk.icon} ${line.speaker}`;
+    const txt = el('div','bc-text'); txt.textContent = line.text;
+    row.append(spkEl, txt);
+    scriptEl.appendChild(row);
+  });
+  body.appendChild(scriptEl);
+
+  // Controls
+  const controls = el('div','bc-controls');
+
+  const playBtn = el('button','bc-btn'); playBtn.id = 'bcPlayBtn';
+  playBtn.innerHTML = '▶ Play Broadcast';
+  playBtn.addEventListener('click', () => {
+    if (bcPlaying) { bcAbort = true; bcPlaying = false; playBtn.innerHTML = '▶ Play Broadcast'; }
+    else { bcAbort = false; playBtn.innerHTML = '⏹ Stop'; playBroadcast(playBtn); }
+  });
+  controls.appendChild(playBtn);
+  body.appendChild(controls);
+
+  appendCard(card);
+}
+
+async function playBroadcast(playBtn) {
+  bcPlaying = true;
+  for (let i = bcIdx; i < bcLines.length; i++) {
+    if (bcAbort) break;
+    bcIdx = i;
+    // Highlight current line
+    document.querySelectorAll('.bc-line').forEach(r => r.style.background = '');
+    const lineEl = document.getElementById(`bc-line-${i}`);
+    if (lineEl) lineEl.style.background = 'rgba(99,102,241,0.12)';
+
+    const line = bcLines[i];
+    const spk  = BC_VOICES[line.speaker] || BC_VOICES.ZEPHYR;
+    await speakGemini(line.text, spk.geminiVoice);
+    if (bcAbort) break;
+    await sleep(200);
+  }
+  document.querySelectorAll('.bc-line').forEach(r => r.style.background = '');
+  bcPlaying = false; bcIdx = 0;
+  if (playBtn) playBtn.innerHTML = '▶ Play Broadcast';
+}
+
+// ── Explain ───────────────────────────────────────────────────────────────────
+function renderExplain(p) {
+  const card = makeContentCard(`📖 ${p.title || 'Explanation'}${p.language !== 'English' ? ' — ' + p.language : ''}`);
+  const body = card.querySelector('.content-card-body');
+
+  const textEl = el('div','explain-body'); textEl.textContent = p.text || '';
+  body.appendChild(textEl);
+
+  // Voice buttons
+  const voiceRow = el('div','speak-row');
+  const voices = [
+    { name: 'Zephyr', label: '🎙 Zephyr' },
+    { name: 'Kore',   label: '🎓 Kore' },
+    { name: 'Puck',   label: '⚡ Puck' },
+    { name: 'Aoede',  label: '🌊 Aoede' },
+  ];
+  voices.forEach(v => {
+    const vBtn = el('button','speak-voice-btn');
+    vBtn.textContent = v.label;
+    vBtn.addEventListener('click', () => speakText(p.text, v.name));
+    voiceRow.appendChild(vBtn);
+  });
+  body.appendChild(voiceRow);
+  appendCard(card);
 }
 
 // ── TTS ───────────────────────────────────────────────────────────────────────
-function speakText(text) {
-  if ('speechSynthesis' in window) {
-    window.speechSynthesis.cancel();
-    const utter = new SpeechSynthesisUtterance(text);
-    utter.rate = 0.95;
-    window.speechSynthesis.speak(utter);
+async function speakText(text, voice = 'Zephyr') {
+  await speakGemini(text, voice);
+}
+
+async function speakGemini(text, voiceName = 'Zephyr') {
+  if (!GEMINI_KEY) { speakFallback(text); return; }
+  try {
+    const res = await fetch(
+      `${BASE}${M.tts}:generateContent?key=${GEMINI_KEY}`,
+      {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: 'Speak naturally and clearly: ' + text }] }],
+          generationConfig: {
+            response_modalities: ['AUDIO'],
+            speech_config: { voice_config: { prebuilt_voice_config: { voice_name: voiceName } } }
+          }
+        })
+      }
+    );
+    const d = await res.json();
+    const part = d?.candidates?.[0]?.content?.parts?.[0]?.inline_data;
+    if (!part?.data) { speakFallback(text); return; }
+    const pcm  = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
+    const mime = (part.mime_type || '').toLowerCase();
+    let blob;
+    if (!mime || mime.includes('pcm') || mime.startsWith('audio/l16')) {
+      blob = new Blob([pcmToWav(pcm)], { type: 'audio/wav' });
+    } else {
+      blob = new Blob([pcm], { type: mime });
+    }
+    const audioURL = URL.createObjectURL(blob);
+    const audio = new Audio(audioURL);
+    audio.onended = () => URL.revokeObjectURL(audioURL);
+    await audio.play();
+    // Wait for it to finish before resolving (for broadcast sequential playback)
+    await new Promise(resolve => { audio.onended = () => { URL.revokeObjectURL(audioURL); resolve(); }; });
+  } catch (e) { speakFallback(text); }
+}
+
+function speakFallback(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.rate = 0.93; u.pitch = 1.02;
+  window.speechSynthesis.speak(u);
+  // Return promise that resolves when done
+  return new Promise(resolve => { u.onend = resolve; });
+}
+
+function pcmToWav(pcm) {
+  const sr = 24000, ch = 1, bps = 16;
+  const buf = new ArrayBuffer(44 + pcm.byteLength);
+  const dv  = new DataView(buf);
+  const ws  = (o, v) => { for (let i = 0; i < v.length; i++) dv.setUint8(o+i, v.charCodeAt(i)); };
+  ws(0,'RIFF'); dv.setUint32(4, 36+pcm.byteLength, true);
+  ws(8,'WAVE'); ws(12,'fmt ');
+  dv.setUint32(16,16,true); dv.setUint16(20,1,true); dv.setUint16(22,ch,true);
+  dv.setUint32(24,sr,true); dv.setUint32(28,sr*ch*bps/8,true);
+  dv.setUint16(32,ch*bps/8,true); dv.setUint16(34,bps,true);
+  ws(36,'data'); dv.setUint32(40,pcm.byteLength,true);
+  new Uint8Array(buf).set(pcm, 44);
+  return buf;
+}
+
+// ── Video (Veo) ───────────────────────────────────────────────────────────────
+async function renderVideo(p) {
+  const card = makeContentCard(`🎬 ${p.title || 'Tutorial Video'}`);
+  const body = card.querySelector('.content-card-body');
+
+  const statusEl = el('div','video-status'); statusEl.textContent = '⏳ Generating video with Veo AI… (this takes 1-3 minutes)';
+  body.appendChild(statusEl);
+  appendCard(card);
+
+  try {
+    const prompt = p.prompt || `Educational tutorial video about: ${p.title}`;
+    const dur    = p.durationSeconds || 8;
+
+    // Kick off Veo predictLongRunning
+    const initRes = await fetch(
+      `${BASE}${M.veo}:predictLongRunning?key=${GEMINI_KEY}`,
+      {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          instances: [{ prompt }],
+          parameters: { aspectRatio: '16:9', durationSeconds: dur, sampleCount: 1 }
+        })
+      }
+    );
+    if (!initRes.ok) { const e = await initRes.json().catch(()=>({})); throw new Error(e?.error?.message || `Veo ${initRes.status}`); }
+    const initData = await initRes.json();
+    const opName = initData.name;
+    if (!opName) throw new Error('No operation name returned from Veo');
+
+    // Poll
+    statusEl.textContent = '🎬 Rendering… checking every 15 seconds…';
+    let videoUri = null;
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await sleep(attempt < 4 ? 8000 : 15000);
+      const pollRes = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/${opName}?key=${GEMINI_KEY}`
+      );
+      const pollData = await pollRes.json();
+      if (pollData.done) {
+        const videos = pollData.response?.predictions?.[0]?.video?.uri
+          ? [pollData.response.predictions[0].video.uri]
+          : (pollData.response?.predictions || []).map(pred => pred?.bytesBase64Encoded ? pred : null).filter(Boolean);
+        if (pollData.response?.predictions?.[0]?.bytesBase64Encoded) {
+          const b64  = pollData.response.predictions[0].bytesBase64Encoded;
+          const blob = new Blob([Uint8Array.from(atob(b64), c=>c.charCodeAt(0))], { type: 'video/mp4' });
+          videoUri = URL.createObjectURL(blob);
+        } else if (pollData.response?.predictions?.[0]?.video?.uri) {
+          videoUri = pollData.response.predictions[0].video.uri + '?key=' + GEMINI_KEY;
+        }
+        break;
+      }
+      statusEl.textContent = `🎬 Still rendering… (attempt ${attempt+1}/20)`;
+    }
+
+    if (videoUri) {
+      statusEl.remove();
+      const videoEl = document.createElement('video');
+      videoEl.src = videoUri; videoEl.controls = true; videoEl.className = 'gen-image';
+      body.appendChild(videoEl);
+    } else {
+      statusEl.textContent = '⚠ Video generation timed out. Try again or use a shorter prompt.';
+    }
+  } catch (err) {
+    statusEl.textContent = '⚠ Video error: ' + err.message;
   }
 }
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-function showScreen(which) {
-  document.getElementById('uploadScreen').style.display = which === 'upload' ? '' : 'none';
-  document.getElementById('processingScreen').style.display = which === 'processing' ? 'flex' : 'none';
-  document.getElementById('studyScreen').style.display = which === 'study' ? 'flex' : 'none';
+// ── Build (Site / Presentation / Game) ───────────────────────────────────────
+async function renderBuild(p) {
+  const card = makeContentCard(`🏗️ Building ${p.type || 'site'}: ${p.title || ''}`);
+  const body = card.querySelector('.content-card-body');
+  const statusEl = el('div','video-status'); statusEl.textContent = '⚙️ Gemini is generating your ' + (p.type || 'site') + '…';
+  body.appendChild(statusEl);
+  appendCard(card);
+
+  try {
+    // Use the build system prompt from ai-chat
+    const buildPromptMap = {
+      site:         'Build a beautiful, professional landing page / website',
+      presentation: 'Create a stunning PowerPoint-style HTML presentation with slide navigation',
+      game:         'Build a fun, playable browser game using HTML canvas',
+    };
+    const base = buildPromptMap[p.type] || buildPromptMap.site;
+    const fullPrompt = `${base} about: ${p.buildPrompt || p.title || 'the topic'}.
+
+CRITICAL RULES:
+- Return ONLY raw HTML (no markdown fences, no explanation)
+- Complete self-contained HTML page with all CSS inline
+- Beautiful, modern design with animations
+- No external CDN links except Google Fonts
+- Mobile responsive`;
+
+    const res = await fetch(url(M.chat)(GEMINI_KEY), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: fullPrompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 8192 }
+      })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `API ${res.status}`); }
+    const d = await res.json();
+    const html = (d?.candidates?.[0]?.content?.parts?.[0]?.text || '')
+      .replace(/^```html\s*/,'').replace(/\s*```$/,'').trim();
+
+    statusEl.remove();
+    const blob = new Blob([html], { type: 'text/html' });
+    const blobUrl = URL.createObjectURL(blob);
+    const iframe = document.createElement('iframe');
+    iframe.src = blobUrl; iframe.className = 'build-result-frame';
+    body.appendChild(iframe);
+
+    // Download button
+    const dlBtn = el('button','bc-btn'); dlBtn.style.marginTop = '10px';
+    dlBtn.textContent = '⬇ Download HTML';
+    dlBtn.addEventListener('click', () => {
+      const a = document.createElement('a');
+      a.href = blobUrl; a.download = (p.title || 'page').replace(/\s+/g,'-').toLowerCase() + '.html';
+      a.click();
+    });
+    body.appendChild(dlBtn);
+  } catch (err) {
+    statusEl.textContent = '⚠ Build error: ' + err.message;
+  }
 }
 
-function resetToUpload() {
-  COURSE = null;
-  completedLessons.clear();
-  quizAnswered = {};
-  currentLessonIdx = 0;
-  document.getElementById('newStudyBtn').style.display = 'none';
-  document.getElementById('fileInput').value = '';
-  showScreen('upload');
+// ── Image generation ──────────────────────────────────────────────────────────
+async function renderImage(p) {
+  const card = makeContentCard(`🖼️ ${p.title || 'Illustration'}`);
+  const body = card.querySelector('.content-card-body');
+  const statusEl = el('div','video-status'); statusEl.textContent = '🎨 Generating illustration…';
+  body.appendChild(statusEl);
+  appendCard(card);
+
+  try {
+    const res = await fetch(url(M.imgGen)(GEMINI_KEY), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: p.imagePrompt || 'Educational illustration about: ' + p.title }] }],
+        generationConfig: { responseModalities: ['TEXT', 'IMAGE'] }
+      })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e?.error?.message || `API ${res.status}`); }
+    const d = await res.json();
+    const imgPart = d?.candidates?.[0]?.content?.parts?.find(pt => pt.inline_data?.mime_type?.startsWith('image/'));
+    if (!imgPart) throw new Error('No image returned');
+    statusEl.remove();
+    const imgEl = document.createElement('img');
+    imgEl.src = `data:${imgPart.inline_data.mime_type};base64,${imgPart.inline_data.data}`;
+    imgEl.className = 'gen-image';
+    body.appendChild(imgEl);
+  } catch (err) {
+    statusEl.textContent = '⚠ Image error: ' + err.message;
+  }
 }
 
-function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ── UI helpers ────────────────────────────────────────────────────────────────
+function appendUserMsg(text) {
+  const chat = document.getElementById('chatArea');
+  const row = el('div','msg-row user');
+  const av  = el('div','msg-avatar user-av'); av.textContent = '👤';
+  const bbl = el('div','msg-bubble user');    bbl.textContent = text;
+  row.append(av, bbl);
+  chat.appendChild(row);
+  scrollChat();
 }
 
-function escAttr(str) {
-  return String(str).replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+function appendAIMsg(text) {
+  const chat = document.getElementById('chatArea');
+  const row = el('div','msg-row');
+  const av  = document.createElement('img');
+  av.src = 'icons/agent-avatar.png'; av.className = 'msg-avatar'; av.alt='';
+  const bbl = el('div','msg-bubble ai'); bbl.textContent = text;
+  row.append(av, bbl);
+  chat.appendChild(row);
+  scrollChat();
+  return bbl;
 }
+
+function appendSystem(text) {
+  const chat = document.getElementById('chatArea');
+  const bbl = el('div','msg-bubble system'); bbl.textContent = text;
+  chat.appendChild(bbl);
+  scrollChat();
+}
+
+function appendThinking() {
+  const chat = document.getElementById('chatArea');
+  const div = el('div','msg-thinking');
+  div.innerHTML = `<img src="icons/agent-avatar.png" style="width:24px;height:24px;border-radius:50%;object-fit:cover;" alt=""><span class="dot-pulse"><span></span><span></span><span></span></span>`;
+  chat.appendChild(div);
+  scrollChat();
+  return div;
+}
+
+function appendCard(card) {
+  document.getElementById('chatArea').appendChild(card);
+  scrollChat();
+}
+
+function makeContentCard(title) {
+  const card = el('div','content-card');
+  const hdr  = el('div','content-card-header'); hdr.textContent = title;
+  const body = el('div','content-card-body');
+  card.append(hdr, body);
+  return card;
+}
+
+function hideWelcome() {
+  const w = document.getElementById('welcome');
+  if (w) w.style.display = 'none';
+}
+
+function setBusy(b) {
+  isBusy = b;
+  document.getElementById('sendBtn').disabled = b;
+  document.getElementById('msgInput').disabled = b;
+}
+
+function scrollChat() {
+  const chat = document.getElementById('chatArea');
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function el(tag, cls = '') {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
+}
+
+function btn(text, cls = '') {
+  const b = document.createElement('button');
+  b.textContent = text;
+  if (cls) b.className = cls;
+  return b;
+}
+
+function escH(str) {
+  return String(str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
