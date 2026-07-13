@@ -15492,10 +15492,6 @@ document.querySelectorAll('.build-type-pill').forEach(btn => {
   });
 });
 
-// Study portal button — opens learn.html as a new extension tab
-document.getElementById('studyToggleBtn')?.addEventListener('click', () => {
-  chrome.tabs.create({ url: chrome.runtime.getURL('learn.html') });
-});
 
 // Image replacer modal — close on X or backdrop click
 document.getElementById('closeImageReplacer')?.addEventListener('click', () => {
