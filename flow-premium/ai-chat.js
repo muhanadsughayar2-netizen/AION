@@ -11432,6 +11432,17 @@ async function handleSend() {
     }
   }
 
+  // Office file context hint (PPTX / DOCX / XLSX extracted as text/plain)
+  const officeParts = filesQueue.filter(f => f._officeType);
+  if (officeParts.length > 0) {
+    officeParts.forEach(f => {
+      const label = f._officeType === 'pptx' ? 'PowerPoint presentation'
+                  : f._officeType === 'docx' ? 'Word document'
+                  : 'Excel spreadsheet';
+      prompt += `\n\n📊 ATTACHED FILE: "${f._displayName || f.name}" is a ${label}. Its full text content has been extracted slide-by-slide and is attached as the text part of this message. Use it as the PRIMARY source of information — do not invent content not present in the file.`;
+    });
+  }
+
   // Image embedding — runs on FIRST builds AND patch edits (same as video above).
   // Previously gated behind _lastBuiltCode, which silently dropped user images
   // on fresh builds ("Start fresh" clears _lastBuiltCode before calling handleSend).
@@ -15898,6 +15909,51 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
       addBubble(`"${file.name}" is too large (${(file.size / 1024 / 1024).toFixed(1)}MB). Max file size is ${limitLabel}.`, 'error');
       return;
     }
+
+    // PowerPoint / Office ZIP formats — extract text before sending to Gemini
+    const isPptx = /\.(pptx|ppt)$/i.test(file.name) ||
+      file.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ||
+      file.type === 'application/vnd.ms-powerpoint';
+    const isDocx = /\.docx$/i.test(file.name) ||
+      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const isXlsx = /\.xlsx$/i.test(file.name) ||
+      file.type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+    if (isPptx || isDocx || isXlsx) {
+      const arrReader = new FileReader();
+      arrReader.onload = async (event) => {
+        try {
+          let extracted = '';
+          if (isPptx)      extracted = await _extractPptxText(event.target.result);
+          else if (isDocx) extracted = await _extractDocxText(event.target.result);
+          else if (isXlsx) extracted = await _extractXlsxText(event.target.result);
+          if (!extracted.trim()) throw new Error('No text found in file');
+          const b64 = btoa(unescape(encodeURIComponent(extracted)));
+          const fileData = {
+            mimeType: 'text/plain',
+            data: b64,
+            name: file.name,
+            _officeType: isPptx ? 'pptx' : isDocx ? 'docx' : 'xlsx',
+            _displayName: file.name
+          };
+          filesQueue.push(fileData);
+          const icon = isPptx ? '📊' : isDocx ? '📝' : '📈';
+          const card = document.createElement('div');
+          card.className = 'file-card';
+          card.innerHTML = `${icon} <span>${file.name}</span> <div class="remove-btn">×</div>`;
+          card.querySelector('.remove-btn').onclick = () => {
+            filesQueue = filesQueue.filter(f => f !== fileData);
+            card.remove();
+          };
+          document.getElementById('filePreviewZone').appendChild(card);
+        } catch (err) {
+          addBubble(`⚠ Couldn't read "${file.name}": ${err.message}. Try saving as PDF or copying the text.`, 'error');
+        }
+      };
+      arrReader.readAsArrayBuffer(file);
+      return;
+    }
+
     const reader = new FileReader();
     reader.onload = (event) => {
       const fileData = {
@@ -16677,6 +16733,148 @@ document.getElementById('saveMagicBtn')?.addEventListener('click', async () => {
 
 // Load magic buttons on start
 loadMagicButtons();
+
+// ── Office file text extraction (PPTX / DOCX / XLSX) ─────────────────────────
+// These are all ZIP archives containing XML. We parse the ZIP structure using
+// the browser's native DecompressionStream (deflate-raw) — no external libs needed.
+
+function _zipReadUint16(b, o) { return b[o] | (b[o+1] << 8); }
+function _zipReadUint32(b, o) { return ((b[o] | (b[o+1]<<8) | (b[o+2]<<16) | (b[o+3]<<24)) >>> 0); }
+
+async function _zipDeflate(data) {
+  const ds = new DecompressionStream('deflate-raw');
+  const w = ds.writable.getWriter();
+  const r = ds.readable.getReader();
+  w.write(data); w.close();
+  const chunks = [];
+  while (true) { const {done,value} = await r.read(); if (done) break; chunks.push(value); }
+  const total = chunks.reduce((s,c) => s+c.length, 0);
+  const out = new Uint8Array(total); let off = 0;
+  for (const c of chunks) { out.set(c, off); off += c.length; }
+  return out;
+}
+
+async function _zipExtractFiles(arrayBuffer, fileFilter) {
+  const buf = new Uint8Array(arrayBuffer);
+  // Locate End-of-Central-Directory record
+  let eocd = -1;
+  for (let i = buf.length - 22; i >= Math.max(0, buf.length - 65558); i--) {
+    if (buf[i]===0x50&&buf[i+1]===0x4b&&buf[i+2]===0x05&&buf[i+3]===0x06) { eocd=i; break; }
+  }
+  if (eocd < 0) throw new Error('Not a valid ZIP/Office file');
+
+  const cdCount  = _zipReadUint16(buf, eocd + 10);
+  const cdOffset = _zipReadUint32(buf, eocd + 16);
+  const results  = {};
+  let pos = cdOffset;
+
+  for (let i = 0; i < cdCount; i++) {
+    if (_zipReadUint32(buf, pos) !== 0x02014b50) break;
+    const compression = _zipReadUint16(buf, pos + 10);
+    const compSize    = _zipReadUint32(buf, pos + 20);
+    const fnLen       = _zipReadUint16(buf, pos + 28);
+    const extraLen    = _zipReadUint16(buf, pos + 30);
+    const commentLen  = _zipReadUint16(buf, pos + 32);
+    const localOffset = _zipReadUint32(buf, pos + 42);
+    const filename    = new TextDecoder().decode(buf.subarray(pos+46, pos+46+fnLen));
+    pos += 46 + fnLen + extraLen + commentLen;
+
+    if (!fileFilter(filename)) continue;
+
+    const lfnLen   = _zipReadUint16(buf, localOffset + 26);
+    const lextraLen= _zipReadUint16(buf, localOffset + 28);
+    const dataStart= localOffset + 30 + lfnLen + lextraLen;
+    const raw      = buf.subarray(dataStart, dataStart + compSize);
+
+    let bytes;
+    if      (compression === 0) bytes = raw;
+    else if (compression === 8) bytes = await _zipDeflate(raw);
+    else continue;
+
+    results[filename] = new TextDecoder().decode(bytes);
+  }
+  return results;
+}
+
+function _xmlAttrDecode(s) {
+  return s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+}
+
+async function _extractPptxText(arrayBuffer) {
+  const files = await _zipExtractFiles(arrayBuffer, f => /^ppt\/slides\/slide\d+\.xml$/i.test(f));
+  const slideNums = Object.keys(files)
+    .map(f => ({ f, n: parseInt(f.match(/slide(\d+)/i)?.[1] ?? 0) }))
+    .sort((a,b) => a.n - b.n);
+  const parts = [];
+  for (const {f, n} of slideNums) {
+    const xml = files[f];
+    const texts = [];
+    const re = /<a:t[^>]*>([\s\S]*?)<\/a:t>/gi;
+    let m;
+    while ((m = re.exec(xml)) !== null) {
+      const t = _xmlAttrDecode(m[1]).trim();
+      if (t) texts.push(t);
+    }
+    if (texts.length) parts.push(`--- Slide ${n} ---\n${texts.join('\n')}`);
+  }
+  if (!parts.length) throw new Error('No slide text found — the file may use images only');
+  return parts.join('\n\n');
+}
+
+async function _extractDocxText(arrayBuffer) {
+  const files = await _zipExtractFiles(arrayBuffer, f => f === 'word/document.xml');
+  const xml = files['word/document.xml'] || '';
+  // Extract paragraph text (<w:t> elements)
+  const parts = [];
+  const re = /<w:t[^>]*>([\s\S]*?)<\/w:t>/gi;
+  let m;
+  while ((m = re.exec(xml)) !== null) {
+    const t = _xmlAttrDecode(m[1]);
+    if (t.trim()) parts.push(t);
+  }
+  if (!parts.length) throw new Error('No text found in document');
+  return parts.join(' ');
+}
+
+async function _extractXlsxText(arrayBuffer) {
+  const files = await _zipExtractFiles(arrayBuffer,
+    f => f === 'xl/sharedStrings.xml' || /^xl\/worksheets\/sheet\d+\.xml$/i.test(f));
+  // Build shared strings table
+  const ssXml = files['xl/sharedStrings.xml'] || '';
+  const strings = [];
+  const siRe = /<si>([\s\S]*?)<\/si>/gi;
+  let m;
+  while ((m = siRe.exec(ssXml)) !== null) {
+    const tRe = /<t[^>]*>([\s\S]*?)<\/t>/gi;
+    let tm; const parts = [];
+    while ((tm = tRe.exec(m[1])) !== null) parts.push(_xmlAttrDecode(tm[1]));
+    strings.push(parts.join(''));
+  }
+  // Extract cell values from sheets
+  const sheetFiles = Object.keys(files).filter(f => /xl\/worksheets\/sheet\d+\.xml/i.test(f))
+    .sort((a,b) => parseInt(a.match(/\d+/)?.[0]??0) - parseInt(b.match(/\d+/)?.[0]??0));
+  const rows = [];
+  for (const sf of sheetFiles) {
+    const xml = files[sf];
+    const rowRe = /<row[^>]*>([\s\S]*?)<\/row>/gi;
+    let rm;
+    while ((rm = rowRe.exec(xml)) !== null) {
+      const cellRe = /<c\b([^>]*)>([\s\S]*?)<\/c>/gi;
+      let cm; const cells = [];
+      while ((cm = cellRe.exec(rm[1])) !== null) {
+        const attrs = cm[1]; const inner = cm[2];
+        const isStr = /t="s"/.test(attrs);
+        const vMatch = /<v>([\s\S]*?)<\/v>/.exec(inner);
+        if (!vMatch) { cells.push(''); continue; }
+        const val = isStr ? (strings[parseInt(vMatch[1])] ?? '') : _xmlAttrDecode(vMatch[1]);
+        cells.push(val);
+      }
+      if (cells.some(c=>c)) rows.push(cells.join('\t'));
+    }
+  }
+  if (!rows.length) throw new Error('No cell data found in spreadsheet');
+  return rows.join('\n');
+}
 
 // ── Flashcard & Quiz inline renderer ──────────────────────────────────────────
 const _FC_COLORS = [
