@@ -7105,7 +7105,19 @@ RESPONSE SHAPE:
 - Close technical answers stoically. Close creative answers with playful energy.
 - No sycophancy. No filler phrases. No restating the question.
 - Code: clean, with brief witty inline comments explaining *why* the logic exists, not just what it does.
-- Markdown only when it genuinely helps — code blocks, tight lists, bold the one thing that matters most.`);
+- Markdown only when it genuinely helps — code blocks, tight lists, bold the one thing that matters most.
+
+FLASHCARDS: When the user asks for flashcards (any topic, any language, any quantity), write a one-line intro then output EXACTLY this block with valid JSON — no text after the closing fence:
+\`\`\`flashcards
+[{"front":"Term or question","back":"Definition or answer"},{"front":"...","back":"..."}]
+\`\`\`
+Generate EXACTLY as many cards as the user requests. No upper limit. Any language.
+
+QUIZ: When the user asks for a quiz (any topic, any language, any quantity), write a one-line intro then output EXACTLY this block with valid JSON — no text after the closing fence:
+\`\`\`quiz
+[{"q":"Question?","opts":["Option A","Option B","Option C","Option D"],"ans":0,"exp":"Why this answer is correct"},{"q":"...","opts":["..."],"ans":0,"exp":"..."}]
+\`\`\`
+"ans" is the 0-based index of the correct option. Generate EXACTLY as many questions as the user requests. No upper limit. Any language.`);
 
 const SMART_SYSTEM_PROMPT = getConfig('SMART_SYSTEM_PROMPT', `You are a brilliant AI with three modes fused into one:
 
@@ -7119,7 +7131,19 @@ RESPONSE SHAPE:
 - Open with one punchy sentence that frames the answer.
 - Reference what you can see in the screenshot specifically — name real elements, text, or layout details.
 - Match depth to difficulty. No padding, no filler phrases.
-- Markdown only when it genuinely helps.`);
+- Markdown only when it genuinely helps.
+
+FLASHCARDS: When the user asks for flashcards (any topic, any language, any quantity), write a one-line intro then output EXACTLY this block with valid JSON — no text after the closing fence:
+\`\`\`flashcards
+[{"front":"Term or question","back":"Definition or answer"},{"front":"...","back":"..."}]
+\`\`\`
+Generate EXACTLY as many cards as the user requests. No upper limit. Any language.
+
+QUIZ: When the user asks for a quiz (any topic, any language, any quantity), write a one-line intro then output EXACTLY this block with valid JSON — no text after the closing fence:
+\`\`\`quiz
+[{"q":"Question?","opts":["Option A","Option B","Option C","Option D"],"ans":0,"exp":"Why this answer is correct"},{"q":"...","opts":["..."],"ans":0,"exp":"..."}]
+\`\`\`
+"ans" is the 0-based index of the correct option. Generate EXACTLY as many questions as the user requests. No upper limit. Any language.`);
 
 const MULTI_IMAGE_PROMPT = getConfig('MULTI_IMAGE_PROMPT', `You are a brilliant AI with three modes fused into one:
 
@@ -12824,6 +12848,7 @@ async function handleSend() {
 
       renderLivePreview(fullText);
       addBubbleActions(responseBubble, fullText);
+      injectStudyCards(responseBubble, fullText);
 
       // After streaming ends: if we were showing "building…" (Build Mode HTML),
       // replace with a clean done message now that the preview is ready.
@@ -16652,3 +16677,147 @@ document.getElementById('saveMagicBtn')?.addEventListener('click', async () => {
 
 // Load magic buttons on start
 loadMagicButtons();
+
+// ── Flashcard & Quiz inline renderer ──────────────────────────────────────────
+const _FC_COLORS = [
+  ['#667eea','#764ba2'], ['#f093fb','#f5576c'], ['#4facfe','#00f2fe'],
+  ['#43e97b','#38f9d7'], ['#fa709a','#fee140'], ['#a18cd1','#fbc2eb'],
+  ['#fccb90','#d57eeb'], ['#a1c4fd','#c2e9fb'], ['#fd7043','#ff8a65'],
+  ['#26c6da','#00acc1'], ['#66bb6a','#43a047'], ['#ef5350','#e53935'],
+  ['#ab47bc','#7b1fa2'], ['#ffa726','#fb8c00'], ['#29b6f6','#0277bd'],
+];
+
+function _escHtml(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _replaceFence(bubble, lang, newEl) {
+  const code = bubble.querySelector(`code.language-${lang}`);
+  if (code && code.closest('pre')) {
+    code.closest('pre').replaceWith(newEl);
+  } else {
+    bubble.appendChild(newEl);
+  }
+}
+
+function injectStudyCards(bubble, text) {
+  if (!bubble || !text) return;
+
+  // ── Flashcards ─────────────────────────────────────────────────────────────
+  const fcRe = /```flashcards\s*([\s\S]*?)```/i;
+  const fcMatch = text.match(fcRe);
+  if (fcMatch) {
+    let cards;
+    try { cards = JSON.parse(fcMatch[1].trim()); } catch(e) { cards = null; }
+    if (Array.isArray(cards) && cards.length) {
+      const deck = document.createElement('div');
+      deck.className = 'fc-deck';
+      cards.forEach((c, i) => {
+        const [c1, c2] = _FC_COLORS[i % _FC_COLORS.length];
+        const front = _escHtml(c.front || c.term || c.question || '');
+        const back  = _escHtml(c.back  || c.answer || c.definition || '');
+        const card  = document.createElement('div');
+        card.className = 'fc-card';
+        card.setAttribute('data-fc', i);
+        card.innerHTML =
+          `<div class="fc-inner">` +
+            `<div class="fc-front" style="background:linear-gradient(135deg,${c1},${c2});">` +
+              `<span class="fc-num">${i+1}/${cards.length}</span>` +
+              `${front}` +
+              `<span class="fc-meta">tap to flip ↩</span>` +
+            `</div>` +
+            `<div class="fc-back" style="background:linear-gradient(135deg,${c2},${c1});">` +
+              `${back}` +
+              `<span class="fc-meta">tap to flip ↩</span>` +
+            `</div>` +
+          `</div>`;
+        deck.appendChild(card);
+      });
+      deck.addEventListener('click', e => {
+        const card = e.target.closest('.fc-card');
+        if (card) card.classList.toggle('flipped');
+      });
+      _replaceFence(bubble, 'flashcards', deck);
+      return;
+    }
+  }
+
+  // ── Quiz ────────────────────────────────────────────────────────────────────
+  const qzRe = /```quiz\s*([\s\S]*?)```/i;
+  const qzMatch = text.match(qzRe);
+  if (qzMatch) {
+    let qs;
+    try { qs = JSON.parse(qzMatch[1].trim()); } catch(e) { qs = null; }
+    if (Array.isArray(qs) && qs.length) {
+      let score = 0, answered = 0;
+      const wrap = document.createElement('div');
+      wrap.className = 'qz-wrap';
+
+      const scoreEl = document.createElement('div');
+      scoreEl.className = 'qz-score';
+      wrap.appendChild(scoreEl);
+
+      const labels = ['A','B','C','D','E','F','G','H'];
+      qs.forEach((q, qi) => {
+        const opts = q.opts || q.options || [];
+        const qDiv = document.createElement('div');
+        qDiv.className = 'qz-q';
+
+        const qText = document.createElement('div');
+        qText.className = 'qz-qtext';
+        qText.innerHTML = `<span style="opacity:.45;font-weight:400;margin-right:4px;">${qi+1}.</span>${_escHtml(q.q || q.question || '')}`;
+        qDiv.appendChild(qText);
+
+        const optsDiv = document.createElement('div');
+        optsDiv.className = 'qz-opts';
+        opts.forEach((o, oi) => {
+          const btn = document.createElement('div');
+          btn.className = 'qz-opt';
+          btn.setAttribute('data-qi', qi);
+          btn.setAttribute('data-oi', oi);
+          btn.innerHTML = `<span class="qz-lbl">${labels[oi] || oi}.</span>${_escHtml(String(o))}`;
+          optsDiv.appendChild(btn);
+        });
+        qDiv.appendChild(optsDiv);
+
+        const expEl = document.createElement('div');
+        expEl.className = 'qz-exp';
+        expEl.textContent = q.exp || q.explanation || '';
+        qDiv.appendChild(expEl);
+
+        wrap.appendChild(qDiv);
+      });
+
+      wrap.addEventListener('click', e => {
+        const opt = e.target.closest('.qz-opt');
+        if (!opt || opt.classList.contains('disabled')) return;
+        const qi  = parseInt(opt.dataset.qi, 10);
+        const oi  = parseInt(opt.dataset.oi, 10);
+        const q   = qs[qi];
+        const correct = q.ans !== undefined ? q.ans : (q.answer !== undefined ? q.answer : 0);
+        const qDiv = wrap.querySelectorAll('.qz-q')[qi];
+        qDiv.querySelectorAll('.qz-opt').forEach(o => o.classList.add('disabled'));
+        opt.classList.add(oi === correct ? 'correct' : 'wrong');
+        if (oi !== correct) {
+          const correctBtn = qDiv.querySelectorAll('.qz-opt')[correct];
+          if (correctBtn) correctBtn.classList.add('correct');
+        }
+        const expEl = qDiv.querySelector('.qz-exp');
+        if (expEl) expEl.style.display = 'block';
+        if (oi === correct) score++;
+        answered++;
+        if (answered === qs.length) {
+          const pct = Math.round(score / qs.length * 100);
+          const emoji = pct === 100 ? '🏆' : pct >= 80 ? '🌟' : pct >= 60 ? '👍' : '📚';
+          scoreEl.innerHTML = `${emoji} Final score: <strong>${score}/${qs.length}</strong> (${pct}%)`;
+          scoreEl.style.display = 'block';
+          scoreEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
+
+      _replaceFence(bubble, 'quiz', wrap);
+    }
+  }
+}
