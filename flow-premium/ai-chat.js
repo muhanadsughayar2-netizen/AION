@@ -8034,8 +8034,10 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
        </div>
      On first load, if no key in localStorage, show a soft banner: "Add your Gemini API key for natural AI voices → [🔑 Add Key]"
 
-     ── GEMINI TTS IMPLEMENTATION ──
-     Implement these exact functions:
+     ── GEMINI TTS IMPLEMENTATION — MANDATORY, COPY VERBATIM ──
+     ⚠️ DO NOT use window.speechSynthesis as the primary voice engine.
+     ⚠️ DO NOT skip this section. EVERY learning portal MUST include these exact functions.
+     Copy these functions WORD FOR WORD into your <script> block — do not paraphrase or simplify:
 
      function buildWavHeader(pcmLength, sampleRate=24000, ch=1, bits=16) {
        const buf = new ArrayBuffer(44);
