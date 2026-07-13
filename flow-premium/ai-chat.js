@@ -7785,6 +7785,17 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
        • 6 tab pills: [📖 Learn] [💡 Examples] [🎴 Flashcards] [❓ Quiz] [🎙️ Broadcast] [🎬 Video]
        • Tab content area below the pills
        • Prev Lesson / Next Lesson buttons at very bottom
+     AI TUTOR PANEL (320px, right side, collapsible, bg #FFFFFF, border-left 1px solid #E2E8F0):
+       • Header bar: "🤖 AI Tutor" title + [≫ Collapse] button
+       • When collapsed: shows only a floating "🤖 Ask Tutor" tab on the right edge (click to expand)
+       • Message thread (scrollable): student messages right-aligned (indigo bg), tutor responses left-aligned
+       • Each tutor response renders THREE sections from the JSON:
+           ① 💬 Feedback — warm, gray text, "Your reasoning about X is correct because..."
+           ② 📖 Explanation — brief teaching content (indigo), never gives the full answer
+           ③ ❓ Socratic Question — bold amber, the guiding question the student must answer
+       • Below thread: textarea + [Ask →] button
+       • "🔊" button on each Socratic Question speaks it aloud via speakGemini()
+       • On load: show a welcome message "👋 I'm your AI Tutor. Ask me anything about this lesson, or try a question below."
 
   3. LEARN TAB — concept cards:
      Each concept = a white card (rounded-xl, shadow) containing:
@@ -8140,6 +8151,113 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
        with RTL layout for the entire main panel. Sidebar stays dark, text flows right-to-left.
      • Language auto-detection: scan the first 200 chars of the user's prompt for Arabic script (Unicode range \u0600-\u06FF)
 
+  13. AI TUTOR — Live Socratic teaching via Gemini API (LearnLM principles):
+
+     ══ THE MOST IMPORTANT FEATURE — DO NOT SKIP ══
+     The portal is not just a static study app. It has a LIVE AI tutor powered by the same
+     Gemini API key the user provided. This is what makes it genuinely educational.
+
+     ── SOCRATIC PERSONA (system_instruction) ──
+     Every call to the tutor API must include this system instruction verbatim:
+       "You are a patient, encouraging Socratic tutor. Your job is to guide the student
+        to discover the answer themselves — never state the answer directly.
+        Always: (1) give warm, specific feedback on what the student said,
+        (2) provide a brief hint or bridge concept (1-2 sentences max),
+        (3) ask ONE focused guiding question that moves them closer to the answer.
+        Keep responses concise. Be warm, never condescending."
+
+     ── STRUCTURED JSON RESPONSE (mandatory) ──
+     Use response_mime_type: 'application/json' so the response is always parseable.
+     The JSON schema for every tutor response:
+       {
+         "feedback":          "Warm reaction to what the student said (1-2 sentences)",
+         "explanation":       "A small bridge concept or hint — never the full answer (1-2 sentences)",
+         "socratic_question": "The single guiding question to lead the student forward"
+       }
+
+     ── IMPLEMENTATION — askTutor() function ──
+     Copy this VERBATIM into your <script>:
+
+     async function askTutor(userMessage, lessonContext) {
+       const key = localStorage.getItem('lp_gemini_key');
+       if (!key) { appendTutorMsg('tutor-error','Add your API key (🔑) to unlock the AI Tutor.'); return; }
+       appendTutorMsg('student', userMessage);
+       appendTutorMsg('tutor-thinking','🤔 Thinking...');
+       try {
+         const sysInstruction =
+           'You are a patient, encouraging Socratic tutor teaching: ' + lessonContext + '. ' +
+           'Guide the student to discover answers — never state them directly. ' +
+           'Always: (1) give warm specific feedback, (2) offer a brief hint (1-2 sentences max), ' +
+           '(3) ask ONE focused guiding question. Be concise and warm.';
+         const schema = {
+           type: 'OBJECT',
+           properties: {
+             feedback:          { type: 'STRING' },
+             explanation:       { type: 'STRING' },
+             socratic_question: { type: 'STRING' }
+           },
+           required: ['feedback','explanation','socratic_question']
+         };
+         const res = await fetch(
+           'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key='+key,
+           { method:'POST', headers:{'Content-Type':'application/json'},
+             body: JSON.stringify({
+               system_instruction: { parts:[{ text: sysInstruction }] },
+               contents: [{ role:'user', parts:[{ text: userMessage }] }],
+               generationConfig: {
+                 response_mime_type: 'application/json',
+                 response_schema: schema
+               }
+             })
+           }
+         );
+         const d = await res.json();
+         removeTutorThinking();
+         if (d.error) { appendTutorMsg('tutor-error', 'API error: '+d.error.message); return; }
+         const t = JSON.parse(d.candidates[0].content.parts[0].text);
+         appendTutorResponse(t.feedback, t.explanation, t.socratic_question);
+         speak(t.socratic_question, 'Zephyr');
+       } catch(e) { removeTutorThinking(); appendTutorMsg('tutor-error','Could not reach tutor. Check your API key.'); }
+     }
+
+     ── TUTOR CHAT UI RENDERING ──
+     appendTutorMsg(type, text):
+       'student'       → right-aligned bubble, indigo bg #6366F1, white text
+       'tutor-thinking'→ left-aligned, gray italic "🤔 Thinking..."
+       'tutor-error'   → left-aligned, red text
+     appendTutorResponse(feedback, explanation, question):
+       Render a card with three stacked rows:
+         Row 1: 💬 [feedback]         — gray text, font-size 14px
+         Row 2: 📖 [explanation]      — slate text, font-size 14px, slight indent
+         Row 3: ❓ [question]         — amber #F59E0B, font-weight 700, font-size 15px + 🔊 button
+       Card has white bg, left border 4px #6366F1, rounded-xl, padding 16px, shadow
+
+     ── AUTO-TRIGGER ON WRONG QUIZ ANSWERS ──
+     In the quiz wrong-answer handler, AFTER calling markWeak(), also call:
+       const lesson = COURSE.lessons[currentLessonIdx];
+       const context = lesson.title + ': ' + lesson.concepts.map(c=>c.term).join(', ');
+       askTutor(
+         'I just answered "' + selectedOption + '" for the question: "' + question.q + '" — but that was wrong. Can you help me understand why?',
+         context
+       );
+       // Also expand the tutor panel if it is collapsed
+       expandTutorPanel();
+
+     ── INPUT BAR ──
+     Below the tutor message thread:
+       <div style="display:flex; gap:8px; padding:12px; border-top:1px solid #E2E8F0;">
+         <textarea id="tutor-input" rows="2" placeholder="Ask your tutor anything about this lesson…"
+           style="flex:1; border:1px solid #E2E8F0; border-radius:10px; padding:10px; font-size:14px; resize:none;"></textarea>
+         <button onclick="handleTutorSend()" style="background:#6366F1;color:white;border:none;border-radius:10px;padding:10px 16px;font-weight:700;cursor:pointer;">Ask →</button>
+       </div>
+     handleTutorSend(): reads tutor-input value, calls askTutor(value, currentLessonContext), clears input.
+     Pressing Enter (not Shift+Enter) in textarea also submits.
+
+     ── TUTOR PANEL TOGGLE ──
+     function expandTutorPanel() { tutorPanel.style.display='flex'; collapseBtn style → show '≫ Collapse'; }
+     function collapseTutorPanel() { tutorPanel.style.width='48px'; hide message thread and input; show floating '🤖' tab. }
+     Default state: expanded on desktop (width 320px), collapsed on mobile.
+
   PROFILE L VISUAL DESIGN:
   Sidebar: #0F172A bg · #E2E8F0 text · #6366F1 active lesson highlight
   Main panel: #F8FAFC bg · white cards with box-shadow 0 2px 12px rgba(0,0,0,0.08)
@@ -8174,6 +8292,10 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
   ✗ Using browser SpeechSynthesis as primary TTS — ALWAYS implement Gemini TTS with API key input
   ✗ Missing API key modal — the header MUST have a 🔑 API Key button + first-run banner
   ✗ Ignoring Arabic content — if source is Arabic or bilingual, ALWAYS apply bilingual mode rules
+  ✗ Missing AI Tutor panel — EVERY portal MUST have the live Socratic tutor chat (item 13)
+  ✗ Skipping askTutor() — copy it VERBATIM; never skip the structured JSON + system_instruction
+  ✗ Static-only quiz — wrong answers MUST auto-trigger askTutor() with the question context
+  ✗ Giving answers directly — tutor persona MUST use Socratic questioning, never state the answer
 
 PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter

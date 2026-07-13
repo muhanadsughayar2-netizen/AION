@@ -1,0 +1,172 @@
+
+To build a high-quality teaching app using Google Gemini, you should structure your integration around three core technical pillars found in the Google AI documentation: 1. **System Instructions (The "Teacher Persona"):** Use the `system_instruction` parameter to define the AI's pedagogical role. Instead of just answering, instruct it to "Act as a patient tutor who uses Socratic questioning" or "Provide constructive feedback before giving the answer." This ensures the "teaching" happens properly rather than just providing solutions. 2. **Structured Outputs (The "Lesson Structure"):** Use `response_format` with a JSON Schema to force the AI to return data in a specific format (e.g., a JSON object with fields for `learning_objective`, `explanation`, `quiz_question`, and `hint`). This allows your app to reliably display lesson components in a consistent UI. *Example Schema:* ```json { "type": "object", "properties": { "lesson_title": { "type": "string" }, "concepts": { "type": "array", "items": { "type": "string" } }, "interactive_prompt": { "type": "string" } } } ``` 3. **LearnLM Integration:** Google has integrated "LearnLM" capabilities into the Gemini 2.5+ series. These models are specifically fine-tuned based on learning science to prioritize student engagement and adaptability. When selecting a model in your code (e.g., `gemini-3.5-flash`), ensure you are using the latest versions to benefit from these educational optimizations. By combining these—a strong **System Instruction** for the teaching style and a **JSON Schema** for the data structure—you can create a powerful, structured educational experience in your app.
+To build a high-quality teaching app using Google Gemini, you should structure your integration around three core technical pillars found in the Google AI documentation: 1. **System Instructions (The "Teacher Persona"):** Use the `system_instruction` parameter to define the AI's pedagogical role. Instead of just answering, instruct it to "Act as a patient tutor who uses Socratic questioning" or "Provide constructive feedback before giving the answer." This ensures the "teaching" happens properly rather than just providing solutions. 2. **Structured Outputs (The "Lesson Structure"):** Use `response_format` with a JSON Schema to force the AI to return data in a specific format (e.g., a JSON object with fields for `learning_objective`, `explanation`, `quiz_question`, and `hint`). This allows your app to reliably display lesson components in a consistent UI. *Example Schema:* ```json { "type": "object", "properties": { "lesson_title": { "type": "string" }, "concepts": { "type": "array", "items": { "type": "string" } }, "interactive_prompt": { "type": "string" } } } ``` 3. **LearnLM Integration:** Google has integrated "LearnLM" capabilities into the Gemini 2.5+ series. These models are specifically fine-tuned based on learning science to prioritize student engagement and adaptability. When selecting a model in your code (e.g., `gemini-3.5-flash`), ensure you are using the latest versions to benefit from these educational optimizations. By combining these—a strong **System Instruction** for the teaching style and a **JSON Schema** for the data structure—you can create a powerful, structured educational experience in your app.give me the exact prmt i give replit to create this feature in the app please exact way in so much deatila that it does it and we ahve exact same llm stucture thanks
+To build this exact educational structure in Replit, you need to provide the Replit Agent with a prompt that defines the backend logic, the specific JSON schema, and the behavioral "Persona."
+
+Copy and paste the prompt below into the Replit Agent. It is designed to ensure the LLM doesn't just "talk," but functions as a structured teaching engine.
+
+The Exact Replit Agent Prompt
+"Build a high-quality educational teaching application using Python (FastAPI) for the backend, React for the frontend, and the Google Gemini 1.5 Pro API.
+
+The core of this app must be built on these three technical pillars:
+
+1. System Instruction (The Teacher Persona): Configure the Gemini model using the system_instruction parameter. The persona must be a 'Patient Socratic Tutor.' It must never give the final answer immediately. Instead, it should provide constructive feedback on the user's logic and ask a guiding question to lead the student to the answer.
+
+2. Structured Outputs (JSON Schema): The LLM must NOT return plain text. It must use response_format with a strict JSON schema. Every response from the AI must follow this structure so the UI can render it properly:
+
+{
+  "type": "object",
+  "properties": {
+    "lesson_title": { "type": "string" },
+    "pedagogical_feedback": { "type": "string", "description": "Feedback on the student's previous input" },
+    "concept_explanation": { "type": "string", "description": "The core teaching content" },
+    "socratic_question": { "type": "string", "description": "A question to keep the student thinking" },
+    "quiz_question": {
+      "type": "object",
+      "properties": {
+        "question_text": { "type": "string" },
+        "options": { "type": "array", "items": { "type": "string" } },
+        "hint": { "type": "string" }
+      }
+    }
+  },
+  "required": ["lesson_title", "pedagogical_feedback", "concept_explanation", "socratic_question"]
+}
+3. LearnLM Optimization: Initialize the model using gemini-1.5-pro (which includes LearnLM fine-tuning). In the code, ensure the generation_config is set to response_mime_type: "application/json".
+
+UI Requirements:
+
+Create a clean, 'Notion-style' interface.
+Map the concept_explanation to a main reading area.
+Create a separate 'Tutor Chat' sidebar that displays the socratic_question.
+Include a 'Quiz Card' component that renders the quiz_question and options from the JSON.
+Workflow: When I type a topic, the backend should send it to Gemini. Gemini should return the structured JSON. The frontend should then parse that JSON to update the lesson content and the quiz automatically."
+
+Why this prompt works (Technical Breakdown)
+Strict Schema Enforcement: By providing the JSON code block directly to the Replit Agent, you prevent the AI from "hallucinating" different formats. Replit will write the Pydantic models (in Python) or Typescript interfaces to match this exactly [2.1.2, 2.4.3].
+Socratic Persona: Using the term system_instruction tells Replit to put the persona in the "Header" of the API call. This is much stronger than just telling the AI "be a teacher" in a regular chat [1.1.5].
+State Management: The prompt tells Replit to "map" specific JSON fields to specific UI components. This ensures that when the LLM generates a "hint," it appears in a hint box, not just as a random sentence in the middle of the text [2.2.1, 2.4.5].
+Model Selection: While you mentioned Gemini 2.5/3.5, the current state-of-the-art for Replit integration is Gemini 1.5 Pro, which contains the LearnLM weights optimized for education [1.2.1, 1.3.1].
+How to implement it in Replit:
+Open Replit.
+Click "Create Repl" and select "Replit Agent."
+Paste the prompt above.
+When Replit asks for your API Key, provide your Google AI Studio (Gemini) API Key.
+Replit will automatically build the folders, the API connection, and the React components based on that JSON structure.
+Sources:
+
+[1] Google AI for Developers: System Instructions Guide
+[2] Google Cloud: Using Structured Outputs with Gemini
+[3] LearnLM: Educational Tuning Overview
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
+Please continue your response from where you left off.
+To build a high-quality teaching app using the latest Google Gemini capabilities (specifically the LearnLM features integrated into the 2.5 and 3.5 series), you should use the following exact prompt for the Replit Agent.
+
+This prompt is designed to ensure the agent uses the Gemini 3.5 Flash model (the latest stable version as of mid-2026 [1.1.1, 1.1.7]) and follows strict pedagogical and architectural rules.
+
+The "Exact" Replit Agent Prompt
+Copy and paste this entire block into your Replit Agent chat:
+
+"Initialize a new full-stack application using FastAPI for the backend and React (Vite) for the frontend.
+
+Step 1: Environment Setup Before writing code, run npx add-mcp "https://gemini-api-docs-mcp.dev" in the terminal to ensure you are using the latest Gemini API definitions and SDK patterns [1.5.6].
+
+Step 2: Model Configuration Use the google-generativeai Python SDK. Initialize the model using gemini-3.5-flash to leverage the latest LearnLM-optimized weights [1.1.1, 1.3.5].
+
+Step 3: System Instruction (The Persona) Set the system_instruction parameter to: 'You are a Master Pedagogical Tutor powered by LearnLM. Your goal is to guide students through a book using active learning. Never give the final answer immediately. Use Socratic questioning: ask one question at a time to lead the student to the conclusion. Always provide encouraging, constructive feedback on their logic before moving to the next concept' [1.4.5, 1.4.8].
+
+Step 4: Strict JSON Schema (The Structure) Force the model to return ONLY a JSON object using response_format with the following schema:
+
+{
+  "type": "object",
+  "properties": {
+    "lesson_title": { "type": "string" },
+    "feedback": { "type": "string", "description": "Constructive feedback on student input" },
+    "explanation": { "type": "string", "description": "The pedagogical content/lesson" },
+    "socratic_question": { "type": "string", "description": "The next question to guide the learner" },
+    "quiz": {
+      "type": "object",
+      "properties": {
+        "question": { "type": "string" },
+        "options": { "type": "array", "items": { "type": "string" } },
+        "correct_index": { "type": "integer" }
+      }
+    }
+  },
+  "required": ["lesson_title", "feedback", "explanation", "socratic_question"]
+}
+Step 5: App Features
+
+Create a 'Book Upload' feature that sends PDF/Text content to the LLM.
+Create a 'Learning Dashboard' where the explanation is shown in a main card.
+Create a 'Tutor Chat' component for the socratic_question.
+Create a 'Quiz Modal' that pops up when the quiz object is present in the JSON.
+Ensure the backend uses Pydantic to validate this JSON before sending it to the frontend."
+
+Technical Breakdown: Why This Works
+LearnLM Integration: Google has moved LearnLM from a standalone model into the core weights of Gemini 2.5 and 3.5 series [1.3.5, 1.4.9]. By calling gemini-3.5-flash, you are automatically using a model fine-tuned for "active learning" and "cognitive load management" [1.4.5, 1.4.8].
+The MCP Command: The prompt includes a command to install the Gemini Docs MCP [1.5.6]. This is a "secret weapon" for Replit; it allows the Replit Agent to search the live Google documentation to ensure it doesn't use outdated 2024 code patterns.
+Controlled Generation: Using response_format with a JSON schema (as shown in Step 4) is the exact way to prevent the AI from "chatting" and instead force it to act as a data engine for your app’s UI [1.2.1, 1.2.4].
+System Instructions: By defining the persona in the system_instruction parameter rather than the user prompt, you ensure the AI's "Teacher" identity is hard-coded into the model's behavior, making it much harder for a student to "jailbreak" it into just giving the answers [1.4.6, 1.4.8].
+Sources
+[1] Gemini API Release Notes (July 2026)
+[2] LearnLM Integration in Gemini 2.5+ Series
+[3] Structured Outputs & JSON Schema Guide
+[4] Gemini Docs MCP for Coding Assistants
+[5] [Pedagogical Principles of LearnLM](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQG1Z1cvzLOclRYZFkdFX86HQw2439cH5NMFsER9ZcZwmqtCmckfC5drFGEpZVztoMIi4ymLwhQj3o9MqOu6_hghxWddzFzZ9K_4TCxw1P7gyvmaqR3aJSd-A314KYLH_CyWQX4K992SAV0BjLjtqpoLLHEfMVhOW_ImShDLTL
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
+Please continue your response from where you left off.
+To complete the implementation of your high-quality teaching app in Replit, we will now focus on the Frontend-to-Backend bridge and the Final Deployment steps.
+
+This ensures that the "Socratic Persona" and "Structured JSON" you've already prompted the Replit Agent to build are correctly connected to the user interface.
+
+4. Exact Frontend-Backend Bridge (The "Logic Flow")
+When you paste the prompt provided in the previous section, the Replit Agent will generate a file structure. You must ensure the main.py (FastAPI) and App.jsx (React) communicate using the following exact logic to maintain the "LearnLM" pedagogical structure:
+
+Backend Logic (api/main.py): Ensure the Agent uses the google-generativeai library with the Interactions API (released May 2026). This allows for "mid-flight steering" where the AI can adjust its teaching style based on the student's progress [1.3.2, 1.3.6].
+
+# The Replit Agent should generate something like this:
+model = genai.GenerativeModel(
+    model_name="gemini-3.5-flash",
+    system_instruction="Act as a Socratic Tutor. Use LearnLM principles: guide, don't tell."
+)
+
+@app.post("/ask")
+async def ask_tutor(user_input: str, history: list):
+    # This config forces the JSON structure defined in the prompt
+    config = genai.GenerationConfig(
+        response_mime_type="application/json",
+        response_schema=teaching_schema,
+        thinking_level="high" # New 2026 parameter for deeper reasoning [1.3.6]
+    )
+    response = model.generate_content(user_input, generation_config=config)
+    return response.text
+Frontend Rendering (src/components/TutorView.jsx): Because the LLM is sending a structured JSON, your React component must "map" these fields to the screen.
+
+Feedback Area: Shows feedback from the JSON.
+Lesson Content: Renders the explanation (supports Markdown).
+Interactive Sidebar: Displays the socratic_question to keep the student engaged.
+5. Final Setup & "How to Launch"
+Once the Replit Agent finishes generating the code, follow these exact steps to make it live:
+
+Check the Terminal: Ensure the Agent ran npx add-mcp "https://gemini-api-docs-mcp.dev". This allows your app to pull the latest 2026 documentation directly into its runtime environment [1.4.2].
+Set Secrets: Go to the Tools > Secrets tab in Replit. Add a key named GEMINI_API_KEY and paste your key from Google AI Studio.
+Run the App: Hit the big green "Run" button at the top. Replit will start the FastAPI server and the Vite frontend simultaneously.
+Test the "Socratic" Wall: Type a direct question like "What is photosynthesis?" If the app is working correctly, the AI should not tell you the answer. It should say something like: "That's a great question! Before we dive in, what do you think plants use to stay alive besides water?" (This confirms the system_instruction is active) [1.2.3, 1.2.6].
+Summary of the "Exact" LLM Structure
+Model: gemini-3.5-flash (Optimized for speed and LearnLM pedagogy) [1.1.1].
+Input Mode: Multi-modal (Supports PDF books/images) [1.1.4].
+Output Mode: Strict JSON Schema (Ensures UI never breaks) [1.3.1].
+Pedagogy: Socratic Questioning (Integrated via system_instruction) [1.2.6].
+Sources:
+
+[1] Google DeepMind: Gemini 3.5 Flash Release & Features (May 2026)
+[2] Google AI for Developers: LearnLM Integration Guide (Updated July 2026)
+[3] Interactions API Migration: Steps vs Outputs (May 2026 Breaking Changes)
+[4] [Google AI for Developers: Gemini Docs MCP Setup](https://vertexaisearch.cloud.google.com/grounding-api-redirect/AUZIYQFG5Vr5Zq7w9ehdNyO3Net1JzL0VrrM7mKPL6nwH7jWeqC4N0o0RnQCetNXLe0OGK8WemsvlLZIVvhOKSHAfkajlHw5Z9j
