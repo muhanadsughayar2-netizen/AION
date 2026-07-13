@@ -1781,13 +1781,13 @@
             <button class="build-type-pill" data-prompt="Create a PowerPoint presentation about " title="Slide deck — exports a real .pptx file">📊 PowerPoint</button>
             <button class="build-type-pill" data-prompt="Build a fun browser game where " title="Playable browser game (canvas engine)">🎮 Game</button>
             <div style="position:relative; display:inline-block; flex-shrink:0;">
-              <button id="buildMoreBtn" class="build-type-pill" style="opacity:0.65;" title="More build types" onclick="(function(){var m=document.getElementById('buildMoreMenu');m.style.display=m.style.display==='flex'?'none':'flex';})(); event.stopPropagation();">More ▾</button>
+              <button id="buildMoreBtn" class="build-type-pill" style="opacity:0.65;" title="More build types">More ▾</button>
               <div id="buildMoreMenu" style="display:none; position:absolute; bottom:30px; left:0; background:#1e293b; border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:5px; flex-direction:column; gap:3px; z-index:999; min-width:155px; box-shadow:0 4px 20px rgba(0,0,0,0.4);">
-                <button class="build-type-pill" data-prompt="Create an interactive learning portal to teach: " title="Course with lessons, flashcards, quizzes &amp; AI voices" style="text-align:left; width:100%; justify-content:flex-start;" onclick="document.getElementById('buildMoreMenu').style.display='none'">🎓 Learn</button>
-                <button class="build-type-pill" data-prompt="Build a product store / shop where people can buy " title="Online shop with payment buttons" style="text-align:left; width:100%; justify-content:flex-start;" onclick="document.getElementById('buildMoreMenu').style.display='none'">🛒 Shop</button>
-                <button class="build-type-pill" data-prompt="Build an interactive dashboard or calculator tool for " title="Interactive tool or dashboard" style="text-align:left; width:100%; justify-content:flex-start;" onclick="document.getElementById('buildMoreMenu').style.display='none'">🧮 Tool</button>
-                <button class="build-type-pill" data-prompt="Build a beautiful portfolio / profile page for " title="Personal or brand portfolio" style="text-align:left; width:100%; justify-content:flex-start;" onclick="document.getElementById('buildMoreMenu').style.display='none'">🪪 Portfolio</button>
-                <button class="build-type-pill" data-prompt="Create a PDF document / report about " title="PDF-style document" style="text-align:left; width:100%; justify-content:flex-start;" onclick="document.getElementById('buildMoreMenu').style.display='none'">📄 PDF</button>
+                <button class="build-type-pill build-more-item" data-prompt="Create an interactive learning portal to teach: " title="Course with lessons, flashcards, quizzes &amp; AI voices" style="text-align:left; width:100%; justify-content:flex-start;">🎓 Learn</button>
+                <button class="build-type-pill build-more-item" data-prompt="Build a product store / shop where people can buy " title="Online shop with payment buttons" style="text-align:left; width:100%; justify-content:flex-start;">🛒 Shop</button>
+                <button class="build-type-pill build-more-item" data-prompt="Build an interactive dashboard or calculator tool for " title="Interactive tool or dashboard" style="text-align:left; width:100%; justify-content:flex-start;">🧮 Tool</button>
+                <button class="build-type-pill build-more-item" data-prompt="Build a beautiful portfolio / profile page for " title="Personal or brand portfolio" style="text-align:left; width:100%; justify-content:flex-start;">🪪 Portfolio</button>
+                <button class="build-type-pill build-more-item" data-prompt="Create a PDF document / report about " title="PDF-style document" style="text-align:left; width:100%; justify-content:flex-start;">📄 PDF</button>
               </div>
             </div>
           </div>
@@ -2405,14 +2405,5 @@
   <script src="subscription.js"></script>
   <script src="prompts.js"></script>
   <script src="ai-chat.js"></script>
-  <script>
-    document.addEventListener('click', function(e) {
-      var menu = document.getElementById('buildMoreMenu');
-      var btn  = document.getElementById('buildMoreBtn');
-      if (menu && btn && !menu.contains(e.target) && !btn.contains(e.target)) {
-        menu.style.display = 'none';
-      }
-    });
-  </script>
 </body>
 </html>
