@@ -7753,7 +7753,24 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
              // 5-8 steps per lesson. Mix title → concept → arrow → concept → end. Keep each step ≤ 8 words.
            ]
          }
-         // Minimum 5 lessons. Per lesson: 3+ concepts, 3+ examples, 5+ flashcards, 4+ quiz questions, 8+ broadcast lines, 5+ videoSteps.
+         // ⚠️ MINIMUM REQUIREMENTS — these are FLOORS, not targets. Go higher whenever content warrants.
+         // Lessons: 5 minimum. Per lesson:
+         //   concepts:   5+ (cover EVERY key term in the source material)
+         //   examples:   5+ (cover EVERY worked example, passage, exercise from the source)
+         //   flashcards: 8+ (one per concept PLUS common confusables)
+         //   quiz:      10+ questions (MUST be 10 minimum — 2 questions is completely unacceptable)
+         //   broadcast: 10+ lines (natural back-and-forth; do NOT stop at 4 lines)
+         //   videoSteps: 5+
+         //
+         // EXHAUSTIVE COVERAGE RULE (TOP PRIORITY):
+         // When the user uploads a PDF, textbook chapter, or pastes book content:
+         //   → Cover EVERY vocabulary word — do not skip any
+         //   → Cover EVERY grammar rule with multiple examples
+         //   → Turn EVERY exercise/question from the book into a quiz question
+         //   → Cover EVERY reading passage with comprehension questions
+         //   → If a textbook has 20 vocab words, your flashcards must have AT LEAST 20 cards
+         //   → If a textbook exercise has 8 questions, put all 8 in the quiz
+         // Producing 2 quiz questions from a 20-word vocabulary list is WRONG. Always be exhaustive.
        ]
      };
 
@@ -8000,22 +8017,126 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
      A lesson is complete when all 6 tabs have been visited.
      On 100% completion → full-screen celebration overlay (confetti CSS keyframes, "🎓 Course Complete!" message, show total score across all quizzes).
 
-  10. AUDIO — browser SpeechSynthesis (no API key, works offline):
-     function speak(text) {
+  10. AUDIO — Gemini TTS (natural voices) with SpeechSynthesis fallback:
+
+     ── API KEY SETUP ──
+     In the header bar, add a "🔑 API Key" button that opens a small inline modal:
+       <div id="key-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; display:flex; align-items:center; justify-content:center;">
+         <div style="background:#1E293B; border-radius:16px; padding:32px; max-width:420px; width:90%;">
+           <h3 style="color:#F8FAFC; font-weight:700; margin-bottom:8px;">🔑 Google Gemini API Key</h3>
+           <p style="color:#94A3B8; font-size:14px; margin-bottom:16px;">Paste your Gemini API key to enable natural AI voices. Your key stays in this browser only.</p>
+           <input id="key-input" type="password" placeholder="AIza..." style="width:100%; padding:10px 14px; border-radius:8px; border:1px solid #334155; background:#0F172A; color:#F8FAFC; font-size:14px; margin-bottom:12px;" />
+           <div style="display:flex; gap:8px;">
+             <button onclick="saveKey()" style="flex:1; padding:10px; background:#6366F1; color:white; border:none; border-radius:8px; font-weight:600; cursor:pointer;">Save Key</button>
+             <button onclick="closeKeyModal()" style="padding:10px 16px; background:#334155; color:white; border:none; border-radius:8px; cursor:pointer;">Cancel</button>
+           </div>
+         </div>
+       </div>
+     On first load, if no key in localStorage, show a soft banner: "Add your Gemini API key for natural AI voices → [🔑 Add Key]"
+
+     ── GEMINI TTS IMPLEMENTATION ──
+     Implement these exact functions:
+
+     function buildWavHeader(pcmLength, sampleRate=24000, ch=1, bits=16) {
+       const buf = new ArrayBuffer(44);
+       const v = new DataView(buf);
+       const ascii = (off, s) => [...s].forEach((c,i) => v.setUint8(off+i, c.charCodeAt(0)));
+       ascii(0,'RIFF'); v.setUint32(4, 36+pcmLength, true);
+       ascii(8,'WAVE'); ascii(12,'fmt '); v.setUint32(16,16,true);
+       v.setUint16(20,1,true); v.setUint16(22,ch,true); v.setUint32(24,sampleRate,true);
+       v.setUint32(28,sampleRate*ch*bits/8,true); v.setUint16(32,ch*bits/8,true);
+       v.setUint16(34,bits,true); ascii(36,'data'); v.setUint32(40,pcmLength,true);
+       return buf;
+     }
+
+     async function speakGemini(text, voiceName='Zephyr') {
+       if (globalMuted) return;
+       const key = localStorage.getItem('lp_gemini_key');
+       if (!key) { speakFallback(text); return; }
+       try {
+         const res = await fetch(
+           'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key='+key,
+           { method:'POST', headers:{'Content-Type':'application/json'},
+             body: JSON.stringify({
+               contents:[{parts:[{text:'In a warm, natural, conversational pace: '+text}]}],
+               generationConfig:{
+                 response_modalities:['AUDIO'],
+                 speech_config:{voice_config:{prebuilt_voice_config:{voice_name:voiceName}}}
+               }
+             })
+           }
+         );
+         const d = await res.json();
+         const part = d?.candidates?.[0]?.content?.parts?.[0]?.inline_data;
+         if (!part) { speakFallback(text); return; }
+         const pcm = Uint8Array.from(atob(part.data), c=>c.charCodeAt(0));
+         const mt  = (part.mime_type||'').toLowerCase();
+         let blob;
+         if (mt.startsWith('audio/l16')||mt.includes('pcm')||mt==='') {
+           const hdr = new Uint8Array(buildWavHeader(pcm.byteLength));
+           const wav = new Uint8Array(44+pcm.byteLength);
+           wav.set(hdr,0); wav.set(pcm,44);
+           blob = new Blob([wav],{type:'audio/wav'});
+         } else { blob = new Blob([pcm],{type:mt}); }
+         const url = URL.createObjectURL(blob);
+         const audio = new Audio(url);
+         audio.onended = ()=> URL.revokeObjectURL(url);
+         audio.play();
+       } catch(e) { speakFallback(text); }
+     }
+
+     function speakFallback(text) {
        if (globalMuted) return;
        const u = new SpeechSynthesisUtterance(text);
-       u.rate = 0.92; u.pitch = 1.05;
+       u.rate=0.92; u.pitch=1.05;
        window.speechSynthesis.cancel();
        window.speechSynthesis.speak(u);
      }
-     • Global 🔇 Mute toggle in top-right header — sets globalMuted = true, disables ALL speech including Broadcast.
+
+     // speak() = main function used everywhere: tries Gemini first, falls back automatically
+     function speak(text, voice='Zephyr') { speakGemini(text, voice); }
+
+     // Broadcast voices — each character uses a different Gemini prebuilt voice:
+     //   ZEPHYR → 'Zephyr'  (warm, authoritative host)
+     //   KORE   → 'Kore'    (curious, younger student)
+     //   FENRIR → 'Puck'    (energetic real-world expert)
+     // In bcPlay(): u.onend calls speakGemini(line.text, BC_VOICES[line.speaker].geminiVoice)
+     // Update BC_VOICES to include: geminiVoice field:
+     //   ZEPHYR: { ..., geminiVoice: 'Zephyr' }
+     //   KORE:   { ..., geminiVoice: 'Kore'   }
+     //   FENRIR: { ..., geminiVoice: 'Puck'   }
+
+     • Global 🔇 Mute toggle in header — sets globalMuted=true, stops all audio
+     • Key stored in localStorage('lp_gemini_key') — never sent anywhere except Google's API
+     • When API key is invalid (401/403 response) → show banner "API key invalid, using basic voice" + fall back
 
   11. RESPONSIVE — on screens < 768px:
-     Sidebar collapses to a top dropdown (<select> of lesson titles).
+     Sidebar collapses to a top dropdown.
      Tab pills scroll horizontally.
      Flashcard shrinks to full width.
-     Broadcast character cards stack vertically (3 rows).
+     Broadcast character cards stack vertically.
      Video canvas is 100% width.
+
+  12. DUAL LANGUAGE / BILINGUAL SUPPORT:
+     Detect the language of the content automatically. If the user's prompt or uploaded material
+     contains Arabic, or if they say "Arabic", "dual language", "bilingual", or "ثنائي اللغة":
+
+     BILINGUAL MODE rules:
+     • Concepts: show BOTH the Arabic term (bold, RTL, font-size 18px) AND the English term side by side
+       Example card layout:
+         [Arabic term — right-aligned, RTL]   |   [English term — left-aligned]
+         Definition in English below (or bilingual if source is bilingual)
+     • Flashcard fronts: Arabic term or question; backs: English answer + Arabic translation
+     • Quiz questions: write in the SAME language as the textbook/source material
+       — if the textbook is Arabic, questions and options are in Arabic
+       — if bilingual (like a Jordanian EFL textbook), questions in English but explain in Arabic
+     • Broadcast dialogue: ZEPHYR and KORE speak in English; FENRIR occasionally drops in
+       a key Arabic term to reinforce vocabulary (e.g., "That's immunisation — التطعيم in Arabic")
+     • RTL layout: wrap Arabic text in <span dir="rtl" lang="ar" style="font-family:'Noto Naskh Arabic',sans-serif; font-size:18px;">...</span>
+       Add Google Font: <link href="https://fonts.googleapis.com/css2?family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
+     • If the source material is ENTIRELY in Arabic (not EFL), generate all content in Arabic
+       with RTL layout for the entire main panel. Sidebar stays dark, text flows right-to-left.
+     • Language auto-detection: scan the first 200 chars of the user's prompt for Arabic script (Unicode range \u0600-\u06FF)
 
   PROFILE L VISUAL DESIGN:
   Sidebar: #0F172A bg · #E2E8F0 text · #6366F1 active lesson highlight
@@ -8026,7 +8147,7 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
   Quiz correct: #10B981 (green) · Quiz wrong: #EF4444 (red)
   Broadcast studio bg: #0D1117 · ZEPHYR: #2DD4BF · KORE: #A78BFA · FENRIR: #F97316
   Video canvas bg: #0D1117 · step colors per videoSteps array
-  Font: Inter (Google Fonts, weights 400 + 600 + 700)
+  Font: Inter (Google Fonts, weights 400 + 600 + 700); Arabic: Noto Naskh Arabic
   Active tab pill: solid #6366F1 bg, white text · Inactive: transparent, #64748B text
   Progress bar fill: linear-gradient(90deg, #6366F1, #8B5CF6)
 
@@ -8038,15 +8159,19 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
   ✗ Quiz without instant feedback + explanation — ALWAYS show why the answer is right/wrong
   ✗ Missing 🔊 audio buttons — every concept card and example card MUST have one
   ✗ Missing localStorage persistence — progress and quiz scores MUST save and restore on refresh
-  ✗ Fewer than 5 lessons or fewer than 4 quiz questions per lesson
+  ✗ Fewer than 10 quiz questions per lesson — 10 is the MINIMUM, never fewer
+  ✗ Skipping book content — if given a textbook/PDF, cover EVERY vocabulary word and exercise
   ✗ Missing Broadcast tab — ALWAYS include the full ZEPHYR/KORE/FENRIR broadcast engine
   ✗ Missing Video tab — ALWAYS include the Canvas animated explainer with Download button
-  ✗ Empty broadcast array — every lesson MUST have 8-12 broadcast dialogue lines
+  ✗ Empty broadcast array — every lesson MUST have 10+ broadcast dialogue lines
   ✗ Empty videoSteps array — every lesson MUST have 5-8 video animation steps
   ✗ Missing cardIdx on quiz questions — every quiz question MUST have cardIdx pointing to its flashcard
   ✗ Missing ⚠️ Weak Areas button in flashcard tab — ALWAYS show the weak/all mode toggle
   ✗ Not tracking wrong answers — markWeak() MUST be called on every wrong quiz answer
-  ✗ Missing post-quiz prompt — ALWAYS show the amber "📌 You missed N…" link to weak flashcards
+  ✗ Missing post-quiz prompt — ALWAYS show the amber link to Weak Areas after finishing
+  ✗ Using browser SpeechSynthesis as primary TTS — ALWAYS implement Gemini TTS with API key input
+  ✗ Missing API key modal — the header MUST have a 🔑 API Key button + first-run banner
+  ✗ Ignoring Arabic content — if source is Arabic or bilingual, ALWAYS apply bilingual mode rules
 
 PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter

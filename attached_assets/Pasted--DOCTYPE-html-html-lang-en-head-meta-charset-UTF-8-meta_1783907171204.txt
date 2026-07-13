@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Action Pack 12: Unit 2 - A Healthy Life | Learning Portal</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #F8FAFC;
+      --sidebar: #0F172A;
+      --accent: #6366F1;
+      --accent-soft: rgba(99, 102, 241, 0.1);
+      --amber: #F59E0B;
+      --green: #10B981;
+      --red: #EF4444;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: #1E293B; overflow: hidden; }
+    
+    .sidebar { width: 280px; height: 100vh; background: var(--sidebar); color: #E2E8F0; position: fixed; left: 0; top: 0; display: flex; flex-direction: column; }
+    .main-content { margin-left: 280px; height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
+    
+    .lesson-item { padding: 16px 20px; cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
+    .lesson-item:hover { background: rgba(255,255,255,0.05); }
+    .lesson-item.active { background: rgba(255,255,255,0.1); border-left-color: var(--accent); color: white; }
+    
+    .tab-pill { padding: 8px 16px; border-radius: 999px; font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.2s; border: 1px solid #E2E8F0; background: white; color: #64748B; }
+    .tab-pill.active { background: var(--accent); color: white; border-color: var(--accent); }
+    
+    .card { background: white; border-radius: 16px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); padding: 24px; transition: transform 0.2s; }
+    .card:hover { transform: translateY(-2px); }
+    
+    /* 3D Flashcard */
+    .flashcard-container { perspective: 1000px; width: 400px; height: 240px; margin: 40px auto; }
+    .flashcard { position: relative; width: 100%; height: 100%; text-align: center; transition: transform 0.6s; transform-style: preserve-3d; cursor: pointer; }
+    .flashcard.flipped { transform: rotateY(180deg); }
+    .flashcard-front, .flashcard-back { position: absolute; width: 100%; height: 100%; backface-visibility: hidden; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 20px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+    .flashcard-front { background: var(--accent); color: white; }
+    .flashcard-back { background: white; color: var(--accent); transform: rotateY(180deg); border: 2px solid var(--accent); }
+
+    /* Broadcast Studio */
+    .studio-panel { background: #0D1117; border-radius: 24px; padding: 32px; color: #E2E8F0; }
+    .character-card { background: rgba(255,255,255,0.05); border-radius: 16px; padding: 16px; text-align: center; opacity: 0.4; transition: all 0.3s; border: 2px solid transparent; }
+    .character-card.active { opacity: 1; border-color: currentColor; background: rgba(255,255,255,0.1); transform: scale(1.05); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+  </style>
+</head>
+<body>
+
+  <div class="sidebar">
+    <div class="p-6 border-b border-white/10">
+      <h1 class="text-xl font-bold text-white flex items-center gap-2">
+        <i data-lucide="book-open" class="text-indigo-400"></i> Action Pack 12
+      </h1>
+      <p class="text-xs text-slate-400 mt-1 uppercase tracking-widest">Unit 2: A Healthy Life</p>
+    </div>
+    <div id="lesson-list" class="flex-1 overflow-y-auto">
+      <!-- Lessons injected here -->
+    </div>
+    <div class="p-6 bg-black/20">
+      <div class="flex justify-between text-xs mb-2">
+        <span>Course Progress</span>
+        <span id="overall-progress-text">0%</span>
+      </div>
+      <div class="h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+        <div id="overall-progress-bar" class="h-full bg-indigo-500 transition-all duration-500" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main-content">
+    <header class="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-10">
+      <div id="active-lesson-header">
+        <h2 class="text-lg font-bold text-slate-800">Select a Lesson</h2>
+      </div>
+      <div class="flex items-center gap-4">
+        <button onclick="window.toggleMute()" id="mute-btn" class="p-2 hover:bg-slate-100 rounded-full">
+          <i data-lucide="volume-2" class="w-5 h-5 text-slate-600"></i>
+        </button>
+      </div>
+    </header>
+
+    <div class="px-8 py-6">
+      <div class="flex gap-2 mb-8 overflow-x-auto pb-2" id="tab-pills">
+        <button class="tab-pill active" onclick="window.switchTab('learn')">📖 Learn</button>
+        <button class="tab-pill" onclick="window.switchTab('examples')">💡 Examples</button>
+        <button class="tab-pill" onclick="window.switchTab('flashcards')">🎴 Flashcards</button>
+        <button class="tab-pill" onclick="window.switchTab('quiz')">❓ Quiz</button>
+        <button class="tab-pill" onclick="window.switchTab('broadcast')">🎙️ Broadcast</button>
+        <button class="tab-pill" onclick="window.switchTab('video')">🎬 Video</button>
+      </div>
+
+      <div id="tab-content" class="max-w-4xl">
+        <!-- Tab content injected here -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio Context and UI Logic -->
+  <script>
+    (function() {
+      const COURSE = {
+        title: "Unit 2: A Healthy Life",
+        lessons: [
+          {
+            id: 1,
+            title: "Medical Terminology",
+            summary: "Master the key medical vocabulary from Unit 2, including complementary and conventional terms.",
+            concepts: [
+              { term: "Acupuncture", definition: "A form of complementary medicine which uses thin needles inserted into the body.", emoji: "🪡" },
+              { term: "Immunisation", definition: "Giving a drug to a person to protect them against a specific disease by building antibodies.", emoji: "🛡️" },
+              { term: "Malaria", definition: "A serious illness that is spread to humans by the bite of infected mosquitoes.", emoji: "🦟" },
+              { term: "Arthritis", definition: "A disease that causes painful inflammation and swelling in the joints.", emoji: "🦴" }
+            ],
+            examples: [
+              { title: "Common Ailments", body: "Headaches and colds are common ailments, especially in winter. Most can be treated with rest." },
+              { title: "Serious Prevention", body: "Many serious diseases can be prevented by immunisation, which helps the body build antibodies." }
+            ],
+            flashcards: [
+              { front: "What uses thin needles?", back: "Acupuncture" },
+              { front: "Disease spread by mosquitoes?", back: "Malaria" },
+              { front: "Disease causing joint swelling?", back: "Arthritis" },
+              { front: "Building antibodies via drugs?", back: "Immunisation" },
+              { front: "An extremely bad headache?", back: "Migraine" }
+            ],
+            quiz: [
+              { q: "Which term describes a disease spread by mosquitoes?", options: ["Arthritis", "Malaria", "Migraine", "Allergies"], answer: 1, explanation: "Malaria is specifically identified in the text as an illness spread by mosquitoes.", cardIdx: 1 },
+              { q: "What is acupuncture?", options: ["A drug injection", "A joint disease", "Medicine using thin needles", "A type of virus"], answer: 2, explanation: "Acupuncture is a form of complementary medicine using thin needles.", cardIdx: 0 }
+            ],
+            broadcast: [
+              { speaker: "ZEPHYR", text: "Welcome to the studio! Today we're looking at the medical vocabulary of Action Pack 12, Unit 2." },
+              { speaker: "KORE", text: "I've always wondered, is acupuncture considered conventional or complementary?" },
+              { speaker: "FENRIR", text: "It's complementary. In Jordan, doctors often treat infections with conventional antibiotics first." },
+              { speaker: "ZEPHYR", text: "Exactly. But for things like arthritis, many people are now exploring these alternative options." }
+            ],
+            videoSteps: [
+              { type: "title", text: "Medical Vocabulary", emoji: "🏥", color: "#6366F1", duration: 2500 },
+              { type: "concept", label: "Acupuncture", emoji: "🪡", color: "#6366F1", body: "Needle-based treatment", duration: 3500 },
+              { type: "arrow", label: "prevents", duration: 1500 },
+              { type: "concept", label: "Immunisation", emoji: "🛡️", color: "#10B981", body: "Protecting against disease", duration: 3500 },
+              { type: "end", text: "Ready for the quiz?", emoji: "✅", duration: 2500 }
+            ]
+          },
+          {
+            id: 2,
+            title: "Grammar: Used to & Be used to",
+            summary: "Learn the difference between past habits and current familiarity with specific grammar rules.",
+            concepts: [
+              { term: "Used to (+ infinitive)", definition: "Used to describe past habits or past states that have now changed.", emoji: "⏳" },
+              { term: "Be used to (+ noun/ing)", definition: "Used to describe things that are familiar or customary to us right now.", emoji: "🔄" }
+            ],
+            examples: [
+              { title: "Past Habit", body: "I used to go shopping at the local supermarket, but it closed two years ago." },
+              { title: "Current Familiarity", body: "Most Jordanians are used to the hot weather that we have in summer." }
+            ],
+            flashcards: [
+              { front: "Used to + ?", back: "Infinitive (for past habits)" },
+              { front: "Be used to + ?", back: "Noun, pronoun, or -ing form" },
+              { front: "Which is for past habits?", back: "Used to" },
+              { front: "Which is for familiarity?", back: "Be used to" }
+            ],
+            quiz: [
+              { q: "Complete: 'We needed warm clothes because we weren't ____ the cold.'", options: ["use to", "used to", "using to", "be use to"], answer: 1, explanation: "We use 'be used to' to describe familiarity. Since it's negative past: 'weren't used to'.", cardIdx: 1 },
+              { q: "Complete: 'When I was a student, I ____ work very hard.'", options: ["am used to", "used to", "get used to", "use to"], answer: 1, explanation: "For a past habit, we use 'used to + infinitive'.", cardIdx: 0 }
+            ],
+            broadcast: [
+              { speaker: "ZEPHYR", text: "Grammar time! 'Used to' vs 'Be used to'. People get these mixed up all the time." },
+              { speaker: "KORE", text: "So if I say 'I used to swim', that means I don't swim anymore?" },
+              { speaker: "FENRIR", text: "Correct. But if you say 'I am used to swimming', it means it's a normal, easy routine for you now." }
+            ],
+            videoSteps: [
+              { type: "title", text: "Grammar Mastery", emoji: "📝", color: "#F59E0B", duration: 2500 },
+              { type: "concept", label: "Used to + Inf", emoji: "⏳", color: "#F59E0B", body: "Past habits (changed)", duration: 3500 },
+              { type: "concept", label: "Be used to + ing", emoji: "🔄", color: "#6366F1", body: "Current familiarity", duration: 3500 },
+              { type: "end", text: "Master the past & present!", emoji: "🎯", duration: 2500 }
+            ]
+          },
+          {
+            id: 3,
+            title: "Complementary Medicine",
+            summary: "Explore the debate between conventional treatments and alternative medical approaches.",
+            concepts: [
+              { term: "Conventional", definition: "The normal, traditionally accepted treatments used by most doctors.", emoji: "🩺" },
+              { term: "Sceptical", definition: "Having doubts or not being easily convinced about something.", emoji: "🤨" },
+              { term: "Viable", definition: "Something that is capable of working successfully; feasible.", emoji: "📈" }
+            ],
+            examples: [
+              { title: "The Doctor's View", body: "Many doctors used to be sceptical about complementary medicine, but now many see it as a viable option." },
+              { title: "Antibodies", body: "Vaccinations produce antibodies, which are essential for conventional immunisation." }
+            ],
+            flashcards: [
+              { front: "Traditionally accepted medicine?", back: "Conventional medicine" },
+              { front: "Having doubts?", back: "Sceptical" },
+              { front: "Something that can work?", back: "Viable" },
+              { front: "Opposite of conventional?", back: "Complementary / Alternative" }
+            ],
+            quiz: [
+              { q: "What does 'sceptical' mean?", options: ["Excited", "Doubtful", "Certain", "Healthy"], answer: 1, explanation: "Sceptical means having doubts or not being easily convinced.", cardIdx: 1 },
+              { q: "Medicines that are not normal, traditional treatments are known as ____.", options: ["Conventional", "Antibodies", "Complementary", "Viable"], answer: 2, explanation: "Complementary medicine refers to non-traditional treatments like acupuncture.", cardIdx: 3 }
+            ],
+            broadcast: [
+              { speaker: "ZEPHYR", text: "Unit 2 discusses the shift in how we view alternative medicine." },
+              { speaker: "FENRIR", text: "It's interesting. What used to be 'alien' or strange is now becoming more mainstream." },
+              { speaker: "KORE", text: "Does that mean it's replacing conventional medicine?" },
+              { speaker: "ZEPHYR", text: "No, it's 'complementary'—it works alongside it to improve health." }
+            ],
+            videoSteps: [
+              { type: "title", text: "Medical Debate", emoji: "⚖️", color: "#8B5CF6", duration: 2500 },
+              { type: "concept", label: "Conventional", emoji: "🩺", color: "#6366F1", body: "Traditional & Accepted", duration: 3500 },
+              { type: "concept", label: "Complementary", emoji: "🌿", color: "#10B981", body: "Alternative approaches", duration: 3500 },
+              { type: "end", text: "Find the balance!", emoji: "🧘", duration: 2500 }
+            ]
+          }
+        ]
+      };
+
+      let currentLessonIdx = 0;
+      let currentTab = 'learn';
+      let isMuted = false;
+      let quizState = { currentQ: 0, score: 0, finished: false };
+      let bcTimer = null;
+      let bcLine = 0;
+
+      window.toggleMute = function() {
+        isMuted = !isMuted;
+        const btn = document.getElementById('mute-btn');
+        btn.innerHTML = isMuted ? '<i data-lucide="volume-x" class="w-5 h-5 text-red-500"></i>' : '<i data-lucide="volume-2" class="w-5 h-5 text-slate-600"></i>';
+        lucide.createIcons();
+        if (isMuted) window.speechSynthesis.cancel();
+      };
+
+      window.speak = function(text) {
+        if (isMuted) return;
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.rate = 0.9;
+        window.speechSynthesis.speak(u);
+      };
+
+      window.switchLesson = function(idx) {
+        currentLessonIdx = idx;
+        quizState = { currentQ: 0, score: 0, finished: false };
+        bcLine = 0;
+        if (bcTimer) clearTimeout(bcTimer);
+        window.speechSynthesis.cancel();
+        renderSidebar();
+        renderHeader();
+        window.switchTab(currentTab);
+      };
+
+      window.switchTab = function(tab) {
+        currentTab = tab;
+        document.querySelectorAll('.tab-pill').forEach(btn => {
+          btn.classList.toggle('active', btn.innerText.toLowerCase().includes(tab));
+        });
+        renderTabContent();
+      };
+
+      function renderSidebar() {
+        const list = document.getElementById('lesson-list');
+        list.innerHTML = COURSE.lessons.map((l, i) => `
+          <div class="lesson-item ${i === currentLessonIdx ? 'active' : ''}" onclick="window.switchLesson(${i})">
+            <div class="text-xs opacity-50 mb-1">Lesson ${i + 1}</div>
+            <div class="font-semibold">${l.title}</div>
+          </div>
+        `).join('');
+      }
+
+      function renderHeader() {
+        const lesson = COURSE.lessons[currentLessonIdx];
+        document.getElementById('active-lesson-header').innerHTML = `
+          <h2 class="text-lg font-bold text-slate-800">${lesson.title}</h2>
+          <p class="text-sm text-slate-500">${lesson.summary}</p>
+        `;
+      }
+
+      function renderTabContent() {
+        const container = document.getElementById('tab-content');
+        const lesson = COURSE.lessons[currentLessonIdx];
+
+        if (currentTab === 'learn') {
+          container.innerHTML = `
+            <div class="grid gap-6">
+              ${lesson.concepts.map(c => `
+                <div class="card flex items-start gap-6">
+                  <div class="text-4xl">${c.emoji}</div>
+                  <div class="flex-1">
+                    <div class="flex justify-between">
+                      <h3 class="text-xl font-bold text-slate-800">${c.term}</h3>
+                      <button onclick="window.speak('${c.term}: ${c.definition.replace(/'/g, "\\'")}')" class="text-indigo-500 hover:text-indigo-700">
+                        <i data-lucide="volume-2" class="w-5 h-5"></i>
+                      </button>
+                    </div>
+                    <p class="text-slate-600 mt-2 leading-relaxed">${c.definition}</p>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else if (currentTab === 'examples') {
+          container.innerHTML = `
+            <div class="grid gap-6">
+              ${lesson.examples.map((ex, i) => `
+                <div class="card border-l-4 border-amber-500">
+                  <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-bold text-amber-600 uppercase tracking-widest">Example ${i+1}</span>
+                    <button onclick="window.speak('${ex.body.replace(/'/g, "\\'")}')" class="text-amber-500">
+                      <i data-lucide="volume-2" class="w-5 h-5"></i>
+                    </button>
+                  </div>
+                  <h4 class="text-lg font-bold text-slate-800 mb-2">${ex.title}</h4>
+                  <p class="text-slate-600 italic">"${ex.body}"</p>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else if (currentTab === 'flashcards') {
+          window.fcIdx = 0;
+          renderFlashcard();
+        } else if (currentTab === 'quiz') {
+          renderQuiz();
+        } else if (currentTab === 'broadcast') {
+          renderBroadcast();
+        } else if (currentTab === 'video') {
+          renderVideo();
+        }
+        lucide.createIcons();
+      }
+
+      // Flashcard Logic
+      window.renderFlashcard = function() {
+        const lesson = COURSE.lessons[currentLessonIdx];
+        const card = lesson.flashcards[window.fcIdx || 0];
+        const container = document.getElementById('tab-content');
+        container.innerHTML = `
+          <div class="text-center">
+            <div class="flashcard-container" onclick="this.querySelector('.flashcard').classList.toggle('flipped')">
+              <div class="flashcard">
+                <div class="flashcard-front">
+                  <p class="text-sm opacity-70 mb-4">Question</p>
+                  <p class="text-2xl font-bold">${card.front}</p>
+                </div>
+                <div class="flashcard-back">
+                  <p class="text-sm opacity-70 mb-4">Answer</p>
+                  <p class="text-2xl font-bold">${card.back}</p>
+                </div>
+              </div>
+            </div>
+            <div class="flex items-center justify-center gap-8 mt-8">
+              <button onclick="window.moveFC(-1)" class="p-2 bg-white rounded-full shadow hover:bg-slate-50"><i data-lucide="chevron-left"></i></button>
+              <span class="font-bold text-slate-400">${(window.fcIdx || 0) + 1} / ${lesson.flashcards.length}</span>
+              <button onclick="window.moveFC(1)" class="p-2 bg-white rounded-full shadow hover:bg-slate-50"><i data-lucide="chevron-right"></i></button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      };
+
+      window.moveFC = function(dir) {
+        const len = COURSE.lessons[currentLessonIdx].flashcards.length;
+        window.fcIdx = (window.fcIdx || 0) + dir;
+        if (window.fcIdx < 0) window.fcIdx = len - 1;
+        if (window.fcIdx >= len) window.fcIdx = 0;
+        renderFlashcard();
+      };
+
+      // Quiz Logic
+      function renderQuiz() {
+        const container = document.getElementById('tab-content');
+        const lesson = COURSE.lessons[currentLessonIdx];
+        
+        if (quizState.finished) {
+          container.innerHTML = `
+            <div class="card text-center py-12">
+              <div class="text-6xl mb-6">🎉</div>
+              <h3 class="text-3xl font-bold text-slate-800">Quiz Complete!</h3>
+              <p class="text-xl text-slate-600 mt-2">You scored ${quizState.score} out of ${lesson.quiz.length}</p>
+              <button onclick="window.resetQuiz()" class="mt-8 px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold">Try Again</button>
+            </div>
+          `;
+          return;
+        }
+
+        const q = lesson.quiz[quizState.currentQ];
+        container.innerHTML = `
+          <div class="card">
+            <div class="flex justify-between items-center mb-6">
+              <span class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase">Question ${quizState.currentQ + 1}</span>
+              <span class="text-slate-400 font-bold">${quizState.score} Correct</span>
+            </div>
+            <h3 class="text-2xl font-bold text-slate-800 mb-8">${q.q}</h3>
+            <div class="grid gap-4">
+              ${q.options.map((opt, i) => `
+                <button onclick="window.handleAnswer(${i})" class="w-full text-left p-4 rounded-xl border-2 border-slate-100 hover:border-indigo-300 transition-all font-medium flex justify-between items-center group">
+                  ${opt}
+                  <i data-lucide="circle" class="w-5 h-5 text-slate-300 group-hover:text-indigo-400"></i>
+                </button>
+              `).join('')}
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      }
+
+      window.handleAnswer = function(idx) {
+        const lesson = COURSE.lessons[currentLessonIdx];
+        const q = lesson.quiz[quizState.currentQ];
+        const container = document.getElementById('tab-content');
+        const isCorrect = idx === q.answer;
+        
+        if (isCorrect) quizState.score++;
+        
+        container.innerHTML = `
+          <div class="card ${isCorrect ? 'border-green-500' : 'border-red-500'} border-t-8">
+            <div class="flex items-center gap-4 mb-6">
+              <div class="w-12 h-12 rounded-full flex items-center justify-center ${isCorrect ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}">
+                <i data-lucide="${isCorrect ? 'check' : 'x'}"></i>
+              </div>
+              <h3 class="text-2xl font-bold">${isCorrect ? 'Correct!' : 'Not quite...'}</h3>
+            </div>
+            <p class="text-slate-600 text-lg mb-8">${q.explanation}</p>
+            <button onclick="window.nextQuestion()" class="w-full py-4 bg-slate-800 text-white rounded-xl font-bold hover:bg-black transition-all">
+              ${quizState.currentQ === lesson.quiz.length - 1 ? 'Finish Quiz' : 'Next Question'}
+            </button>
+          </div>
+        `;
+        lucide.createIcons();
+      };
+
+      window.nextQuestion = function() {
+        quizState.currentQ++;
+        if (quizState.currentQ >= COURSE.lessons[currentLessonIdx].quiz.length) {
+          quizState.finished = true;
+          updateProgress();
+        }
+        renderQuiz();
+      };
+
+      window.resetQuiz = function() {
+        quizState = { currentQ: 0, score: 0, finished: false };
+        renderQuiz();
+      };
+
+      // Broadcast Logic
+      const VOICES = {
+        ZEPHYR: { color: '#2DD4BF', emoji: '🎙️', role: 'Host' },
+        KORE: { color: '#A78BFA', emoji: '🎓', role: 'Student' },
+        FENRIR: { color: '#F97316', emoji: '⚡', role: 'Expert' }
+      };
+
+      function renderBroadcast() {
+        const container = document.getElementById('tab-content');
+        container.innerHTML = `
+          <div class="studio-panel">
+            <div class="grid grid-cols-3 gap-4 mb-8">
+              ${Object.entries(VOICES).map(([name, v]) => `
+                <div id="char-${name}" class="character-card" style="color: ${v.color}">
+                  <div class="text-3xl mb-2">${v.emoji}</div>
+                  <div class="font-bold uppercase tracking-widest text-xs">${name}</div>
+                  <div class="text-[10px] opacity-60">${v.role}</div>
+                </div>
+              `).join('')}
+            </div>
+            <div id="transcript" class="h-48 overflow-y-auto bg-black/30 rounded-xl p-4 font-mono text-sm leading-relaxed mb-6">
+              <p class="text-slate-500 italic">Press play to start the discussion...</p>
+            </div>
+            <div class="flex justify-center gap-4">
+              <button onclick="window.playBroadcast()" class="px-6 py-2 bg-indigo-600 text-white rounded-full font-bold flex items-center gap-2">
+                <i data-lucide="play" class="w-4 h-4"></i> Play Episode
+              </button>
+              <button onclick="window.stopBroadcast()" class="px-6 py-2 bg-slate-700 text-white rounded-full font-bold">Stop</button>
+            </div>
+          </div>
+        `;
+        lucide.createIcons();
+      }
+
+      window.playBroadcast = function() {
+        const script = COURSE.lessons[currentLessonIdx].broadcast;
+        if (bcLine >= script.length) bcLine = 0;
+        
+        function playNext() {
+          if (bcLine >= script.length) return;
+          const line = script[bcLine];
+          
+          // Update UI
+          Object.keys(VOICES).forEach(name => {
+            document.getElementById(`char-${name}`).classList.toggle('active', name === line.speaker);
+          });
+          
+          const transcript = document.getElementById('transcript');
+          if (bcLine === 0) transcript.innerHTML = '';
+          transcript.innerHTML += `<p class="mb-2"><span style="color: ${VOICES[line.speaker].color}">● ${line.speaker}:</span> ${line.text}</p>`;
+          transcript.scrollTop = transcript.scrollHeight;
+
+          const u = new SpeechSynthesisUtterance(line.text);
+          u.onend = () => { bcLine++; playNext(); };
+          window.speechSynthesis.speak(u);
+        }
+        window.speechSynthesis.cancel();
+        playNext();
+      };
+
+      window.stopBroadcast = function() {
+        window.speechSynthesis.cancel();
+        bcLine = 0;
+        renderBroadcast();
+      };
+
+      // Video Logic
+      function renderVideo() {
+        const container = document.getElementById('tab-content');
+        container.innerHTML = `
+          <div class="card text-center">
+            <canvas id="videoCanvas" width="640" height="360" class="w-full max-w-2xl mx-auto rounded-xl bg-[#0D1117] shadow-2xl mb-6"></canvas>
+            <div class="flex justify-center gap-4">
+              <button onclick="window.startVideo()" class="px-8 py-3 bg-indigo-600 text-white rounded-xl font-bold">▶ Watch Explainer</button>
+              <button onclick="window.downloadVideo()" class="px-8 py-3 bg-slate-800 text-white rounded-xl font-bold">⬇ Download .webm</button>
+            </div>
+          </div>
+        `;
+      }
+
+      window.startVideo = function() {
+        const canvas = document.getElementById('videoCanvas');
+        const ctx = canvas.getContext('2d');
+        const steps = COURSE.lessons[currentLessonIdx].videoSteps;
+        let stepIdx = 0;
+
+        function runStep() {
+          if (stepIdx >= steps.length) return;
+          const step = steps[stepIdx];
+          
+          ctx.fillStyle = '#0D1117'; ctx.fillRect(0,0,640,360);
+          ctx.textAlign = 'center';
+
+          if (step.type === 'title') {
+            ctx.fillStyle = step.color;
+            ctx.font = 'bold 40px Inter';
+            ctx.fillText(step.emoji + ' ' + step.text, 320, 180);
+          } else if (step.type === 'concept') {
+            ctx.strokeStyle = step.color; ctx.lineWidth = 2;
+            ctx.strokeRect(120, 100, 400, 160);
+            ctx.fillStyle = step.color;
+            ctx.font = 'bold 32px Inter';
+            ctx.fillText(step.emoji + ' ' + step.label, 320, 160);
+            ctx.fillStyle = 'white';
+            ctx.font = '18px Inter';
+            ctx.fillText(step.body, 320, 210);
+          } else if (step.type === 'arrow') {
+            ctx.strokeStyle = 'white'; ctx.beginPath(); ctx.moveTo(200, 180); ctx.lineTo(440, 180); ctx.stroke();
+            ctx.fillStyle = 'white'; ctx.fillText('▶', 440, 186);
+          } else if (step.type === 'end') {
+            ctx.fillStyle = '#10B981'; ctx.font = 'bold 40px Inter';
+            ctx.fillText(step.emoji + ' ' + step.text, 320, 180);
+          }
+
+          window.speak(step.label || step.text);
+          setTimeout(() => { stepIdx++; runStep(); }, step.duration);
+        }
+        runStep();
+      };
+
+      window.downloadVideo = function() {
+        const canvas = document.getElementById('videoCanvas');
+        const stream = canvas.captureStream(30);
+        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const chunks = [];
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = () => {
+          const blob = new Blob(chunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a'); a.href = url; a.download = 'lesson-explainer.webm'; a.click();
+        };
+        recorder.start();
+        window.startVideo();
+        setTimeout(() => recorder.stop(), COURSE.lessons[currentLessonIdx].videoSteps.reduce((a,b)=>a+b.duration, 0));
+      };
+
+      function updateProgress() {
+        const progress = JSON.parse(localStorage.getItem('ap12_progress') || '{}');
+        progress[currentLessonIdx] = true;
+        localStorage.setItem('ap12_progress', JSON.stringify(progress));
+        
+        const count = Object.keys(progress).length;
+        const total = COURSE.lessons.length;
+        const pct = Math.round((count / total) * 100);
+        
+        document.getElementById('overall-progress-text').innerText = pct + '%';
+        document.getElementById('overall-progress-bar').style.width = pct + '%';
+      }
+
+      // Init
+      window.switchLesson(0);
+      updateProgress();
+    })();
+  </script>
+</body>
+</html>
