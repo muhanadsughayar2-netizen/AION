@@ -7731,7 +7731,8 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
              { front: "Question or term?", back: "Answer or definition" }
            ],
            quiz: [
-             { q: "Question text?", options: ["Option A", "Option B", "Option C", "Option D"], answer: 0, explanation: "Why this answer is correct." }
+             { q: "Question text?", options: ["Option A", "Option B", "Option C", "Option D"], answer: 0, explanation: "Why this answer is correct.", cardIdx: 0 }
+             // cardIdx = index into this lesson's flashcards array that covers the same concept
            ],
            broadcast: [
              { speaker: "ZEPHYR", text: "Welcome everyone! Today we're diving into [Lesson Title]. Let's start with the big picture." },
@@ -7790,6 +7791,48 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
      • Below: ← Prev card | Card 3 of 8 | Next card → | 🔀 Shuffle
      • Track seen cards; show ✓ on cards the user has flipped
 
+     ── REVIEW WEAK CARDS (mandatory) ──
+     Above the card deck, show TWO mode buttons side by side:
+       [📚 All Cards]   [⚠️ Weak Areas (N)]   ← N = number of weak flashcards for this lesson
+     • "All Cards" = normal full deck (default)
+     • "Weak Areas" = filtered deck containing ONLY flashcards that correspond to quiz
+       questions the user answered wrong in this lesson.
+     • If N = 0 (no wrong answers yet): button is dimmed + tooltip "Finish the quiz first — missed
+       questions will appear here for review."
+     • If N > 0: button is amber (#F59E0B) with a badge count; clicking it loads the filtered deck.
+       Each card in the weak deck shows a small red ✗ badge in the corner.
+     • After the user reviews all weak cards (flipped every one), badge changes to ✓ and button
+       turns green — "All weak areas reviewed!"
+
+     IMPLEMENTATION — how to link quiz wrong answers → flashcards:
+       // Each quiz question has an optional cardIdx field (0-based index into the flashcards array).
+       // When the AI generates quiz questions, set cardIdx to the flashcard that best covers that concept.
+       // Example: quiz[2].cardIdx = 4  → wrong answer on q2 means flashcard[4] goes into weak deck.
+       // If cardIdx is missing, fall back to: cardIdx = questionIndex % flashcards.length
+
+       // Store weak card indices in localStorage:
+       function markWeak(lessonId, cardIdx) {
+         const key = 'lp_weak_' + lessonId;
+         const set = new Set(JSON.parse(localStorage.getItem(key) || '[]'));
+         set.add(cardIdx);
+         localStorage.setItem(key, JSON.stringify([...set]));
+       }
+       function getWeakIndices(lessonId) {
+         return new Set(JSON.parse(localStorage.getItem('lp_weak_' + lessonId) || '[]'));
+       }
+       function clearWeak(lessonId) { localStorage.removeItem('lp_weak_' + lessonId); }
+
+       // Update the Weak Areas badge whenever quiz results change or the tab is opened:
+       function refreshWeakBadge(lesson) {
+         const n = getWeakIndices(lesson.id).size;
+         weakBtn.textContent = '⚠️ Weak Areas (' + n + ')';
+         weakBtn.style.opacity = n === 0 ? '0.4' : '1';
+         weakBtn.style.borderColor = n === 0 ? '' : '#F59E0B';
+         weakBtn.style.color      = n === 0 ? '' : '#F59E0B';
+       }
+
+       // Add cardIdx to the COURSE data structure for each quiz question (see item 1 above).
+
   6. QUIZ TAB — one question at a time:
      • Question in large bold text (20px)
      • 4 option buttons (A B C D), full width, rounded
@@ -7798,6 +7841,26 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
      • Final screen: "🎉 You got 7 / 10!" + stars visual + Retry button
      • Save best score per lesson to localStorage key "lp_score_[lessonId]"
      • Show "🏆 Best: 9/10" below final score
+
+     ── WRONG-ANSWER TRACKING (mandatory) ──
+     When user selects a WRONG answer:
+       const cardIdx = q.cardIdx !== undefined ? q.cardIdx : (questionIndex % lesson.flashcards.length);
+       markWeak(lesson.id, cardIdx);
+       refreshWeakBadge(lesson);
+     When user selects the CORRECT answer: do NOT remove it from weak set — they need to review it.
+     On quiz Retry: call clearWeak(lesson.id) then refreshWeakBadge(lesson) to reset.
+
+     After the final score screen, show a prompt if any weak cards exist:
+       "📌 You missed [N] question(s). → Switch to Flashcards › ⚠️ Weak Areas to review them."
+       (This line is amber-colored and acts as a button that switches to the Flashcards tab in Weak mode.)
+
+     COURSE DATA — add cardIdx to every quiz question (mandatory):
+       quiz: [
+         { q: "...", options: [...], answer: 0, explanation: "...", cardIdx: 2 }
+         //                                                          ^^^ index into this lesson's flashcards array
+       ]
+     Rule: cardIdx should point to the flashcard that best covers the same concept being tested.
+     If you have 5 flashcards and 6 quiz questions, two questions can share the same cardIdx.
 
   7. BROADCAST TAB — AI talk-show episode for this lesson:
      ══ UI LAYOUT ══
@@ -7980,6 +8043,10 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
   ✗ Missing Video tab — ALWAYS include the Canvas animated explainer with Download button
   ✗ Empty broadcast array — every lesson MUST have 8-12 broadcast dialogue lines
   ✗ Empty videoSteps array — every lesson MUST have 5-8 video animation steps
+  ✗ Missing cardIdx on quiz questions — every quiz question MUST have cardIdx pointing to its flashcard
+  ✗ Missing ⚠️ Weak Areas button in flashcard tab — ALWAYS show the weak/all mode toggle
+  ✗ Not tracking wrong answers — markWeak() MUST be called on every wrong quiz answer
+  ✗ Missing post-quiz prompt — ALWAYS show the amber "📌 You missed N…" link to weak flashcards
 
 PROFILE F — GAME (Nintendo / Arcade / Platformer / Puzzle)
   Use for: ANY request containing the words game, play, level, player, score, jump, shoot, enemy, platformer, arcade, puzzle, RPG, Mario, Zelda, dungeon, shooter
