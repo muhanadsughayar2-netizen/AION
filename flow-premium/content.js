@@ -4270,6 +4270,89 @@
       }
 
       case 'type': {
+        const host = location.hostname;
+
+        // ── Helper: paste via clipboard (best for virtual-canvas editors) ──────
+        async function pasteViaClipboard(text, focusEl) {
+          await navigator.clipboard.writeText(text);
+          await new Promise(r => setTimeout(r, 150));
+          const target = focusEl || document.activeElement || document.body;
+          target.dispatchEvent(new KeyboardEvent('keydown',  { key:'v', code:'KeyV', ctrlKey:true, bubbles:true, cancelable:true }));
+          target.dispatchEvent(new KeyboardEvent('keyup',    { key:'v', code:'KeyV', ctrlKey:true, bubbles:true }));
+          await new Promise(r => setTimeout(r, 400));
+        }
+
+        // ── GOOGLE DOCS — virtual canvas, no real contenteditable body ─────────
+        if (host.includes('docs.google.com')) {
+          showAgentBanner(`📋 Pasting into Google Docs…`);
+
+          // The title IS a real input — avoid clicking it when writing to body
+          // Priority: canvas editor → zoom container → editor shell
+          const editorSelectors = [
+            '.kix-appview-editor',
+            '.kix-zoomdocumentplugin-outer',
+            '.docs-editor-container',
+            '#docs-editor',
+          ];
+          let editorEl = null;
+          for (const sel of editorSelectors) {
+            const el = document.querySelector(sel);
+            if (el) { editorEl = el; break; }
+          }
+
+          // Click into the document body (not the title bar)
+          if (editorEl) {
+            const r = editorEl.getBoundingClientRect();
+            // Click ~200px from top-left to land in the document content, not the title
+            const cx = r.left + Math.min(200, r.width * 0.3);
+            const cy = r.top  + Math.min(120, r.height * 0.25);
+            moveGhostCursor(cx, cy);
+            await new Promise(r2 => setTimeout(r2, 200));
+            editorEl.dispatchEvent(new MouseEvent('mousedown', { bubbles:true, clientX:cx, clientY:cy }));
+            editorEl.dispatchEvent(new MouseEvent('mouseup',   { bubbles:true, clientX:cx, clientY:cy }));
+            editorEl.dispatchEvent(new MouseEvent('click',     { bubbles:true, clientX:cx, clientY:cy }));
+            await new Promise(r2 => setTimeout(r2, 300));
+          }
+
+          // Paste text at cursor
+          await pasteViaClipboard(params.text, editorEl);
+          showAgentBanner('✓ Text pasted into document body');
+
+          if (params.pressEnter) {
+            const target = editorEl || document.body;
+            target.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', code:'Enter', keyCode:13, bubbles:true }));
+            target.dispatchEvent(new KeyboardEvent('keyup',   { key:'Enter', code:'Enter', keyCode:13, bubbles:true }));
+          }
+          return { success: true, message: 'Pasted text into Google Docs body' };
+        }
+
+        // ── WORD ONLINE / MICROSOFT 365 ────────────────────────────────────────
+        if (host.includes('word.office.com') || host.includes('word.live.com') ||
+            host.includes('microsoft365.com') || host.includes('office.com')) {
+          showAgentBanner(`📋 Pasting into Word Online…`);
+
+          const wordSelectors = [
+            '.WACViewPanel', '.Page', '[class*="EditArea"]',
+            'div[contenteditable="true"]', '.ms-rtestate-field'
+          ];
+          let editorEl = null;
+          for (const sel of wordSelectors) {
+            const el = document.querySelector(sel);
+            if (el) { editorEl = el; break; }
+          }
+
+          if (editorEl) {
+            editorEl.click();
+            editorEl.focus();
+            await new Promise(r => setTimeout(r, 300));
+          }
+
+          await pasteViaClipboard(params.text, editorEl);
+          showAgentBanner('✓ Text pasted into Word document');
+          return { success: true, message: 'Pasted text into Word Online' };
+        }
+
+        // ── STANDARD INPUTS / SEARCH BOXES / CONTENTEDITABLE ──────────────────
         let element = null;
         const attemptedSelectors = [];
         
@@ -4286,7 +4369,7 @@
             'input[type="search"]', 'input[placeholder*="Search"]', 'input[placeholder*="search"]',
             'input[aria-label*="Search"]', 'input[aria-label*="search"]',
             '#search-input', '#searchInput', '#search_input', '.search-input',
-            'input#twotabsearchtextbox', 'input.nav-input', // Amazon
+            'input#twotabsearchtextbox', 'input.nav-input',
             'input[data-testid="search-input"]', 'input[data-testid="SearchBox"]'
           ];
           for (const sel of commonSearchSelectors) {
@@ -4313,7 +4396,7 @@
           }
         }
         
-        // Strategy 4: Find first visible search/text input
+        // Strategy 4: Find first visible text input
         if (!element) {
           attemptedSelectors.push('visible text/search input');
           const inputs = document.querySelectorAll('input[type="text"], input[type="search"], input:not([type]), textarea, [contenteditable="true"]');
@@ -4330,45 +4413,56 @@
           throw new Error(`Input not found. Tried: ${attemptedSelectors.slice(0, 5).join(', ')}. Page may have different structure.`);
         }
         
-        // Scroll into view
+        // Scroll into view and move cursor
         element.scrollIntoView({ behavior: 'smooth', block: 'center' });
         await new Promise(r => setTimeout(r, 300));
-        
-        // Move ghost cursor to element
         const center = getElementCenter(element);
         moveGhostCursor(center.x, center.y);
-        await new Promise(r => setTimeout(r, 400));
-        
-        // Click on input
+        await new Promise(r => setTimeout(r, 300));
         clickGhostCursor(center.x, center.y);
         highlightElement(element);
-        showAgentBanner(`Typing: "${params.text.substring(0, 30)}${params.text.length > 30 ? '...' : ''}"`);
-        
-        // Focus and type with typing effect
+        showAgentBanner(`Typing: "${params.text.substring(0, 40)}${params.text.length > 40 ? '…' : ''}"`);
         element.focus();
         
         if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-          // Simulate typing character by character for effect
-          element.value = '';
-          for (let i = 0; i < params.text.length; i++) {
-            element.value += params.text[i];
-            element.dispatchEvent(new Event('input', { bubbles: true }));
-            if (i < 20) await new Promise(r => setTimeout(r, 30)); // Fast typing effect for first 20 chars
+          // Clear then set value — fire input/change so React/Vue pick it up
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
+            || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+          if (nativeInputValueSetter) {
+            nativeInputValueSetter.call(element, params.text);
+          } else {
+            element.value = params.text;
           }
+          element.dispatchEvent(new Event('input',  { bubbles: true }));
           element.dispatchEvent(new Event('change', { bubbles: true }));
         } else {
-          // Contenteditable
-          element.textContent = params.text;
+          // Contenteditable: use execCommand to INSERT at cursor (not replace all content)
+          element.focus();
+          const sel = window.getSelection();
+          if (sel && sel.rangeCount) {
+            // Move caret to end of existing content
+            const range = document.createRange();
+            range.selectNodeContents(element);
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+          }
+          // execCommand('insertText') inserts at caret without replacing — no duplicates
+          const inserted = document.execCommand('insertText', false, params.text);
+          if (!inserted) {
+            // Last resort: clipboard paste
+            await pasteViaClipboard(params.text, element);
+          }
           element.dispatchEvent(new InputEvent('input', { bubbles: true, data: params.text }));
         }
         
-        // Press Enter if it looks like a search box
+        // Press Enter if requested or looks like a search box
         if (params.pressEnter || element.getAttribute('type') === 'search') {
           await new Promise(r => setTimeout(r, 300));
-          showAgentBanner('Pressing Enter...');
-          element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+          showAgentBanner('Pressing Enter…');
+          element.dispatchEvent(new KeyboardEvent('keydown',  { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
           element.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
-          element.dispatchEvent(new KeyboardEvent('keyup', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+          element.dispatchEvent(new KeyboardEvent('keyup',    { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
         }
         
         return { success: true };

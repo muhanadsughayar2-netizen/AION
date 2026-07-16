@@ -10271,7 +10271,9 @@ Rules:
 - If the user's message is ambiguous, unclear, or doesn't read like an actionable instruction (e.g. a stray phrase, a comment, or something that isn't clearly a task), do NOT guess and start searching the web for it. Call "finish" and ask them to clarify what they want you to do instead.
 - Never invent that something happened — only report success after a function call actually returns success.
 - If a page repeatedly returns no readable text or the same action fails the same way more than once in a row, stop retrying blindly — call "finish" and explain what's blocking you.
-- Keep your reasoning to yourself; only function calls and the final "finish" summary are shown to the user.`;
+- Keep your reasoning to yourself; only function calls and the final "finish" summary are shown to the user.
+- DOCUMENT EDITORS (Google Docs, Word Online): These apps use a virtual canvas — there is no real DOM text field for the document body. The document TITLE is a real input (avoid clicking it). To write into the document body: use "type" with your text and no selector — the agent automatically uses clipboard-paste which is the only reliable method. Do NOT try to click on text inside the document or search for a body element by name. Just call "type" directly after the page loads.
+- GOOGLE DOCS TITLE vs BODY: The element labelled "Untitled document" or the document name at the top is the TITLE — clicking it types into the title. To type in the document BODY, use "type" without clicking the title first — the agent will find and click the correct document canvas area automatically.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
