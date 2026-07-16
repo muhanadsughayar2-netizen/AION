@@ -1,0 +1,300 @@
+# Exported Chat from Chrome DevTools AI Assistance
+
+**Export Timestamp (UTC):** 2026-07-16T11:10:19.796Z
+
+---
+
+## User
+
+[SnapToAI] UI mode: popup (sidebar entry point disabled)
+background.js:203 [SnapToAI] Extension updated - trial preserved from: 7/16/2026
+background.js:1530 Content script injection skipped: clearAndInject is not defined
+ai-chat.js:761 [SnapToAI] Loaded 22 voices
+ai-chat.js:764 [SnapToAI] Available languages: en, de, es, fr, hi, id, it, ja, ko, nl, pl, pt, ru, zh
+ai-chat.js:9996 [SnapToAI] Loading images from IndexedDB (unlimited storage)
+ai-chat.js:1143 [SnapToAI] Prepaid key detected — all modes enabled
+ai-chat.js:10009 [SnapToAI] Loaded 1 images for AI chat
+(index):64 cdn.tailwindcss.com should not be used in production. To use Tailwind CSS in production, install it as a PostCSS plugin or use the Tailwind CLI: https://tailwindcss.com/docs/installation
+(anonymous) @ (index):64
+
+## AI
+
+### Listing source requests
+
+**Code executed:**
+```
+listSourceFiles()
+```
+
+**Data returned:**
+```
+[{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/icons/icon48.png","id":1},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/icons/agent-avatar.png","id":2},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/ai-chat.html?count=1","id":3},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/theme.css","id":4},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/sandbox.html","id":6},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/background.js","id":7},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/theme.js","id":14},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/branding.js","id":15},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/subscription.js","id":16},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/video-pipeline-core.js","id":17},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/marked.min.js","id":18},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/jspdf.min.js","id":19},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/purify.min.js","id":20},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/prompts.js","id":21},{"file":"chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/ai-chat.js","id":22}]
+```
+
+### Getting source file
+
+### Analyzing data
+
+**Selected file:**
+````
+File name: background.js
+URL: chrome-extension://limbgchfndcckplhnnbdnkmpmnfeegal/background.js
+File content:
+```
+// SnapToAI Background Service Worker
+// Handles screenshot capture, storage management, downloads, and messaging
+
+const MAX_SNAPS = 10;
+const AI_SITES = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'specode.ai'];
+const CAPTURE_COOLDOWN = 700; // Minimum 700ms between captures to avoid Chrome rate limit (MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND)
+
+// Default settings
+const DEFAULT_SETTINGS = {
+  imageFormat: 'png',
+  jpegQuality: 90,
+  pdfPaperSize: 'letter-portrait',
+  smartPageSplit: true,
+  addUrlDateTime: false,
+  downloadDirectory: '',
+  showSaveAs: false,
+  autoDownload: false,
+  fitGoogleDocsLimit: true,
+  defaultBorderEnabled: true,
+  defaultBorderColor: '#00d9ff',
+  defaultBorderWidth: 8,
+  defaultFrameStyle: 'none'
+};
+
+// Track last capture time to prevent rate limiting (shared between
+// snap captures AND sidebar live-preview captures — see
+// `sidebarPreviewCapture` handler below)
+let lastCaptureTime = 0;
+const SIDEBAR_PREVIEW_MIN_GAP_MS = 700;
+let lastSidebarPreviewAt = 0;
+let sidebarPreviewInFlight = false;
+
+// ============================================
+// UI MODE PREFERENCE (popup vs sidebar)
+// ============================================
+// applyUiMode: switch the action click between opening the popup
+// (default) and opening the side panel. This is what makes the
+// user's choice persist across browser restarts.
+// Serialization guard: ensure only ONE applyUiMode is in flight at a
+// time. Concurrent callers (popup click + onStartup + sidebar init +
+// fullpage abort) all chain off the same promise, which prevents them
+// from racing and toggling popup/sidebar state inconsistently.
+let _applyUiModeChain = Promise.resolve();
+function applyUiMode(mode) {
+  // TEMPORARILY DISABLED: sidebar mode is hidden from users while we
+  // sort out the side-panel UX. We force popup mode here so any
+  // previously-persisted `uiMode: 'sidebar'` preference is overridden
+  // on every load and the icon click always opens the popup.
+  const _ignoredMode = mode; // eslint-disable-line no-unused-vars
+  const next = _applyUiModeChain.catch(() => {}).then(async () => {
+    try {
+      if (chrome.sidePanel && chrome.sidePanel.setPanelBehavior) {
+        await chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: false });
+      }
+      await chrome.action.setPopup({ popup: 'popup.html' });
+      console.log('[SnapToAI] UI mode: popup (sidebar entry point disabled)');
+    } catch (e) {
+      console.log('[SnapToAI] applyUiMode failed:', e && e.message);
+    }
+  });
+  _applyUiModeChain = next;
+  return next;
+}
+function loadAndApplyUiMode() {
+  return chrome.storage.local.get(['uiMode'])
+    .then((res) => applyUiMode((res && res.uiMode) || 'popup'))
+    .catch(() => applyUiMode('popup'));
+}
+
+// Open welcome page on first install and initialize subscription
+// ============================================
+// GOOGLE SIGN-IN (callable from popup OR sidebar)
+// ============================================
+async function backgroundGoogleSignIn() {
+  const manifest = chrome.runtime.getManifest();
+  const clientId = manifest && manifest.oauth2 && manifest.oauth2.client_id;
+  if (!clientId) throw new Error('OAuth client_id missing in manifest');
+  const redirectUrl = chrome.identity.getRedirectURL();
+  const scopes = 'openid email profile';
+  const authUrl = 'https://accounts.google.com/o/oauth2/v2/auth' +
+    '?client_id=' + encodeURIComponent(clientId) +
+    '&response_type=token' +
+    '&redirect_uri=' + encodeURIComponent(redirectUrl) +
+    '&scope=' + encodeURIComponent(scopes);
+
+  const responseUrl = await new Promise((resolve, reject) => {
+    chrome.identity.launchWebAuthFlow({ url: authUrl, interactive: true }, (url) => {
+      if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
+      if (!url) return reject(new Error('No response from Google sign-in'));
+      resolve(url);
+    });
+  });
+  const tokenMatch = responseUrl.match(/access_token=([^&]+)/);
+  if (!tokenMatch) throw new Error('No access token in response');
+  const token = tokenMatch[1];
+
+  const resp = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+    headers: { Authorization: `Bearer ${token}` },
+    signal: AbortSignal.timeout(10000)
+  });
+  if (!resp.ok) throw new Error('Failed to get user info from Google');
+  const userInfo = await resp.json();
+  if (!userInfo.email) throw new Error('No email returned from Google account');
+
+  const userData = {
+    name: userInfo.name || '',
+    email: userInfo.email,
+    picture: userInfo.picture || '',
+    signedInAt: Date.now(),
+    accessToken: token,
+    tokenObtainedAt: Date.now()
+  };
+  await chrome.storage.local.set({ snaptoai_user: userData });
+  return userData;
+}
+
+chrome.runtime.onInstalled.addListener(async (details) => {
+  // Apply persisted UI mode preference on install/update so the icon
+  // click behaves consistently across browser restarts.
+  await loadAndApplyUiMode();
+
+  // v2.6.0 theme migration: existing v2.5.0 users were always dark.
+  // On the first upgrade, persist that preference explicitly so the
+  // theme controller reconciles to dark immediately and any future
+  // first-paint resolves correctly with no light flash on light-OS.
+  if (details.reason === 'update') {
+    try {
+      const r = await chrome.storage.local.get(['snaptoaiSettings']);
+      const s = r && r.snaptoaiSettings;
+      if (s && !s.theme) {
+        await chrome.storage.local.set({ snaptoaiSettings: Object.assign({}, s, { theme: 'dark' }) });
+      }
+    } catch (e) { /* non-fatal */ }
+  }
+
+  if (details.reason === 'install') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('welcome.html') });
+    
+    // CRITICAL: Check BOTH sync AND local storage for existing trial
+    // On reinstall: local is WIPED but sync SURVIVES (tied to Google account)
+    const { trialStartDate: syncDate } = await chrome.storage.sync.get(['trialStartDate']);
+    const { initialInstallTimestamp: localTimestamp, trialStartDate: localDate } = 
+      await chrome.storage.local.get(['initialInstallTimestamp', 'trialStartDate']);
+    
+    // Find the earliest valid timestamp from ANY source
+    // IMPORTANT: Convert string values to numbers (legacy storage issue)
+    const toNum = (v) => {
+      if (typeof v === 'number' && v > 0) return v;
+      if (typeof v === 'string') {
+        const n = parseInt(v, 10) || Date.parse(v);
+        return n > 0 ? n : null;
+      }
+      return null;
+    };
+    const candidates = [syncDate, localTimestamp, localDate].map(toNum).filter(d => d && d > 0);
+    const existingTimestamp = candidates.length > 0 ? Math.min(...candidates) : null;
+    
+    if (!existingTimestamp) {
+      // TRUE FIRST INSTALL - No trial data anywhere, create new trial
+      const now = Date.now();
+      await chrome.storage.sync.set({ trialStartDate: now });
+      await chrome.storage.local.set({
+        initialInstallTimestamp: now,
+        trialStartDate: now,
+        subscriptionActive: false,
+        subscriptionPlan: null
+      });
+      console.log('[SnapToAI] Trial started:', new Date(now).toLocaleDateString());
+    } else {
+      // REINSTALL - Found existing trial data, preserve it
+      await chrome.storage.sync.set({ trialStartDate: existingTimestamp });
+      await chrome.storage.local.set({ 
+        initialInstallTimestamp: existingTimestamp,
+        trialStartDate: existingTimestamp 
+      });
+      console.log('[SnapToAI] Reinstall detected - trial preserved from:', new Date(existingTimestamp).toLocaleDateString());
+    }
+  } else if (details.reason === 'update') {
+    // On update: Verify trial date exists, repair from immutable timestamp if needed
+    const { initialInstallTimestamp, trialStartDate: localDate } = await chrome.storage.local.get(['initialInstallTimestamp', 'trialStartDate']);
+    const { trialStartDate: syncDate } = await chrome.storage.sync.get(['trialStartDate']);
+    
+    // Use the immutable timestamp as source of truth, fallback to earliest available
+    // CRITICAL: Guard against empty array (Math.min() returns Infinity on empty array)
+    // IMPORTANT: Convert string values to numbers (legacy storage issue)
+    const toNum = (v) => {
+      if (typeof v === 'number' && v > 0) return v;
+      if (typeof v === 'string') {
+        const n = parseInt(v, 10) || Date.parse(v);
+        return n > 0 ? n : null;
+      }
+      return null;
+    };
+    const candidates = [initialInstallTimestamp, localDate, syncDate].map(toNum).filter(d => d && d > 0);
+    const canonicalDate = candidates.length > 0 ? Math.min(...candidates) : null;
+    
+    if (canonicalDate) {
+      // Repair any missing storage
+      if (!localDate) await chrome.storage.local.set({ trialStartDate: canonicalDate });
+      if (!syncDate) await chrome.storage.sync.set({ trialStartDate: canonicalDate });
+      // Ensure immutable timestamp exists
+      if (!initialInstallTimestamp) await chrome.storage.local.set({ initialInstallTimestamp: canonicalDate });
+      console.log('[SnapToAI] Extension updated - trial preserved from:', new Date(canonicalDate).toLocaleDateString());
+    } else {
+      // No trial data found anywhere - this is an error state
+      // DO NOT create new trial - checkSubscription will handle this
+      console.log('[SnapToAI] Extension updated but NO trial data found! User needs to reinstall.');
+    }
+  }
+});
+
+// ============================================
+// SNAPTOAI MOUSE WAND MENU (Right-click controls everything)
+// Reuses ALL existing functions - no other files touched
+// ============================================
+
+let _menuRegistrationPending = false;
+function registerSnapToAIMenu() {
+  // Guard against concurrent calls — rapid MV3 service-worker wake-ups can
+  // fire this before the first removeAll callback completes, producing
+  // "Cannot create item with duplicate id" errors in the extension panel.
+  if (_menuRegistrationPending) return;
+  _menuRegistrationPending = true;
+  ...
+```
+````
+
+### Answer
+
+This `background.js` file serves as the **Background Service Worker** for the "SnapToAI" Chrome extension. It manages core extension logic including screenshot capture, storage orchestration, user authentication via Google OAuth, and trial/subscription lifecycle management.
+
+### Primary Functionality
+*   **UI Management**: Enforces "popup" mode (disabling the sidebar) and ensures consistent behavior across browser restarts.
+*   **Trial & Subscription Tracking**: Manages trial start dates using a multi-layered storage strategy (`sync` and `local`) to preserve trial status across reinstalls and updates.
+*   **Authentication**: Implements `backgroundGoogleSignIn` using `chrome.identity` to fetch user profiles and access tokens.
+*   **Configuration**: Manages default settings for image formats, PDF exports, and visual styles (borders, frames).
+*   **Rate Limiting**: Implements a cooldown mechanism (`CAPTURE_COOLDOWN`) to avoid hitting Chrome's `captureVisibleTab` API limits.
+
+### Key Technologies & APIs
+*   **Framework/Library**: None (Vanilla JavaScript). It mentions **Tailwind CSS** is used in the associated UI.
+*   **Chrome Extension APIs**: `chrome.storage` (local/sync), `chrome.runtime`, `chrome.identity` (OAuth2), `chrome.action`, `chrome.sidePanel`, and `chrome.tabs`.
+*   **Patterns**: Promise chaining (for UI mode serialization), asynchronous initialization, and migration logic for version updates.
+
+### External Resources
+*   **Chrome Extension Documentation**: [Service Workers](https://developer.chrome.com/docs/extensions/develop/concepts/service-workers)
+*   **MDN Web Docs**: [Using the Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+*   **Google Identity**: [chrome.identity API Reference](https://developer.chrome.com/docs/extensions/reference/api/identity)
+
+### Analysis of Logs (Initiator Chain)
+The provided logs explain the state of the extension:
+*   **UI Mode**: The extension explicitly forced "popup" mode because the sidebar entry point was intentionally disabled in code.
+*   **Update Success**: The extension successfully updated and recovered trial data from July 16, 2026, using the logic in the `onInstalled` listener.
+*   **Error**: `Content script injection skipped: clearAndInject is not defined` suggests a missing utility function or a scoping issue in the script injection logic (likely near line 1530).
+*   **Tailwind Warning**: The application is using the Play CDN for Tailwind, which is discouraged for production performance.
+
+**Root Cause (Injection Error)**: The background script attempted to call a function `clearAndInject` which is not defined in the provided scope or was not properly imported/declared.
+**Suggestion**: Verify if `clearAndInject` is defined in an external library or if it should be part of a utility object within `background.js`.
