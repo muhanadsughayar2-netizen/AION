@@ -756,6 +756,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   } else if (request.action === 'agentExecute') {
     // Relay agent automation command to the target tab
     const { tabId, executeAction, params } = request;
+
+    // Helper: clear the version-stamp guard then inject content.js fresh.
+    // Without this, a tab that loaded an OLD content.js keeps its stale code
+    // because the guard makes subsequent executeScript calls a no-op.
+    const clearAndInject = async (tid, allFrames = true) => {
+      await chrome.scripting.executeScript({
+        target: { tabId: tid, allFrames },
+        func: () => { window.__snaptoai_loaded = null; window.__snaptoai_healthy = false; }
+      }).catch(() => {});
+      await chrome.scripting.executeScript({
+        target: { tabId: tid, allFrames },
+        files: ['content.js']
+      });
+    };
     if (!tabId) {
       sendResponse({ success: false, error: 'No tab ID provided' });
       return;
@@ -849,7 +863,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const runFallbackType = () => {
           chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, (response) => {
             if (chrome.runtime.lastError) {
-              chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] })
+              clearAndInject(tabId)
                 .then(() => {
                   chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, sendResponse);
                 })
@@ -891,7 +905,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           try {
             loc = await locate();
           } catch (_e) {
-            await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
+            await clearAndInject(tabId);
             loc = await locate();
           }
 
@@ -968,7 +982,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const fallbackToSyntheticDoubleClick = () => {
           chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, (response) => {
             if (chrome.runtime.lastError) {
-              chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] })
+              clearAndInject(tabId)
                 .then(() => {
                   chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, sendResponse);
                 })
@@ -993,7 +1007,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           try {
             loc = await locate();
           } catch (_e) {
-            await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
+            await clearAndInject(tabId);
             loc = await locate();
           }
 
@@ -1038,10 +1052,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         // Try injecting content script first, then retry. allFrames:true also
         // reaches embedded iframes (e.g. a Google Docs/Drive preview pane) so
         // clicks/drags/scrolls can target content that lives inside them.
-        chrome.scripting.executeScript({
-          target: { tabId, allFrames: true },
-          files: ['content.js']
-        }).then(() => {
+        clearAndInject(tabId).then(() => {
           chrome.tabs.sendMessage(tabId, {
             action: 'agentExecute',
             executeAction,
@@ -1316,10 +1327,7 @@ async function captureScreenshot(targetTabId = null) {
     // Re-inject content script to handle iframe-heavy sites like Grok
     // This ensures the content script is fresh and ready for toast display
     try {
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id, allFrames: true },
-        files: ['content.js']
-      });
+      await clearAndInject(tab.id, true);
     } catch (injectError) {
       // Ignore injection errors (e.g., chrome:// pages)
       console.log('Content script injection skipped:', injectError.message);
@@ -1730,10 +1738,7 @@ async function startFullPageCapture(targetTabId = null) {
     
     // Inject content script - use allFrames for AI platforms with nested iframes
     try {
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id, allFrames: isAIPlatform },
-        files: ['content.js']
-      });
+      await clearAndInject(tab.id, isAIPlatform);
       console.log(`[SnapToAI] Content script injected (allFrames: ${isAIPlatform})`);
     } catch (e) {
       console.log('[SnapToAI] Content script injection skipped:', e.message);

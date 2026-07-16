@@ -4,14 +4,14 @@
 (function() {
   'use strict';
   
-  // Guard against multiple injections - but allow re-injection after errors
-  // Reset flag on each page load to allow fresh start
-  if (window.__snaptoai_loaded && window.__snaptoai_healthy) {
-    console.log('[SnapToAI] Already loaded and healthy, skipping');
+  // Version-stamped guard — a new build always replaces the old injection
+  const _SNAP_VERSION = '20260716';
+  if (window.__snaptoai_loaded === _SNAP_VERSION && window.__snaptoai_healthy) {
+    console.log('[SnapToAI] Already loaded (current version), skipping');
     return;
   }
-  window.__snaptoai_loaded = true;
-  window.__snaptoai_healthy = true; // Will be set to false on critical errors
+  window.__snaptoai_loaded = _SNAP_VERSION;
+  window.__snaptoai_healthy = true; // Set false on critical errors
 
   // === THEME (v2.6.0) ===
   // Mirrors the extension's Light/Dark/Auto preference for any UI we
