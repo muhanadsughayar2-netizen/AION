@@ -4326,11 +4326,9 @@
           return { success: true, message: 'Pasted text into Google Docs body' };
         }
 
-        // ── WORD ONLINE / MICROSOFT 365 ────────────────────────────────────────
-        if (host.includes('word.office.com') || host.includes('word.live.com') ||
-            host.includes('microsoft365.com') || host.includes('office.com')) {
+        // ── WORD ONLINE ────────────────────────────────────────────────────────
+        if (host.includes('word.office.com') || host.includes('word.live.com')) {
           showAgentBanner(`📋 Pasting into Word Online…`);
-
           const wordSelectors = [
             '.WACViewPanel', '.Page', '[class*="EditArea"]',
             'div[contenteditable="true"]', '.ms-rtestate-field'
@@ -4340,16 +4338,96 @@
             const el = document.querySelector(sel);
             if (el) { editorEl = el; break; }
           }
-
-          if (editorEl) {
-            editorEl.click();
-            editorEl.focus();
-            await new Promise(r => setTimeout(r, 300));
-          }
-
+          if (editorEl) { editorEl.click(); editorEl.focus(); await new Promise(r => setTimeout(r, 300)); }
           await pasteViaClipboard(params.text, editorEl);
           showAgentBanner('✓ Text pasted into Word document');
           return { success: true, message: 'Pasted text into Word Online' };
+        }
+
+        // ── POWERPOINT ONLINE ──────────────────────────────────────────────────
+        if (host.includes('powerpoint.office.com') || host.includes('powerpoint.live.com')) {
+          showAgentBanner(`📋 Pasting into PowerPoint…`);
+          // If a text box is already open for editing, use it directly
+          const activeTextBox = document.querySelector('[contenteditable="true"]');
+          if (activeTextBox) {
+            activeTextBox.focus();
+            await new Promise(r => setTimeout(r, 200));
+            await pasteViaClipboard(params.text, activeTextBox);
+            showAgentBanner('✓ Text pasted into text box');
+            return { success: true, message: 'Pasted into PowerPoint text box' };
+          }
+          // No text box open — click the slide canvas to open one, then paste
+          const slideSelectors = [
+            '#MainContent', '.ppt-slide-view', '[class*="slideCanvas"]',
+            '[class*="SlideView"]', 'canvas', '.canvascontainer', '#WACViewPanel'
+          ];
+          let slideEl = null;
+          for (const sel of slideSelectors) {
+            const el = document.querySelector(sel);
+            if (el) { slideEl = el; break; }
+          }
+          if (slideEl) {
+            const r = slideEl.getBoundingClientRect();
+            const cx = r.left + r.width * 0.5;
+            const cy = r.top  + r.height * 0.5;
+            moveGhostCursor(cx, cy);
+            await new Promise(r2 => setTimeout(r2, 200));
+            slideEl.dispatchEvent(new MouseEvent('dblclick', { bubbles:true, clientX:cx, clientY:cy }));
+            await new Promise(r2 => setTimeout(r2, 600));
+          }
+          // Now re-check for contenteditable text box
+          const openedBox = document.querySelector('[contenteditable="true"]');
+          await pasteViaClipboard(params.text, openedBox || slideEl);
+          showAgentBanner('✓ Text pasted into slide');
+          return { success: true, message: 'Pasted into PowerPoint slide' };
+        }
+
+        // ── EXCEL ONLINE ───────────────────────────────────────────────────────
+        if (host.includes('excel.office.com') || host.includes('excel.live.com')) {
+          showAgentBanner(`⌨️ Typing into Excel cell…`);
+          // Excel has a real cell-edit input — find formula bar or active cell editor
+          const cellSelectors = [
+            '#ce-input',                          // cell editor input
+            '[class*="cell-input"]',
+            '[class*="cellInput"]',
+            '[class*="formulaBarInput"]',
+            'input[class*="formula"]',
+            '[id*="cellInput"]',
+          ];
+          let cellEl = null;
+          for (const sel of cellSelectors) {
+            const el = document.querySelector(sel);
+            if (el && el.offsetParent !== null) { cellEl = el; break; }
+          }
+          if (cellEl) {
+            // Cell editor is already open — type directly
+            cellEl.focus();
+            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+            if (nativeSetter) nativeSetter.call(cellEl, params.text);
+            else cellEl.value = params.text;
+            cellEl.dispatchEvent(new Event('input',  { bubbles: true }));
+            cellEl.dispatchEvent(new Event('change', { bubbles: true }));
+            if (params.pressEnter !== false) {
+              cellEl.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', keyCode:13, bubbles:true }));
+              cellEl.dispatchEvent(new KeyboardEvent('keyup',   { key:'Enter', keyCode:13, bubbles:true }));
+            }
+            showAgentBanner('✓ Value entered in cell');
+            return { success: true, message: 'Typed value into Excel cell' };
+          }
+          // No cell editor visible — try clipboard paste into the active grid area
+          const gridSelectors = [
+            '[class*="gridCanvas"]', '[class*="sheetCanvas"]',
+            'canvas', '[id*="ewaCtrl"]', '.ms-fpo-ewactrl'
+          ];
+          let gridEl = null;
+          for (const sel of gridSelectors) {
+            const el = document.querySelector(sel);
+            if (el) { gridEl = el; break; }
+          }
+          if (gridEl) { gridEl.click(); await new Promise(r => setTimeout(r, 300)); }
+          await pasteViaClipboard(params.text, gridEl);
+          showAgentBanner('✓ Value pasted into Excel');
+          return { success: true, message: 'Pasted into Excel cell' };
         }
 
         // ── STANDARD INPUTS / SEARCH BOXES / CONTENTEDITABLE ──────────────────
