@@ -860,18 +860,104 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       // from someone physically typing. Every other site keeps using the
       // existing content-script type path untouched below.
       (async () => {
-        const runFallbackType = () => {
-          chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, (response) => {
-            if (chrome.runtime.lastError) {
-              clearAndInject(tabId)
-                .then(() => {
-                  chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, sendResponse);
-                })
-                .catch(err => sendResponse({ success: false, error: err.message }));
-            } else {
-              sendResponse(response);
+        // runFallbackType: for Google Docs/Word/Excel we inject the typing
+        // logic as an INLINE function (not via content.js) so it always runs
+        // fresh code from this extension regardless of which content.js
+        // version is loaded in the tab.
+        const runFallbackType = async () => {
+          try {
+            const currentTab = await chrome.tabs.get(tabId).catch(() => null);
+            const tabUrl = currentTab && currentTab.url ? currentTab.url : '';
+            const tabHost = (() => { try { return new URL(tabUrl).hostname; } catch(_) { return ''; } })();
+
+            // ── Google Docs inline paste (bypasses content.js entirely) ────────
+            if (tabHost.includes('docs.google.com') && tabUrl.includes('/document/')) {
+              const text = String(params && params.text ? params.text : '');
+              try {
+                const results = await chrome.scripting.executeScript({
+                  target: { tabId },
+                  func: async (textToType) => {
+                    // Find the Docs canvas editor (NOT the title input at top)
+                    const editorSelectors = [
+                      '.kix-appview-editor',
+                      '.kix-zoomdocumentplugin-outer',
+                      '.docs-editor-container',
+                      '#docs-editor',
+                    ];
+                    let editorEl = null;
+                    for (const sel of editorSelectors) {
+                      const el = document.querySelector(sel);
+                      if (el && el.getBoundingClientRect().width > 50) { editorEl = el; break; }
+                    }
+                    // Click inside the document body area
+                    const r = editorEl ? editorEl.getBoundingClientRect() : null;
+                    const cx = r ? r.left + Math.min(200, r.width  * 0.3) : window.innerWidth  * 0.5;
+                    const cy = r ? r.top  + Math.min(160, r.height * 0.3) : window.innerHeight * 0.4;
+                    const target = editorEl || document.elementFromPoint(cx, cy) || document.body;
+                    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: cx, clientY: cy }));
+                    target.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, clientX: cx, clientY: cy }));
+                    target.dispatchEvent(new MouseEvent('click',     { bubbles: true, clientX: cx, clientY: cy }));
+                    await new Promise(res => setTimeout(res, 350));
+                    // Paste via clipboard
+                    await navigator.clipboard.writeText(textToType);
+                    await new Promise(res => setTimeout(res, 150));
+                    const pasteTarget = document.activeElement || target;
+                    pasteTarget.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', code: 'KeyV', ctrlKey: true, bubbles: true, cancelable: true }));
+                    pasteTarget.dispatchEvent(new KeyboardEvent('keyup',   { key: 'v', code: 'KeyV', ctrlKey: true, bubbles: true }));
+                    await new Promise(res => setTimeout(res, 400));
+                    return { success: true, method: 'docs-inline-paste' };
+                  },
+                  args: [text]
+                });
+                const r = results && results[0] && results[0].result;
+                sendResponse(r && r.success ? r : { success: false, error: 'Inline paste returned no result' });
+              } catch (inlineErr) {
+                sendResponse({ success: false, error: 'Google Docs inline paste failed: ' + inlineErr.message });
+              }
+              return;
             }
-          });
+
+            // ── Word Online inline paste ────────────────────────────────────────
+            if (tabHost.includes('word.office.com') || tabHost.includes('word.live.com')) {
+              const text = String(params && params.text ? params.text : '');
+              try {
+                const results = await chrome.scripting.executeScript({
+                  target: { tabId },
+                  func: async (textToType) => {
+                    const selectors = ['.WACViewPanel', '.Page', '[class*="EditArea"]', 'div[contenteditable="true"]'];
+                    let el = null;
+                    for (const sel of selectors) { el = document.querySelector(sel); if (el) break; }
+                    if (el) { el.click(); el.focus(); await new Promise(r => setTimeout(r, 300)); }
+                    await navigator.clipboard.writeText(textToType);
+                    await new Promise(r => setTimeout(r, 150));
+                    const t = document.activeElement || el || document.body;
+                    t.dispatchEvent(new KeyboardEvent('keydown', { key:'v', code:'KeyV', ctrlKey:true, bubbles:true, cancelable:true }));
+                    t.dispatchEvent(new KeyboardEvent('keyup',   { key:'v', code:'KeyV', ctrlKey:true, bubbles:true }));
+                    await new Promise(r => setTimeout(r, 400));
+                    return { success: true };
+                  },
+                  args: [text]
+                });
+                sendResponse(results?.[0]?.result || { success: false });
+              } catch (e) {
+                sendResponse({ success: false, error: 'Word inline paste failed: ' + e.message });
+              }
+              return;
+            }
+
+            // ── All other sites: try content.js, inject fresh if needed ─────────
+            chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, (response) => {
+              if (chrome.runtime.lastError) {
+                clearAndInject(tabId)
+                  .then(() => chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, sendResponse))
+                  .catch(err => sendResponse({ success: false, error: err.message }));
+              } else {
+                sendResponse(response);
+              }
+            });
+          } catch (fallbackErr) {
+            sendResponse({ success: false, error: fallbackErr.message });
+          }
         };
 
         try {
