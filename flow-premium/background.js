@@ -1089,6 +1089,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return;
           }
 
+          // CRITICAL: Google Docs /document/ does NOT accept CDP char events.
+          // The canvas silently swallows them — CDP returns success:true but
+          // nothing appears. Docs ONLY accepts text via execCommand('insertText')
+          // on its hidden docs-texteventtarget-iframe. runFallbackType() does
+          // exactly that. Skip CDP entirely for Docs documents.
+          if (tabHostname.includes('docs.google.com') && tabPath.includes('/document/')) {
+            runFallbackType();
+            return;
+          }
+
           // Ask content.js for the (x, y) coordinates to click.
           // If content.js isn't loaded yet, inject it then retry once.
           const locate = () => new Promise((resolve, reject) => {
