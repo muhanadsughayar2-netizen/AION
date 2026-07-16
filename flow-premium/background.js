@@ -1071,26 +1071,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         };
 
         try {
-          // Right after a "navigate" step, tab.url can still briefly reflect
-          // an intermediate/redirecting URL (e.g. sheets.new before it lands
-          // on the real /spreadsheets/d/.../edit URL) — retry a few times
-          // before concluding this isn't a Sheets/Docs page.
-          let isDocsHost = false;
-          for (let i = 0; i < 5; i++) {
-            const tab = await chrome.tabs.get(tabId);
-            const url = tab && tab.url ? new URL(tab.url) : null;
-            isDocsHost = !!url && url.hostname.includes('docs.google.com') &&
-              (url.pathname.includes('/spreadsheets/') || url.pathname.includes('/document/'));
-            if (isDocsHost) break;
-            await new Promise(r => setTimeout(r, 300));
-          }
+          // Determine if this tab is a canvas-based editor that needs CDP.
+          // BUG FIX: the old check only covered docs.google.com — Word Online
+          // and Excel Online were never reaching CDP and fell into the clipboard
+          // fallback which silently fails. Now all canvas apps use CDP first.
+          const tab = await chrome.tabs.get(tabId);
+          const tabUrlObj = tab && tab.url ? (() => { try { return new URL(tab.url); } catch(_) { return null; } })() : null;
+          const tabHostname = tabUrlObj ? tabUrlObj.hostname : '';
+          const tabPath     = tabUrlObj ? tabUrlObj.pathname : '';
 
-          if (!isDocsHost) {
+          const isCanvasApp = tabHostname.includes('docs.google.com')
+            || tabHostname.includes('office.com')
+            || tabHostname.includes('live.com');
+
+          if (!isCanvasApp) {
             runFallbackType();
             return;
           }
 
-          const locate = async () => new Promise((resolve, reject) => {
+          // Ask content.js for the (x, y) coordinates to click.
+          // If content.js isn't loaded yet, inject it then retry once.
+          const locate = () => new Promise((resolve, reject) => {
             chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction: 'locateForType', params }, (response) => {
               if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
               else resolve(response);
@@ -1098,67 +1099,73 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
 
           let loc;
-          try {
-            loc = await locate();
-          } catch (_e) {
-            await clearAndInject(tabId);
-            loc = await locate();
-          }
+          try { loc = await locate(); }
+          catch (_e) { await clearAndInject(tabId); loc = await locate(); }
 
+          // locateForType always returns success:true with fallback coords now,
+          // so if we still get failure the page is in a broken state — use paste.
           if (!loc || !loc.success || typeof loc.x !== 'number' || typeof loc.y !== 'number') {
             runFallbackType();
             return;
           }
 
           const { x, y, mode } = loc;
+
+          // Attach Chrome DevTools Protocol — gives us hardware-level trusted events.
+          // IMPORTANT: This fails if the user has DevTools open on the same tab
+          // (only one debugger can be attached at a time). In that case we fall back.
           const debuggee = { tabId };
-          await chrome.debugger.attach(debuggee, '1.3');
           try {
-            const send = (method, params2) => new Promise((resolve, reject) => {
-              chrome.debugger.sendCommand(debuggee, method, params2, () => {
+            await chrome.debugger.attach(debuggee, '1.3');
+          } catch (attachErr) {
+            console.warn('[Aion Agent] CDP attach failed (DevTools open?), using paste fallback:', attachErr.message);
+            runFallbackType();
+            return;
+          }
+
+          try {
+            const send = (method, p) => new Promise((resolve, reject) => {
+              chrome.debugger.sendCommand(debuggee, method, p, () => {
                 if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
                 else resolve();
               });
             });
 
-            // Sheets/Excel: single click only SELECTS a cell — must double-click
-            // to actually ENTER edit mode so subsequent key events go into the cell.
-            // Docs: single click is enough to place the cursor in the document body.
-            const clickCount = (mode === 'sheets') ? 2 : 1;
+            // Sheets/Excel: single click only SELECTS a cell.
+            // Double-click is required to actually ENTER edit mode.
+            // Docs/Word: single click places the cursor.
+            const isGrid = (mode === 'sheets');
+            const clickCount = isGrid ? 2 : 1;
             for (let ci = 1; ci <= clickCount; ci++) {
               await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: ci });
               await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: ci });
-              if (ci < clickCount) await new Promise(r => setTimeout(r, 80));
+              if (ci < clickCount) await new Promise(r => setTimeout(r, 100));
             }
             await new Promise(r => setTimeout(r, 200));
 
-            const specialKeys = {
-              '\n': { key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 },
-              '\t': { key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 }
-            };
-
+            // Type each character using the CDP 'char' event.
+            // 'char' is the ONLY event that inserts text into a canvas editor.
+            // Do NOT use keyDown+char — that inserts TWICE (doubled characters bug).
+            // rawKeyDown alone does NOT insert — safe to use for Enter/Tab context.
             const text = String(params.text ?? '');
             for (const ch of text) {
-              if (specialKeys[ch]) {
-                const k = specialKeys[ch];
-                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: k.key, code: k.code, windowsVirtualKeyCode: k.windowsVirtualKeyCode });
-                await send('Input.dispatchKeyEvent', { type: 'keyUp', key: k.key, code: k.code, windowsVirtualKeyCode: k.windowsVirtualKeyCode });
+              if (ch === '\n') {
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+              } else if (ch === '\t') {
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
               } else {
-                // rawKeyDown has NO text property — it does NOT insert a character.
-                // Only the 'char' event inserts. Using keyDown+char both insert = doubled chars.
-                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: ch });
                 await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
-                await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ch });
               }
             }
 
-            // For spreadsheet cells, an untyped Enter leaves the cell stuck
-            // in edit mode with the value never actually saved — commit it
-            // unless the caller explicitly asked us not to.
-            if (mode === 'sheets' && params.pressEnter !== false) {
+            // Sheets: press Enter after typing to COMMIT the cell value.
+            // Without this the cell stays in edit mode and the value is not saved.
+            if (isGrid && params.pressEnter !== false) {
               await new Promise(r => setTimeout(r, 100));
               await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-              await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+              await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
             }
 
             sendResponse({ success: true });
@@ -1166,7 +1173,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
           }
         } catch (e) {
-          console.warn('[SnapToAI Agent] Trusted type failed, falling back:', e && e.message);
+          console.warn('[Aion Agent] CDP type failed, using paste fallback:', e && e.message);
           runFallbackType();
         }
       })();

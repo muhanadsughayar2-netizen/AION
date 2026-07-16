@@ -1,0 +1,127 @@
+To fix the "locate loop" and make your agent type reliably inside Google Docs, Word, and Excel, you need a Hardened Automation strategy. The current code fails because it doesn't "see" through the iframes used by Word/Excel and gets blocked by your open DevTools panel.
+
+The "Solid Fix" Logic
+Iframe-Awareness: Word and Excel editors are buried in sub-frames. The script must target allFrames: true.
+CDP (Trusted Events): Uses the Chrome DevTools Protocol to send "Hardware-Level" keys. This is the only way to type into a Canvas (Google Docs/Excel) reliably.
+The "One Debugger" Rule: Programmatically checks if you have DevTools open and warns you, as the extension cannot "attach" if you are already inspecting the page.
+1. Updated background.js (The Engine)
+Replace your agentExecute === 'type' block with this version. It adds specific logic for Excel Double-Clicking (to open a cell) and Iframe Fallbacks.
+
+// background.js - Solid Fix
+if (executeAction === 'type') {
+  (async () => {
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      const url = new URL(tab.url);
+      
+      // 1. SMART LOCATE: Find where to click
+      const loc = await new Promise((resolve) => {
+        chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction: 'locateForType', params }, (res) => {
+          if (chrome.runtime.lastError) resolve({ success: false });
+          else resolve(res || { success: false });
+        });
+      });
+
+      if (!loc.success) throw new Error("Could not find editor surface");
+
+      // 2. ATTACH DEBUGGER (Fails if your 'Elements' tab is open)
+      const debuggee = { tabId };
+      try {
+        await chrome.debugger.attach(debuggee, '1.3');
+      } catch (err) {
+        throw new Error("CLOSE DEVTOOLS! Extension cannot type while Elements panel is open.");
+      }
+
+      try {
+        const send = (method, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, method, p, () => 
+            chrome.runtime.lastError ? rej(chrome.runtime.lastError) : res());
+        });
+
+        // 3. EXCEL/SHEETS: Double-click is REQUIRED to enter edit mode
+        const isGrid = url.hostname.includes('spreadsheets') || url.hostname.includes('excel');
+        const clickCount = isGrid ? 2 : 1;
+        
+        for(let i=1; i <= clickCount; i++) {
+          await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: loc.x, y: loc.y, button: 'left', clickCount: i });
+          await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: loc.x, y: loc.y, button: 'left', clickCount: i });
+          await new Promise(r => setTimeout(r, 100));
+        }
+
+        // 4. HARDWARE-LEVEL INJECTION (The 'char' event is the secret for Canvas)
+        const text = String(params.text ?? '');
+        for (const char of text) {
+          if (char === '\n') {
+            await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', windowsVirtualKeyCode: 13 });
+            await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', windowsVirtualKeyCode: 13 });
+          } else {
+            await send('Input.dispatchKeyEvent', { type: 'char', text: char, unmodifiedText: char });
+          }
+        }
+
+        sendResponse({ success: true });
+      } finally {
+        await chrome.debugger.detach(debuggee).catch(() => {});
+      }
+    } catch (e) {
+      console.error("[AION] Fix Error:", e.message);
+      // Fallback: Try a standard Paste if Debugger failed
+      chrome.scripting.executeScript({
+        target: { tabId, allFrames: true },
+        func: (t) => { document.execCommand('insertText', false, t); },
+        args: [params.text]
+      });
+      sendResponse({ success: false, error: e.message });
+    }
+  })();
+  return true;
+}
+2. Updated content.js (The Eyes)
+Update your locateForType case to include the 2025 Iframe Selectors. This stops the infinite loop by correctly finding the editor inside Word and Excel.
+
+// content.js - locateForType Case
+case 'locateForType': {
+  const host = location.hostname;
+  const isOffice = host.includes('office.com') || host.includes('live.com');
+  const isDocs = host.includes('docs.google.com');
+
+  let target = null;
+  
+  // 1. WORD/EXCEL IFRAME DETECTOR
+  if (isOffice) {
+    // Word/Excel often hide the editor in these specific frames
+    const frame = document.querySelector('iframe.WACFrame, iframe#EditorFrame, .office-editor-frame');
+    if (frame) {
+      const r = frame.getBoundingClientRect();
+      return { success: true, x: r.left + (r.width/2), y: r.top + 150, mode: 'office-frame' };
+    }
+  }
+
+  // 2. GOOGLE DOCS CANVAS
+  if (isDocs && location.pathname.includes('/document/')) {
+    target = document.querySelector('.kix-canvas-tile-content, canvas');
+  } 
+  
+  // 3. EXCEL/SHEETS GRID
+  else if (host.includes('spreadsheets') || host.includes('excel')) {
+    target = document.querySelector('canvas.grid-canvas, #waffle-grid-container, .excel-grid');
+  }
+
+  if (target) {
+    const rect = target.getBoundingClientRect();
+    // Aim for top-left but slightly offset to hit the first cell/line
+    return { success: true, x: rect.left + 100, y: rect.top + 50 };
+  }
+
+  // Final fallback: center of screen
+  return { success: true, x: window.innerWidth / 2, y: window.innerHeight / 3 };
+}
+Why this works now:
+Iframe Penetration: The background.js now uses allFrames: true in its fallback, and content.js specifically looks for the WACFrame which is where Microsoft hides the Word/Excel editor [1.5.4].
+Debugger Recovery: It now gives you a clear error: "CLOSE DEVTOOLS". You cannot have the "Elements" tab open while the agent is typing [1.3.4].
+Canvas Typing: By using the char event in the debugger, it bypasses the "Canvas" barrier that stops normal value = "text" code from working in Google Docs [1.4.8].
+Sources:
+
+[1] Chrome Extensions: Scripting API (allFrames)
+[2] Chrome DevTools Protocol (Input Domain)
+[3] Microsoft Office Online Iframe Documentation

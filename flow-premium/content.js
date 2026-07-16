@@ -4203,21 +4203,24 @@
         const isExcel  = host.includes('excel.office.com') || host.includes('excel.live.com');
         const isWord   = host.includes('word.office.com')  || host.includes('word.live.com');
 
-        // ── GOOGLE SHEETS ────────────────────────────────────────────────────
-        if (isSheets || isExcel) {
-          const gridSelectors = [
-            'canvas.grid-canvas', '.grid-canvas',
-            '#waffle', '.grid-container', '.grid-scrollable-wrapper-3',
-            'canvas', 'div[role="grid"]', '.waffle-container'
-          ];
-          let grid = null;
-          for (let attempt = 0; attempt < 6 && !grid; attempt++) {
-            for (const sel of gridSelectors) {
-              const el = document.querySelector(sel);
-              if (el) { const r = el.getBoundingClientRect(); if (r.width > 50 && r.height > 50) { grid = el; break; } }
-            }
-            if (!grid) await new Promise(r => setTimeout(r, 400));
+        // Helper: find first visible element from a list of selectors (no retry loop).
+        // The old code had 6-attempt retry loops (up to 2.4s each) that caused
+        // the "locate loop" hang. Now we do one fast pass and fall back to safe
+        // screen coordinates — CDP will still click the right area.
+        const findVisible = (selectors) => {
+          for (const sel of selectors) {
+            const el = document.querySelector(sel);
+            if (el) { const r = el.getBoundingClientRect(); if (r.width > 50 && r.height > 50) return el; }
           }
+          return null;
+        };
+
+        // ── GOOGLE SHEETS / EXCEL ────────────────────────────────────────────
+        if (isSheets || isExcel) {
+          const grid = findVisible([
+            'canvas.grid-canvas', '.grid-canvas', '#waffle-grid-container',
+            '#waffle', '.grid-container', 'canvas', 'div[role="grid"]'
+          ]);
           let x, y;
           if (grid) {
             const r = grid.getBoundingClientRect();
@@ -4232,17 +4235,20 @@
           return { success: true, x, y, mode: 'sheets' };
         }
 
-        // ── WORD ONLINE (iframe-based editor) ────────────────────────────────
+        // ── WORD ONLINE ──────────────────────────────────────────────────────
         if (isWord) {
-          const editorFrame = document.querySelector('iframe.WACFrame, #EditorFrame, iframe[title*="Word"], iframe[title*="Document"]');
-          if (editorFrame) {
-            const r = editorFrame.getBoundingClientRect();
+          // Word buries its editor inside an iframe — target the iframe centre.
+          const frame = document.querySelector(
+            'iframe.WACFrame, iframe#EditorFrame, .office-editor-frame, iframe[title*="Word"], iframe[title*="Document"]'
+          );
+          if (frame) {
+            const r = frame.getBoundingClientRect();
             const x = r.left + r.width / 2;
             const y = r.top  + Math.min(150, r.height * 0.2);
             moveGhostCursor(x, y);
             return { success: true, x, y, mode: 'word-iframe' };
           }
-          const editArea = document.querySelector('.WACViewPanel, .Page, div[contenteditable="true"]');
+          const editArea = findVisible(['.WACViewPanel', '.Page', 'div[contenteditable="true"]']);
           if (editArea) {
             const r = editArea.getBoundingClientRect();
             const x = r.left + r.width * 0.5;
@@ -4255,19 +4261,11 @@
 
         // ── GOOGLE DOCS (canvas tiles) ───────────────────────────────────────
         if (isDocs) {
-          const docsSelectors = [
+          const target = findVisible([
             '.kix-canvas-tile-content', 'canvas.kix-canvas-tile-content',
             '.kix-appview-editor', '.kix-page-content-wrapper', '.kix-page',
             '#docs-editor-container', 'div[role="textbox"]'
-          ];
-          let target = null;
-          for (let attempt = 0; attempt < 6 && !target; attempt++) {
-            for (const sel of docsSelectors) {
-              const el = document.querySelector(sel);
-              if (el) { const r = el.getBoundingClientRect(); if (r.width > 50 && r.height > 50) { target = el; break; } }
-            }
-            if (!target) await new Promise(r => setTimeout(r, 400));
-          }
+          ]);
           let x, y;
           if (target) {
             const rect = target.getBoundingClientRect();
@@ -4282,7 +4280,11 @@
           return { success: true, x, y, mode: 'docs' };
         }
 
-        return { success: false };
+        // ── UNKNOWN CANVAS APP — safe centre-of-screen fallback ──────────────
+        // background.js only calls locateForType for known canvas hosts, so
+        // reaching here means the page structure is unexpected. Return safe
+        // centre coords so CDP still attempts to click rather than giving up.
+        return { success: true, x: window.innerWidth * 0.5, y: window.innerHeight * 0.35, mode: 'unknown' };
       }
 
       case 'type': {
