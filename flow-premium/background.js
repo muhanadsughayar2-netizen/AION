@@ -971,6 +971,59 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               return;
             }
 
+            // ── Google Sheets inline paste ──────────────────────────────────────
+            if (tabHost.includes('docs.google.com') && tabUrl.includes('/spreadsheets/')) {
+              const text = String(params && params.text ? params.text : '');
+              try {
+                const results = await chrome.scripting.executeScript({
+                  target: { tabId },
+                  func: async (textToType) => {
+                    const sleep = ms => new Promise(res => setTimeout(res, ms));
+                    // Split by newline OR comma+space so agent can pass "Jan\nFeb" or "Jan, Feb"
+                    const values = textToType.split(/\n|,\s*/).map(v => v.trim()).filter(Boolean);
+
+                    // Find the Name Box input to navigate to a starting cell
+                    const nameBox = document.querySelector(
+                      '#t-name-box, [id="t-name-box"], .docs-objectbox-container input, [aria-label="Name Box"]'
+                    );
+
+                    if (values.length > 1 && nameBox) {
+                      // Multi-value: paste all as newline-separated → Sheets splits into rows
+                      nameBox.click(); nameBox.focus(); await sleep(100);
+                      nameBox.value = 'A1';
+                      nameBox.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', keyCode:13, bubbles:true }));
+                      nameBox.dispatchEvent(new KeyboardEvent('keyup',   { key:'Enter', keyCode:13, bubbles:true }));
+                      await sleep(300);
+                      // Write newline-separated values to clipboard then paste
+                      await navigator.clipboard.writeText(values.join('\n'));
+                      await sleep(150);
+                      document.execCommand('paste');
+                      await sleep(500);
+                      return { success: true, method: 'sheets-paste-column' };
+                    }
+
+                    // Single value: just click first cell and paste
+                    if (nameBox) {
+                      nameBox.click(); nameBox.focus(); await sleep(100);
+                      nameBox.value = 'A1';
+                      nameBox.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', keyCode:13, bubbles:true }));
+                      await sleep(200);
+                    }
+                    await navigator.clipboard.writeText(textToType);
+                    await sleep(150);
+                    document.execCommand('paste');
+                    await sleep(300);
+                    return { success: true, method: 'sheets-single-paste' };
+                  },
+                  args: [text]
+                });
+                sendResponse(results?.[0]?.result || { success: false });
+              } catch (e) {
+                sendResponse({ success: false, error: 'Sheets inline paste failed: ' + e.message });
+              }
+              return;
+            }
+
             // ── All other sites: try content.js, inject fresh if needed ─────────
             chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, (response) => {
               if (chrome.runtime.lastError) {
@@ -1054,7 +1107,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: k.key, code: k.code, windowsVirtualKeyCode: k.windowsVirtualKeyCode });
                 await send('Input.dispatchKeyEvent', { type: 'keyUp', key: k.key, code: k.code, windowsVirtualKeyCode: k.windowsVirtualKeyCode });
               } else {
-                await send('Input.dispatchKeyEvent', { type: 'keyDown', text: ch, unmodifiedText: ch, key: ch });
+                // rawKeyDown has NO text property — it does NOT insert a character.
+                // Only the 'char' event inserts. Using keyDown+char both insert = doubled chars.
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: ch });
                 await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
                 await send('Input.dispatchKeyEvent', { type: 'keyUp', key: ch });
               }

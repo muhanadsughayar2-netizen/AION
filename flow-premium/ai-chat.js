@@ -10273,7 +10273,9 @@ Rules:
 - If a page repeatedly returns no readable text or the same action fails the same way more than once in a row, stop retrying blindly — call "finish" and explain what's blocking you.
 - Keep your reasoning to yourself; only function calls and the final "finish" summary are shown to the user.
 - DOCUMENT EDITORS (Google Docs, Word Online): These apps use a virtual canvas — there is no real DOM text field for the document body. The document TITLE is a real input (avoid clicking it). To write into the document body: use "type" with your text and no selector — the agent automatically uses clipboard-paste which is the only reliable method. Do NOT try to click on text inside the document or search for a body element by name. Just call "type" directly after the page loads.
-- GOOGLE DOCS TITLE vs BODY: The element labelled "Untitled document" or the document name at the top is the TITLE — clicking it types into the title. To type in the document BODY, use "type" without clicking the title first — the agent will find and click the correct document canvas area automatically.`;
+- GOOGLE DOCS TITLE vs BODY: The element labelled "Untitled document" or the document name at the top is the TITLE — clicking it types into the title. To type in the document BODY, use "type" without clicking the title first — the agent will find and click the correct document canvas area automatically.
+- GOOGLE SHEETS — entering a list into a column: Do NOT type each value one at a time with separate "type" calls. Instead, use a SINGLE "type" call where the text contains all values separated by newlines (e.g. "January\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember"). The agent code will automatically navigate to cell A1 and paste the list so each value lands in its own row. One type call = entire column filled.
+- GOOGLE SHEETS — typing a single cell value: use "type" with just that value and pressEnter:true. The agent handles focusing the correct cell.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
