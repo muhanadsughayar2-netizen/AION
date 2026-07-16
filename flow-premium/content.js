@@ -4200,8 +4200,10 @@
         const host = location.hostname;
         const isSheets = host.includes('docs.google.com') && location.pathname.includes('/spreadsheets/');
         const isDocs   = host.includes('docs.google.com') && location.pathname.includes('/document/');
-        const isExcel  = host.includes('excel.office.com') || host.includes('excel.live.com');
-        const isWord   = host.includes('word.office.com')  || host.includes('word.live.com');
+        const isExcel  = host.includes('excel.office.com') || host.includes('excel.live.com')
+                      || (host.includes('officeapps.live.com') && !host.includes('word'));
+        const isWord   = host.includes('word.office.com')  || host.includes('word.live.com')
+                      || (host.includes('officeapps.live.com') && host.includes('word'));
 
         // Helper: find first visible element from a list of selectors (no retry loop).
         // The old code had 6-attempt retry loops (up to 2.4s each) that caused
@@ -4215,8 +4217,8 @@
           return null;
         };
 
-        // ── GOOGLE SHEETS / EXCEL ────────────────────────────────────────────
-        if (isSheets || isExcel) {
+        // ── GOOGLE SHEETS ────────────────────────────────────────────────────
+        if (isSheets) {
           const grid = findVisible([
             'canvas.grid-canvas', '.grid-canvas', '#waffle-grid-container',
             '#waffle', '.grid-container', 'canvas', 'div[role="grid"]'
@@ -4224,15 +4226,42 @@
           let x, y;
           if (grid) {
             const r = grid.getBoundingClientRect();
-            x = r.left + Math.min(120, r.width  * 0.15);
-            y = r.top  + Math.min(60,  r.height * 0.10);
+            // Skip the row-header strip (~46px) and column-header strip (~25px)
+            x = r.left + Math.max(100, r.width  * 0.15);
+            y = r.top  + Math.max(55,  r.height * 0.10);
             highlightElement(grid);
           } else {
-            x = window.innerWidth  * 0.3;
-            y = window.innerHeight * 0.45;
+            x = window.innerWidth  * 0.35;
+            y = window.innerHeight * 0.40;
           }
           moveGhostCursor(x, y);
           return { success: true, x, y, mode: 'sheets' };
+        }
+
+        // ── EXCEL ONLINE ─────────────────────────────────────────────────────
+        if (isExcel) {
+          // Excel Online uses a different canvas class hierarchy than Sheets.
+          // The Name Box (cell-address input) is a real DOM element we can focus
+          // via Runtime.evaluate to navigate to cell A1 before typing.
+          // For the click target we still need a coordinate inside the data area.
+          const grid = findVisible([
+            'canvas[class*="excel"]', 'canvas[class*="grid"]', 'canvas[class*="cell"]',
+            '.lowLevelCanvasHost canvas', '.canvasOverlay', 'canvas', 'div[role="grid"]'
+          ]);
+          let x, y;
+          if (grid) {
+            const r = grid.getBoundingClientRect();
+            // Excel header strip: ~48px row headers (left), ~26px col headers (top).
+            // Click well into the first data cell to avoid the header zone.
+            x = r.left + Math.max(110, r.width  * 0.18);
+            y = r.top  + Math.max(60,  r.height * 0.12);
+            highlightElement(grid);
+          } else {
+            x = window.innerWidth  * 0.4;
+            y = window.innerHeight * 0.4;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'excel' };
         }
 
         // ── WORD ONLINE ──────────────────────────────────────────────────────

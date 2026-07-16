@@ -10240,6 +10240,17 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'pressKey',
+      description: 'Press a keyboard key or shortcut on the current page. Use this for: save (ctrl+s), undo (ctrl+z), redo (ctrl+y), select all (ctrl+a), copy (ctrl+c), paste (ctrl+v), bold (ctrl+b), Escape, Enter, Tab, arrow keys, F-keys, and any modifier combo. This is the ONLY reliable way to save a document in Word Online or Excel Online.',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'Key or combo to press. Format: "ctrl+s", "ctrl+z", "ctrl+shift+s", "escape", "enter", "tab", "f12", "arrowdown". Case-insensitive.' }
+        },
+        required: ['key']
+      }
+    },
+    {
       name: 'finish',
       description: 'Call this when the task is complete, impossible, or you need to stop and tell the user something.',
       parameters: {
@@ -10272,10 +10283,13 @@ Rules:
 - Never invent that something happened — only report success after a function call actually returns success.
 - If a page repeatedly returns no readable text or the same action fails the same way more than once in a row, stop retrying blindly — call "finish" and explain what's blocking you.
 - Keep your reasoning to yourself; only function calls and the final "finish" summary are shown to the user.
-- DOCUMENT EDITORS (Google Docs, Word Online): These apps use a virtual canvas — there is no real DOM text field for the document body. The document TITLE is a real input (avoid clicking it). To write into the document body: use "type" with your text and no selector — the agent automatically uses clipboard-paste which is the only reliable method. Do NOT try to click on text inside the document or search for a body element by name. Just call "type" directly after the page loads.
+- DOCUMENT EDITORS (Google Docs, Word Online): These apps use a virtual canvas — there is no real DOM text field for the document body. The document TITLE is a real input (avoid clicking it). To write into the document body: use "type" with your text and no selector — the agent automatically uses the correct keyboard injection method. Do NOT try to click on text inside the document or search for a body element by name. Just call "type" directly after the page loads.
 - GOOGLE DOCS TITLE vs BODY: The element labelled "Untitled document" or the document name at the top is the TITLE — clicking it types into the title. To type in the document BODY, use "type" without clicking the title first — the agent will find and click the correct document canvas area automatically.
-- GOOGLE SHEETS — entering a list into a column: Do NOT type each value one at a time with separate "type" calls. Instead, use a SINGLE "type" call where the text contains all values separated by newlines (e.g. "January\nFebruary\nMarch\nApril\nMay\nJune\nJuly\nAugust\nSeptember\nOctober\nNovember\nDecember"). The agent code will automatically navigate to cell A1 and paste the list so each value lands in its own row. One type call = entire column filled.
-- GOOGLE SHEETS — typing a single cell value: use "type" with just that value and pressEnter:true. The agent handles focusing the correct cell.`;
+- SAVING DOCUMENTS: To save in Word Online, Excel Online, Google Docs, or any web editor — use pressKey with key "ctrl+s". Do NOT click File > Save manually; the keyboard shortcut is faster and more reliable. Always pressKey("ctrl+s") after finishing a typing task in an editor.
+- WORD ONLINE — attachments & templates: Word Online menus (Insert, File, etc.) are real HTML buttons. Use "click" with the menu name (e.g. click "Insert"), then click the sub-item (e.g. click "Pictures" or "From computer"). For templates: navigate to office.com, find the template in the gallery, then click to open it — do NOT try to access templates from within an already-open document.
+- EXCEL ONLINE — entering data into cells: Use "type" with your text — the agent automatically navigates to cell A1 and enters data. Each newline in the text moves to the next row. After typing, the agent presses Enter to commit. Do NOT try to click individual cells; just call "type" with all the data at once using "\n" between rows.
+- GOOGLE SHEETS — entering a list into a column: Use a SINGLE "type" call where values are separated by newlines (e.g. "January\nFebruary\nMarch"). One type call = entire column filled.
+- KEYBOARD SHORTCUTS: Use pressKey for any shortcut — "ctrl+b" (bold), "ctrl+i" (italic), "ctrl+u" (underline), "ctrl+z" (undo), "ctrl+y" (redo), "ctrl+a" (select all), "escape" (close dialog), "f2" (rename/edit), "ctrl+home" (go to top). These work reliably in ALL apps including canvas editors.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window

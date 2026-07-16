@@ -1162,16 +1162,30 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               });
             });
 
-            const text    = String(params.text ?? '');
-            const isDocs  = tabHostname.includes('docs.google.com') && tabPath.includes('/document/');
-            const isGrid  = (mode === 'sheets');
+            const text     = String(params.text ?? '');
+            const isDocs   = tabHostname.includes('docs.google.com') && tabPath.includes('/document/');
+            const isGrid   = (mode === 'sheets');
+            const isExcel  = (mode === 'excel');
+
+            // Helper — send CDP char + special-key events into whatever element has focus
+            const typeChars = async (str) => {
+              for (const ch of str) {
+                if (ch === '\n') {
+                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                } else if (ch === '\t') {
+                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+                } else {
+                  await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
+                }
+              }
+            };
 
             if (isDocs) {
-              // ── GOOGLE DOCS — focus the texteventtarget-iframe via Runtime.evaluate,
-              // then fire CDP char events into it. CDP char events go to whatever
-              // element currently has focus at the BROWSER level — focusing the
-              // hidden input iframe first makes those events land in Docs' own
-              // keyboard router, which is the only reliable way to insert text.
+              // ── GOOGLE DOCS ──────────────────────────────────────────────────
+              // Focus the hidden texteventtarget-iframe body via Runtime.evaluate
+              // so CDP char events land in Docs' own keyboard router.
               await send('Runtime.enable', {});
               await sendR('Runtime.evaluate', {
                 expression: `(async () => {
@@ -1189,32 +1203,54 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 awaitPromise: true,
                 returnByValue: true
               });
-              // Give Docs a moment to register the focus change
               await new Promise(r => setTimeout(r, 200));
+              await typeChars(text);
 
-              // Now fire CDP char events — they go straight into the focused iframe
-              for (const ch of text) {
-                if (ch === '\n') {
-                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-                } else if (ch === '\t') {
-                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
-                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
-                } else {
-                  await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
-                }
+            } else if (isExcel) {
+              // ── EXCEL ONLINE ─────────────────────────────────────────────────
+              // Step 1: Focus the Name Box (real DOM input), type "A1", press Enter
+              // to navigate to cell A1 so we have a known selected cell.
+              await send('Runtime.enable', {});
+              await sendR('Runtime.evaluate', {
+                expression: `(async () => {
+                  const sleep = ms => new Promise(r => setTimeout(r, ms));
+                  // Name Box selectors used across Excel Online versions
+                  const nb = document.querySelector(
+                    'input[aria-label="Name Box"], input#NameBox, input.nameBox, ' +
+                    'input[class*="NameBox"], input[class*="nameBox"], .formulaBar input'
+                  );
+                  if (nb) { nb.focus(); nb.select(); return 'namebox'; }
+                  return 'no-namebox';
+                })()`,
+                awaitPromise: true,
+                returnByValue: true
+              });
+              await new Promise(r => setTimeout(r, 100));
+              // Type "A1" + Enter in the Name Box to navigate to the first data cell
+              for (const ch of 'A1') {
+                await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
               }
-            } else {
-              // ── SHEETS / EXCEL / WORD — click to focus, then type ────────────
-              // Sheets/Excel: single click selects a cell; double-click enters edit mode.
-              const clickCount = isGrid ? 2 : 1;
-              for (let ci = 1; ci <= clickCount; ci++) {
+              await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+              await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+              await new Promise(r => setTimeout(r, 300));
+              // Step 2: Click the data-area coordinate so the grid has OS focus
+              await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+              await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+              await new Promise(r => setTimeout(r, 200));
+              // Step 3: Type — starting to type in Excel with a cell selected
+              // automatically enters edit mode, so char events work directly.
+              await typeChars(text);
+
+            } else if (isGrid) {
+              // ── GOOGLE SHEETS ─────────────────────────────────────────────────
+              // Double-click enters edit mode; then use keyDown+text (more reliable
+              // than char events for Sheets' canvas input handler).
+              for (let ci = 1; ci <= 2; ci++) {
                 await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: ci });
                 await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: ci });
-                if (ci < clickCount) await new Promise(r => setTimeout(r, 100));
+                if (ci < 2) await new Promise(r => setTimeout(r, 100));
               }
               await new Promise(r => setTimeout(r, 200));
-
               for (const ch of text) {
                 if (ch === '\n') {
                   await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
@@ -1227,11 +1263,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   await send('Input.dispatchKeyEvent', { type: 'keyUp',   text: ch, unmodifiedText: ch });
                 }
               }
+
+            } else {
+              // ── WORD ONLINE / other canvas apps ──────────────────────────────
+              await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+              await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+              await new Promise(r => setTimeout(r, 200));
+              await typeChars(text);
             }
 
-            // Sheets: press Enter after typing to COMMIT the cell value.
-            // Without this the cell stays in edit mode and the value is not saved.
-            if (isGrid && params.pressEnter !== false) {
+            // Sheets / Excel: press Enter to COMMIT the cell value.
+            if ((isGrid || isExcel) && params.pressEnter !== false) {
               await new Promise(r => setTimeout(r, 100));
               await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
               await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
@@ -1248,6 +1290,100 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       })();
       return true;
     }
+    if (executeAction === 'pressKey') {
+      // Fire a keyboard shortcut via CDP — the ONLY way to reliably send
+      // modifier key combos (Ctrl+S, Ctrl+Z, etc.) to canvas-based apps.
+      // Modifier bitmask: Alt=1, Ctrl=2, Meta=4, Shift=8.
+      (async () => {
+        const combo = String(params.key || '').toLowerCase().trim();
+        const parts = combo.split('+').map(p => p.trim());
+        let modifiers = 0;
+        let keyName = '';
+        for (const p of parts) {
+          if (p === 'ctrl' || p === 'control')           modifiers |= 2;
+          else if (p === 'alt')                          modifiers |= 1;
+          else if (p === 'shift')                        modifiers |= 8;
+          else if (p === 'meta'||p==='cmd'||p==='super') modifiers |= 4;
+          else keyName = p;
+        }
+        const KEY_MAP = {
+          'a':{ key:'a', code:'KeyA', kc:65 },  'b':{ key:'b', code:'KeyB', kc:66 },
+          'c':{ key:'c', code:'KeyC', kc:67 },  'd':{ key:'d', code:'KeyD', kc:68 },
+          'e':{ key:'e', code:'KeyE', kc:69 },  'f':{ key:'f', code:'KeyF', kc:70 },
+          'g':{ key:'g', code:'KeyG', kc:71 },  'h':{ key:'h', code:'KeyH', kc:72 },
+          'i':{ key:'i', code:'KeyI', kc:73 },  'j':{ key:'j', code:'KeyJ', kc:74 },
+          'k':{ key:'k', code:'KeyK', kc:75 },  'l':{ key:'l', code:'KeyL', kc:76 },
+          'm':{ key:'m', code:'KeyM', kc:77 },  'n':{ key:'n', code:'KeyN', kc:78 },
+          'o':{ key:'o', code:'KeyO', kc:79 },  'p':{ key:'p', code:'KeyP', kc:80 },
+          'q':{ key:'q', code:'KeyQ', kc:81 },  'r':{ key:'r', code:'KeyR', kc:82 },
+          's':{ key:'s', code:'KeyS', kc:83 },  't':{ key:'t', code:'KeyT', kc:84 },
+          'u':{ key:'u', code:'KeyU', kc:85 },  'v':{ key:'v', code:'KeyV', kc:86 },
+          'w':{ key:'w', code:'KeyW', kc:87 },  'x':{ key:'x', code:'KeyX', kc:88 },
+          'y':{ key:'y', code:'KeyY', kc:89 },  'z':{ key:'z', code:'KeyZ', kc:90 },
+          '1':{ key:'1', code:'Digit1', kc:49 },'2':{ key:'2', code:'Digit2', kc:50 },
+          '3':{ key:'3', code:'Digit3', kc:51 },'4':{ key:'4', code:'Digit4', kc:52 },
+          '5':{ key:'5', code:'Digit5', kc:53 },'6':{ key:'6', code:'Digit6', kc:54 },
+          '7':{ key:'7', code:'Digit7', kc:55 },'8':{ key:'8', code:'Digit8', kc:56 },
+          '9':{ key:'9', code:'Digit9', kc:57 },'0':{ key:'0', code:'Digit0', kc:48 },
+          'enter':    { key:'Enter',    code:'Enter',    kc:13  },
+          'escape':   { key:'Escape',   code:'Escape',   kc:27  },
+          'esc':      { key:'Escape',   code:'Escape',   kc:27  },
+          'tab':      { key:'Tab',      code:'Tab',      kc:9   },
+          'backspace':{ key:'Backspace',code:'Backspace',kc:8   },
+          'delete':   { key:'Delete',   code:'Delete',   kc:46  },
+          'arrowup':  { key:'ArrowUp',  code:'ArrowUp',  kc:38  },
+          'arrowdown':{ key:'ArrowDown',code:'ArrowDown',kc:40  },
+          'arrowleft':{ key:'ArrowLeft',code:'ArrowLeft',kc:37  },
+          'arrowright':{ key:'ArrowRight',code:'ArrowRight',kc:39 },
+          'up':       { key:'ArrowUp',  code:'ArrowUp',  kc:38  },
+          'down':     { key:'ArrowDown',code:'ArrowDown',kc:40  },
+          'left':     { key:'ArrowLeft',code:'ArrowLeft',kc:37  },
+          'right':    { key:'ArrowRight',code:'ArrowRight',kc:39 },
+          'home':     { key:'Home',     code:'Home',     kc:36  },
+          'end':      { key:'End',      code:'End',      kc:35  },
+          'pageup':   { key:'PageUp',   code:'PageUp',   kc:33  },
+          'pagedown': { key:'PageDown', code:'PageDown', kc:34  },
+          'f1': { key:'F1', code:'F1', kc:112 },'f2': { key:'F2', code:'F2', kc:113 },
+          'f3': { key:'F3', code:'F3', kc:114 },'f4': { key:'F4', code:'F4', kc:115 },
+          'f5': { key:'F5', code:'F5', kc:116 },'f6': { key:'F6', code:'F6', kc:117 },
+          'f7': { key:'F7', code:'F7', kc:118 },'f8': { key:'F8', code:'F8', kc:119 },
+          'f9': { key:'F9', code:'F9', kc:120 },'f10':{ key:'F10',code:'F10',kc:121 },
+          'f11':{ key:'F11',code:'F11',kc:122 },'f12':{ key:'F12',code:'F12',kc:123 },
+        };
+        const mapped = KEY_MAP[keyName];
+        if (!mapped) { sendResponse({ success: false, error: `Unknown key: "${keyName}" in combo "${combo}"` }); return; }
+        const finalKey = (modifiers & 8) && mapped.key.length === 1 ? mapped.key.toUpperCase() : mapped.key;
+        const debuggee = { tabId };
+        try {
+          await chrome.debugger.attach(debuggee, '1.3');
+        } catch (_e) {
+          sendResponse({ success: false, error: 'CDP attach failed (DevTools open?)' });
+          return;
+        }
+        try {
+          const sendKey = (type) => new Promise((res, rej) => {
+            chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent', {
+              type,
+              modifiers,
+              key: finalKey,
+              code: mapped.code,
+              windowsVirtualKeyCode: mapped.kc,
+              nativeVirtualKeyCode: mapped.kc
+            }, () => {
+              if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+              else res();
+            });
+          });
+          await sendKey('rawKeyDown');
+          await sendKey('keyUp');
+          sendResponse({ success: true });
+        } finally {
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
     if (executeAction === 'doubleClick') {
       // Content-script click/dblclick events are ALWAYS isTrusted:false — no
       // amount of synthetic dispatchEvent() can change that. Security-sensitive
