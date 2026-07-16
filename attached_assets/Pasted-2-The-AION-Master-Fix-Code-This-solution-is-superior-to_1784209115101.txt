@@ -1,0 +1,68 @@
+2. The "AION Master-Fix" Code
+This solution is superior to standard methods because it uses CDP (Chrome DevTools Protocol). CDP doesn't "pretend" to type; it tells the browser's hardware layer to press keys. This bypasses all Canvas and Iframe security.
+
+A. Updated background.js (The Brain)
+Replace your current type logic with this "Hardened" version. I have added specific logic for Excel and Word focus.
+
+if (executeAction === 'type') {
+  (async () => {
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      const url = new URL(tab.url);
+      
+      // 1. Get location with "Smart-Focus"
+      const loc = await new Promise((resolve) => {
+        chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction: 'locateForType', params }, (res) => {
+          resolve(res || { success: false });
+        });
+      });
+
+      if (!loc.success) throw new Error("Could not find editor surface");
+
+      const debuggee = { tabId };
+      await chrome.debugger.attach(debuggee, '1.3');
+
+      try {
+        const send = (method, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, method, p, () => 
+            chrome.runtime.lastError ? rej(chrome.runtime.lastError) : res());
+        });
+
+        // 2. EXCEL/WORD SPECIAL: Double-click to activate the cell/line
+        const clickCount = (url.hostname.includes('spreadsheets') || url.hostname.includes('excel')) ? 2 : 1;
+        
+        for(let i=1; i <= clickCount; i++) {
+          await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: loc.x, y: loc.y, button: 'left', clickCount: i });
+          await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: loc.x, y: loc.y, button: 'left', clickCount: i });
+          await new Promise(r => setTimeout(r, 100));
+        }
+
+        // 3. HARDWARE-LEVEL INJECTION
+        const text = String(params.text ?? '');
+        for (const char of text) {
+          if (char === '\n') {
+            await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', windowsVirtualKeyCode: 13 });
+            await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', windowsVirtualKeyCode: 13 });
+          } else {
+            // This 'char' method is the ONLY way to type into Google Docs Canvas
+            await send('Input.dispatchKeyEvent', { type: 'char', text: char, unmodifiedText: char });
+          }
+        }
+
+        // 4. EXCEL COMMIT: Press Enter after typing to save cell data
+        if (url.hostname.includes('spreadsheets') || url.hostname.includes('excel')) {
+          await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', windowsVirtualKeyCode: 13 });
+          await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', windowsVirtualKeyCode: 13 });
+        }
+
+        sendResponse({ success: true });
+      } finally {
+        await chrome.debugger.detach(debuggee).catch(() => {});
+      }
+    } catch (e) {
+      console.error("[AION] Critical Error:", e.message);
+      sendResponse({ success: false, error: e.message });
+    }
+  })();
+  return true;
+}

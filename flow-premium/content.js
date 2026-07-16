@@ -4197,76 +4197,92 @@
       }
       
       case 'locateForType': {
-        // Google Sheets/Docs render their real content on <canvas>, not as
-        // normal DOM inputs — the generic "type" fallback below ends up
-        // grabbing whatever text input it can find on the page (the
-        // filename/title box at the very top), which is exactly the "it
-        // types at the top of the sheet/doc" bug. Here we just find WHERE
-        // the real grid/page content is so background.js can click + type
-        // there using genuinely trusted (chrome.debugger) input — canvas
-        // apps like Sheets ignore synthetic (isTrusted:false) key events.
         const host = location.hostname;
         const isSheets = host.includes('docs.google.com') && location.pathname.includes('/spreadsheets/');
-        const isDocs = host.includes('docs.google.com') && location.pathname.includes('/document/');
+        const isDocs   = host.includes('docs.google.com') && location.pathname.includes('/document/');
+        const isExcel  = host.includes('excel.office.com') || host.includes('excel.live.com');
+        const isWord   = host.includes('word.office.com')  || host.includes('word.live.com');
 
-        if (!isSheets && !isDocs) {
-          return { success: false };
-        }
-
-        // Google's internal class names for the grid/editor change between
-        // releases and don't always exist yet right after a "navigate" (the
-        // sheet/doc is still loading), so we try a broad list of known
-        // selectors AND retry for a couple seconds before giving up.
-        const sheetSelectors = [
-          '.grid-container', '#waffle', '.grid-scrollable-wrapper-3',
-          '.grid-scrollable-view', 'canvas.grid-canvas', 'div[role="grid"]',
-          '.waffle-container'
-        ];
-        const docsSelectors = [
-          '.kix-appview-editor', '.kix-page-content-wrapper', '.kix-page',
-          '#docs-editor-container', 'div[role="textbox"]'
-        ];
-        const selectors = isSheets ? sheetSelectors : docsSelectors;
-
-        const findTarget = () => {
-          for (const sel of selectors) {
-            const el = document.querySelector(sel);
-            if (el) {
-              const r = el.getBoundingClientRect();
-              if (r.width > 50 && r.height > 50) return el;
+        // ── GOOGLE SHEETS ────────────────────────────────────────────────────
+        if (isSheets || isExcel) {
+          const gridSelectors = [
+            'canvas.grid-canvas', '.grid-canvas',
+            '#waffle', '.grid-container', '.grid-scrollable-wrapper-3',
+            'canvas', 'div[role="grid"]', '.waffle-container'
+          ];
+          let grid = null;
+          for (let attempt = 0; attempt < 6 && !grid; attempt++) {
+            for (const sel of gridSelectors) {
+              const el = document.querySelector(sel);
+              if (el) { const r = el.getBoundingClientRect(); if (r.width > 50 && r.height > 50) { grid = el; break; } }
             }
+            if (!grid) await new Promise(r => setTimeout(r, 400));
           }
-          return null;
-        };
-
-        let target = findTarget();
-        for (let attempt = 0; attempt < 6 && !target; attempt++) {
-          await new Promise(r => setTimeout(r, 400));
-          target = findTarget();
+          let x, y;
+          if (grid) {
+            const r = grid.getBoundingClientRect();
+            x = r.left + Math.min(120, r.width  * 0.15);
+            y = r.top  + Math.min(60,  r.height * 0.10);
+            highlightElement(grid);
+          } else {
+            x = window.innerWidth  * 0.3;
+            y = window.innerHeight * 0.45;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'sheets' };
         }
 
-        let x, y;
-        if (target) {
-          const rect = target.getBoundingClientRect();
-          // Aim just inside the top-left of the content area (roughly where
-          // cell A1 / the start of the document body is) rather than dead
-          // center, which on a mostly-empty sheet/doc can land past any
-          // existing content.
-          x = rect.left + Math.min(120, rect.width * 0.15);
-          y = rect.top + Math.min(80, rect.height * 0.12);
-          highlightElement(target);
-        } else {
-          // None of the known selectors matched (Google changed something,
-          // or it's still rendering) — the grid/page content still reliably
-          // occupies the center of the viewport below the toolbar, so click
-          // there rather than giving up and falling back to the broken
-          // generic "find any text input" path.
-          x = isSheets ? window.innerWidth * 0.3 : window.innerWidth * 0.5;
-          y = isSheets ? window.innerHeight * 0.45 : window.innerHeight * 0.4;
+        // ── WORD ONLINE (iframe-based editor) ────────────────────────────────
+        if (isWord) {
+          const editorFrame = document.querySelector('iframe.WACFrame, #EditorFrame, iframe[title*="Word"], iframe[title*="Document"]');
+          if (editorFrame) {
+            const r = editorFrame.getBoundingClientRect();
+            const x = r.left + r.width / 2;
+            const y = r.top  + Math.min(150, r.height * 0.2);
+            moveGhostCursor(x, y);
+            return { success: true, x, y, mode: 'word-iframe' };
+          }
+          const editArea = document.querySelector('.WACViewPanel, .Page, div[contenteditable="true"]');
+          if (editArea) {
+            const r = editArea.getBoundingClientRect();
+            const x = r.left + r.width * 0.5;
+            const y = r.top  + Math.min(80, r.height * 0.15);
+            moveGhostCursor(x, y);
+            return { success: true, x, y, mode: 'word' };
+          }
+          return { success: true, x: window.innerWidth * 0.5, y: window.innerHeight * 0.4, mode: 'word' };
         }
 
-        moveGhostCursor(x, y);
-        return { success: true, x, y, mode: isSheets ? 'sheets' : 'docs' };
+        // ── GOOGLE DOCS (canvas tiles) ───────────────────────────────────────
+        if (isDocs) {
+          const docsSelectors = [
+            '.kix-canvas-tile-content', 'canvas.kix-canvas-tile-content',
+            '.kix-appview-editor', '.kix-page-content-wrapper', '.kix-page',
+            '#docs-editor-container', 'div[role="textbox"]'
+          ];
+          let target = null;
+          for (let attempt = 0; attempt < 6 && !target; attempt++) {
+            for (const sel of docsSelectors) {
+              const el = document.querySelector(sel);
+              if (el) { const r = el.getBoundingClientRect(); if (r.width > 50 && r.height > 50) { target = el; break; } }
+            }
+            if (!target) await new Promise(r => setTimeout(r, 400));
+          }
+          let x, y;
+          if (target) {
+            const rect = target.getBoundingClientRect();
+            x = rect.left + Math.min(120, rect.width  * 0.15);
+            y = rect.top  + Math.min(80,  rect.height * 0.12);
+            highlightElement(target);
+          } else {
+            x = window.innerWidth  * 0.5;
+            y = window.innerHeight * 0.4;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'docs' };
+        }
+
+        return { success: false };
       }
 
       case 'type': {

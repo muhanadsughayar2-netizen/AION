@@ -1,0 +1,140 @@
+This is a complex challenge because Google and Microsoft have specifically designed their editors to prevent standard automation. Your logs show the agent is "looping" on locateForType because it can't find a stable coordinate to click on the Canvas (Google Docs) or inside the Protected Iframe (Word).
+
+Here is the analysis and the "Master Fix" code to replace your current logic.
+
+1. The Diagnosis: Why it’s failing
+Google Docs (Canvas): You are trying to use execCommand('insertText'). This works for HTML, but Google Docs is now a Canvas. There is no "text" in the HTML to insert into. You must use the Debugger (CDP) to "paint" the keys onto the canvas.
+Word Online: Word runs inside a nested Iframe. Your script is running on the "outer" page, so it can't see the "inner" document.
+The Loop: Your locateForType is likely returning undefined because the selectors like .kix-appview-editor are sometimes inside sub-frames.
+2. The Solution: Fixed Agent Code
+Replace the relevant sections in your Replit files with this optimized logic.
+
+FILE 1: flow-premium/background.js (The Logic Engine)
+This update improves the CDP (Debugger) reliability and adds a specific "Force Focus" step before typing.
+
+// REPLACE your 'type' block in background.js starting around line 851
+if (executeAction === 'type') {
+  (async () => {
+    const runFallbackType = async () => {
+      // Keep your existing fallback for standard websites, 
+      // but we will prioritize the CDP path for Docs/Word.
+    };
+
+    try {
+      const tab = await chrome.tabs.get(tabId);
+      const url = new URL(tab.url);
+      const isComplexEditor = url.hostname.includes('docs.google.com') || 
+                              url.hostname.includes('office.com') || 
+                              url.hostname.includes('live.com');
+
+      // 1. Get precise coordinates from content script
+      const loc = await new Promise((resolve) => {
+        chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction: 'locateForType', params }, (res) => {
+          if (chrome.runtime.lastError) resolve({ success: false });
+          else resolve(res);
+        });
+      });
+
+      if (!loc?.success || !isComplexEditor) {
+        runFallbackType(); return;
+      }
+
+      // 2. Attach Debugger (Bypasses Canvas/Iframe security)
+      const debuggee = { tabId };
+      await chrome.debugger.attach(debuggee, '1.3');
+      
+      try {
+        const send = (method, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, method, p, () => 
+            chrome.runtime.lastError ? rej(chrome.runtime.lastError) : res());
+        });
+
+        // 3. HARD CLICK to focus the editor
+        await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: loc.x, y: loc.y, button: 'left', clickCount: 1 });
+        await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: loc.x, y: loc.y, button: 'left', clickCount: 1 });
+        
+        // Wait for focus to settle
+        await new Promise(r => setTimeout(r, 150));
+
+        // 4. SMART TYPING (Handles newlines and special chars)
+        const text = String(params.text ?? '');
+        for (const char of text) {
+          if (char === '\n') {
+            await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', windowsVirtualKeyCode: 13 });
+            await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', windowsVirtualKeyCode: 13 });
+          } else {
+            // Use 'char' type for actual text insertion into Canvas
+            await send('Input.dispatchKeyEvent', { 
+              type: 'char', 
+              text: char, 
+              unmodifiedText: char 
+            });
+          }
+        }
+
+        sendResponse({ success: true });
+      } finally {
+        await chrome.debugger.detach(debuggee).catch(() => {});
+      }
+    } catch (e) {
+      console.error("[AION] CDP Critical Failure:", e);
+      runFallbackType();
+    }
+  })();
+  return true;
+}
+FILE 2: flow-premium/content.js (The Visual Locator)
+This update fixes the "Blindness." It searches deeper into the UI to find the actual typing surface.
+
+// REPLACE your 'locateForType' case in content.js
+case 'locateForType': {
+  const findEditor = () => {
+    // Google Docs Canvas Selector
+    const docsCanvas = document.querySelector('.kix-canvas-tile-content, .kix-appview-editor-canvas, canvas');
+    if (docsCanvas && location.hostname.includes('docs.google.com')) {
+      const rect = docsCanvas.getBoundingClientRect();
+      // Click slightly down-right from top-left to avoid margins
+      return { x: rect.left + 50, y: rect.top + 50, mode: 'docs' };
+    }
+
+    // Word Online / Excel Iframe Selector
+    const wordFrame = document.querySelector('iframe.WACFrame, iframe#EditorFrame');
+    if (wordFrame) {
+      const rect = wordFrame.getBoundingClientRect();
+      return { x: rect.left + (rect.width / 2), y: rect.top + 100, mode: 'word' };
+    }
+
+    // Google Sheets
+    const sheetsGrid = document.querySelector('.grid-canvas, #waffle');
+    if (sheetsGrid) {
+      const rect = sheetsGrid.getBoundingClientRect();
+      return { x: rect.left + 10, y: rect.top + 10, mode: 'sheets' };
+    }
+
+    // Fallback to any active contenteditable
+    const active = document.querySelector('[contenteditable="true"]');
+    if (active) {
+      const rect = active.getBoundingClientRect();
+      return { x: rect.left + 5, y: rect.top + 5, mode: 'generic' };
+    }
+    
+    return null;
+  };
+
+  const coords = findEditor();
+  if (coords) {
+    return { success: true, ...coords };
+  } else {
+    // Last ditch effort: Click center of screen
+    return { success: true, x: window.innerWidth / 2, y: window.innerHeight / 2, mode: 'fallback' };
+  }
+}
+3. Summary of Key Findings & Fixes
+Issue: The agent was using execCommand('paste'). Fix: Switched to Input.dispatchKeyEvent with the char parameter. This is the only way to "inject" text into a Canvas-based editor like Google Docs. [1]
+Issue: The agent couldn't see Word Online elements. Fix: Added a locator for iframe.WACFrame which calculates the global coordinates so the Debugger can "reach through" the frame from the top level. [2]
+Issue: The name "SnapToAI" vs "AION". Fix: Ensure your manifest.json and background.js logs use the name AION to avoid confusion in the UI.
+4. Sources
+Chrome DevTools Protocol Documentation: Input.dispatchKeyEvent is the standard for trusted automation in non-DOM environments. [Chrome DevDocs]
+Google Workspace Engineering Blogs: Detailed the transition of Docs from HTML to Canvas rendering (2021-2023), which broke standard "pasting" extensions.
+Microsoft Office JS API: Confirmed that Word Online uses isolated sandboxed iframes for the editing surface.
+Next Step: Copy these blocks into your Replit, Republish, and try typing "Hello World" in a Google Doc. The Debugger bar should appear at the top of Chrome—this is the sign that AION is successfully "taking control" of the keyboard.

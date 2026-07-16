@@ -1121,9 +1121,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               });
             });
 
-            // Click to focus the real grid/page content (not the title box).
-            await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
-            await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+            // Sheets/Excel: single click only SELECTS a cell — must double-click
+            // to actually ENTER edit mode so subsequent key events go into the cell.
+            // Docs: single click is enough to place the cursor in the document body.
+            const clickCount = (mode === 'sheets') ? 2 : 1;
+            for (let ci = 1; ci <= clickCount; ci++) {
+              await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: ci });
+              await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: ci });
+              if (ci < clickCount) await new Promise(r => setTimeout(r, 80));
+            }
             await new Promise(r => setTimeout(r, 200));
 
             const specialKeys = {
