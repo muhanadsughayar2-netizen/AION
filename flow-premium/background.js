@@ -877,35 +877,61 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 const results = await chrome.scripting.executeScript({
                   target: { tabId },
                   func: async (textToType) => {
-                    // Find the Docs canvas editor (NOT the title input at top)
+                    const sleep = ms => new Promise(res => setTimeout(res, ms));
+
+                    // ── Method 1: docs-texteventtarget-iframe ──────────────────
+                    // Google Docs routes ALL keyboard input through this hidden
+                    // iframe. execCommand('insertText') on its document is the
+                    // only non-CDP way to actually insert text into the canvas.
+                    const textIframe = document.querySelector('.docs-texteventtarget-iframe');
+                    if (textIframe && textIframe.contentDocument) {
+                      try {
+                        const iframeDoc = textIframe.contentDocument;
+                        const iframeBody = iframeDoc.body;
+                        iframeBody.focus();
+                        await sleep(150);
+                        // Click the main editor first so Docs registers focus
+                        const editorEl = document.querySelector('.kix-appview-editor');
+                        if (editorEl) {
+                          const r = editorEl.getBoundingClientRect();
+                          const cx = r.left + Math.min(200, r.width * 0.3);
+                          const cy = r.top  + Math.min(160, r.height * 0.3);
+                          editorEl.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: cx, clientY: cy }));
+                          await sleep(200);
+                        }
+                        iframeBody.focus();
+                        await sleep(100);
+                        const inserted = iframeDoc.execCommand('insertText', false, textToType);
+                        if (inserted) return { success: true, method: 'textevent-iframe' };
+                      } catch (_) { /* fall through */ }
+                    }
+
+                    // ── Method 2: clipboard paste via editor canvas click ──────
+                    // Ctrl+V via synthetic events is isTrusted:false and ignored
+                    // by the Docs canvas — we write to clipboard and let the
+                    // browser's built-in paste handler fire instead via execCommand.
                     const editorSelectors = [
-                      '.kix-appview-editor',
-                      '.kix-zoomdocumentplugin-outer',
-                      '.docs-editor-container',
-                      '#docs-editor',
+                      '.kix-appview-editor', '.kix-zoomdocumentplugin-outer',
+                      '.docs-editor-container', '#docs-editor',
                     ];
                     let editorEl = null;
                     for (const sel of editorSelectors) {
                       const el = document.querySelector(sel);
                       if (el && el.getBoundingClientRect().width > 50) { editorEl = el; break; }
                     }
-                    // Click inside the document body area
-                    const r = editorEl ? editorEl.getBoundingClientRect() : null;
-                    const cx = r ? r.left + Math.min(200, r.width  * 0.3) : window.innerWidth  * 0.5;
-                    const cy = r ? r.top  + Math.min(160, r.height * 0.3) : window.innerHeight * 0.4;
-                    const target = editorEl || document.elementFromPoint(cx, cy) || document.body;
-                    target.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: cx, clientY: cy }));
-                    target.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, clientX: cx, clientY: cy }));
-                    target.dispatchEvent(new MouseEvent('click',     { bubbles: true, clientX: cx, clientY: cy }));
-                    await new Promise(res => setTimeout(res, 350));
-                    // Paste via clipboard
+                    const r2 = editorEl ? editorEl.getBoundingClientRect() : null;
+                    const cx2 = r2 ? r2.left + Math.min(200, r2.width  * 0.3) : window.innerWidth  * 0.5;
+                    const cy2 = r2 ? r2.top  + Math.min(160, r2.height * 0.3) : window.innerHeight * 0.4;
+                    const target2 = editorEl || document.elementFromPoint(cx2, cy2) || document.body;
+                    target2.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: cx2, clientY: cy2 }));
+                    target2.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, clientX: cx2, clientY: cy2 }));
+                    target2.dispatchEvent(new MouseEvent('click',     { bubbles: true, clientX: cx2, clientY: cy2 }));
+                    await sleep(350);
                     await navigator.clipboard.writeText(textToType);
-                    await new Promise(res => setTimeout(res, 150));
-                    const pasteTarget = document.activeElement || target;
-                    pasteTarget.dispatchEvent(new KeyboardEvent('keydown', { key: 'v', code: 'KeyV', ctrlKey: true, bubbles: true, cancelable: true }));
-                    pasteTarget.dispatchEvent(new KeyboardEvent('keyup',   { key: 'v', code: 'KeyV', ctrlKey: true, bubbles: true }));
-                    await new Promise(res => setTimeout(res, 400));
-                    return { success: true, method: 'docs-inline-paste' };
+                    await sleep(150);
+                    document.execCommand('paste');
+                    await sleep(400);
+                    return { success: true, method: 'clipboard-execcommand' };
                   },
                   args: [text]
                 });
