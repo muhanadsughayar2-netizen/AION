@@ -1115,16 +1115,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             return;
           }
 
-          // CRITICAL: Google Docs /document/ does NOT accept CDP char events.
-          // The canvas silently swallows them — CDP returns success:true but
-          // nothing appears. Docs ONLY accepts text via execCommand('insertText')
-          // on its hidden docs-texteventtarget-iframe. runFallbackType() does
-          // exactly that. Skip CDP entirely for Docs documents.
-          if (tabHostname.includes('docs.google.com') && tabPath.includes('/document/')) {
-            runFallbackType();
-            return;
-          }
-
           // Ask content.js for the (x, y) coordinates to click.
           // If content.js isn't loaded yet, inject it then retry once.
           const locate = () => new Promise((resolve, reject) => {
@@ -1138,8 +1128,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           try { loc = await locate(); }
           catch (_e) { await clearAndInject(tabId); loc = await locate(); }
 
-          // locateForType always returns success:true with fallback coords now,
-          // so if we still get failure the page is in a broken state — use paste.
           if (!loc || !loc.success || typeof loc.x !== 'number' || typeof loc.y !== 'number') {
             runFallbackType();
             return;
@@ -1147,19 +1135,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           const { x, y, mode } = loc;
 
-          // Attach Chrome DevTools Protocol — gives us hardware-level trusted events.
-          // IMPORTANT: This fails if the user has DevTools open on the same tab
-          // (only one debugger can be attached at a time). In that case we fall back.
+          // Attach CDP. Fails if DevTools is already open on this tab.
           const debuggee = { tabId };
           try {
             await chrome.debugger.attach(debuggee, '1.3');
           } catch (attachErr) {
-            console.warn('[Aion Agent] CDP attach failed (DevTools open?), using paste fallback:', attachErr.message);
+            console.warn('[Aion Agent] CDP attach failed:', attachErr.message);
             runFallbackType();
             return;
           }
 
           try {
+            // send: fire a CDP command, resolve when done (no return value needed)
             const send = (method, p) => new Promise((resolve, reject) => {
               chrome.debugger.sendCommand(debuggee, method, p, () => {
                 if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
@@ -1167,36 +1154,78 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               });
             });
 
-            // Sheets/Excel: single click only SELECTS a cell.
-            // Double-click is required to actually ENTER edit mode.
-            // Docs/Word: single click places the cursor.
-            const isGrid = (mode === 'sheets');
-            const clickCount = isGrid ? 2 : 1;
-            for (let ci = 1; ci <= clickCount; ci++) {
-              await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: ci });
-              await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: ci });
-              if (ci < clickCount) await new Promise(r => setTimeout(r, 100));
-            }
-            await new Promise(r => setTimeout(r, 200));
+            // sendR: fire a CDP command AND return its result object
+            const sendR = (method, p) => new Promise((resolve, reject) => {
+              chrome.debugger.sendCommand(debuggee, method, p, (res) => {
+                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+                else resolve(res);
+              });
+            });
 
-            // Type each character using the CDP 'char' event.
-            // 'char' is the ONLY event that inserts text into a canvas editor.
-            // Do NOT use keyDown+char — that inserts TWICE (doubled characters bug).
-            // rawKeyDown alone does NOT insert — safe to use for Enter/Tab context.
-            const text = String(params.text ?? '');
-            for (const ch of text) {
-              if (ch === '\n') {
-                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
-                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
-              } else if (ch === '\t') {
-                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 });
-                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 });
-              } else {
-                // keyDown with text field = one insertion (no doubled chars).
-                // char event also works but keyDown+text is slightly more compatible
-                // with canvas apps like Sheets and Excel Online.
-                await send('Input.dispatchKeyEvent', { type: 'keyDown', text: ch, unmodifiedText: ch });
-                await send('Input.dispatchKeyEvent', { type: 'keyUp',   text: ch, unmodifiedText: ch });
+            const text    = String(params.text ?? '');
+            const isDocs  = tabHostname.includes('docs.google.com') && tabPath.includes('/document/');
+            const isGrid  = (mode === 'sheets');
+
+            if (isDocs) {
+              // ── GOOGLE DOCS — focus the texteventtarget-iframe via Runtime.evaluate,
+              // then fire CDP char events into it. CDP char events go to whatever
+              // element currently has focus at the BROWSER level — focusing the
+              // hidden input iframe first makes those events land in Docs' own
+              // keyboard router, which is the only reliable way to insert text.
+              await send('Runtime.enable', {});
+              await sendR('Runtime.evaluate', {
+                expression: `(async () => {
+                  const sleep = ms => new Promise(r => setTimeout(r, ms));
+                  let iframe = null;
+                  for (let i = 0; i < 20; i++) {
+                    iframe = document.querySelector('.docs-texteventtarget-iframe');
+                    if (iframe && iframe.contentDocument && iframe.contentDocument.body) break;
+                    await sleep(250);
+                  }
+                  if (!iframe || !iframe.contentDocument) return 'no-iframe';
+                  iframe.contentDocument.body.focus();
+                  return 'focused';
+                })()`,
+                awaitPromise: true,
+                returnByValue: true
+              });
+              // Give Docs a moment to register the focus change
+              await new Promise(r => setTimeout(r, 200));
+
+              // Now fire CDP char events — they go straight into the focused iframe
+              for (const ch of text) {
+                if (ch === '\n') {
+                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                } else if (ch === '\t') {
+                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+                } else {
+                  await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
+                }
+              }
+            } else {
+              // ── SHEETS / EXCEL / WORD — click to focus, then type ────────────
+              // Sheets/Excel: single click selects a cell; double-click enters edit mode.
+              const clickCount = isGrid ? 2 : 1;
+              for (let ci = 1; ci <= clickCount; ci++) {
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: ci });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: ci });
+                if (ci < clickCount) await new Promise(r => setTimeout(r, 100));
+              }
+              await new Promise(r => setTimeout(r, 200));
+
+              for (const ch of text) {
+                if (ch === '\n') {
+                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                } else if (ch === '\t') {
+                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+                } else {
+                  await send('Input.dispatchKeyEvent', { type: 'keyDown', text: ch, unmodifiedText: ch });
+                  await send('Input.dispatchKeyEvent', { type: 'keyUp',   text: ch, unmodifiedText: ch });
+                }
               }
             }
 
