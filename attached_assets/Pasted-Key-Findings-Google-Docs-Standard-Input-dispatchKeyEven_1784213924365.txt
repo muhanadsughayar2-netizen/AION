@@ -1,0 +1,144 @@
+Key Findings
+Google Docs: Standard Input.dispatchKeyEvent (CDP) fails on the canvas. The only reliable method is to focus the .docs-texteventtarget-iframe and use document.execCommand('insertText') [1.1.3].
+Google Sheets: A single click only selects a cell. A double-click is required to activate the cursor and allow text entry [1.3.5].
+Word/Excel Online: These also use iframes (e.g., WACFrame) and require precise coordinate-based clicking before typing.
+The "Master Fix" Code
+Replace the type handler in your background.js with this optimized version. This code specifically handles the Google Docs iframe "handshake."
+
+1. Updated background.js (The Brain)
+// Handle the 'type' action specifically for Google Docs/Sheets
+if (executeAction === 'type') {
+  (async () => {
+    const runFallbackType = async () => {
+      try {
+        const currentTab = await chrome.tabs.get(tabId);
+        const url = new URL(currentTab.url);
+        
+        // --- GOOGLE DOCS SPECIAL HANDLING ---
+        if (url.hostname.includes('docs.google.com') && url.pathname.includes('/document/')) {
+          await chrome.scripting.executeScript({
+            target: { tabId },
+            func: async (textToType) => {
+              const iframe = document.querySelector('.docs-texteventtarget-iframe');
+              if (iframe && iframe.contentDocument) {
+                const body = iframe.contentDocument.body;
+                body.focus();
+                // Force a small delay for focus to register
+                await new Promise(r => setTimeout(r, 100));
+                // Use the only command Google Docs' internal listener accepts
+                iframe.contentDocument.execCommand('insertText', false, textToType);
+                return { success: true, method: 'iframe-insert' };
+              }
+              return { success: false, error: 'Iframe not found' };
+            },
+            args: [params.text]
+          });
+          sendResponse({ success: true });
+          return;
+        }
+
+        // --- STANDARD FALLBACK (Sheets/Word/Input fields) ---
+        chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, sendResponse);
+      } catch (e) {
+        sendResponse({ success: false, error: e.message });
+      }
+    };
+
+    // Use CDP for Sheets/Excel (Double-Click is key)
+    try {
+      const loc = await chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction: 'locateForType', params });
+      if (!loc?.success) return runFallbackType();
+
+      const debuggee = { tabId };
+      await chrome.debugger.attach(debuggee, '1.3');
+      
+      // If it's Sheets, we MUST double-click to enter edit mode
+      const clickCount = (loc.mode === 'sheets') ? 2 : 1;
+      for (let i = 1; i <= clickCount; i++) {
+        await chrome.debugger.sendCommand(debuggee, 'Input.dispatchMouseEvent', { 
+          type: 'mousePressed', x: loc.x, y: loc.y, button: 'left', clickCount: i 
+        });
+        await chrome.debugger.sendCommand(debuggee, 'Input.dispatchMouseEvent', { 
+          type: 'mouseReleased', x: loc.x, y: loc.y, button: 'left', clickCount: i 
+        });
+      }
+
+      // Type characters one by one
+      for
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
+Please continue your response from where you left off.
+Continuing from where the code was interrupted:
+
+      // Type characters one by one
+      for (const char of params.text) {
+        await chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent', {
+          type: 'keyDown',
+          text: char,
+          unmodifiedText: char,
+        });
+        await chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent', {
+          type: 'keyUp',
+          text: char,
+          unmodifiedText: char,
+        });
+      }
+
+      // If Sheets, press Enter to commit the value
+      if (loc.mode === 'sheets') {
+        await chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent', {
+          type: 'rawKeyDown',
+          windowsVirtualKeyCode: 13, // Enter
+          nativeVirtualKeyCode: 13,
+          macCharCode: 13
+        });
+      }
+
+      await chrome.debugger.detach(debuggee);
+      sendResponse({ success: true });
+    } catch (e) {
+      console.error("CDP Typing failed, falling back:", e);
+      runFallbackType();
+    }
+  })();
+  return true; // Keep message channel open for async response
+}
+Summary of the Final Solution
+The core issue is that Google Docs uses a Canvas to render text, which does not behave like a standard HTML input. The agent was reporting "success" because the hardware-level events were sent, but the Canvas simply ignored them [1]. To fix this, the agent now detects if it is on a Google Doc and switches to a "Direct Injection" method using a hidden internal iframe that Google Docs uses specifically for text input [2].
+
+Key Findings
+Google Docs (Canvas): You cannot "type" onto the canvas directly. You must target the .docs-texteventtarget-iframe and use execCommand('insertText'). This is the only method that bypasses the canvas barrier reliably [1].
+Google Sheets (Grid): A single click only selects the cell. To trigger the blinking cursor (Edit Mode), the agent must send a double-click event via the Chrome Debugger (CDP) [3].
+Word/Excel Online: These sites often use nested iframes (e.g., WACFrame). The agent's locateForType function must use getBoundingClientRect() on the iframe itself to calculate the correct global coordinates for the debugger to click [2].
+Debugger Conflict: If you have the Chrome DevTools (F12) window open, the extension's debugger will fail to attach. Always close DevTools before testing the agent's typing features [3].
+Sources
+[1] Google Docs Developer Documentation - Editor Overview
+[2] Chrome DevTools Protocol (CDP) - Input Domain Documentation
+[3] StackOverflow - Simulating Keyboard Events in Google Docs/Sheets
+
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
+
+🔍
+Vision
+
+✨
+Image
+
+🎵
+Music
+
+🎬
+Video
+
+🎙️
+Broadcast
+
+
+Autopilot
+✦ Custom Prompts
+Clear

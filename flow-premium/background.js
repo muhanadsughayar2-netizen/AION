@@ -1160,13 +1160,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const text = String(params.text ?? '');
             for (const ch of text) {
               if (ch === '\n') {
-                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
               } else if (ch === '\t') {
-                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
-                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9, nativeVirtualKeyCode: 9 });
               } else {
-                await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
+                // keyDown with text field = one insertion (no doubled chars).
+                // char event also works but keyDown+text is slightly more compatible
+                // with canvas apps like Sheets and Excel Online.
+                await send('Input.dispatchKeyEvent', { type: 'keyDown', text: ch, unmodifiedText: ch });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',   text: ch, unmodifiedText: ch });
               }
             }
 

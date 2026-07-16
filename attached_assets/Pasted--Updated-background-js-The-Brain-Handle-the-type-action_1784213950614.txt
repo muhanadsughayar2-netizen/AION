@@ -1,0 +1,60 @@
+. Updated background.js (The Brain)
+// Handle the 'type' action specifically for Google Docs/Sheets
+if (executeAction === 'type') {
+  (async () => {
+    const runFallbackType = async () => {
+      try {
+        const currentTab = await chrome.tabs.get(tabId);
+        const url = new URL(currentTab.url);
+        
+        // --- GOOGLE DOCS SPECIAL HANDLING ---
+        if (url.hostname.includes('docs.google.com') && url.pathname.includes('/document/')) {
+          await chrome.scripting.executeScript({
+            target: { tabId },
+            func: async (textToType) => {
+              const iframe = document.querySelector('.docs-texteventtarget-iframe');
+              if (iframe && iframe.contentDocument) {
+                const body = iframe.contentDocument.body;
+                body.focus();
+                // Force a small delay for focus to register
+                await new Promise(r => setTimeout(r, 100));
+                // Use the only command Google Docs' internal listener accepts
+                iframe.contentDocument.execCommand('insertText', false, textToType);
+                return { success: true, method: 'iframe-insert' };
+              }
+              return { success: false, error: 'Iframe not found' };
+            },
+            args: [params.text]
+          });
+          sendResponse({ success: true });
+          return;
+        }
+
+        // --- STANDARD FALLBACK (Sheets/Word/Input fields) ---
+        chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, sendResponse);
+      } catch (e) {
+        sendResponse({ success: false, error: e.message });
+      }
+    };
+
+    // Use CDP for Sheets/Excel (Double-Click is key)
+    try {
+      const loc = await chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction: 'locateForType', params });
+      if (!loc?.success) return runFallbackType();
+
+      const debuggee = { tabId };
+      await chrome.debugger.attach(debuggee, '1.3');
+      
+      // If it's Sheets, we MUST double-click to enter edit mode
+      const clickCount = (loc.mode === 'sheets') ? 2 : 1;
+      for (let i = 1; i <= clickCount; i++) {
+        await chrome.debugger.sendCommand(debuggee, 'Input.dispatchMouseEvent', { 
+          type: 'mousePressed', x: loc.x, y: loc.y, button: 'left', clickCount: i 
+        });
+        await chrome.debugger.sendCommand(debuggee, 'Input.dispatchMouseEvent', { 
+          type: 'mouseReleased', x: loc.x, y: loc.y, button: 'left', clickCount: i 
+        });
+      }
+
+      // Type characters one by one
+      for
