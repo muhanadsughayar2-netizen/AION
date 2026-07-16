@@ -1,0 +1,793 @@
+
+Start typing to search...
+Runtime Domain
+Runtime domain exposes JavaScript runtime by means of remote evaluation and mirror objects. Evaluation results are returned as mirror object that expose object type, string representation and unique identifier that can be used for further object reference. Original objects are maintained in memory unless they are either explicitly released or are released along with the other objects in their object group.
+Methods
+Runtime.addBinding
+Runtime.awaitPromise
+Runtime.callFunctionOn
+Runtime.compileScript
+Runtime.disable
+Runtime.discardConsoleEntries
+Runtime.enable
+Runtime.evaluate
+Runtime.getProperties
+Runtime.globalLexicalScopeNames
+Runtime.queryObjects
+Runtime.releaseObject
+Runtime.releaseObjectGroup
+Runtime.removeBinding
+Runtime.runIfWaitingForDebugger
+Runtime.runScript
+Runtime.setAsyncCallStackDepth
+Runtime.getExceptionDetails Experimental
+Runtime.getHeapUsage Experimental
+Runtime.getIsolateId Experimental
+Runtime.setCustomObjectFormatterEnabled Experimental
+Runtime.setMaxCallStackSizeToCapture Experimental
+Runtime.terminateExecution Experimental
+Events
+Runtime.consoleAPICalled
+Runtime.exceptionRevoked
+Runtime.exceptionThrown
+Runtime.executionContextCreated
+Runtime.executionContextDestroyed
+Runtime.executionContextsCleared
+Runtime.inspectRequested
+Runtime.bindingCalled Experimental
+Types
+Runtime.CallArgument
+Runtime.CallFrame
+Runtime.DeepSerializedValue
+Runtime.ExceptionDetails
+Runtime.ExecutionContextDescription
+Runtime.ExecutionContextId
+Runtime.InternalPropertyDescriptor
+Runtime.PropertyDescriptor
+Runtime.RemoteObject
+Runtime.RemoteObjectId
+Runtime.ScriptId
+Runtime.SerializationOptions
+Runtime.StackTrace
+Runtime.TimeDelta
+Runtime.Timestamp
+Runtime.UnserializableValue
+Runtime.CustomPreview Experimental
+Runtime.EntryPreview Experimental
+Runtime.ObjectPreview Experimental
+Runtime.PrivatePropertyDescriptor Experimental
+Runtime.PropertyPreview Experimental
+Runtime.StackTraceId Experimental
+Runtime.UniqueDebuggerId Experimental
+Methods
+Runtime.addBinding #
+If executionContextId is empty, adds binding with the given name on the global objects of all inspected contexts, including those created later, bindings survive reloads. Binding function takes exactly one argument, this argument should be string, in case of any other input, function throws an exception. Each binding function call produces Runtime.bindingCalled notification.
+parameters
+name
+string
+executionContextId
+ExecutionContextId
+If specified, the binding would only be exposed to the specified execution context. If omitted and executionContextName is not set, the binding is exposed to all execution contexts of the target. This parameter is mutually exclusive with executionContextName. Deprecated in favor of executionContextName due to an unclear use case and bugs in implementation (crbug.com/1169639). executionContextId will be removed in the future. ExperimentalDeprecated
+executionContextName
+string
+If specified, the binding is exposed to the executionContext with matching name, even for contexts created after the binding is added. See also ExecutionContext.name and worldName parameter to Page.addScriptToEvaluateOnNewDocument. This parameter is mutually exclusive with executionContextId.
+Runtime.awaitPromise #
+Add handler to promise with given promise object id.
+parameters
+promiseObjectId
+RemoteObjectId
+Identifier of the promise.
+returnByValue
+boolean
+Whether the result is expected to be a JSON object that should be sent by value.
+generatePreview
+boolean
+Whether preview should be generated for the result.
+Return Object
+result
+RemoteObject
+Promise result. Will contain rejected value if promise was rejected.
+exceptionDetails
+ExceptionDetails
+Exception details if stack strace is available.
+Runtime.callFunctionOn #
+Calls function with given declaration on the given object. Object group of the result is inherited from the target object.
+parameters
+functionDeclaration
+string
+Declaration of the function to call.
+objectId
+RemoteObjectId
+Identifier of the object to call function on. Either objectId or executionContextId should be specified.
+arguments
+array[ CallArgument ]
+Call arguments. All call arguments must belong to the same JavaScript world as the target object.
+silent
+boolean
+In silent mode exceptions thrown during evaluation are not reported and do not pause execution. Overrides setPauseOnException state.
+returnByValue
+boolean
+Whether the result is expected to be a JSON object which should be sent by value. Can be overriden by serializationOptions.
+generatePreview
+boolean
+Whether preview should be generated for the result. Experimental
+userGesture
+boolean
+Whether execution should be treated as initiated by user in the UI.
+awaitPromise
+boolean
+Whether execution should await for resulting value and return once awaited promise is resolved.
+executionContextId
+ExecutionContextId
+Specifies execution context which global object will be used to call function on. Either executionContextId or objectId should be specified.
+objectGroup
+string
+Symbolic group name that can be used to release multiple objects. If objectGroup is not specified and objectId is, objectGroup will be inherited from object.
+throwOnSideEffect
+boolean
+Whether to throw an exception if side effect cannot be ruled out during evaluation. Experimental
+uniqueContextId
+string
+An alternative way to specify the execution context to call function on. Compared to contextId that may be reused across processes, this is guaranteed to be system-unique, so it can be used to prevent accidental function call in context different than intended (e.g. as a result of navigation across process boundaries). This is mutually exclusive with executionContextId. Experimental
+serializationOptions
+SerializationOptions
+Specifies the result serialization. If provided, overrides generatePreview and returnByValue. Experimental
+Return Object
+result
+RemoteObject
+Call result.
+exceptionDetails
+ExceptionDetails
+Exception details.
+Runtime.compileScript #
+Compiles expression.
+parameters
+expression
+string
+Expression to compile.
+sourceURL
+string
+Source url to be set for the script.
+persistScript
+boolean
+Specifies whether the compiled script should be persisted.
+executionContextId
+ExecutionContextId
+Specifies in which execution context to perform script run. If the parameter is omitted the evaluation will be performed in the context of the inspected page.
+Return Object
+scriptId
+ScriptId
+Id of the script.
+exceptionDetails
+ExceptionDetails
+Exception details.
+Runtime.disable #
+Disables reporting of execution contexts creation.
+Runtime.discardConsoleEntries #
+Discards collected exceptions and console API calls.
+Runtime.enable #
+Enables reporting of execution contexts creation by means of executionContextCreated event. When the reporting gets enabled the event will be sent immediately for each existing execution context.
+Runtime.evaluate #
+Evaluates expression on global object.
+parameters
+expression
+string
+Expression to evaluate.
+objectGroup
+string
+Symbolic group name that can be used to release multiple objects.
+includeCommandLineAPI
+boolean
+Determines whether Command Line API should be available during the evaluation.
+silent
+boolean
+In silent mode exceptions thrown during evaluation are not reported and do not pause execution. Overrides setPauseOnException state.
+contextId
+ExecutionContextId
+Specifies in which execution context to perform evaluation. If the parameter is omitted the evaluation will be performed in the context of the inspected page. This is mutually exclusive with uniqueContextId, which offers an alternative way to identify the execution context that is more reliable in a multi-process environment.
+returnByValue
+boolean
+Whether the result is expected to be a JSON object that should be sent by value.
+generatePreview
+boolean
+Whether preview should be generated for the result. Experimental
+userGesture
+boolean
+Whether execution should be treated as initiated by user in the UI.
+awaitPromise
+boolean
+Whether execution should await for resulting value and return once awaited promise is resolved.
+throwOnSideEffect
+boolean
+Whether to throw an exception if side effect cannot be ruled out during evaluation. This implies disableBreaks below. Experimental
+timeout
+TimeDelta
+Terminate execution after timing out (number of milliseconds). Experimental
+disableBreaks
+boolean
+Disable breakpoints during execution. Experimental
+replMode
+boolean
+Setting this flag to true enables let re-declaration and top-level await. Note that let variables can only be re-declared if they originate from replMode themselves. Experimental
+allowUnsafeEvalBlockedByCSP
+boolean
+The Content Security Policy (CSP) for the target might block 'unsafe-eval' which includes eval(), Function(), setTimeout() and setInterval() when called with non-callable arguments. This flag bypasses CSP for this evaluation and allows unsafe-eval. Defaults to true. Experimental
+uniqueContextId
+string
+An alternative way to specify the execution context to evaluate in. Compared to contextId that may be reused across processes, this is guaranteed to be system-unique, so it can be used to prevent accidental evaluation of the expression in context different than intended (e.g. as a result of navigation across process boundaries). This is mutually exclusive with contextId. Experimental
+serializationOptions
+SerializationOptions
+Specifies the result serialization. If provided, overrides generatePreview and returnByValue. Experimental
+Return Object
+result
+RemoteObject
+Evaluation result.
+exceptionDetails
+ExceptionDetails
+Exception details.
+Runtime.getProperties #
+Returns properties of a given object. Object group of the result is inherited from the target object.
+parameters
+objectId
+RemoteObjectId
+Identifier of the object to return properties for.
+ownProperties
+boolean
+If true, returns properties belonging only to the element itself, not to its prototype chain.
+accessorPropertiesOnly
+boolean
+If true, returns accessor properties (with getter/setter) only; internal properties are not returned either. Experimental
+generatePreview
+boolean
+Whether preview should be generated for the results. Experimental
+nonIndexedPropertiesOnly
+boolean
+If true, returns non-indexed properties only. Experimental
+Return Object
+result
+array[ PropertyDescriptor ]
+Object properties.
+internalProperties
+array[ InternalPropertyDescriptor ]
+Internal object properties (only of the element itself).
+privateProperties
+array[ PrivatePropertyDescriptor ]
+Object private properties. Experimental
+exceptionDetails
+ExceptionDetails
+Exception details.
+Runtime.globalLexicalScopeNames #
+Returns all let, const and class variables from global scope.
+parameters
+executionContextId
+ExecutionContextId
+Specifies in which execution context to lookup global scope variables.
+Return Object
+names
+array[ string ]
+Runtime.queryObjects #
+parameters
+prototypeObjectId
+RemoteObjectId
+Identifier of the prototype to return objects for.
+objectGroup
+string
+Symbolic group name that can be used to release the results.
+Return Object
+objects
+RemoteObject
+Array with objects.
+Runtime.releaseObject #
+Releases remote object with given id.
+parameters
+objectId
+RemoteObjectId
+Identifier of the object to release.
+Runtime.releaseObjectGroup #
+Releases all remote objects that belong to a given group.
+parameters
+objectGroup
+string
+Symbolic object group name.
+Runtime.removeBinding #
+This method does not remove binding function from global object but unsubscribes current runtime agent from Runtime.bindingCalled notifications.
+parameters
+name
+string
+Runtime.runIfWaitingForDebugger #
+Tells inspected instance to run if it was waiting for debugger to attach.
+Runtime.runScript #
+Runs script with given id in a given context.
+parameters
+scriptId
+ScriptId
+Id of the script to run.
+executionContextId
+ExecutionContextId
+Specifies in which execution context to perform script run. If the parameter is omitted the evaluation will be performed in the context of the inspected page.
+objectGroup
+string
+Symbolic group name that can be used to release multiple objects.
+silent
+boolean
+In silent mode exceptions thrown during evaluation are not reported and do not pause execution. Overrides setPauseOnException state.
+includeCommandLineAPI
+boolean
+Determines whether Command Line API should be available during the evaluation.
+returnByValue
+boolean
+Whether the result is expected to be a JSON object which should be sent by value.
+generatePreview
+boolean
+Whether preview should be generated for the result.
+awaitPromise
+boolean
+Whether execution should await for resulting value and return once awaited promise is resolved.
+Return Object
+result
+RemoteObject
+Run result.
+exceptionDetails
+ExceptionDetails
+Exception details.
+Runtime.setAsyncCallStackDepth #
+Enables or disables async call stacks tracking.
+parameters
+maxDepth
+integer
+Maximum depth of async call stacks. Setting to 0 will effectively disable collecting async call stacks (default).
+Runtime.getExceptionDetails Experimental #
+This method tries to lookup and populate exception details for a JavaScript Error object. Note that the stackTrace portion of the resulting exceptionDetails will only be populated if the Runtime domain was enabled at the time when the Error was thrown.
+parameters
+errorObjectId
+RemoteObjectId
+The error object for which to resolve the exception details.
+Return Object
+exceptionDetails
+ExceptionDetails
+Runtime.getHeapUsage Experimental #
+Returns the JavaScript heap usage. It is the total usage of the corresponding isolate not scoped to a particular Runtime.
+Return Object
+usedSize
+number
+Used JavaScript heap size in bytes.
+totalSize
+number
+Allocated JavaScript heap size in bytes.
+embedderHeapUsedSize
+number
+Used size in bytes in the embedder's garbage-collected heap.
+backingStorageSize
+number
+Size in bytes of backing storage for array buffers and external strings.
+Runtime.getIsolateId Experimental #
+Returns the isolate id.
+Return Object
+id
+string
+The isolate id.
+Runtime.setCustomObjectFormatterEnabled Experimental #
+parameters
+enabled
+boolean
+Runtime.setMaxCallStackSizeToCapture Experimental #
+parameters
+size
+integer
+Runtime.terminateExecution Experimental #
+Terminate current or next JavaScript execution. Will cancel the termination when the outer-most script execution ends.
+Events
+Runtime.consoleAPICalled #
+Issued when console API was called.
+parameters
+type
+string
+Type of the call.
+Allowed Values: log, debug, info, error, warning, dir, dirxml, table, trace, clear, startGroup, startGroupCollapsed, endGroup, assert, profile, profileEnd, count, timeEnd
+args
+array[ RemoteObject ]
+Call arguments.
+executionContextId
+ExecutionContextId
+Identifier of the context where the call was made.
+timestamp
+Timestamp
+Call timestamp.
+stackTrace
+StackTrace
+Stack trace captured when the call was made. The async stack chain is automatically reported for the following call types: assert, error, trace, warning. For other types the async call chain can be retrieved using Debugger.getStackTrace and stackTrace.parentId field.
+context
+string
+Console context descriptor for calls on non-default console context (not console.*): 'anonymous#unique-logger-id' for call on unnamed context, 'name#unique-logger-id' for call on named context. Experimental
+Runtime.exceptionRevoked #
+Issued when unhandled exception was revoked.
+parameters
+reason
+string
+Reason describing why exception was revoked.
+exceptionId
+integer
+The id of revoked exception, as reported in exceptionThrown.
+Runtime.exceptionThrown #
+Issued when exception was thrown and unhandled.
+parameters
+timestamp
+Timestamp
+Timestamp of the exception.
+exceptionDetails
+ExceptionDetails
+Runtime.executionContextCreated #
+Issued when new execution context is created.
+parameters
+context
+ExecutionContextDescription
+A newly created execution context.
+Runtime.executionContextDestroyed #
+Issued when execution context is destroyed.
+parameters
+executionContextId
+ExecutionContextId
+Id of the destroyed context Deprecated
+executionContextUniqueId
+string
+Unique Id of the destroyed context Experimental
+Runtime.executionContextsCleared #
+Issued when all executionContexts were cleared in browser
+Runtime.inspectRequested #
+Issued when object should be inspected (for example, as a result of inspect() command line API call).
+parameters
+object
+RemoteObject
+hints
+object
+executionContextId
+ExecutionContextId
+Identifier of the context where the call was made. Experimental
+Runtime.bindingCalled Experimental #
+Notification is issued every time when binding is called.
+parameters
+name
+string
+payload
+string
+executionContextId
+ExecutionContextId
+Identifier of the context where the call was made.
+Types
+Runtime.CallArgument #
+Represents function call argument. Either remote object id objectId, primitive value, unserializable primitive value or neither of (for undefined) them should be specified.
+Type: object
+
+properties
+value
+any
+Primitive value or serializable javascript object.
+unserializableValue
+UnserializableValue
+Primitive value which can not be JSON-stringified.
+objectId
+RemoteObjectId
+Remote object handle.
+Runtime.CallFrame #
+Stack entry for runtime errors and assertions.
+Type: object
+
+properties
+functionName
+string
+JavaScript function name.
+scriptId
+ScriptId
+JavaScript script id.
+url
+string
+JavaScript script name or url.
+lineNumber
+integer
+JavaScript script line number (0-based).
+columnNumber
+integer
+JavaScript script column number (0-based).
+Runtime.DeepSerializedValue #
+Represents deep serialized value.
+Type: object
+
+properties
+type
+string
+Allowed Values: undefined, null, string, number, boolean, bigint, regexp, date, symbol, array, object, function, map, set, weakmap, weakset, error, proxy, promise, typedarray, arraybuffer, node, window, generator
+value
+any
+objectId
+string
+weakLocalObjectReference
+integer
+Set if value reference met more then once during serialization. In such case, value is provided only to one of the serialized values. Unique per value in the scope of one CDP call.
+Runtime.ExceptionDetails #
+Detailed information about exception (or error) that was thrown during script compilation or execution.
+Type: object
+
+properties
+exceptionId
+integer
+Exception id.
+text
+string
+Exception text, which should be used together with exception object when available.
+lineNumber
+integer
+Line number of the exception location (0-based).
+columnNumber
+integer
+Column number of the exception location (0-based).
+scriptId
+ScriptId
+Script ID of the exception location.
+url
+string
+URL of the exception location, to be used when the script was not reported.
+stackTrace
+StackTrace
+JavaScript stack trace if available.
+exception
+RemoteObject
+Exception object if available.
+executionContextId
+ExecutionContextId
+Identifier of the context where exception happened.
+exceptionMetaData
+object
+Dictionary with entries of meta data that the client associated with this exception, such as information about associated network requests, etc. Experimental
+Runtime.ExecutionContextDescription #
+Description of an isolated world.
+Type: object
+
+properties
+id
+ExecutionContextId
+Unique id of the execution context. It can be used to specify in which execution context script evaluation should be performed.
+origin
+string
+Execution context origin.
+name
+string
+Human readable name describing given context.
+uniqueId
+string
+A system-unique execution context identifier. Unlike the id, this is unique across multiple processes, so can be reliably used to identify specific context while backend performs a cross-process navigation. Experimental
+auxData
+object
+Embedder-specific auxiliary data likely matching {isDefault: boolean, type: 'default'|'isolated'|'worker', frameId: string}
+Runtime.ExecutionContextId #
+Id of an execution context.
+Type: integer
+
+Runtime.InternalPropertyDescriptor #
+Object internal property descriptor. This property isn't normally visible in JavaScript code.
+Type: object
+
+properties
+name
+string
+Conventional property name.
+value
+RemoteObject
+The value associated with the property.
+Runtime.PropertyDescriptor #
+Object property descriptor.
+Type: object
+
+properties
+name
+string
+Property name or symbol description.
+value
+RemoteObject
+The value associated with the property.
+writable
+boolean
+True if the value associated with the property may be changed (data descriptors only).
+get
+RemoteObject
+A function which serves as a getter for the property, or undefined if there is no getter (accessor descriptors only).
+set
+RemoteObject
+A function which serves as a setter for the property, or undefined if there is no setter (accessor descriptors only).
+configurable
+boolean
+True if the type of this property descriptor may be changed and if the property may be deleted from the corresponding object.
+enumerable
+boolean
+True if this property shows up during enumeration of the properties on the corresponding object.
+wasThrown
+boolean
+True if the result was thrown during the evaluation.
+isOwn
+boolean
+True if the property is owned for the object.
+symbol
+RemoteObject
+Property symbol object, if the property is of the symbol type.
+Runtime.RemoteObject #
+Mirror object referencing original JavaScript object.
+Type: object
+
+properties
+type
+string
+Object type.
+Allowed Values: object, function, undefined, string, number, boolean, symbol, bigint
+subtype
+string
+Object subtype hint. Specified for object type values only. NOTE: If you change anything here, make sure to also update subtype in ObjectPreview and PropertyPreview below.
+Allowed Values: array, null, node, regexp, date, map, set, weakmap, weakset, iterator, generator, error, proxy, promise, typedarray, arraybuffer, dataview, webassemblymemory, wasmvalue, trustedtype
+className
+string
+Object class (constructor) name. Specified for object type values only.
+value
+any
+Remote object value in case of primitive values or JSON values (if it was requested).
+unserializableValue
+UnserializableValue
+Primitive value which can not be JSON-stringified does not have value, but gets this property.
+description
+string
+String representation of the object.
+deepSerializedValue
+DeepSerializedValue
+Deep serialized value. Experimental
+objectId
+RemoteObjectId
+Unique object identifier (for non-primitive values).
+preview
+ObjectPreview
+Preview containing abbreviated property values. Specified for object type values only. Experimental
+customPreview
+CustomPreview
+Experimental
+Runtime.RemoteObjectId #
+Unique object identifier.
+Type: string
+
+Runtime.ScriptId #
+Unique script identifier.
+Type: string
+
+Runtime.SerializationOptions #
+Represents options for serialization. Overrides generatePreview and returnByValue.
+Type: object
+
+properties
+serialization
+string
+Allowed Values: deep, json, idOnly
+maxDepth
+integer
+Deep serialization depth. Default is full depth. Respected only in deep serialization mode.
+additionalParameters
+object
+Embedder-specific parameters. For example if connected to V8 in Chrome these control DOM serialization via maxNodeDepth: integer and includeShadowTree: "none" | "open" | "all". Values can be only of type string or integer.
+Runtime.StackTrace #
+Call frames for assertions or error messages.
+Type: object
+
+properties
+description
+string
+String label of this stack trace. For async traces this may be a name of the function that initiated the async call.
+callFrames
+array[ CallFrame ]
+JavaScript function name.
+parent
+StackTrace
+Asynchronous JavaScript stack trace that preceded this stack, if available.
+parentId
+StackTraceId
+Asynchronous JavaScript stack trace that preceded this stack, if available. Experimental
+Runtime.TimeDelta #
+Number of milliseconds.
+Type: number
+
+Runtime.Timestamp #
+Number of milliseconds since epoch.
+Type: number
+
+Runtime.UnserializableValue #
+Primitive value which cannot be JSON-stringified. Includes values -0, NaN, Infinity, -Infinity, and bigint literals.
+Type: string
+
+Runtime.CustomPreview Experimental #
+Type: object
+
+properties
+header
+string
+The JSON-stringified result of formatter.header(object, config) call. It contains json ML array that represents RemoteObject.
+bodyGetterId
+RemoteObjectId
+If formatter returns true as a result of formatter.hasBody call then bodyGetterId will contain RemoteObjectId for the function that returns result of formatter.body(object, config) call. The result value is json ML array.
+Runtime.EntryPreview Experimental #
+Type: object
+
+properties
+key
+ObjectPreview
+Preview of the key. Specified for map-like collection entries.
+value
+ObjectPreview
+Preview of the value.
+Runtime.ObjectPreview Experimental #
+Object containing abbreviated remote object value.
+Type: object
+
+properties
+type
+string
+Object type.
+Allowed Values: object, function, undefined, string, number, boolean, symbol, bigint
+subtype
+string
+Object subtype hint. Specified for object type values only.
+Allowed Values: array, null, node, regexp, date, map, set, weakmap, weakset, iterator, generator, error, proxy, promise, typedarray, arraybuffer, dataview, webassemblymemory, wasmvalue, trustedtype
+description
+string
+String representation of the object.
+overflow
+boolean
+True iff some of the properties or entries of the original object did not fit.
+properties
+array[ PropertyPreview ]
+List of the properties.
+entries
+array[ EntryPreview ]
+List of the entries. Specified for map and set subtype values only.
+Runtime.PrivatePropertyDescriptor Experimental #
+Object private field descriptor.
+Type: object
+
+properties
+name
+string
+Private property name.
+value
+RemoteObject
+The value associated with the private property.
+get
+RemoteObject
+A function which serves as a getter for the private property, or undefined if there is no getter (accessor descriptors only).
+set
+RemoteObject
+A function which serves as a setter for the private property, or undefined if there is no setter (accessor descriptors only).
+Runtime.PropertyPreview Experimental #
+Type: object
+
+properties
+name
+string
+Property name.
+type
+string
+Object type. Accessor means that the property itself is an accessor property.
+Allowed Values: object, function, undefined, string, number, boolean, symbol, accessor, bigint
+value
+string
+User-friendly property value string.
+valuePreview
+ObjectPreview
+Nested value preview.
+subtype
+string
+Object subtype hint. Specified for object type values only.
+Allowed Values: array, null, node, regexp, date, map, set, weakmap, weakset, iterator, generator, error, proxy, promise, typedarray, arraybuffer, dataview, webassemblymemory, wasmvalue, trustedtype
+Runtime.StackTraceId Experimental #
+If debuggerId is set stack trace comes from another debugger and can be resolved there. This allows to track cross-debugger calls. See Runtime.StackTrace and Debugger.paused for usages.
+Type: object
+
+properties
+id
+string
+debuggerId
+UniqueDebuggerId
+Runtime.UniqueDebuggerId Experimental #
+Unique identifier of current debugger.
+Type: string
