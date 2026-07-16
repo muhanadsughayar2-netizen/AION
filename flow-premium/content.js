@@ -4273,8 +4273,17 @@
         const host = location.hostname;
 
         // ── Helper: paste via clipboard (best for virtual-canvas editors) ──────
+        // navigator.clipboard.writeText() throws "Document is not focused" when
+        // called from a content script without user activation.  Use a hidden
+        // textarea + execCommand('copy') instead — no gesture required.
         async function pasteViaClipboard(text, focusEl) {
-          await navigator.clipboard.writeText(text);
+          const ta = document.createElement('textarea');
+          ta.value = text;
+          ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
+          document.body.appendChild(ta);
+          ta.focus(); ta.select();
+          document.execCommand('copy');
+          ta.remove();
           await new Promise(r => setTimeout(r, 150));
           const target = focusEl || document.activeElement || document.body;
           target.dispatchEvent(new KeyboardEvent('keydown',  { key:'v', code:'KeyV', ctrlKey:true, bubbles:true, cancelable:true }));
