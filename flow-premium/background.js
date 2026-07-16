@@ -5,6 +5,20 @@ const MAX_SNAPS = 10;
 const AI_SITES = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'specode.ai'];
 const CAPTURE_COOLDOWN = 700; // Minimum 700ms between captures to avoid Chrome rate limit (MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND)
 
+// Helper: clear the version-stamp guard then inject content.js fresh.
+// Defined at module scope so it's accessible from all message handlers,
+// not just the agentExecute block where it was previously trapped.
+const clearAndInject = async (tid, allFrames = true) => {
+  await chrome.scripting.executeScript({
+    target: { tabId: tid, allFrames },
+    func: () => { window.__snaptoai_loaded = null; window.__snaptoai_healthy = false; }
+  }).catch(() => {});
+  await chrome.scripting.executeScript({
+    target: { tabId: tid, allFrames },
+    files: ['content.js']
+  });
+};
+
 // Default settings
 const DEFAULT_SETTINGS = {
   imageFormat: 'png',
@@ -757,19 +771,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Relay agent automation command to the target tab
     const { tabId, executeAction, params } = request;
 
-    // Helper: clear the version-stamp guard then inject content.js fresh.
-    // Without this, a tab that loaded an OLD content.js keeps its stale code
-    // because the guard makes subsequent executeScript calls a no-op.
-    const clearAndInject = async (tid, allFrames = true) => {
-      await chrome.scripting.executeScript({
-        target: { tabId: tid, allFrames },
-        func: () => { window.__snaptoai_loaded = null; window.__snaptoai_healthy = false; }
-      }).catch(() => {});
-      await chrome.scripting.executeScript({
-        target: { tabId: tid, allFrames },
-        files: ['content.js']
-      });
-    };
     if (!tabId) {
       sendResponse({ success: false, error: 'No tab ID provided' });
       return;
