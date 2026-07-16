@@ -879,59 +879,66 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   func: async (textToType) => {
                     const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-                    // ── Method 1: docs-texteventtarget-iframe ──────────────────
-                    // Google Docs routes ALL keyboard input through this hidden
-                    // iframe. execCommand('insertText') on its document is the
-                    // only non-CDP way to actually insert text into the canvas.
-                    const textIframe = document.querySelector('.docs-texteventtarget-iframe');
-                    if (textIframe && textIframe.contentDocument) {
-                      try {
+                    // Helper: stage text in a hidden textarea and execCommand('copy').
+                    // Works without a user gesture or document focus — unlike
+                    // navigator.clipboard.writeText() which throws "Document is not focused"
+                    // when called from executeScript with no user activation.
+                    const stageClipboard = (txt) => {
+                      const ta = document.createElement('textarea');
+                      ta.value = txt;
+                      ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
+                      document.body.appendChild(ta);
+                      ta.focus(); ta.select();
+                      document.execCommand('copy');
+                      ta.remove();
+                    };
+
+                    try {
+                      // ── Method 1: docs-texteventtarget-iframe ────────────────
+                      // Google Docs routes ALL keyboard input through this hidden
+                      // same-origin iframe. execCommand('insertText') on its body
+                      // is the only non-CDP way to insert into the canvas.
+                      // IMPORTANT: do NOT click the outer editor div before calling
+                      // this — clicking .kix-appview-editor moves focus OUT of the
+                      // iframe, causing execCommand to return false.
+                      const textIframe = document.querySelector('.docs-texteventtarget-iframe');
+                      if (textIframe && textIframe.contentDocument) {
                         const iframeDoc = textIframe.contentDocument;
                         const iframeBody = iframeDoc.body;
                         iframeBody.focus();
-                        await sleep(150);
-                        // Click the main editor first so Docs registers focus
-                        const editorEl = document.querySelector('.kix-appview-editor');
-                        if (editorEl) {
-                          const r = editorEl.getBoundingClientRect();
-                          const cx = r.left + Math.min(200, r.width * 0.3);
-                          const cy = r.top  + Math.min(160, r.height * 0.3);
-                          editorEl.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: cx, clientY: cy }));
-                          await sleep(200);
-                        }
-                        iframeBody.focus();
-                        await sleep(100);
+                        await sleep(200);
                         const inserted = iframeDoc.execCommand('insertText', false, textToType);
                         if (inserted) return { success: true, method: 'textevent-iframe' };
-                      } catch (_) { /* fall through */ }
-                    }
+                      }
 
-                    // ── Method 2: clipboard paste via editor canvas click ──────
-                    // Ctrl+V via synthetic events is isTrusted:false and ignored
-                    // by the Docs canvas — we write to clipboard and let the
-                    // browser's built-in paste handler fire instead via execCommand.
-                    const editorSelectors = [
-                      '.kix-appview-editor', '.kix-zoomdocumentplugin-outer',
-                      '.docs-editor-container', '#docs-editor',
-                    ];
-                    let editorEl = null;
-                    for (const sel of editorSelectors) {
-                      const el = document.querySelector(sel);
-                      if (el && el.getBoundingClientRect().width > 50) { editorEl = el; break; }
+                      // ── Method 2: hidden-textarea copy → execCommand paste ───
+                      // Stage the text into the clipboard via a hidden textarea
+                      // (no user-gesture required), then paste into the editor.
+                      const editorSelectors = [
+                        '.kix-appview-editor', '.kix-zoomdocumentplugin-outer',
+                        '.docs-editor-container', '#docs-editor',
+                      ];
+                      let editorEl = null;
+                      for (const sel of editorSelectors) {
+                        const el = document.querySelector(sel);
+                        if (el && el.getBoundingClientRect().width > 50) { editorEl = el; break; }
+                      }
+                      stageClipboard(textToType);
+                      await sleep(100);
+                      const r2 = editorEl ? editorEl.getBoundingClientRect() : null;
+                      const cx2 = r2 ? r2.left + Math.min(200, r2.width  * 0.3) : window.innerWidth  * 0.5;
+                      const cy2 = r2 ? r2.top  + Math.min(160, r2.height * 0.3) : window.innerHeight * 0.4;
+                      const target2 = editorEl || document.elementFromPoint(cx2, cy2) || document.body;
+                      target2.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: cx2, clientY: cy2 }));
+                      target2.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, clientX: cx2, clientY: cy2 }));
+                      target2.dispatchEvent(new MouseEvent('click',     { bubbles: true, clientX: cx2, clientY: cy2 }));
+                      await sleep(300);
+                      document.execCommand('paste');
+                      await sleep(400);
+                      return { success: true, method: 'clipboard-execcommand' };
+                    } catch (e) {
+                      return { success: false, error: String(e && e.message || e) };
                     }
-                    const r2 = editorEl ? editorEl.getBoundingClientRect() : null;
-                    const cx2 = r2 ? r2.left + Math.min(200, r2.width  * 0.3) : window.innerWidth  * 0.5;
-                    const cy2 = r2 ? r2.top  + Math.min(160, r2.height * 0.3) : window.innerHeight * 0.4;
-                    const target2 = editorEl || document.elementFromPoint(cx2, cy2) || document.body;
-                    target2.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: cx2, clientY: cy2 }));
-                    target2.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, clientX: cx2, clientY: cy2 }));
-                    target2.dispatchEvent(new MouseEvent('click',     { bubbles: true, clientX: cx2, clientY: cy2 }));
-                    await sleep(350);
-                    await navigator.clipboard.writeText(textToType);
-                    await sleep(150);
-                    document.execCommand('paste');
-                    await sleep(400);
-                    return { success: true, method: 'clipboard-execcommand' };
                   },
                   args: [text]
                 });
@@ -953,8 +960,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     const selectors = ['.WACViewPanel', '.Page', '[class*="EditArea"]', 'div[contenteditable="true"]'];
                     let el = null;
                     for (const sel of selectors) { el = document.querySelector(sel); if (el) break; }
+                    // Stage text without needing document focus (navigator.clipboard requires user gesture)
+                    const ta = document.createElement('textarea');
+                    ta.value = textToType;
+                    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
+                    document.body.appendChild(ta);
+                    ta.focus(); ta.select();
+                    document.execCommand('copy');
+                    ta.remove();
                     if (el) { el.click(); el.focus(); await new Promise(r => setTimeout(r, 300)); }
-                    await navigator.clipboard.writeText(textToType);
                     await new Promise(r => setTimeout(r, 150));
                     const t = document.activeElement || el || document.body;
                     t.dispatchEvent(new KeyboardEvent('keydown', { key:'v', code:'KeyV', ctrlKey:true, bubbles:true, cancelable:true }));
@@ -979,41 +993,57 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   target: { tabId },
                   func: async (textToType) => {
                     const sleep = ms => new Promise(res => setTimeout(res, ms));
-                    // Split by newline OR comma+space so agent can pass "Jan\nFeb" or "Jan, Feb"
-                    const values = textToType.split(/\n|,\s*/).map(v => v.trim()).filter(Boolean);
 
-                    // Find the Name Box input to navigate to a starting cell
-                    const nameBox = document.querySelector(
-                      '#t-name-box, [id="t-name-box"], .docs-objectbox-container input, [aria-label="Name Box"]'
-                    );
+                    // Stage text without needing document focus — navigator.clipboard.writeText
+                    // throws "Document is not focused" when called from executeScript.
+                    const stageClipboard = (txt) => {
+                      const ta = document.createElement('textarea');
+                      ta.value = txt;
+                      ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
+                      document.body.appendChild(ta);
+                      ta.focus(); ta.select();
+                      document.execCommand('copy');
+                      ta.remove();
+                    };
 
-                    if (values.length > 1 && nameBox) {
-                      // Multi-value: paste all as newline-separated → Sheets splits into rows
-                      nameBox.click(); nameBox.focus(); await sleep(100);
-                      nameBox.value = 'A1';
-                      nameBox.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', keyCode:13, bubbles:true }));
-                      nameBox.dispatchEvent(new KeyboardEvent('keyup',   { key:'Enter', keyCode:13, bubbles:true }));
-                      await sleep(300);
-                      // Write newline-separated values to clipboard then paste
-                      await navigator.clipboard.writeText(values.join('\n'));
-                      await sleep(150);
+                    try {
+                      // Split by newline OR comma+space so agent can pass "Jan\nFeb" or "Jan, Feb"
+                      const values = textToType.split(/\n|,\s*/).map(v => v.trim()).filter(Boolean);
+
+                      // Find the Name Box input to navigate to a starting cell
+                      const nameBox = document.querySelector(
+                        '#t-name-box, [id="t-name-box"], .docs-objectbox-container input, [aria-label="Name Box"]'
+                      );
+
+                      if (values.length > 1 && nameBox) {
+                        // Multi-value: paste all as newline-separated → Sheets splits into rows
+                        nameBox.click(); nameBox.focus(); await sleep(100);
+                        nameBox.value = 'A1';
+                        nameBox.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', keyCode:13, bubbles:true }));
+                        nameBox.dispatchEvent(new KeyboardEvent('keyup',   { key:'Enter', keyCode:13, bubbles:true }));
+                        await sleep(300);
+                        stageClipboard(values.join('\n'));
+                        await sleep(100);
+                        document.execCommand('paste');
+                        await sleep(500);
+                        return { success: true, method: 'sheets-paste-column' };
+                      }
+
+                      // Single value: navigate to A1 then paste
+                      if (nameBox) {
+                        nameBox.click(); nameBox.focus(); await sleep(100);
+                        nameBox.value = 'A1';
+                        nameBox.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', keyCode:13, bubbles:true }));
+                        await sleep(200);
+                      }
+                      stageClipboard(textToType);
+                      await sleep(100);
                       document.execCommand('paste');
-                      await sleep(500);
-                      return { success: true, method: 'sheets-paste-column' };
+                      await sleep(300);
+                      return { success: true, method: 'sheets-single-paste' };
+                    } catch (e) {
+                      return { success: false, error: String(e && e.message || e) };
                     }
-
-                    // Single value: just click first cell and paste
-                    if (nameBox) {
-                      nameBox.click(); nameBox.focus(); await sleep(100);
-                      nameBox.value = 'A1';
-                      nameBox.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', keyCode:13, bubbles:true }));
-                      await sleep(200);
-                    }
-                    await navigator.clipboard.writeText(textToType);
-                    await sleep(150);
-                    document.execCommand('paste');
-                    await sleep(300);
-                    return { success: true, method: 'sheets-single-paste' };
                   },
                   args: [text]
                 });
