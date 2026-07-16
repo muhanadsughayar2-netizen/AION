@@ -1,0 +1,29 @@
+ix this issue in your Replit project, you should provide the Replit AI with the following specific technical instructions. This addresses the "Document is not focused" error that is currently breaking your extension.
+
+Copy and Paste this message to Replit:
+"The extension is failing to insert text into Google Docs and Word Online because navigator.clipboard.writeText requires active document focus and a user gesture, which is missing when the script runs.
+
+Please apply these three fixes to background.js:
+
+Replace Clipboard API with Hidden Textarea: Instead of using navigator.clipboard.writeText(), use a hidden textarea to copy text. This bypasses the 'Document is not focused' error.
+Fix Focus Logic: In the Google Docs function, stop calling editorEl.click() before inserting text, as it is shifting focus away from the iframe.
+Sync for all platforms: Apply this 'hidden textarea' logic to the functions for Google Sheets and Word Online as well.
+Use this logic for the copy function:
+
+function copyToClipboard(text) {
+  const textArea = document.createElement('textarea');
+  textArea.value = text;
+  document.body.appendChild(textArea);
+  textArea.select();
+  document.execCommand('copy');
+  document.body.removeChild(textArea);
+}
+After copying, use document.execCommand('paste') or document.execCommand('insertText', false, text) inside the document iframe."
+
+Why this is the solution:
+The Problem: Modern browsers have high security for the Clipboard. If an AI (the extension) tries to touch the clipboard without you physically clicking a button at that exact microsecond, the browser blocks it [1].
+The "Hidden Textarea" Hack: By creating a invisible text box, putting the text there, and "selecting" it via code, the browser treats it as a standard copy-paste action, which is allowed even if the main document isn't perfectly focused [2].
+The "Aeon" vs "SnapToAI" name issue: You should also tell Replit: "Ensure all UI labels and manifest files use the name 'Aeon' instead of 'SnapToAI' to maintain consistency" [1].
+Sources
+[1] Analysis of provided logs: The error Document is not focused is the primary blocker in the content.js execution.
+[2] Standard Extension Workaround: Documentation for Chrome Extensions confirms that execCommand('copy') inside a background script or injected script is the standard way to bypass Clipboard API focus restrictions.
