@@ -871,7 +871,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const tabUrl = currentTab && currentTab.url ? currentTab.url : '';
             const tabHost = (() => { try { return new URL(tabUrl).hostname; } catch(_) { return ''; } })();
 
-            // ── Google Docs inline paste (bypasses content.js entirely) ────────
+            // ── Google Docs ──────────────────────────────────────────────────────
             if (tabHost.includes('docs.google.com') && tabUrl.includes('/document/')) {
               const text = String(params && params.text ? params.text : '');
               try {
@@ -880,73 +880,99 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   func: async (textToType) => {
                     const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-                    // Helper: stage text in a hidden textarea and execCommand('copy').
-                    // Works without a user gesture or document focus — unlike
-                    // navigator.clipboard.writeText() which throws "Document is not focused"
-                    // when called from executeScript with no user activation.
-                    const stageClipboard = (txt) => {
-                      const ta = document.createElement('textarea');
-                      ta.value = txt;
-                      ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
-                      document.body.appendChild(ta);
-                      ta.focus(); ta.select();
-                      document.execCommand('copy');
-                      ta.remove();
+                    // Show a status banner so the user can see what's happening
+                    const showBanner = (msg) => {
+                      let b = document.getElementById('__aion_type_banner');
+                      if (!b) {
+                        b = document.createElement('div');
+                        b.id = '__aion_type_banner';
+                        b.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:999999;background:#1a73e8;color:#fff;padding:8px 18px;border-radius:20px;font:600 13px/1.4 sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none;';
+                        document.body.appendChild(b);
+                      }
+                      b.textContent = msg;
+                      clearTimeout(b.__t);
+                      b.__t = setTimeout(() => b.remove(), 4000);
                     };
 
-                    try {
-                      // ── Method 1: docs-texteventtarget-iframe ────────────────
-                      // Google Docs routes ALL keyboard input through this hidden
-                      // same-origin iframe. execCommand('insertText') on its body
-                      // is the only non-CDP way to insert into the canvas.
-                      // IMPORTANT: do NOT click the outer editor div before calling
-                      // this — clicking .kix-appview-editor moves focus OUT of the
-                      // iframe, causing execCommand to return false.
-                      const textIframe = document.querySelector('.docs-texteventtarget-iframe');
-                      if (textIframe && textIframe.contentDocument) {
-                        const iframeDoc = textIframe.contentDocument;
-                        const iframeBody = iframeDoc.body;
-                        iframeBody.focus();
-                        await sleep(200);
-                        const inserted = iframeDoc.execCommand('insertText', false, textToType);
-                        if (inserted) return { success: true, method: 'textevent-iframe' };
-                      }
-
-                      // ── Method 2: hidden-textarea copy → execCommand paste ───
-                      // Stage the text into the clipboard via a hidden textarea
-                      // (no user-gesture required), then paste into the editor.
-                      const editorSelectors = [
-                        '.kix-appview-editor', '.kix-zoomdocumentplugin-outer',
-                        '.docs-editor-container', '#docs-editor',
-                      ];
-                      let editorEl = null;
-                      for (const sel of editorSelectors) {
-                        const el = document.querySelector(sel);
-                        if (el && el.getBoundingClientRect().width > 50) { editorEl = el; break; }
-                      }
-                      stageClipboard(textToType);
-                      await sleep(100);
-                      const r2 = editorEl ? editorEl.getBoundingClientRect() : null;
-                      const cx2 = r2 ? r2.left + Math.min(200, r2.width  * 0.3) : window.innerWidth  * 0.5;
-                      const cy2 = r2 ? r2.top  + Math.min(160, r2.height * 0.3) : window.innerHeight * 0.4;
-                      const target2 = editorEl || document.elementFromPoint(cx2, cy2) || document.body;
-                      target2.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: cx2, clientY: cy2 }));
-                      target2.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, clientX: cx2, clientY: cy2 }));
-                      target2.dispatchEvent(new MouseEvent('click',     { bubbles: true, clientX: cx2, clientY: cy2 }));
+                    // ── Method 1: docs-texteventtarget-iframe ─────────────────
+                    // Google Docs routes ALL keyboard input through this hidden
+                    // same-origin iframe. We must WAIT for it — on a freshly
+                    // navigated tab it can take 1-3 seconds to appear.
+                    showBanner('⌨️ Aion: waiting for Docs editor…');
+                    let textIframe = null;
+                    for (let i = 0; i < 15; i++) {
+                      textIframe = document.querySelector('.docs-texteventtarget-iframe');
+                      if (textIframe && textIframe.contentDocument && textIframe.contentDocument.body) break;
                       await sleep(300);
-                      document.execCommand('paste');
-                      await sleep(400);
-                      return { success: true, method: 'clipboard-execcommand' };
-                    } catch (e) {
-                      return { success: false, error: String(e && e.message || e) };
                     }
+
+                    if (textIframe && textIframe.contentDocument) {
+                      try {
+                        const iframeDoc = textIframe.contentDocument;
+                        iframeDoc.body.focus();
+                        await sleep(150);
+                        showBanner('⌨️ Aion: typing into Docs…');
+                        const ok = iframeDoc.execCommand('insertText', false, textToType);
+                        if (ok) {
+                          showBanner('✅ Aion: typed into Docs');
+                          return { success: true, method: 'textevent-iframe' };
+                        }
+                      } catch(iframeErr) { /* fall through */ }
+                    }
+
+                    // ── Method 2: click canvas tile → insertText on body ──────
+                    // If iframe focus didn't work, click a canvas tile to give
+                    // Docs the focus it needs, then try insertText on the body.
+                    showBanner('⌨️ Aion: trying canvas click…');
+                    const tile = document.querySelector('.kix-canvas-tile-content')
+                               || document.querySelector('.kix-appview-editor')
+                               || document.querySelector('#docs-editor');
+                    if (tile) {
+                      const r = tile.getBoundingClientRect();
+                      const cx = r.left + Math.min(150, r.width * 0.2);
+                      const cy = r.top  + Math.min(100, r.height * 0.15);
+                      tile.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, clientX: cx, clientY: cy }));
+                      tile.dispatchEvent(new MouseEvent('mouseup',   { bubbles: true, clientX: cx, clientY: cy }));
+                      tile.dispatchEvent(new MouseEvent('click',     { bubbles: true, clientX: cx, clientY: cy }));
+                      await sleep(400);
+                    }
+                    // Re-try iframe after click
+                    const iframe2 = document.querySelector('.docs-texteventtarget-iframe');
+                    if (iframe2 && iframe2.contentDocument) {
+                      try {
+                        iframe2.contentDocument.body.focus();
+                        await sleep(150);
+                        const ok2 = iframe2.contentDocument.execCommand('insertText', false, textToType);
+                        if (ok2) {
+                          showBanner('✅ Aion: typed (method 2)');
+                          return { success: true, method: 'iframe-after-click' };
+                        }
+                      } catch(_) { /* fall through */ }
+                    }
+
+                    // ── Method 3: clipboard stage → Ctrl+V ────────────────────
+                    showBanner('📋 Aion: pasting via clipboard…');
+                    const ta = document.createElement('textarea');
+                    ta.value = textToType;
+                    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;pointer-events:none;';
+                    document.body.appendChild(ta);
+                    ta.focus(); ta.select();
+                    document.execCommand('copy');
+                    ta.remove();
+                    await sleep(150);
+                    const activeEl = document.activeElement || document.body;
+                    activeEl.dispatchEvent(new KeyboardEvent('keydown', { key:'v', code:'KeyV', ctrlKey:true, bubbles:true, cancelable:true }));
+                    activeEl.dispatchEvent(new KeyboardEvent('keyup',   { key:'v', code:'KeyV', ctrlKey:true, bubbles:true }));
+                    await sleep(400);
+                    showBanner('✅ Aion: paste sent');
+                    return { success: true, method: 'ctrl-v-fallback' };
                   },
                   args: [text]
                 });
                 const r = results && results[0] && results[0].result;
-                sendResponse(r && r.success ? r : { success: false, error: 'Inline paste returned no result' });
+                sendResponse(r || { success: false, error: 'Script returned nothing' });
               } catch (inlineErr) {
-                sendResponse({ success: false, error: 'Google Docs inline paste failed: ' + inlineErr.message });
+                sendResponse({ success: false, error: 'Docs script failed: ' + inlineErr.message });
               }
               return;
             }
