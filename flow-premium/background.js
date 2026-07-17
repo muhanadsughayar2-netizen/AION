@@ -1290,67 +1290,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       })();
       return true;
     }
-    if (executeAction === 'selectCellRange') {
-      // Navigate to a specific cell or range by typing into the Name Box
-      // (the address input like "A1") and pressing Enter. Works in both
-      // Google Sheets (#t-name-box) and Excel Online (input[aria-label*="Name Box"]).
-      // Using CDP to type and press Enter is more reliable than synthetic events
-      // because the Name Box commit requires a trusted keypress.
-      (async () => {
-        const range = String(params.range || 'A1').trim();
-        const debuggee = { tabId };
-        try {
-          await chrome.debugger.attach(debuggee, '1.3');
-        } catch (_e) {
-          // Fallback: let content.js handle it via DOM events
-          chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, sendResponse);
-          return;
-        }
-        try {
-          const send = (method, p) => new Promise((res, rej) => {
-            chrome.debugger.sendCommand(debuggee, method, p, () => {
-              if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-              else res();
-            });
-          });
-
-          // Step 1: Focus the Name Box via Runtime.evaluate
-          await send('Runtime.enable', {});
-          await new Promise((res, rej) => {
-            chrome.debugger.sendCommand(debuggee, 'Runtime.evaluate', {
-              expression: `(async () => {
-                const nb = document.querySelector(
-                  '#t-name-box input, #t-name-box,' +
-                  'input[aria-label*="Name Box"], input[aria-label*="name box"],' +
-                  '.name-box-container input, .formulaBarNameBox, input.nameBox'
-                );
-                if (!nb) return 'not-found';
-                nb.focus(); nb.select(); return 'focused';
-              })()`,
-              awaitPromise: true,
-              returnByValue: true
-            }, () => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(); });
-          });
-          await new Promise(r => setTimeout(r, 150));
-
-          // Step 2: Type the range (e.g. "B2:D10") char by char
-          for (const ch of range) {
-            await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
-          }
-          await new Promise(r => setTimeout(r, 100));
-
-          // Step 3: Press Enter to commit — moves focus to that cell/range
-          await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-          await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-
-          sendResponse({ success: true });
-        } finally {
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
-        }
-      })();
-      return true;
-    }
-
     if (executeAction === 'pressKey') {
       // Fire a keyboard shortcut via CDP — the ONLY way to reliably send
       // modifier key combos (Ctrl+S, Ctrl+Z, etc.) to canvas-based apps.
