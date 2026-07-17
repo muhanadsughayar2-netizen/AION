@@ -10206,13 +10206,14 @@ const AGENT_TOOLS = [{
     },
     {
       name: 'type',
-      description: 'Type text into an input field, search box, or textarea on the current page.',
+      description: 'Type text into an input field, search box, textarea, or spreadsheet cell on the current page. For Excel Online and Google Sheets, use the "cell" parameter to navigate to a specific cell before typing (e.g. cell:"A1", cell:"B3"). Separate column values with \\t (tab) and rows with \\n (newline) to fill multiple cells in one call.',
       parameters: {
         type: 'object',
         properties: {
-          text: { type: 'string', description: 'The text to type' },
+          text: { type: 'string', description: 'The text to type. In spreadsheets: use \\t between column values and \\n between rows to fill a table in one call.' },
           selector: { type: 'string', description: 'CSS selector of the input, if known' },
           placeholder: { type: 'string', description: 'Placeholder text of the input, if known' },
+          cell: { type: 'string', description: 'Spreadsheet cell address to navigate to before typing, e.g. "A1", "B3", "C10". Use this in Excel Online and Google Sheets to target a specific starting cell.' },
           pressEnter: { type: 'boolean', description: 'Whether to press Enter after typing (e.g. to submit a search)' }
         },
         required: ['text']
@@ -10287,8 +10288,8 @@ Rules:
 - GOOGLE DOCS TITLE vs BODY: The element labelled "Untitled document" or the document name at the top is the TITLE — clicking it types into the title. To type in the document BODY, use "type" without clicking the title first — the agent will find and click the correct document canvas area automatically.
 - SAVING DOCUMENTS: To save in Word Online, Excel Online, Google Docs, or any web editor — use pressKey with key "ctrl+s". Do NOT click File > Save manually; the keyboard shortcut is faster and more reliable. Always pressKey("ctrl+s") after finishing a typing task in an editor.
 - WORD ONLINE — attachments & templates: Word Online menus (Insert, File, etc.) are real HTML buttons. Use "click" with the menu name (e.g. click "Insert"), then click the sub-item (e.g. click "Pictures" or "From computer"). For templates: navigate to office.com, find the template in the gallery, then click to open it — do NOT try to access templates from within an already-open document.
-- EXCEL ONLINE — entering data into cells: Use "type" with your text — the agent automatically navigates to cell A1 and enters data. Each newline in the text moves to the next row. After typing, the agent presses Enter to commit. Do NOT try to click individual cells; just call "type" with all the data at once using "\n" between rows.
-- GOOGLE SHEETS — entering a list into a column: Use a SINGLE "type" call where values are separated by newlines (e.g. "January\nFebruary\nMarch"). One type call = entire column filled.
+- EXCEL ONLINE — entering data into cells: Always use the "cell" parameter to specify WHERE to start typing (e.g. cell:"A1", cell:"B2"). Use "\t" (tab) to separate values going RIGHT across columns, and "\n" (newline) to move DOWN to the next row. Example — fill a 3-column table starting at A1: type({cell:"A1", text:"Name\tAge\tCity\nAlice\t30\tLondon\nBob\t25\tParis"}). This fills A1=Name, B1=Age, C1=City, A2=Alice, B2=30, C2=London, A3=Bob, B3=25, C3=Paris — all in ONE call. Do NOT call "type" once per cell; fill the whole range in one shot. After filling, pressKey("ctrl+s") to save.
+- GOOGLE SHEETS — entering data: Use the "cell" parameter to navigate to a starting cell (e.g. cell:"A1"), then use "\t" between column values and "\n" between rows — exactly like Excel. Example: type({cell:"A1", text:"Month\tRevenue\nJan\t5000\nFeb\t6200"}) fills A1=Month, B1=Revenue, A2=Jan, B2=5000, A3=Feb, B3=6200. One call fills any table.
 - KEYBOARD SHORTCUTS: Use pressKey for any shortcut — "ctrl+b" (bold), "ctrl+i" (italic), "ctrl+u" (underline), "ctrl+z" (undo), "ctrl+y" (redo), "ctrl+a" (select all), "escape" (close dialog), "f2" (rename/edit), "ctrl+home" (go to top). These work reliably in ALL apps including canvas editors.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────

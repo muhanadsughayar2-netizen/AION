@@ -1208,8 +1208,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
             } else if (isExcel) {
               // ── EXCEL ONLINE ─────────────────────────────────────────────────
-              // Step 1: Focus the Name Box (real DOM input), type "A1", press Enter
-              // to navigate to cell A1 so we have a known selected cell.
+              // Step 1: Focus the Name Box and navigate to the requested cell.
+              // params.cell lets the agent target any cell (e.g. "B3", "C10").
+              // Falls back to "A1" when no cell is specified.
+              const targetCell = (params.cell && /^[A-Za-z]+\d+$/.test(params.cell.trim()))
+                ? params.cell.trim().toUpperCase()
+                : 'A1';
               await send('Runtime.enable', {});
               await sendR('Runtime.evaluate', {
                 expression: `(async () => {
@@ -1226,8 +1230,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 returnByValue: true
               });
               await new Promise(r => setTimeout(r, 100));
-              // Type "A1" + Enter in the Name Box to navigate to the first data cell
-              for (const ch of 'A1') {
+              // Type the target cell address + Enter to navigate there
+              for (const ch of targetCell) {
                 await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
               }
               await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
@@ -1238,11 +1242,42 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
               await new Promise(r => setTimeout(r, 200));
               // Step 3: Type — starting to type in Excel with a cell selected
-              // automatically enters edit mode, so char events work directly.
+              // automatically enters edit mode. Tab moves RIGHT (next column),
+              // Enter moves DOWN (next row). typeChars handles both correctly.
               await typeChars(text);
 
             } else if (isGrid) {
               // ── GOOGLE SHEETS ─────────────────────────────────────────────────
+              // If a target cell is specified, navigate there via the Name Box first.
+              // The Sheets Name Box is a real DOM input — focus it, type the address,
+              // press Enter, wait for the grid to scroll to that cell.
+              const sheetsCell = (params.cell && /^[A-Za-z]+\d+$/.test(params.cell.trim()))
+                ? params.cell.trim().toUpperCase()
+                : null;
+              if (sheetsCell) {
+                await send('Runtime.enable', {});
+                await sendR('Runtime.evaluate', {
+                  expression: `(async () => {
+                    const sleep = ms => new Promise(r => setTimeout(r, ms));
+                    // Sheets Name Box selectors
+                    const nb = document.querySelector(
+                      '#t-name-box-input, .docs-input-label-input, input[aria-label*="cell"], ' +
+                      '.t-name-box-input, div.cell-input input, .goog-toolbar-combo-button input'
+                    );
+                    if (nb) { nb.focus(); nb.select(); return 'ok'; }
+                    return 'no-namebox';
+                  })()`,
+                  awaitPromise: true,
+                  returnByValue: true
+                });
+                await new Promise(r => setTimeout(r, 80));
+                for (const ch of sheetsCell) {
+                  await send('Input.dispatchKeyEvent', { type: 'char', text: ch, unmodifiedText: ch, key: ch });
+                }
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                await new Promise(r => setTimeout(r, 250));
+              }
               // Double-click enters edit mode; then use keyDown+text (more reliable
               // than char events for Sheets' canvas input handler).
               for (let ci = 1; ci <= 2; ci++) {
