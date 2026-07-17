@@ -10240,6 +10240,30 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'insertImage',
+      description: 'Insert an image into a document editor (Word Online, Google Docs, etc.). Use source="url" to insert from a web link, or source="upload" to trigger a file picker. Always use this tool for image insertion — never try to drag or paste images manually.',
+      parameters: {
+        type: 'object',
+        properties: {
+          source:      { type: 'string', enum: ['url', 'upload'], description: '"url" to insert by web link, "upload" to open the file picker' },
+          url:         { type: 'string', description: 'Image URL, required when source is "url"' },
+          description: { type: 'string', description: 'Menu path to reach the insert-image dialog, e.g. "Insert > Image > By URL"' }
+        },
+        required: ['source', 'description']
+      }
+    },
+    {
+      name: 'selectCellRange',
+      description: 'Navigate to and select a cell range in Excel Online or Google Sheets (e.g. "A1", "B2:D10", "Sheet2!A1"). Types the range into the Name Box and presses Enter — the only reliable way to jump to a specific cell or range without clicking.',
+      parameters: {
+        type: 'object',
+        properties: {
+          range: { type: 'string', description: 'Cell address or range, e.g. "A1", "B2:D10", "Sheet2!A1:C5"' }
+        },
+        required: ['range']
+      }
+    },
+    {
       name: 'pressKey',
       description: 'Press a keyboard key or shortcut on the current page. Use this for: save (ctrl+s), undo (ctrl+z), redo (ctrl+y), select all (ctrl+a), copy (ctrl+c), paste (ctrl+v), bold (ctrl+b), Escape, Enter, Tab, arrow keys, F-keys, and any modifier combo. This is the ONLY reliable way to save a document in Word Online or Excel Online.',
       parameters: {

@@ -4195,6 +4195,57 @@
 
         return { success: true };
       }
+
+      case 'selectCellRange': {
+        // DOM fallback: find the Name Box directly and set its value.
+        // background.js tries CDP first (more reliable); this runs only if
+        // CDP attach failed (e.g. DevTools already open on the tab).
+        const range = String(params.range || 'A1').trim();
+        const nameBox = document.querySelector(
+          '#t-name-box input, #t-name-box,' +
+          'input[aria-label*="Name Box"], input[aria-label*="name box"],' +
+          '.name-box-container input, .formulaBarNameBox, input.nameBox'
+        );
+        if (nameBox) {
+          nameBox.focus();
+          nameBox.select();
+          // Set value and fire input events so the app's React/Angular handler sees the change
+          const nativeInputSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+          if (nativeInputSetter) nativeInputSetter.call(nameBox, range);
+          else nameBox.value = range;
+          nameBox.dispatchEvent(new Event('input',  { bubbles: true }));
+          nameBox.dispatchEvent(new Event('change', { bubbles: true }));
+          await new Promise(r => setTimeout(r, 100));
+          nameBox.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true, cancelable: true }));
+          nameBox.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+          return { success: true };
+        }
+        return { success: false, error: 'Name Box not found — is a spreadsheet open?' };
+      }
+
+      case 'insertImage': {
+        // Guide the agent to the right menu path for image insertion.
+        // The actual menu clicking is done via the normal 'click' tool calls
+        // that follow; this case just validates the parameters and returns
+        // the step-by-step instruction so background.js can show it.
+        const src = params.source || 'url';
+        if (src === 'url' && params.url) {
+          // Find any "Insert image by URL" input that may already be open
+          const urlInput = document.querySelector(
+            'input[placeholder*="URL"], input[placeholder*="url"], input[aria-label*="URL"]'
+          );
+          if (urlInput) {
+            urlInput.focus();
+            urlInput.value = params.url;
+            urlInput.dispatchEvent(new Event('input', { bubbles: true }));
+            await new Promise(r => setTimeout(r, 100));
+            urlInput.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+            return { success: true };
+          }
+        }
+        // No open dialog found — tell the agent to open the menu first
+        return { success: false, error: 'Image URL dialog not open. First click the Insert menu, then the Image option, then call insertImage again.' };
+      }
       
       case 'locateForType': {
         const host = location.hostname;
