@@ -1,0 +1,224 @@
+Home
+Versions
+latest (tip-of-tree)
+v8-inspector (node)
+stable (1.3)
+Domains
+Accessibility
+Animation
+Audits
+Autofill
+BackgroundService
+BluetoothEmulation
+Browser
+CacheStorage
+Cast
+Console
+CrashReportContext
+CSS
+Debugger
+DeviceAccess
+DeviceOrientation
+DOM
+DOMDebugger
+DOMSnapshot
+DOMStorage
+Emulation
+EventBreakpoints
+Extensions
+FedCm
+Fetch
+FileSystem
+HeadlessExperimental
+HeapProfiler
+IndexedDB
+Input
+Inspector
+IO
+LayerTree
+Log
+Media
+Memory
+Network
+Overlay
+Page
+Performance
+PerformanceTimeline
+Preload
+Profiler
+PWA
+Runtime
+Schema
+Security
+ServiceWorker
+SmartCardEmulation
+Storage
+SystemInfo
+Target
+Tethering
+Tracing
+WebAudio
+WebAuthn
+WebMCP
+Chrome DevTools Protocol 
+Start typing to search...
+CacheStorage Domain
+Experimental
+Methods
+CacheStorage.deleteCache
+CacheStorage.deleteEntry
+CacheStorage.requestCachedResponse
+CacheStorage.requestCacheNames
+CacheStorage.requestEntries
+Types
+CacheStorage.Cache
+CacheStorage.CachedResponse
+CacheStorage.CachedResponseType
+CacheStorage.CacheId
+CacheStorage.DataEntry
+CacheStorage.Header
+Methods
+CacheStorage.deleteCache #
+Deletes a cache.
+parameters
+cacheId
+CacheId
+Id of cache for deletion.
+CacheStorage.deleteEntry #
+Deletes a cache entry.
+parameters
+cacheId
+CacheId
+Id of cache where the entry will be deleted.
+request
+string
+URL spec of the request.
+CacheStorage.requestCachedResponse #
+Fetches cache entry.
+parameters
+cacheId
+CacheId
+Id of cache that contains the entry.
+requestURL
+string
+URL spec of the request.
+requestHeaders
+array[ Header ]
+headers of the request.
+Return Object
+response
+CachedResponse
+Response read from the cache.
+CacheStorage.requestCacheNames #
+Requests cache names.
+parameters
+securityOrigin
+string
+At least and at most one of securityOrigin, storageKey, storageBucket must be specified. Security origin.
+storageKey
+string
+Storage key.
+storageBucket
+Storage.StorageBucket
+Storage bucket. If not specified, it uses the default bucket.
+Return Object
+caches
+array[ Cache ]
+Caches for the security origin.
+CacheStorage.requestEntries #
+Requests data from cache.
+parameters
+cacheId
+CacheId
+ID of cache to get entries from.
+skipCount
+integer
+Number of records to skip.
+pageSize
+integer
+Number of records to fetch.
+pathFilter
+string
+If present, only return the entries containing this substring in the path
+Return Object
+cacheDataEntries
+array[ DataEntry ]
+Array of object store data entries.
+returnCount
+number
+Count of returned entries from this storage. If pathFilter is empty, it is the count of all entries from this storage.
+Types
+CacheStorage.Cache #
+Cache identifier.
+Type: object
+
+properties
+cacheId
+CacheId
+An opaque unique id of the cache.
+securityOrigin
+string
+Security origin of the cache.
+storageKey
+string
+Storage key of the cache.
+storageBucket
+Storage.StorageBucket
+Storage bucket of the cache.
+cacheName
+string
+The name of the cache.
+CacheStorage.CachedResponse #
+Cached response
+Type: object
+
+properties
+body
+string
+Entry content, base64-encoded. (Encoded as a base64 string when passed over JSON)
+CacheStorage.CachedResponseType #
+type of HTTP response cached
+Allowed Values: basic, cors, default, error, opaqueResponse, opaqueRedirect
+Type: string
+
+CacheStorage.CacheId #
+Unique identifier of the Cache object.
+Type: string
+
+CacheStorage.DataEntry #
+Data entry.
+Type: object
+
+properties
+requestURL
+string
+Request URL.
+requestMethod
+string
+Request method.
+requestHeaders
+array[ Header ]
+Request headers
+responseTime
+number
+Number of seconds since epoch.
+responseStatus
+integer
+HTTP response status code.
+responseStatusText
+string
+HTTP response status text.
+responseType
+CachedResponseType
+HTTP response type
+responseHeaders
+array[ Header ]
+Response headers
+CacheStorage.Header #
+Type: object
+
+properties
+name
+string
+value
+string

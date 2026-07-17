@@ -1290,6 +1290,142 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       })();
       return true;
     }
+    if (executeAction === 'click') {
+      // CDP-first click pipeline:
+      //   1. content.js DOM/text search  → finds x,y  → CDP trusted mouse click
+      //   2. If not found               → CDP Accessibility.queryAXTree by visible label
+      //                                  → DOM.getBoxModel for coords → CDP click
+      //   3. If CDP unavailable         → content.js synthetic click (fallback)
+      //
+      // Accessibility.queryAXTree is the wow-factor: it finds ANY element by what
+      // the user sees (its accessible name), even inside iframes and shadow DOM,
+      // without needing CSS selectors. Perfect for Word Online ribbon, Excel menus, etc.
+      (async () => {
+        // ── helpers ──────────────────────────────────────────────────────────
+        const fallbackSynthetic = () => {
+          chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, (r) => {
+            if (chrome.runtime.lastError) {
+              clearAndInject(tabId)
+                .then(() => chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction, params }, sendResponse))
+                .catch(e => sendResponse({ success: false, error: e.message }));
+            } else { sendResponse(r); }
+          });
+        };
+
+        const locateViaContent = () => new Promise((resolve) => {
+          chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction: 'locateForClick', params }, (r) => {
+            if (chrome.runtime.lastError || !r || !r.success) resolve(null);
+            else resolve(r);
+          });
+        });
+
+        // ── Step 1: DOM text search via content.js ────────────────────────
+        let loc = null;
+        try { loc = await locateViaContent(); } catch (_) {}
+        if (!loc) {
+          try { await clearAndInject(tabId); loc = await locateViaContent(); } catch (_) {}
+        }
+
+        const debuggee = { tabId };
+        let attached = false;
+        try {
+          await chrome.debugger.attach(debuggee, '1.3');
+          attached = true;
+        } catch (_) {
+          // DevTools open — fall straight to synthetic
+          fallbackSynthetic();
+          return;
+        }
+
+        const cdpCmd = (method, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, method, p || {}, (r) => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+
+        const cdpMouseClick = async (x, y) => {
+          const base = { x, y, button: 'left', buttons: 1, clickCount: 1 };
+          await cdpCmd('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
+          await cdpCmd('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased' });
+        };
+
+        try {
+          if (loc && typeof loc.x === 'number') {
+            // Content.js found it — click using trusted CDP events
+            await cdpMouseClick(loc.x, loc.y);
+            sendResponse({ success: true });
+            return;
+          }
+
+          // ── Step 2: CDP Accessibility fallback ─────────────────────────
+          // queryAXTree finds elements by accessible name (visible label) — works
+          // in iframes, shadow DOM, and canvas apps where DOM text search fails.
+          const searchLabel = (params.text || params.description || '').trim();
+          if (searchLabel) {
+            await cdpCmd('Accessibility.enable');
+            await cdpCmd('DOM.enable');
+
+            // Try several roles so we cast a wide net; collect all candidates.
+            const rolesToTry = [null, 'button', 'link', 'menuitem', 'menuitemcheckbox',
+                                'option', 'tab', 'treeitem', 'textbox'];
+            let axNodes = [];
+            for (const role of rolesToTry) {
+              const qp = { accessibleName: searchLabel };
+              if (role) qp.role = role;
+              try {
+                const res = await cdpCmd('Accessibility.queryAXTree', qp);
+                if (res && res.nodes && res.nodes.length > 0) {
+                  axNodes = res.nodes;
+                  break;  // first match set is enough
+                }
+              } catch (_) {}
+            }
+
+            // Also try a partial / case-insensitive match via getFullAXTree if needed
+            if (axNodes.length === 0) {
+              try {
+                const full = await cdpCmd('Accessibility.getFullAXTree');
+                if (full && full.nodes) {
+                  const lower = searchLabel.toLowerCase();
+                  axNodes = full.nodes.filter(n =>
+                    n.name && n.name.value && n.name.value.toLowerCase().includes(lower) &&
+                    n.backendDOMNodeId
+                  );
+                }
+              } catch (_) {}
+            }
+
+            for (const node of axNodes) {
+              if (!node.backendDOMNodeId) continue;
+              try {
+                const box = await cdpCmd('DOM.getBoxModel', { backendNodeId: node.backendDOMNodeId });
+                if (!box || !box.model || !box.model.content) continue;
+                const [x1, y1, x2, , , y3] = box.model.content;
+                const cx = (x1 + x2) / 2;
+                const cy = (y1 + y3) / 2;
+                if (cx > 0 && cy > 0 && cx < 8000 && cy < 6000) {
+                  await cdpMouseClick(cx, cy);
+                  sendResponse({ success: true });
+                  return;
+                }
+              } catch (_) { continue; }
+            }
+          }
+
+          // Nothing worked — tell the AI so it can try a different approach
+          sendResponse({ success: false, error: `Element "${params.text || params.description || '?'}" not found via DOM or Accessibility tree` });
+
+        } catch (e) {
+          console.warn('[Aion Agent] CDP click failed:', e && e.message);
+          fallbackSynthetic();
+        } finally {
+          if (attached) chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
     if (executeAction === 'pressKey') {
       // Fire a keyboard shortcut via CDP — the ONLY way to reliably send
       // modifier key combos (Ctrl+S, Ctrl+Z, etc.) to canvas-based apps.
