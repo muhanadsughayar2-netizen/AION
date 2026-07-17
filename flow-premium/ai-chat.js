@@ -10436,26 +10436,126 @@ function addAgentStepBubble(thread, text, kind) {
 }
 
 async function getActiveTabPageText(tabId) {
+  // Build a richer context snapshot than just innerText:
+  // includes URL, title, all form field values, select values, and
+  // visible body text — giving Gemini far better signal about page state.
+  const richSnapshotScript = async () => {
+    try {
+      const [frame] = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: () => {
+          try {
+            const lines = [];
+            lines.push('[URL: ' + location.href + ']');
+            lines.push('[Title: ' + document.title + ']');
+
+            // Form fields — the agent needs to know current values, not just labels
+            document.querySelectorAll('input, textarea').forEach(el => {
+              if (el.type === 'hidden') return;
+              const lbl = el.getAttribute('aria-label') || el.getAttribute('placeholder') ||
+                          el.getAttribute('name') || el.id || el.type || '';
+              const val = el.value || '';
+              if (lbl || val) lines.push('[Field "' + lbl + '": "' + val + '"]');
+            });
+
+            // Select dropdowns — show what is currently selected
+            document.querySelectorAll('select').forEach(el => {
+              const lbl = el.getAttribute('aria-label') || el.getAttribute('name') || el.id || '';
+              const sel = el.options[el.selectedIndex];
+              const selText = sel ? sel.text : '';
+              const opts = Array.from(el.options).map(o => o.text).slice(0, 8).join(' | ');
+              lines.push('[Dropdown "' + lbl + '" selected: "' + selText + '" options: ' + opts + ']');
+            });
+
+            // Main visible text (capped so we don't flood the model)
+            const bodyText = (document.body.innerText || '').replace(/\s{3,}/g, '\n').trim();
+            lines.push(bodyText.slice(0, 5000));
+            return lines.join('\n');
+          } catch (e) {
+            return document.body ? document.body.innerText.slice(0, 6000) : '';
+          }
+        }
+      });
+      return frame?.result || '';
+    } catch (_) { return null; }
+  };
+
+  // Try rich snapshot first (works on any page once scripting permission is granted)
+  let rich = await richSnapshotScript();
+  if (rich) return rich.slice(0, 6500);
+
+  // Fallback: ask the already-injected content script
   const ask = () => chrome.tabs.sendMessage(tabId, { action: 'get_page_text' });
   try {
     const res = await ask();
-    return (res && res.text) ? res.text.slice(0, 6000) : '';
-  } catch (_) {
-    // Content script likely isn't injected on this site (it only auto-loads on
-    // a few AI chat domains) — inject it now using the activeTab grant from
-    // the user's send click, then retry once.
-    try {
-      // allFrames:true also injects into embedded iframes (e.g. a Google
-      // Docs/Drive preview pane rendered inside another site's page), so
-      // Autopilot can read text that lives inside them, not just the
-      // top-level document.
-      await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
-      const res = await ask();
-      return (res && res.text) ? res.text.slice(0, 6000) : '';
-    } catch (_e) {
-      return '';
-    }
+    if (res && res.text) return res.text.slice(0, 6000);
+  } catch (_) {}
+
+  // Last resort: inject content.js and retry
+  try {
+    await chrome.scripting.executeScript({ target: { tabId, allFrames: true }, files: ['content.js'] });
+    const res = await ask();
+    if (res && res.text) return res.text.slice(0, 6000);
+  } catch (_) {}
+
+  return '';
+}
+
+// Smart wait after an agent action — replaces the blind 700ms sleep.
+// Detects whether the action triggered a page navigation and waits for
+// the tab to finish loading (up to 15s) instead of guessing with a fixed delay.
+// For pure DOM changes (hover, scroll, select) just waits a short settle time.
+function smartWaitAfterAction(tabId, actionName) {
+  // waitForElement and navigate manage their own timing — skip extra wait
+  if (actionName === 'waitForElement' || actionName === 'navigate') {
+    return Promise.resolve();
   }
+
+  return new Promise(resolve => {
+    const SETTLE_MS  = 450;  // for non-navigation actions
+    const NAV_MAX_MS = 15000; // max wait when a navigation fires
+
+    let resolved = false;
+    let navListener = null;
+    let settleTimer = null;
+
+    const done = () => {
+      if (resolved) return;
+      resolved = true;
+      if (navListener) chrome.tabs.onUpdated.removeListener(navListener);
+      clearTimeout(settleTimer);
+      resolve();
+    };
+
+    // Watch for navigation that starts within the first 400ms of this action
+    const navDeadline = Date.now() + 400;
+    let navDetected = false;
+
+    navListener = (updatedTabId, changeInfo) => {
+      if (updatedTabId !== tabId) return;
+      if (changeInfo.status === 'loading' && Date.now() < navDeadline) {
+        navDetected = true;
+        clearTimeout(settleTimer); // cancel the short settle timer
+      }
+      if (changeInfo.status === 'complete' && navDetected) {
+        // Page finished loading — small extra settle for JS frameworks to render
+        setTimeout(done, 300);
+      }
+    };
+
+    chrome.tabs.onUpdated.addListener(navListener);
+
+    // Safety net: if no nav detected, resolve after SETTLE_MS;
+    // if nav detected but never completes, resolve after NAV_MAX_MS.
+    settleTimer = setTimeout(() => {
+      if (!navDetected) {
+        done();
+      } else {
+        // Navigation was detected but never completed — give up after NAV_MAX_MS
+        setTimeout(done, NAV_MAX_MS - SETTLE_MS);
+      }
+    }, SETTLE_MS);
+  });
 }
 
 async function captureActiveTabScreenshot(tab) {
@@ -10628,7 +10728,7 @@ async function runAgentTask(prompt, thread) {
       } catch (_) {}
     }
 
-    await new Promise(r => setTimeout(r, 700)); // let the page settle after the action
+    await smartWaitAfterAction(tab.id, name); // wait for nav or settle
 
     // Some links/buttons open a NEW tab instead of navigating the current
     // one (very common on channel/video pages, search results, etc). If we
