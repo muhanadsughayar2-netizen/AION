@@ -1,0 +1,199 @@
+Home
+Versions
+latest (tip-of-tree)
+v8-inspector (node)
+stable (1.3)
+Domains
+Accessibility
+Animation
+Audits
+Autofill
+BackgroundService
+BluetoothEmulation
+Browser
+CacheStorage
+Cast
+Console
+CrashReportContext
+CSS
+Debugger
+DeviceAccess
+DeviceOrientation
+DOM
+DOMDebugger
+DOMSnapshot
+DOMStorage
+Emulation
+EventBreakpoints
+Extensions
+FedCm
+Fetch
+FileSystem
+HeadlessExperimental
+HeapProfiler
+IndexedDB
+Input
+Inspector
+IO
+LayerTree
+Log
+Media
+Memory
+Network
+Overlay
+Page
+Performance
+PerformanceTimeline
+Preload
+Profiler
+PWA
+Runtime
+Schema
+Security
+ServiceWorker
+SmartCardEmulation
+Storage
+SystemInfo
+Target
+Tethering
+Tracing
+WebAudio
+WebAuthn
+WebMCP
+Chrome DevTools Protocol 
+Start typing to search...
+Memory Domain
+Experimental
+Methods
+Memory.forciblyPurgeJavaScriptMemory
+Memory.getAllTimeSamplingProfile
+Memory.getBrowserSamplingProfile
+Memory.getDOMCounters
+Memory.getDOMCountersForLeakDetection
+Memory.getSamplingProfile
+Memory.prepareForLeakDetection
+Memory.setPressureNotificationsSuppressed
+Memory.simulatePressureNotification
+Memory.startSampling
+Memory.stopSampling
+Types
+Memory.DOMCounter
+Memory.Module
+Memory.PressureLevel
+Memory.SamplingProfile
+Memory.SamplingProfileNode
+Methods
+Memory.forciblyPurgeJavaScriptMemory #
+Simulate OomIntervention by purging V8 memory.
+Memory.getAllTimeSamplingProfile #
+Retrieve native memory allocations profile collected since renderer process startup.
+Return Object
+profile
+SamplingProfile
+Memory.getBrowserSamplingProfile #
+Retrieve native memory allocations profile collected since browser process startup.
+Return Object
+profile
+SamplingProfile
+Memory.getDOMCounters #
+Retruns current DOM object counters.
+Return Object
+documents
+integer
+nodes
+integer
+jsEventListeners
+integer
+Memory.getDOMCountersForLeakDetection #
+Retruns DOM object counters after preparing renderer for leak detection.
+Return Object
+counters
+array[ DOMCounter ]
+DOM object counters.
+Memory.getSamplingProfile #
+Retrieve native memory allocations profile collected since last startSampling call.
+Return Object
+profile
+SamplingProfile
+Memory.prepareForLeakDetection #
+Prepares for leak detection by terminating workers, stopping spellcheckers, dropping non-essential internal caches, running garbage collections, etc.
+Memory.setPressureNotificationsSuppressed #
+Enable/disable suppressing memory pressure notifications in all processes.
+parameters
+suppressed
+boolean
+If true, memory pressure notifications will be suppressed.
+Memory.simulatePressureNotification #
+Simulate a memory pressure notification in all processes.
+parameters
+level
+PressureLevel
+Memory pressure level of the notification.
+Memory.startSampling #
+Start collecting native memory profile.
+parameters
+samplingInterval
+integer
+Average number of bytes between samples.
+suppressRandomness
+boolean
+Do not randomize intervals between samples.
+Memory.stopSampling #
+Stop collecting native memory profile.
+Types
+Memory.DOMCounter #
+DOM object counter data.
+Type: object
+
+properties
+name
+string
+Object name. Note: object names should be presumed volatile and clients should not expect the returned names to be consistent across runs.
+count
+integer
+Object count.
+Memory.Module #
+Executable module information
+Type: object
+
+properties
+name
+string
+Name of the module.
+uuid
+string
+UUID of the module.
+baseAddress
+string
+Base address where the module is loaded into memory. Encoded as a decimal or hexadecimal (0x prefixed) string.
+size
+number
+Size of the module in bytes.
+Memory.PressureLevel #
+Memory pressure level.
+Allowed Values: moderate, critical
+Type: string
+
+Memory.SamplingProfile #
+Array of heap profile samples.
+Type: object
+
+properties
+samples
+array[ SamplingProfileNode ]
+modules
+array[ Module ]
+Memory.SamplingProfileNode #
+Heap profile sample.
+Type: object
+
+properties
+size
+number
+Size of the sampled allocation.
+total
+number
+Total bytes attributed to this sample.
+stack
+array[ string ]
+Execution stack at the point of allocation.

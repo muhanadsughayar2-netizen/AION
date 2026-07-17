@@ -1,0 +1,183 @@
+Home
+Versions
+latest (tip-of-tree)
+v8-inspector (node)
+stable (1.3)
+Domains
+Accessibility
+Animation
+Audits
+Autofill
+BackgroundService
+BluetoothEmulation
+Browser
+CacheStorage
+Cast
+Console
+CrashReportContext
+CSS
+Debugger
+DeviceAccess
+DeviceOrientation
+DOM
+DOMDebugger
+DOMSnapshot
+DOMStorage
+Emulation
+EventBreakpoints
+Extensions
+FedCm
+Fetch
+FileSystem
+HeadlessExperimental
+HeapProfiler
+IndexedDB
+Input
+Inspector
+IO
+LayerTree
+Log
+Media
+Memory
+Network
+Overlay
+Page
+Performance
+PerformanceTimeline
+Preload
+Profiler
+PWA
+Runtime
+Schema
+Security
+ServiceWorker
+SmartCardEmulation
+Storage
+SystemInfo
+Target
+Tethering
+Tracing
+WebAudio
+WebAuthn
+WebMCP
+Chrome DevTools Protocol 
+Start typing to search...
+FedCm Domain
+This domain allows interacting with the FedCM dialog. Experimental
+Methods
+FedCm.clickDialogButton
+FedCm.disable
+FedCm.dismissDialog
+FedCm.enable
+FedCm.openUrl
+FedCm.resetCooldown
+FedCm.selectAccount
+Events
+FedCm.dialogClosed
+FedCm.dialogShown
+Types
+FedCm.Account
+FedCm.AccountUrlType
+FedCm.DialogButton
+FedCm.DialogType
+FedCm.LoginState
+Methods
+FedCm.clickDialogButton #
+parameters
+dialogId
+string
+dialogButton
+DialogButton
+FedCm.disable #
+FedCm.dismissDialog #
+parameters
+dialogId
+string
+triggerCooldown
+boolean
+FedCm.enable #
+parameters
+disableRejectionDelay
+boolean
+Allows callers to disable the promise rejection delay that would normally happen, if this is unimportant to what's being tested. (step 4 of https://fedidcg.github.io/FedCM/#browser-api-rp-sign-in)
+FedCm.openUrl #
+parameters
+dialogId
+string
+accountIndex
+integer
+accountUrlType
+AccountUrlType
+FedCm.resetCooldown #
+Resets the cooldown time, if any, to allow the next FedCM call to show a dialog even if one was recently dismissed by the user.
+FedCm.selectAccount #
+parameters
+dialogId
+string
+accountIndex
+integer
+Events
+FedCm.dialogClosed #
+Triggered when a dialog is closed, either by user action, JS abort, or a command below.
+parameters
+dialogId
+string
+FedCm.dialogShown #
+parameters
+dialogId
+string
+dialogType
+DialogType
+accounts
+array[ Account ]
+title
+string
+These exist primarily so that the caller can verify the RP context was used appropriately.
+subtitle
+string
+Types
+FedCm.Account #
+Corresponds to IdentityRequestAccount
+Type: object
+
+properties
+accountId
+string
+email
+string
+name
+string
+givenName
+string
+pictureUrl
+string
+idpConfigUrl
+string
+idpLoginUrl
+string
+loginState
+LoginState
+termsOfServiceUrl
+string
+These two are only set if the loginState is signUp
+privacyPolicyUrl
+string
+FedCm.AccountUrlType #
+The URLs that each account has
+Allowed Values: TermsOfService, PrivacyPolicy
+Type: string
+
+FedCm.DialogButton #
+The buttons on the FedCM dialog.
+Allowed Values: ConfirmIdpLoginContinue, ErrorGotIt, ErrorMoreDetails
+Type: string
+
+FedCm.DialogType #
+The types of FedCM dialogs.
+Allowed Values: AccountChooser, AutoReauthn, ConfirmIdpLogin, Error
+Type: string
+
+FedCm.LoginState #
+Whether this is a sign-up or sign-in action for this account, i.e. whether this account has ever been used to sign in to this RP before.
+Allowed Values: SignIn, SignUp
+Type: string

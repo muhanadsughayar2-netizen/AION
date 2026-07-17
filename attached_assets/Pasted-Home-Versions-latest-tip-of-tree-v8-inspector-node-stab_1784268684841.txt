@@ -1,0 +1,185 @@
+Home
+Versions
+latest (tip-of-tree)
+v8-inspector (node)
+stable (1.3)
+Domains
+Accessibility
+Animation
+Audits
+Autofill
+BackgroundService
+BluetoothEmulation
+Browser
+CacheStorage
+Cast
+Console
+CrashReportContext
+CSS
+Debugger
+DeviceAccess
+DeviceOrientation
+DOM
+DOMDebugger
+DOMSnapshot
+DOMStorage
+Emulation
+EventBreakpoints
+Extensions
+FedCm
+Fetch
+FileSystem
+HeadlessExperimental
+HeapProfiler
+IndexedDB
+Input
+Inspector
+IO
+LayerTree
+Log
+Media
+Memory
+Network
+Overlay
+Page
+Performance
+PerformanceTimeline
+Preload
+Profiler
+PWA
+Runtime
+Schema
+Security
+ServiceWorker
+SmartCardEmulation
+Storage
+SystemInfo
+Target
+Tethering
+Tracing
+WebAudio
+WebAuthn
+WebMCP
+Chrome DevTools Protocol 
+Start typing to search...
+Extensions Domain
+Defines commands and events for browser extensions. Experimental
+Methods
+Extensions.clearStorageItems
+Extensions.getExtensions
+Extensions.getStorageItems
+Extensions.loadUnpacked
+Extensions.removeStorageItems
+Extensions.setStorageItems
+Extensions.triggerAction
+Extensions.uninstall
+Types
+Extensions.ExtensionInfo
+Extensions.StorageArea
+Methods
+Extensions.clearStorageItems #
+Clears extension storage in the given storageArea.
+parameters
+id
+string
+ID of extension.
+storageArea
+StorageArea
+StorageArea to remove data from.
+Extensions.getExtensions #
+Gets a list of all unpacked extensions.
+Return Object
+extensions
+array[ ExtensionInfo ]
+Extensions.getStorageItems #
+Gets data from extension storage in the given storageArea. If keys is specified, these are used to filter the result.
+parameters
+id
+string
+ID of extension.
+storageArea
+StorageArea
+StorageArea to retrieve data from.
+keys
+array[ string ]
+Keys to retrieve.
+Return Object
+data
+object
+Extensions.loadUnpacked #
+Installs an unpacked extension from the filesystem similar to --load-extension CLI flags. Returns extension ID once the extension has been installed.
+parameters
+path
+string
+Absolute file path.
+enableInIncognito
+boolean
+Enable the extension in incognito
+Return Object
+id
+string
+Extension id.
+Extensions.removeStorageItems #
+Removes keys from extension storage in the given storageArea.
+parameters
+id
+string
+ID of extension.
+storageArea
+StorageArea
+StorageArea to remove data from.
+keys
+array[ string ]
+Keys to remove.
+Extensions.setStorageItems #
+Sets values in extension storage in the given storageArea. The provided values will be merged with existing values in the storage area.
+parameters
+id
+string
+ID of extension.
+storageArea
+StorageArea
+StorageArea to set data in.
+values
+object
+Values to set.
+Extensions.triggerAction #
+Runs an extension default action.
+parameters
+id
+string
+Extension id.
+targetId
+string
+A tab target ID to trigger the default extension action on.
+Extensions.uninstall #
+Uninstalls an unpacked extension (others not supported) from the profile.
+parameters
+id
+string
+Extension id.
+Types
+Extensions.ExtensionInfo #
+Detailed information about an extension.
+Type: object
+
+properties
+id
+string
+Extension id.
+name
+string
+Extension name.
+version
+string
+Extension version.
+path
+string
+The path from which the extension was loaded.
+enabled
+boolean
+Extension enabled status.
+Extensions.StorageArea #
+Storage areas.
+Allowed Values: session, local, sync, managed
+Type: string
