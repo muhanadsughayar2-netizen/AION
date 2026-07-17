@@ -1167,6 +1167,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const isGrid   = (mode === 'sheets');
             const isExcel  = (mode === 'excel');
 
+            // clearFirst: select all + delete before typing, so existing field
+            // content is replaced instead of appended.
+            if (params.clearFirst) {
+              await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+              await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+              await new Promise(r => setTimeout(r, 50));
+              await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
+              await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
+              await new Promise(r => setTimeout(r, 50));
+            }
+
             // Helper — send CDP char + special-key events into whatever element has focus
             const typeChars = async (str) => {
               for (const ch of str) {
@@ -1434,6 +1445,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             for (const node of axNodes) {
               if (!node.backendDOMNodeId) continue;
               try {
+                // Scroll element into view first — DOM.getBoxModel returns viewport-relative
+                // coords, so an off-screen element returns negative/out-of-range values.
+                try { await cdpCmd('DOM.scrollIntoViewIfNeeded', { backendNodeId: node.backendDOMNodeId }); } catch (_) {}
+                await new Promise(r => setTimeout(r, 80));
                 const box = await cdpCmd('DOM.getBoxModel', { backendNodeId: node.backendDOMNodeId });
                 if (!box || !box.model || !box.model.content) continue;
                 const [x1, y1, x2, , , y3] = box.model.content;
@@ -1446,6 +1461,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
               } catch (_) { continue; }
             }
+          }
+
+          // Step 3: Direct coordinate click — if the agent supplied x,y from the
+          // screenshot, use those as a last resort rather than returning failure.
+          if (typeof params.x === 'number' && typeof params.y === 'number') {
+            await cdpMouseClick(params.x, params.y);
+            sendResponse({ success: true });
+            return;
           }
 
           // Nothing worked — tell the AI so it can try a different approach
@@ -1548,6 +1571,235 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await sendKey('rawKeyDown');
           await sendKey('keyUp');
           sendResponse({ success: true });
+        } finally {
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── hover ──────────────────────────────────────────────────────────────────
+    // Moves the synthetic mouse to an element, triggering CSS :hover AND
+    // JavaScript mouseenter/mouseover handlers.  Reveals dropdown menus,
+    // flyout panels, and contextual action buttons that are invisible until hovered.
+    // The hover state persists after CDP detach because Input.dispatchMouseEvent
+    // updates the browser's real internal mouse position.
+    if (executeAction === 'hover') {
+      (async () => {
+        const locateViaContent = () => new Promise((resolve) => {
+          chrome.tabs.sendMessage(tabId, { action: 'agentExecute', executeAction: 'locateForClick', params }, (r) => {
+            if (chrome.runtime.lastError || !r || !r.success) resolve(null);
+            else resolve(r);
+          });
+        });
+        let loc = null;
+        try { loc = await locateViaContent(); } catch (_) {}
+        if (!loc) {
+          try { await clearAndInject(tabId); loc = await locateViaContent(); } catch (_) {}
+        }
+
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+
+        try {
+          let cx, cy;
+          if (loc && typeof loc.x === 'number') {
+            cx = loc.x; cy = loc.y;
+          } else {
+            const searchLabel = (params.text || params.description || '').trim();
+            if (!searchLabel) { sendResponse({ success: false, error: 'No element label provided for hover' }); return; }
+            await cdpC('Accessibility.enable');
+            await cdpC('DOM.enable');
+            let axNodes = [];
+            for (const role of [null, 'button', 'link', 'menuitem', 'option', 'tab']) {
+              const qp = { accessibleName: searchLabel };
+              if (role) qp.role = role;
+              try { const r = await cdpC('Accessibility.queryAXTree', qp); if (r?.nodes?.length) { axNodes = r.nodes; break; } } catch (_) {}
+            }
+            for (const node of axNodes) {
+              if (!node.backendDOMNodeId) continue;
+              try {
+                try { await cdpC('DOM.scrollIntoViewIfNeeded', { backendNodeId: node.backendDOMNodeId }); } catch (_) {}
+                await new Promise(r => setTimeout(r, 80));
+                const box = await cdpC('DOM.getBoxModel', { backendNodeId: node.backendDOMNodeId });
+                if (!box?.model?.content) continue;
+                const [x1, y1, x2, , , y3] = box.model.content;
+                cx = (x1 + x2) / 2; cy = (y1 + y3) / 2;
+                if (cx > 0 && cy > 0) break;
+              } catch (_) { continue; }
+            }
+          }
+          if (!cx || !cy) { sendResponse({ success: false, error: 'Element not found for hover' }); return; }
+          // Fire a real synthetic mouse-move — triggers CSS :hover + JS mouseenter
+          await cdpC('Input.dispatchMouseEvent', { type: 'mouseMoved', x: cx, y: cy, button: 'none', buttons: 0 });
+          await new Promise(r => setTimeout(r, 400)); // let hover animations run
+          sendResponse({ success: true });
+        } catch (e) {
+          sendResponse({ success: false, error: e.message });
+        } finally {
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── select ─────────────────────────────────────────────────────────────────
+    // Sets a native <select> dropdown to a specific option value via JS.
+    // Much more reliable than trying to click tiny <option> elements.
+    if (executeAction === 'select') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const label = String(params.label || params.text || '');
+          const value = String(params.value || '');
+          const evalRes = await cdpC('Runtime.evaluate', {
+            expression: `(function(label, value) {
+              const selects = Array.from(document.querySelectorAll('select'));
+              const sel = selects.find(s => {
+                if (s.offsetWidth === 0 && s.offsetHeight === 0) return false;
+                const lb = document.querySelector('label[for="' + s.id + '"]');
+                const lbTxt = (lb ? lb.textContent : '') + (s.getAttribute('aria-label') || '') +
+                              (s.name || '') + (s.id || '') +
+                              (s.closest('label')?.textContent || '') +
+                              (s.parentElement?.querySelector('label')?.textContent || '');
+                return lbTxt.toLowerCase().includes(label.toLowerCase());
+              }) || (selects.length === 1 ? selects[0] : null);
+              if (!sel) return JSON.stringify({ ok:false, error:'No <select> found matching: ' + label });
+              const opt = Array.from(sel.options).find(o =>
+                o.value === value || o.text === value ||
+                o.text.toLowerCase().includes(value.toLowerCase()) ||
+                o.value.toLowerCase().includes(value.toLowerCase())
+              );
+              if (!opt) {
+                const avail = Array.from(sel.options).map(o => o.text).join(', ');
+                return JSON.stringify({ ok:false, error:'Option not found. Available: ' + avail });
+              }
+              sel.value = opt.value;
+              sel.dispatchEvent(new Event('change', { bubbles:true }));
+              sel.dispatchEvent(new Event('input',  { bubbles:true }));
+              return JSON.stringify({ ok:true, selected: opt.text });
+            })(${JSON.stringify(label)}, ${JSON.stringify(value)})`,
+            returnByValue: true
+          });
+          const result = evalRes?.result?.value ? JSON.parse(evalRes.result.value) : { ok:false, error:'No response' };
+          sendResponse(result.ok
+            ? { success: true,  data: 'Selected: ' + result.selected }
+            : { success: false, error: result.error });
+        } catch (e) {
+          sendResponse({ success: false, error: e.message });
+        } finally {
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── waitForElement ─────────────────────────────────────────────────────────
+    // Polls until text appears on the page OR a CSS selector matches a visible
+    // element.  Prevents the agent from clicking things mid-load.
+    if (executeAction === 'waitForElement') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const target      = String(params.text || params.selector || '');
+          const useSelector = !params.text && !!params.selector;
+          const timeoutSec  = Math.min(30, Math.max(1, parseInt(params.timeout) || 10));
+          const deadline    = Date.now() + timeoutSec * 1000;
+          let found = false;
+          while (Date.now() < deadline) {
+            const expr = useSelector
+              ? `!!document.querySelector(${JSON.stringify(target)})`
+              : `document.body.innerText.toLowerCase().includes(${JSON.stringify(target.toLowerCase())})`;
+            const r = await cdpC('Runtime.evaluate', { expression: expr, returnByValue: true });
+            if (r?.result?.value === true) { found = true; break; }
+            await new Promise(r => setTimeout(r, 500));
+          }
+          sendResponse(found
+            ? { success: true,  data: '"' + target + '" appeared on page' }
+            : { success: false, error: 'Timed out after ' + timeoutSec + 's waiting for "' + target + '"' });
+        } catch (e) {
+          sendResponse({ success: false, error: e.message });
+        } finally {
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── readText ───────────────────────────────────────────────────────────────
+    // Extracts the exact text content or value of a specific element — lets the
+    // agent read prices, counts, form values, and table cells without relying on
+    // screenshot OCR.  Returns the data field in the tool response.
+    if (executeAction === 'readText') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const selector = String(params.selector || '');
+          const label    = String(params.text || params.label || '');
+          const maxCh    = Math.min(5000, parseInt(params.maxChars) || 2000);
+          const evalRes  = await cdpC('Runtime.evaluate', {
+            expression: `(function(sel, lbl, max) {
+              let el = null;
+              if (sel) {
+                el = document.querySelector(sel);
+              } else if (lbl) {
+                // Walk visible text nodes to find closest named container
+                const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+                let node;
+                while ((node = walker.nextNode())) {
+                  if (node.textContent.toLowerCase().includes(lbl.toLowerCase())) {
+                    el = node.parentElement; break;
+                  }
+                }
+                if (!el) el = document.querySelector('[aria-label*="' + lbl.replace(/"/g,'') + '"]');
+              }
+              if (!el) return JSON.stringify({ ok:false, error:'Element not found' });
+              const tag = el.tagName;
+              let text = (tag==='INPUT'||tag==='TEXTAREA') ? el.value
+                       : tag==='SELECT' ? (el.options[el.selectedIndex]?.text || '')
+                       : (el.innerText || el.textContent || '');
+              return JSON.stringify({ ok:true, text: text.trim().slice(0, max) });
+            })(${JSON.stringify(selector)}, ${JSON.stringify(label)}, ${maxCh})`,
+            returnByValue: true
+          });
+          const result = evalRes?.result?.value ? JSON.parse(evalRes.result.value) : { ok:false, error:'No response' };
+          sendResponse(result.ok
+            ? { success: true,  data: result.text }
+            : { success: false, error: result.error });
+        } catch (e) {
+          sendResponse({ success: false, error: e.message });
         } finally {
           chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
         }

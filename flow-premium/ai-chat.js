@@ -10165,13 +10165,15 @@ const AGENT_TOOLS = [{
   functionDeclarations: [
     {
       name: 'click',
-      description: 'Click a button, link, or element on the current page. Prefer "text" (the visible label) over "selector" unless you are certain of the CSS selector.',
+      description: 'Click a button, link, or element on the current page. Prefer "text" (the visible label) over "selector". If the element cannot be found by text, use x and y pixel coordinates from the current screenshot as a last resort.',
       parameters: {
         type: 'object',
         properties: {
           text: { type: 'string', description: 'Visible text on the element to click, e.g. "Sign up" or "Buy"' },
           selector: { type: 'string', description: 'CSS selector, only if known precisely' },
-          description: { type: 'string', description: 'Fallback description of the element if text/selector are unknown' }
+          description: { type: 'string', description: 'Fallback description of the element if text/selector are unknown' },
+          x: { type: 'number', description: 'X pixel coordinate on the current screenshot — last resort if text/selector cannot find the element' },
+          y: { type: 'number', description: 'Y pixel coordinate on the current screenshot — last resort if text/selector cannot find the element' }
         }
       }
     },
@@ -10214,9 +10216,58 @@ const AGENT_TOOLS = [{
           selector: { type: 'string', description: 'CSS selector of the input, if known' },
           placeholder: { type: 'string', description: 'Placeholder text of the input, if known' },
           cell: { type: 'string', description: 'Spreadsheet cell address to navigate to before typing, e.g. "A1", "B3", "C10". Use this in Excel Online and Google Sheets to target a specific starting cell.' },
+          clearFirst: { type: 'boolean', description: 'If true, select-all and delete any existing content in the field before typing new text. Use when replacing an existing value (e.g. clearing a search box before typing something new).' },
           pressEnter: { type: 'boolean', description: 'Whether to press Enter after typing (e.g. to submit a search)' }
         },
         required: ['text']
+      }
+    },
+    {
+      name: 'hover',
+      description: 'Move the mouse over an element to trigger its hover state — revealing dropdown menus, tooltip buttons, flyout panels, and contextual actions that only appear on hover. After hovering, you can click the revealed item in your next step.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Visible text/label of the element to hover over, e.g. "Products" or "File"' },
+          selector: { type: 'string', description: 'CSS selector of the element to hover, if known' },
+          description: { type: 'string', description: 'Fallback description if text/selector are unknown' }
+        }
+      }
+    },
+    {
+      name: 'select',
+      description: 'Set a dropdown (HTML <select> element) to a specific option. More reliable than clicking tiny option items. For custom/styled dropdowns built with divs, use click instead.',
+      parameters: {
+        type: 'object',
+        properties: {
+          label: { type: 'string', description: 'The visible label next to the dropdown, e.g. "Country" or "Sort by"' },
+          value: { type: 'string', description: 'The option text or value to select, e.g. "United Kingdom" or "Newest first"' }
+        },
+        required: ['value']
+      }
+    },
+    {
+      name: 'waitForElement',
+      description: 'Wait until specific text appears on the page OR a CSS selector matches a visible element, before continuing. Use after clicking something that triggers a page load, AJAX request, or animation — prevents acting on elements that have not loaded yet.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Text to wait for on the page, e.g. "Results" or "Saved"' },
+          selector: { type: 'string', description: 'CSS selector to wait for, e.g. ".results-list"' },
+          timeout: { type: 'number', description: 'Max seconds to wait (default 10, max 30)' }
+        }
+      }
+    },
+    {
+      name: 'readText',
+      description: 'Read the exact text content or value of a specific element on the page — a price, count, table cell, or form field value. Returns the data directly so you can use it without guessing from the screenshot.',
+      parameters: {
+        type: 'object',
+        properties: {
+          selector: { type: 'string', description: 'CSS selector of the element to read, e.g. ".price" or "#total"' },
+          text: { type: 'string', description: 'Visible label near the element to read, if selector is unknown' },
+          maxChars: { type: 'number', description: 'Max characters to return (default 2000)' }
+        }
       }
     },
     {
@@ -10290,7 +10341,13 @@ Rules:
 - WORD ONLINE — attachments & templates: Word Online menus (Insert, File, etc.) are real HTML buttons. Use "click" with the menu name (e.g. click "Insert"), then click the sub-item (e.g. click "Pictures" or "From computer"). For templates: navigate to office.com, find the template in the gallery, then click to open it — do NOT try to access templates from within an already-open document.
 - EXCEL ONLINE — entering data into cells: Always use the "cell" parameter to specify WHERE to start typing (e.g. cell:"A1", cell:"B2"). Use "\t" (tab) to separate values going RIGHT across columns, and "\n" (newline) to move DOWN to the next row. Example — fill a 3-column table starting at A1: type({cell:"A1", text:"Name\tAge\tCity\nAlice\t30\tLondon\nBob\t25\tParis"}). This fills A1=Name, B1=Age, C1=City, A2=Alice, B2=30, C2=London, A3=Bob, B3=25, C3=Paris — all in ONE call. Do NOT call "type" once per cell; fill the whole range in one shot. After filling, pressKey("ctrl+s") to save.
 - GOOGLE SHEETS — entering data: Use the "cell" parameter to navigate to a starting cell (e.g. cell:"A1"), then use "\t" between column values and "\n" between rows — exactly like Excel. Example: type({cell:"A1", text:"Month\tRevenue\nJan\t5000\nFeb\t6200"}) fills A1=Month, B1=Revenue, A2=Jan, B2=5000, A3=Feb, B3=6200. One call fills any table.
-- KEYBOARD SHORTCUTS: Use pressKey for any shortcut — "ctrl+b" (bold), "ctrl+i" (italic), "ctrl+u" (underline), "ctrl+z" (undo), "ctrl+y" (redo), "ctrl+a" (select all), "escape" (close dialog), "f2" (rename/edit), "ctrl+home" (go to top). These work reliably in ALL apps including canvas editors.`;
+- KEYBOARD SHORTCUTS: Use pressKey for any shortcut — "ctrl+b" (bold), "ctrl+i" (italic), "ctrl+u" (underline), "ctrl+z" (undo), "ctrl+y" (redo), "ctrl+a" (select all), "escape" (close dialog), "f2" (rename/edit), "ctrl+home" (go to top). These work reliably in ALL apps including canvas editors.
+- HOVER MENUS: Many nav bars, toolbars, and action menus are hidden until you hover. If a menu item or button does not appear when you look at the page, try hover first (e.g. hover("File") to open the File menu), then click the revealed option in your next step. This works on Bootstrap dropdowns, Office ribbon menus, nav menus, and any element that uses CSS :hover or JS mouseenter.
+- SELECT DROPDOWNS: For native HTML dropdowns (<select>), use the "select" tool with label and value — it is far more reliable than clicking options. Example: select({label:"Sort by", value:"Newest"}). If the dropdown is a custom styled widget (built with divs), use click instead.
+- WAITING FOR CONTENT: After a click that triggers a page load, form submit, or AJAX request, use waitForElement before your next action. Example: waitForElement({text:"Search results", timeout:10}). Without this, you risk clicking elements that have not loaded yet.
+- READING DATA: Use readText to extract exact values from the page — a price, a number, a field value — when the screenshot alone is not precise enough. The extracted text is returned directly in the tool response so you can use it in your next step. Example: readText({selector:".total-price"}) or readText({text:"Balance"}). 
+- REPLACING FIELD VALUES: When typing into a field that already has content (a search box, a form field with a pre-filled value), add clearFirst:true to "type" to erase the old value before typing. Example: type({text:"new search", clearFirst:true}).
+- COORDINATE CLICK: If you have tried text/selector and an element still cannot be found, use click with x and y coordinates from the screenshot. Example: click({x:540, y:320}). Use this as a last resort only.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
@@ -10601,7 +10658,10 @@ async function runAgentTask(prompt, thread) {
         functionResponse: {
           name,
           response: execResult && execResult.success
-            ? { success: true, pageNow: pageText.slice(0, 4000) }
+            ? { success: true,
+                // Pass through any data returned by readText/waitForElement/select
+                ...(execResult.data != null ? { data: String(execResult.data) } : {}),
+                pageNow: pageText.slice(0, 4000) }
             : { success: false, error: execResult?.error || 'unknown error', pageNow: pageText.slice(0, 4000) }
         }
       }]
