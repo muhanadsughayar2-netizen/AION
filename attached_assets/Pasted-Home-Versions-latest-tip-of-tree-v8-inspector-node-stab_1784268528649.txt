@@ -1,0 +1,1421 @@
+Home
+Versions
+latest (tip-of-tree)
+v8-inspector (node)
+stable (1.3)
+Domains
+Accessibility
+Animation
+Audits
+Autofill
+BackgroundService
+BluetoothEmulation
+Browser
+CacheStorage
+Cast
+Console
+CrashReportContext
+CSS
+Debugger
+DeviceAccess
+DeviceOrientation
+DOM
+DOMDebugger
+DOMSnapshot
+DOMStorage
+Emulation
+EventBreakpoints
+Extensions
+FedCm
+Fetch
+FileSystem
+HeadlessExperimental
+HeapProfiler
+IndexedDB
+Input
+Inspector
+IO
+LayerTree
+Log
+Media
+Memory
+Network
+Overlay
+Page
+Performance
+PerformanceTimeline
+Preload
+Profiler
+PWA
+Runtime
+Schema
+Security
+ServiceWorker
+SmartCardEmulation
+Storage
+SystemInfo
+Target
+Tethering
+Tracing
+WebAudio
+WebAuthn
+WebMCP
+Chrome DevTools Protocol 
+Start typing to search...
+CSS Domain
+This domain exposes CSS read/write operations. All CSS objects (stylesheets, rules, and styles) have an associated id used in subsequent operations on the related object. Each object type has a specific id structure, and those are not interchangeable between objects of different kinds. CSS objects can be loaded using the get*ForNode() calls (which accept a DOM node id). A client can also keep track of stylesheets via the styleSheetAdded/styleSheetRemoved events and subsequently load the required stylesheet contents using the getStyleSheet[Text]() methods. Experimental
+Methods
+CSS.addRule
+CSS.collectClassNames
+CSS.createStyleSheet
+CSS.disable
+CSS.enable
+CSS.forcePseudoState
+CSS.forceStartingStyle
+CSS.getBackgroundColors
+CSS.getComputedStyleForNode
+CSS.getInlineStylesForNode
+CSS.getMatchedStylesForNode
+CSS.getMediaQueries
+CSS.getPlatformFontsForNode
+CSS.getStyleSheetText
+CSS.setEffectivePropertyValueForNode
+CSS.setKeyframeKey
+CSS.setMediaText
+CSS.setPropertyRulePropertyName
+CSS.setRuleSelector
+CSS.setStyleSheetText
+CSS.setStyleTexts
+CSS.startRuleUsageTracking
+CSS.stopRuleUsageTracking
+CSS.takeCoverageDelta
+CSS.getAnimatedStylesForNode Experimental
+CSS.getEnvironmentVariables Experimental
+CSS.getLayersForNode Experimental
+CSS.getLocationForSelector Experimental
+CSS.getLonghandProperties Experimental
+CSS.resolveValues Experimental
+CSS.setContainerQueryConditionText Experimental
+CSS.setLocalFontsEnabled Experimental
+CSS.setNavigationText Experimental
+CSS.setScopeText Experimental
+CSS.setSupportsText Experimental
+CSS.takeComputedStyleUpdates Experimental
+CSS.trackComputedStyleUpdates Experimental
+CSS.trackComputedStyleUpdatesForNode Experimental
+CSS.setContainerQueryText ExperimentalDeprecated
+Events
+CSS.fontsUpdated
+CSS.mediaQueryResultChanged
+CSS.styleSheetAdded
+CSS.styleSheetChanged
+CSS.styleSheetRemoved
+CSS.computedStyleUpdated Experimental
+Types
+CSS.CSSAnimationStyle
+CSS.CSSAtRule
+CSS.CSSComputedStyleProperty
+CSS.CSSFunctionConditionNode
+CSS.CSSFunctionNode
+CSS.CSSFunctionParameter
+CSS.CSSFunctionRule
+CSS.CSSKeyframeRule
+CSS.CSSKeyframesRule
+CSS.CSSMedia
+CSS.CSSPositionTryRule
+CSS.CSSProperty
+CSS.CSSPropertyRegistration
+CSS.CSSPropertyRule
+CSS.CSSRule
+CSS.CSSStyle
+CSS.CSSStyleSheetHeader
+CSS.CSSTryRule
+CSS.FontFace
+CSS.FontVariationAxis
+CSS.InheritedAnimatedStyleEntry
+CSS.InheritedPseudoElementMatches
+CSS.InheritedStyleEntry
+CSS.MediaQuery
+CSS.MediaQueryExpression
+CSS.PlatformFontUsage
+CSS.PseudoElementMatches
+CSS.RuleMatch
+CSS.RuleUsage
+CSS.SelectorList
+CSS.ShorthandEntry
+CSS.SourceRange
+CSS.StyleDeclarationEdit
+CSS.StyleSheetOrigin
+CSS.Value
+CSS.ComputedStyleExtraFields Experimental
+CSS.CSSContainerQuery Experimental
+CSS.CSSLayer Experimental
+CSS.CSSLayerData Experimental
+CSS.CSSNavigation Experimental
+CSS.CSSRuleType Experimental
+CSS.CSSScope Experimental
+CSS.CSSStartingStyle Experimental
+CSS.CSSSupports Experimental
+CSS.Specificity Experimental
+CSS.SpecificityComponent Experimental
+Methods
+CSS.addRule #
+Inserts a new rule with the given ruleText in a stylesheet with given styleSheetId, at the position specified by location.
+parameters
+styleSheetId
+DOM.StyleSheetId
+The css style sheet identifier where a new rule should be inserted.
+ruleText
+string
+The text of a new rule.
+location
+SourceRange
+Text position of a new rule in the target style sheet.
+nodeForPropertySyntaxValidation
+DOM.NodeId
+NodeId for the DOM node in whose context custom property declarations for registered properties should be validated. If omitted, declarations in the new rule text can only be validated statically, which may produce incorrect results if the declaration contains a var() for example. Experimental
+Return Object
+rule
+CSSRule
+The newly created rule.
+CSS.collectClassNames #
+Returns all class names from specified stylesheet.
+parameters
+styleSheetId
+DOM.StyleSheetId
+Return Object
+classNames
+array[ string ]
+Class name list.
+CSS.createStyleSheet #
+Creates a new special "via-inspector" stylesheet in the frame with given frameId.
+parameters
+frameId
+Page.FrameId
+Identifier of the frame where "via-inspector" stylesheet should be created.
+force
+boolean
+If true, creates a new stylesheet for every call. If false, returns a stylesheet previously created by a call with force=false for the frame's document if it exists or creates a new stylesheet (default: false).
+Return Object
+styleSheetId
+DOM.StyleSheetId
+Identifier of the created "via-inspector" stylesheet.
+CSS.disable #
+Disables the CSS agent for the given page.
+CSS.enable #
+Enables the CSS agent for the given page. Clients should not assume that the CSS agent has been enabled until the result of this command is received.
+CSS.forcePseudoState #
+Ensures that the given node will have specified pseudo-classes whenever its style is computed by the browser.
+parameters
+nodeId
+DOM.NodeId
+The element id for which to force the pseudo state.
+forcedPseudoClasses
+array[ string ]
+Element pseudo classes to force when computing the element's style.
+CSS.forceStartingStyle #
+Ensures that the given node is in its starting-style state.
+parameters
+nodeId
+DOM.NodeId
+The element id for which to force the starting-style state.
+forced
+boolean
+Boolean indicating if this is on or off.
+CSS.getBackgroundColors #
+parameters
+nodeId
+DOM.NodeId
+Id of the node to get background colors for.
+Return Object
+backgroundColors
+array[ string ]
+The range of background colors behind this element, if it contains any visible text. If no visible text is present, this will be undefined. In the case of a flat background color, this will consist of simply that color. In the case of a gradient, this will consist of each of the color stops. For anything more complicated, this will be an empty array. Images will be ignored (as if the image had failed to load).
+computedFontSize
+string
+The computed font size for this node, as a CSS computed value string (e.g. '12px').
+computedFontWeight
+string
+The computed font weight for this node, as a CSS computed value string (e.g. 'normal' or '100').
+CSS.getComputedStyleForNode #
+Returns the computed style for a DOM node identified by nodeId.
+parameters
+nodeId
+DOM.NodeId
+Return Object
+computedStyle
+array[ CSSComputedStyleProperty ]
+Computed style for the specified DOM node.
+extraFields
+ComputedStyleExtraFields
+A list of non-standard "extra fields" which blink stores alongside each computed style. Experimental
+CSS.getInlineStylesForNode #
+Returns the styles defined inline (explicitly in the "style" attribute and implicitly, using DOM attributes) for a DOM node identified by nodeId.
+parameters
+nodeId
+DOM.NodeId
+Return Object
+inlineStyle
+CSSStyle
+Inline style for the specified DOM node.
+attributesStyle
+CSSStyle
+Attribute-defined element style (e.g. resulting from "width=20 height=100%").
+CSS.getMatchedStylesForNode #
+Returns requested styles for a DOM node identified by nodeId.
+parameters
+nodeId
+DOM.NodeId
+Return Object
+inlineStyle
+CSSStyle
+Inline style for the specified DOM node.
+attributesStyle
+CSSStyle
+Attribute-defined element style (e.g. resulting from "width=20 height=100%").
+matchedCSSRules
+array[ RuleMatch ]
+CSS rules matching this node, from all applicable stylesheets.
+pseudoElements
+array[ PseudoElementMatches ]
+Pseudo style matches for this node.
+inherited
+array[ InheritedStyleEntry ]
+A chain of inherited styles (from the immediate node parent up to the DOM tree root).
+inheritedPseudoElements
+array[ InheritedPseudoElementMatches ]
+A chain of inherited pseudo element styles (from the immediate node parent up to the DOM tree root).
+cssKeyframesRules
+array[ CSSKeyframesRule ]
+A list of CSS keyframed animations matching this node.
+cssPositionTryRules
+array[ CSSPositionTryRule ]
+A list of CSS @position-try rules matching this node, based on the position-try-fallbacks property.
+activePositionFallbackIndex
+integer
+Index of the active fallback in the applied position-try-fallback property, will not be set if there is no active position-try fallback.
+cssPropertyRules
+array[ CSSPropertyRule ]
+A list of CSS at-property rules matching this node.
+cssPropertyRegistrations
+array[ CSSPropertyRegistration ]
+A list of CSS property registrations matching this node.
+cssAtRules
+array[ CSSAtRule ]
+A list of simple @rules matching this node or its pseudo-elements.
+parentLayoutNodeId
+DOM.NodeId
+Id of the first parent element that does not have display: contents. Experimental
+cssFunctionRules
+array[ CSSFunctionRule ]
+A list of CSS at-function rules referenced by styles of this node. Experimental
+CSS.getMediaQueries #
+Returns all media queries parsed by the rendering engine.
+Return Object
+medias
+array[ CSSMedia ]
+CSS.getPlatformFontsForNode #
+Requests information about platform fonts which we used to render child TextNodes in the given node.
+parameters
+nodeId
+DOM.NodeId
+Return Object
+fonts
+array[ PlatformFontUsage ]
+Usage statistics for every employed platform font.
+CSS.getStyleSheetText #
+Returns the current textual content for a stylesheet.
+parameters
+styleSheetId
+DOM.StyleSheetId
+Return Object
+text
+string
+The stylesheet text.
+CSS.setEffectivePropertyValueForNode #
+Find a rule with the given active property for the given node and set the new value for this property
+parameters
+nodeId
+DOM.NodeId
+The element id for which to set property.
+propertyName
+string
+value
+string
+CSS.setKeyframeKey #
+Modifies the keyframe rule key text.
+parameters
+styleSheetId
+DOM.StyleSheetId
+range
+SourceRange
+keyText
+string
+Return Object
+keyText
+Value
+The resulting key text after modification.
+CSS.setMediaText #
+Modifies the rule selector.
+parameters
+styleSheetId
+DOM.StyleSheetId
+range
+SourceRange
+text
+string
+Return Object
+media
+CSSMedia
+The resulting CSS media rule after modification.
+CSS.setPropertyRulePropertyName #
+Modifies the property rule property name.
+parameters
+styleSheetId
+DOM.StyleSheetId
+range
+SourceRange
+propertyName
+string
+Return Object
+propertyName
+Value
+The resulting key text after modification.
+CSS.setRuleSelector #
+Modifies the rule selector.
+parameters
+styleSheetId
+DOM.StyleSheetId
+range
+SourceRange
+selector
+string
+Return Object
+selectorList
+SelectorList
+The resulting selector list after modification.
+CSS.setStyleSheetText #
+Sets the new stylesheet text.
+parameters
+styleSheetId
+DOM.StyleSheetId
+text
+string
+Return Object
+sourceMapURL
+string
+URL of source map associated with script (if any).
+CSS.setStyleTexts #
+Applies specified style edits one after another in the given order.
+parameters
+edits
+array[ StyleDeclarationEdit ]
+nodeForPropertySyntaxValidation
+DOM.NodeId
+NodeId for the DOM node in whose context custom property declarations for registered properties should be validated. If omitted, declarations in the new rule text can only be validated statically, which may produce incorrect results if the declaration contains a var() for example. Experimental
+Return Object
+styles
+array[ CSSStyle ]
+The resulting styles after modification.
+CSS.startRuleUsageTracking #
+Enables the selector recording.
+CSS.stopRuleUsageTracking #
+Stop tracking rule usage and return the list of rules that were used since last call to takeCoverageDelta (or since start of coverage instrumentation).
+Return Object
+ruleUsage
+array[ RuleUsage ]
+CSS.takeCoverageDelta #
+Obtain list of rules that became used since last call to this method (or since start of coverage instrumentation).
+Return Object
+coverage
+array[ RuleUsage ]
+timestamp
+number
+Monotonically increasing time, in seconds.
+CSS.getAnimatedStylesForNode Experimental #
+Returns the styles coming from animations & transitions including the animation & transition styles coming from inheritance chain.
+parameters
+nodeId
+DOM.NodeId
+Return Object
+animationStyles
+array[ CSSAnimationStyle ]
+Styles coming from animations.
+transitionsStyle
+CSSStyle
+Style coming from transitions.
+inherited
+array[ InheritedAnimatedStyleEntry ]
+Inherited style entries for animationsStyle and transitionsStyle from the inheritance chain of the element.
+CSS.getEnvironmentVariables Experimental #
+Returns the values of the default UA-defined environment variables used in env()
+Return Object
+environmentVariables
+object
+CSS.getLayersForNode Experimental #
+Returns all layers parsed by the rendering engine for the tree scope of a node. Given a DOM element identified by nodeId, getLayersForNode returns the root layer for the nearest ancestor document or shadow root. The layer root contains the full layer tree for the tree scope and their ordering.
+parameters
+nodeId
+DOM.NodeId
+Return Object
+rootLayer
+CSSLayerData
+CSS.getLocationForSelector Experimental #
+Given a CSS selector text and a style sheet ID, getLocationForSelector returns an array of locations of the CSS selector in the style sheet.
+parameters
+styleSheetId
+DOM.StyleSheetId
+selectorText
+string
+Return Object
+ranges
+array[ SourceRange ]
+CSS.getLonghandProperties Experimental #
+parameters
+shorthandName
+string
+value
+string
+Return Object
+longhandProperties
+array[ CSSProperty ]
+CSS.resolveValues Experimental #
+Resolve the specified values in the context of the provided element. For example, a value of '1em' is evaluated according to the computed 'font-size' of the element and a value 'calc(1px + 2px)' will be resolved to '3px'. If the propertyName was specified the values are resolved as if they were property's declaration. If a value cannot be parsed according to the provided property syntax, the value is parsed using combined syntax as if null propertyName was provided. If the value cannot be resolved even then, return the provided value without any changes. Note: this function currently does not resolve CSS random() function, it returns unmodified random() function parts.`
+parameters
+values
+array[ string ]
+Cascade-dependent keywords (revert/revert-layer) do not work.
+nodeId
+DOM.NodeId
+Id of the node in whose context the expression is evaluated
+propertyName
+string
+Only longhands and custom property names are accepted.
+pseudoType
+DOM.PseudoType
+Pseudo element type, only works for pseudo elements that generate elements in the tree, such as ::before and ::after.
+pseudoIdentifier
+string
+Pseudo element custom ident.
+Return Object
+results
+array[ string ]
+CSS.setContainerQueryConditionText Experimental #
+parameters
+styleSheetId
+DOM.StyleSheetId
+range
+SourceRange
+text
+string
+Return Object
+containerQuery
+CSSContainerQuery
+The resulting CSS container query rule after modification.
+CSS.setLocalFontsEnabled Experimental #
+Enables/disables rendering of local CSS fonts (enabled by default).
+parameters
+enabled
+boolean
+Whether rendering of local fonts is enabled.
+CSS.setNavigationText Experimental #
+Modifies the expression of a navigation at-rule.
+parameters
+styleSheetId
+DOM.StyleSheetId
+range
+SourceRange
+text
+string
+Return Object
+navigation
+CSSNavigation
+The resulting CSS Navigation rule after modification.
+CSS.setScopeText Experimental #
+Modifies the expression of a scope at-rule.
+parameters
+styleSheetId
+DOM.StyleSheetId
+range
+SourceRange
+text
+string
+Return Object
+scope
+CSSScope
+The resulting CSS Scope rule after modification.
+CSS.setSupportsText Experimental #
+Modifies the expression of a supports at-rule.
+parameters
+styleSheetId
+DOM.StyleSheetId
+range
+SourceRange
+text
+string
+Return Object
+supports
+CSSSupports
+The resulting CSS Supports rule after modification.
+CSS.takeComputedStyleUpdates Experimental #
+Polls the next batch of computed style updates.
+Return Object
+nodeIds
+array[ DOM.NodeId ]
+The list of node Ids that have their tracked computed styles updated.
+CSS.trackComputedStyleUpdates Experimental #
+Starts tracking the given computed styles for updates. The specified array of properties replaces the one previously specified. Pass empty array to disable tracking. Use takeComputedStyleUpdates to retrieve the list of nodes that had properties modified. The changes to computed style properties are only tracked for nodes pushed to the front-end by the DOM agent. If no changes to the tracked properties occur after the node has been pushed to the front-end, no updates will be issued for the node.
+parameters
+propertiesToTrack
+array[ CSSComputedStyleProperty ]
+CSS.trackComputedStyleUpdatesForNode Experimental #
+Starts tracking the given node for the computed style updates and whenever the computed style is updated for node, it queues a computedStyleUpdated event with throttling. There can only be 1 node tracked for computed style updates so passing a new node id removes tracking from the previous node. Pass undefined to disable tracking.
+parameters
+nodeId
+DOM.NodeId
+CSS.setContainerQueryText ExperimentalDeprecated #
+Modifies the expression of a container query. Deprecated. Use setContainerQueryConditionText instead.
+parameters
+styleSheetId
+DOM.StyleSheetId
+range
+SourceRange
+text
+string
+Return Object
+containerQuery
+CSSContainerQuery
+The resulting CSS container query rule after modification.
+Events
+CSS.fontsUpdated #
+Fires whenever a web font is updated. A non-empty font parameter indicates a successfully loaded web font.
+parameters
+font
+FontFace
+The web font that has loaded.
+CSS.mediaQueryResultChanged #
+Fires whenever a MediaQuery result changes (for example, after a browser window has been resized.) The current implementation considers only viewport-dependent media features.
+CSS.styleSheetAdded #
+Fired whenever an active document stylesheet is added.
+parameters
+header
+CSSStyleSheetHeader
+Added stylesheet metainfo.
+CSS.styleSheetChanged #
+Fired whenever a stylesheet is changed as a result of the client operation.
+parameters
+styleSheetId
+DOM.StyleSheetId
+CSS.styleSheetRemoved #
+Fired whenever an active document stylesheet is removed.
+parameters
+styleSheetId
+DOM.StyleSheetId
+Identifier of the removed stylesheet.
+CSS.computedStyleUpdated Experimental #
+parameters
+nodeId
+DOM.NodeId
+The node id that has updated computed styles.
+Types
+CSS.CSSAnimationStyle #
+CSS style coming from animations with the name of the animation.
+Type: object
+
+properties
+name
+string
+The name of the animation.
+style
+CSSStyle
+The style coming from the animation.
+CSS.CSSAtRule #
+CSS generic @rule representation.
+Type: object
+
+properties
+type
+string
+Type of at-rule.
+Allowed Values: font-face, font-feature-values, font-palette-values, counter-style
+subsection
+string
+Subsection of font-feature-values, if this is a subsection.
+Allowed Values: swash, annotation, ornaments, stylistic, styleset, character-variant
+name
+Value
+Associated name, if applicable.
+styleSheetId
+DOM.StyleSheetId
+The css style sheet identifier (absent for user agent stylesheet and user-specified stylesheet rules) this rule came from.
+origin
+StyleSheetOrigin
+Parent stylesheet's origin.
+style
+CSSStyle
+Associated style declaration.
+CSS.CSSComputedStyleProperty #
+Type: object
+
+properties
+name
+string
+Computed style property name.
+value
+string
+Computed style property value.
+CSS.CSSFunctionConditionNode #
+CSS function conditional block representation.
+Type: object
+
+properties
+media
+CSSMedia
+Media query for this conditional block. Only one type of condition should be set.
+containerQueries
+CSSContainerQuery
+Container query for this conditional block. Only one type of condition should be set.
+supports
+CSSSupports
+@supports CSS at-rule condition. Only one type of condition should be set.
+navigation
+CSSNavigation
+@navigation condition. Only one type of condition should be set.
+children
+array[ CSSFunctionNode ]
+Block body.
+conditionText
+string
+The condition text.
+CSS.CSSFunctionNode #
+Section of the body of a CSS function rule.
+Type: object
+
+properties
+condition
+CSSFunctionConditionNode
+A conditional block. If set, style should not be set.
+style
+CSSStyle
+Values set by this node. If set, condition should not be set.
+CSS.CSSFunctionParameter #
+CSS function argument representation.
+Type: object
+
+properties
+name
+string
+The parameter name.
+type
+string
+The parameter type.
+CSS.CSSFunctionRule #
+CSS function at-rule representation.
+Type: object
+
+properties
+name
+Value
+Name of the function.
+styleSheetId
+DOM.StyleSheetId
+The css style sheet identifier (absent for user agent stylesheet and user-specified stylesheet rules) this rule came from.
+origin
+StyleSheetOrigin
+Parent stylesheet's origin.
+parameters
+array[ CSSFunctionParameter ]
+List of parameters.
+children
+array[ CSSFunctionNode ]
+Function body.
+originTreeScopeNodeId
+DOM.BackendNodeId
+The BackendNodeId of the DOM node that constitutes the origin tree scope of this rule. Experimental
+CSS.CSSKeyframeRule #
+CSS keyframe rule representation.
+Type: object
+
+properties
+styleSheetId
+DOM.StyleSheetId
+The css style sheet identifier (absent for user agent stylesheet and user-specified stylesheet rules) this rule came from.
+origin
+StyleSheetOrigin
+Parent stylesheet's origin.
+keyText
+Value
+Associated key text.
+style
+CSSStyle
+Associated style declaration.
+CSS.CSSKeyframesRule #
+CSS keyframes rule representation.
+Type: object
+
+properties
+animationName
+Value
+Animation name.
+keyframes
+array[ CSSKeyframeRule ]
+List of keyframes.
+CSS.CSSMedia #
+CSS media rule descriptor.
+Type: object
+
+properties
+text
+string
+Media query text.
+source
+string
+Source of the media query: "mediaRule" if specified by a @media rule, "importRule" if specified by an @import rule, "linkedSheet" if specified by a "media" attribute in a linked stylesheet's LINK tag, "inlineSheet" if specified by a "media" attribute in an inline stylesheet's STYLE tag.
+Allowed Values: mediaRule, importRule, linkedSheet, inlineSheet
+sourceURL
+string
+URL of the document containing the media query description.
+range
+SourceRange
+The associated rule (@media or @import) header range in the enclosing stylesheet (if available).
+styleSheetId
+DOM.StyleSheetId
+Identifier of the stylesheet containing this object (if exists).
+mediaList
+array[ MediaQuery ]
+Array of media queries.
+CSS.CSSPositionTryRule #
+CSS @position-try rule representation.
+Type: object
+
+properties
+name
+Value
+The prelude dashed-ident name
+styleSheetId
+DOM.StyleSheetId
+The css style sheet identifier (absent for user agent stylesheet and user-specified stylesheet rules) this rule came from.
+origin
+StyleSheetOrigin
+Parent stylesheet's origin.
+style
+CSSStyle
+Associated style declaration.
+active
+boolean
+CSS.CSSProperty #
+CSS property declaration data.
+Type: object
+
+properties
+name
+string
+The property name.
+value
+string
+The property value.
+important
+boolean
+Whether the property has "!important" annotation (implies false if absent).
+implicit
+boolean
+Whether the property is implicit (implies false if absent).
+text
+string
+The full property text as specified in the style.
+parsedOk
+boolean
+Whether the property is understood by the browser (implies true if absent).
+disabled
+boolean
+Whether the property is disabled by the user (present for source-based properties only).
+range
+SourceRange
+The entire property range in the enclosing style declaration (if available).
+longhandProperties
+array[ CSSProperty ]
+Parsed longhand components of this property if it is a shorthand. This field will be empty if the given property is not a shorthand. Experimental
+CSS.CSSPropertyRegistration #
+Representation of a custom property registration through CSS.registerProperty
+Type: object
+
+properties
+propertyName
+string
+initialValue
+Value
+inherits
+boolean
+syntax
+string
+CSS.CSSPropertyRule #
+CSS property at-rule representation.
+Type: object
+
+properties
+styleSheetId
+DOM.StyleSheetId
+The css style sheet identifier (absent for user agent stylesheet and user-specified stylesheet rules) this rule came from.
+origin
+StyleSheetOrigin
+Parent stylesheet's origin.
+propertyName
+Value
+Associated property name.
+style
+CSSStyle
+Associated style declaration.
+CSS.CSSRule #
+CSS rule representation.
+Type: object
+
+properties
+styleSheetId
+DOM.StyleSheetId
+The css style sheet identifier (absent for user agent stylesheet and user-specified stylesheet rules) this rule came from.
+selectorList
+SelectorList
+Rule selector data.
+nestingSelectors
+array[ string ]
+Array of selectors from ancestor style rules, sorted by distance from the current rule. Experimental
+origin
+StyleSheetOrigin
+Parent stylesheet's origin.
+style
+CSSStyle
+Associated style declaration.
+originTreeScopeNodeId
+DOM.BackendNodeId
+The BackendNodeId of the DOM node that constitutes the origin tree scope of this rule. Experimental
+media
+array[ CSSMedia ]
+Media list array (for rules involving media queries). The array enumerates media queries starting with the innermost one, going outwards.
+containerQueries
+array[ CSSContainerQuery ]
+Container query list array (for rules involving container queries). The array enumerates container queries starting with the innermost one, going outwards. Experimental
+supports
+array[ CSSSupports ]
+@supports CSS at-rule array. The array enumerates @supports at-rules starting with the innermost one, going outwards. Experimental
+layers
+array[ CSSLayer ]
+Cascade layer array. Contains the layer hierarchy that this rule belongs to starting with the innermost layer and going outwards. Experimental
+scopes
+array[ CSSScope ]
+@scope CSS at-rule array. The array enumerates @scope at-rules starting with the innermost one, going outwards. Experimental
+ruleTypes
+array[ CSSRuleType ]
+The array keeps the types of ancestor CSSRules from the innermost going outwards. Experimental
+startingStyles
+array[ CSSStartingStyle ]
+@starting-style CSS at-rule array. The array enumerates @starting-style at-rules starting with the innermost one, going outwards. Experimental
+navigations
+array[ CSSNavigation ]
+@navigation CSS at-rule array. The array enumerates @navigation at-rules starting with the innermost one, going outwards. Experimental
+CSS.CSSStyle #
+CSS style representation.
+Type: object
+
+properties
+styleSheetId
+DOM.StyleSheetId
+The css style sheet identifier (absent for user agent stylesheet and user-specified stylesheet rules) this rule came from.
+cssProperties
+array[ CSSProperty ]
+CSS properties in the style.
+shorthandEntries
+array[ ShorthandEntry ]
+Computed values for all shorthands found in the style.
+cssText
+string
+Style declaration text (if available).
+range
+SourceRange
+Style declaration range in the enclosing stylesheet (if available).
+CSS.CSSStyleSheetHeader #
+CSS stylesheet metainformation.
+Type: object
+
+properties
+styleSheetId
+DOM.StyleSheetId
+The stylesheet identifier.
+frameId
+Page.FrameId
+Owner frame identifier.
+sourceURL
+string
+Stylesheet resource URL. Empty if this is a constructed stylesheet created using new CSSStyleSheet() (but non-empty if this is a constructed stylesheet imported as a CSS module script).
+sourceMapURL
+string
+URL of source map associated with the stylesheet (if any).
+origin
+StyleSheetOrigin
+Stylesheet origin.
+title
+string
+Stylesheet title.
+ownerNode
+DOM.BackendNodeId
+The backend id for the owner node of the stylesheet.
+disabled
+boolean
+Denotes whether the stylesheet is disabled.
+hasSourceURL
+boolean
+Whether the sourceURL field value comes from the sourceURL comment.
+isInline
+boolean
+Whether this stylesheet is created for STYLE tag by parser. This flag is not set for document.written STYLE tags.
+isMutable
+boolean
+Whether this stylesheet is mutable. Inline stylesheets become mutable after they have been modified via CSSOM API. <link> element's stylesheets become mutable only if DevTools modifies them. Constructed stylesheets (new CSSStyleSheet()) are mutable immediately after creation.
+isConstructed
+boolean
+True if this stylesheet is created through new CSSStyleSheet() or imported as a CSS module script.
+startLine
+number
+Line offset of the stylesheet within the resource (zero based).
+startColumn
+number
+Column offset of the stylesheet within the resource (zero based).
+length
+number
+Size of the content (in characters).
+endLine
+number
+Line offset of the end of the stylesheet within the resource (zero based).
+endColumn
+number
+Column offset of the end of the stylesheet within the resource (zero based).
+loadingFailed
+boolean
+If the style sheet was loaded from a network resource, this indicates when the resource failed to load Experimental
+CSS.CSSTryRule #
+CSS try rule representation.
+Type: object
+
+properties
+styleSheetId
+DOM.StyleSheetId
+The css style sheet identifier (absent for user agent stylesheet and user-specified stylesheet rules) this rule came from.
+origin
+StyleSheetOrigin
+Parent stylesheet's origin.
+style
+CSSStyle
+Associated style declaration.
+CSS.FontFace #
+Properties of a web font: https://www.w3.org/TR/2008/REC-CSS2-20080411/fonts.html#font-descriptions and additional information such as platformFontFamily and fontVariationAxes.
+Type: object
+
+properties
+fontFamily
+string
+The font-family.
+fontStyle
+string
+The font-style.
+fontVariant
+string
+The font-variant.
+fontWeight
+string
+The font-weight.
+fontStretch
+string
+The font-stretch.
+fontDisplay
+string
+The font-display.
+unicodeRange
+string
+The unicode-range.
+src
+string
+The src.
+platformFontFamily
+string
+The resolved platform font family
+fontVariationAxes
+array[ FontVariationAxis ]
+Available variation settings (a.k.a. "axes").
+CSS.FontVariationAxis #
+Information about font variation axes for variable fonts
+Type: object
+
+properties
+tag
+string
+The font-variation-setting tag (a.k.a. "axis tag").
+name
+string
+Human-readable variation name in the default language (normally, "en").
+minValue
+number
+The minimum value (inclusive) the font supports for this tag.
+maxValue
+number
+The maximum value (inclusive) the font supports for this tag.
+defaultValue
+number
+The default value.
+CSS.InheritedAnimatedStyleEntry #
+Inherited CSS style collection for animated styles from ancestor node.
+Type: object
+
+properties
+animationStyles
+array[ CSSAnimationStyle ]
+Styles coming from the animations of the ancestor, if any, in the style inheritance chain.
+transitionsStyle
+CSSStyle
+The style coming from the transitions of the ancestor, if any, in the style inheritance chain.
+CSS.InheritedPseudoElementMatches #
+Inherited pseudo element matches from pseudos of an ancestor node.
+Type: object
+
+properties
+pseudoElements
+array[ PseudoElementMatches ]
+Matches of pseudo styles from the pseudos of an ancestor node.
+CSS.InheritedStyleEntry #
+Inherited CSS rule collection from ancestor node.
+Type: object
+
+properties
+inlineStyle
+CSSStyle
+The ancestor node's inline style, if any, in the style inheritance chain.
+matchedCSSRules
+array[ RuleMatch ]
+Matches of CSS rules matching the ancestor node in the style inheritance chain.
+CSS.MediaQuery #
+Media query descriptor.
+Type: object
+
+properties
+expressions
+array[ MediaQueryExpression ]
+Array of media query expressions.
+active
+boolean
+Whether the media query condition is satisfied.
+CSS.MediaQueryExpression #
+Media query expression descriptor.
+Type: object
+
+properties
+value
+number
+Media query expression value.
+unit
+string
+Media query expression units.
+feature
+string
+Media query expression feature.
+valueRange
+SourceRange
+The associated range of the value text in the enclosing stylesheet (if available).
+computedLength
+number
+Computed length of media query expression (if applicable).
+CSS.PlatformFontUsage #
+Information about amount of glyphs that were rendered with given font.
+Type: object
+
+properties
+familyName
+string
+Font's family name reported by platform.
+postScriptName
+string
+Font's PostScript name reported by platform.
+isCustomFont
+boolean
+Indicates if the font was downloaded or resolved locally.
+glyphCount
+number
+Amount of glyphs that were rendered with this font.
+CSS.PseudoElementMatches #
+CSS rule collection for a single pseudo style.
+Type: object
+
+properties
+pseudoType
+DOM.PseudoType
+Pseudo element type.
+pseudoIdentifier
+string
+Pseudo element custom ident.
+matches
+array[ RuleMatch ]
+Matches of CSS rules applicable to the pseudo style.
+CSS.RuleMatch #
+Match data for a CSS rule.
+Type: object
+
+properties
+rule
+CSSRule
+CSS rule in the match.
+matchingSelectors
+array[ integer ]
+Matching selector indices in the rule's selectorList selectors (0-based).
+CSS.RuleUsage #
+CSS coverage information.
+Type: object
+
+properties
+styleSheetId
+DOM.StyleSheetId
+The css style sheet identifier (absent for user agent stylesheet and user-specified stylesheet rules) this rule came from.
+startOffset
+number
+Offset of the start of the rule (including selector) from the beginning of the stylesheet.
+endOffset
+number
+Offset of the end of the rule body from the beginning of the stylesheet.
+used
+boolean
+Indicates whether the rule was actually used by some element in the page.
+CSS.SelectorList #
+Selector list data.
+Type: object
+
+properties
+selectors
+array[ Value ]
+Selectors in the list.
+text
+string
+Rule selector text.
+CSS.ShorthandEntry #
+Type: object
+
+properties
+name
+string
+Shorthand name.
+value
+string
+Shorthand value.
+important
+boolean
+Whether the property has "!important" annotation (implies false if absent).
+CSS.SourceRange #
+Text range within a resource. All numbers are zero-based.
+Type: object
+
+properties
+startLine
+integer
+Start line of range.
+startColumn
+integer
+Start column of range (inclusive).
+endLine
+integer
+End line of range
+endColumn
+integer
+End column of range (exclusive).
+CSS.StyleDeclarationEdit #
+A descriptor of operation to mutate style declaration text.
+Type: object
+
+properties
+styleSheetId
+DOM.StyleSheetId
+The css style sheet identifier.
+range
+SourceRange
+The range of the style text in the enclosing stylesheet.
+text
+string
+New style text.
+CSS.StyleSheetOrigin #
+Stylesheet type: "injected" for stylesheets injected via extension, "user-agent" for user-agent stylesheets, "inspector" for stylesheets created by the inspector (i.e. those holding the "via inspector" rules), "regular" for regular stylesheets.
+Allowed Values: injected, user-agent, inspector, regular
+Type: string
+
+CSS.Value #
+Data for a simple selector (these are delimited by commas in a selector list).
+Type: object
+
+properties
+text
+string
+Value text.
+range
+SourceRange
+Value range in the underlying resource (if available).
+specificity
+Specificity
+Specificity of the selector. Experimental
+CSS.ComputedStyleExtraFields Experimental #
+Type: object
+
+properties
+isAppearanceBase
+boolean
+Returns whether or not this node is being rendered with base appearance, which happens when it has its appearance property set to base/base-select or it is in the subtree of an element being rendered with base appearance.
+CSS.CSSContainerQuery Experimental #
+CSS container query rule descriptor.
+Type: object
+
+properties
+text
+string
+Container query text. Contains the query part without the container name for a single query. Deprecated in favor of conditionText which contains the full prelude after @container. Deprecated
+range
+SourceRange
+The associated rule header range in the enclosing stylesheet (if available).
+styleSheetId
+DOM.StyleSheetId
+Identifier of the stylesheet containing this object (if exists).
+name
+string
+Optional name for the container.
+physicalAxes
+DOM.PhysicalAxes
+Optional physical axes queried for the container.
+logicalAxes
+DOM.LogicalAxes
+Optional logical axes queried for the container.
+queriesScrollState
+boolean
+true if the query contains scroll-state() queries.
+queriesAnchored
+boolean
+true if the query contains anchored() queries.
+conditionText
+string
+CSSContainerRule.conditionText
+CSS.CSSLayer Experimental #
+CSS Layer at-rule descriptor.
+Type: object
+
+properties
+text
+string
+Layer name.
+range
+SourceRange
+The associated rule header range in the enclosing stylesheet (if available).
+styleSheetId
+DOM.StyleSheetId
+Identifier of the stylesheet containing this object (if exists).
+CSS.CSSLayerData Experimental #
+CSS Layer data.
+Type: object
+
+properties
+name
+string
+Layer name.
+subLayers
+array[ CSSLayerData ]
+Direct sub-layers
+order
+number
+Layer order. The order determines the order of the layer in the cascade order. A higher number has higher priority in the cascade order.
+CSS.CSSNavigation Experimental #
+CSS Navigation at-rule descriptor.
+Type: object
+
+properties
+text
+string
+Navigation rule text.
+active
+boolean
+Whether the navigation condition is satisfied.
+range
+SourceRange
+The associated rule header range in the enclosing stylesheet (if available).
+styleSheetId
+DOM.StyleSheetId
+Identifier of the stylesheet containing this object (if exists).
+CSS.CSSRuleType Experimental #
+Enum indicating the type of a CSS rule, used to represent the order of a style rule's ancestors. This list only contains rule types that are collected during the ancestor rule collection.
+Allowed Values: MediaRule, SupportsRule, ContainerRule, LayerRule, ScopeRule, StyleRule, StartingStyleRule, NavigationRule
+Type: string
+
+CSS.CSSScope Experimental #
+CSS Scope at-rule descriptor.
+Type: object
+
+properties
+text
+string
+Scope rule text.
+range
+SourceRange
+The associated rule header range in the enclosing stylesheet (if available).
+styleSheetId
+DOM.StyleSheetId
+Identifier of the stylesheet containing this object (if exists).
+CSS.CSSStartingStyle Experimental #
+CSS Starting Style at-rule descriptor.
+Type: object
+
+properties
+range
+SourceRange
+The associated rule header range in the enclosing stylesheet (if available).
+styleSheetId
+DOM.StyleSheetId
+Identifier of the stylesheet containing this object (if exists).
+CSS.CSSSupports Experimental #
+CSS Supports at-rule descriptor.
+Type: object
+
+properties
+text
+string
+Supports rule text.
+active
+boolean
+Whether the supports condition is satisfied.
+range
+SourceRange
+The associated rule header range in the enclosing stylesheet (if available).
+styleSheetId
+DOM.StyleSheetId
+Identifier of the stylesheet containing this object (if exists).
+CSS.Specificity Experimental #
+Specificity: https://drafts.csswg.org/selectors/#specificity-rules
+Type: object
+
+properties
+a
+integer
+The a component, which represents the number of ID selectors.
+b
+integer
+The b component, which represents the number of class selectors, attributes selectors, and pseudo-classes.
+c
+integer
+The c component, which represents the number of type selectors and pseudo-elements.
+components
+array[ SpecificityComponent ]
+Per-simple-selector contributions used to explain this specificity. Experimental
+CSS.SpecificityComponent Experimental #
+Contribution of an individual simple selector to specificity.
+Type: object
+
+properties
+text
+string
+The simple selector text that contributes to specificity.
+a
+integer
+The a component contribution.
+b
+integer
+The b component contribution.
+c
+integer
+The c component contribution.

@@ -1,0 +1,163 @@
+Home
+Versions
+latest (tip-of-tree)
+v8-inspector (node)
+stable (1.3)
+Domains
+Accessibility
+Animation
+Audits
+Autofill
+BackgroundService
+BluetoothEmulation
+Browser
+CacheStorage
+Cast
+Console
+CrashReportContext
+CSS
+Debugger
+DeviceAccess
+DeviceOrientation
+DOM
+DOMDebugger
+DOMSnapshot
+DOMStorage
+Emulation
+EventBreakpoints
+Extensions
+FedCm
+Fetch
+FileSystem
+HeadlessExperimental
+HeapProfiler
+IndexedDB
+Input
+Inspector
+IO
+LayerTree
+Log
+Media
+Memory
+Network
+Overlay
+Page
+Performance
+PerformanceTimeline
+Preload
+Profiler
+PWA
+Runtime
+Schema
+Security
+ServiceWorker
+SmartCardEmulation
+Storage
+SystemInfo
+Target
+Tethering
+Tracing
+WebAudio
+WebAuthn
+WebMCP
+Chrome DevTools Protocol 
+Start typing to search...
+DOMStorage Domain
+Query and modify DOM storage. Experimental
+Methods
+DOMStorage.clear
+DOMStorage.disable
+DOMStorage.enable
+DOMStorage.getDOMStorageItems
+DOMStorage.removeDOMStorageItem
+DOMStorage.setDOMStorageItem
+Events
+DOMStorage.domStorageItemAdded
+DOMStorage.domStorageItemRemoved
+DOMStorage.domStorageItemsCleared
+DOMStorage.domStorageItemUpdated
+Types
+DOMStorage.Item
+DOMStorage.SerializedStorageKey
+DOMStorage.StorageId
+Methods
+DOMStorage.clear #
+parameters
+storageId
+StorageId
+DOMStorage.disable #
+Disables storage tracking, prevents storage events from being sent to the client.
+DOMStorage.enable #
+Enables storage tracking, storage events will now be delivered to the client.
+DOMStorage.getDOMStorageItems #
+parameters
+storageId
+StorageId
+Return Object
+entries
+array[ Item ]
+DOMStorage.removeDOMStorageItem #
+parameters
+storageId
+StorageId
+key
+string
+DOMStorage.setDOMStorageItem #
+parameters
+storageId
+StorageId
+key
+string
+value
+string
+Events
+DOMStorage.domStorageItemAdded #
+parameters
+storageId
+StorageId
+key
+string
+newValue
+string
+DOMStorage.domStorageItemRemoved #
+parameters
+storageId
+StorageId
+key
+string
+DOMStorage.domStorageItemsCleared #
+parameters
+storageId
+StorageId
+DOMStorage.domStorageItemUpdated #
+parameters
+storageId
+StorageId
+key
+string
+oldValue
+string
+newValue
+string
+Types
+DOMStorage.Item #
+DOM Storage item.
+Type: array
+
+DOMStorage.SerializedStorageKey #
+Type: string
+
+DOMStorage.StorageId #
+DOM Storage identifier.
+Type: object
+
+properties
+securityOrigin
+string
+Security origin for the storage.
+storageKey
+SerializedStorageKey
+Represents a key by which DOM Storage keys its CachedStorageAreas
+isLocalStorage
+boolean
+Whether the storage is local storage (not session storage).

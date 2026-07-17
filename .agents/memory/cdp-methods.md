@@ -246,3 +246,249 @@ Mostly useful for debugging/testing — not needed for automation:
 - `Animation.seekAnimations` — jump to a time position
 
 For agent automation, the most relevant use: `Animation.setPlaybackRate({ playbackRate: 0 })` to freeze all CSS/JS animations before taking screenshots (avoids motion blur / mid-transition captures).
+
+---
+
+## Autofill domain — fill forms in one call ⭐
+
+`Autofill.trigger` fills an entire form automatically given a `DOM.BackendNodeId` anchor field. No clicking, no typing — one call.
+
+```js
+await CDP('Autofill.enable');
+
+// Fill with address
+await CDP('Autofill.trigger', {
+  fieldId: backendNodeId,   // any field in the form (anchor)
+  frameId: frameId,         // Page.FrameId the field lives in
+  address: {
+    fields: [
+      { name: 'GIVEN_NAME',   value: 'Jon' },
+      { name: 'FAMILY_NAME',  value: 'Doe' },
+      { name: 'ADDRESS_LINE1',value: '123 Main St' },
+      { name: 'CITY',         value: 'New York' },
+      { name: 'STATE',        value: 'NY' },
+      { name: 'ZIP_CODE',     value: '10001' },
+      { name: 'COUNTRY_CODE', value: 'US' },
+      { name: 'EMAIL',        value: 'jon@example.com' },
+      { name: 'PHONE',        value: '+12125550100' },
+    ]
+  }
+});
+
+// Fill with credit card (mutually exclusive with address)
+await CDP('Autofill.trigger', {
+  fieldId: backendNodeId,
+  frameId: frameId,
+  card: {
+    number: '4111111111111111',
+    name: 'Jon Doe',
+    expiryMonth: '12',
+    expiryYear: '2028',
+    cvc: '123'
+  }
+});
+```
+
+**How to get fieldId + frameId**: use `Accessibility.queryAXTree` to find the first form input, then `DOM.getBoxModel` gives `backendNodeId`. For `frameId`, use `Page.getFrameTree` and pick the main frame's `id`.
+
+**Event fired**: `Autofill.addressFormFilled` — confirms which fields were actually filled.
+
+Full address field name list: `GIVEN_NAME`, `FAMILY_NAME`, `FULL_NAME`, `EMAIL`, `PHONE`, `ADDRESS_LINE1`, `ADDRESS_LINE2`, `CITY`, `STATE`, `ZIP_CODE`, `COUNTRY_CODE`, `COMPANY_NAME`. See [Chromium source](https://source.chromium.org/chromium/chromium/src/+/main:components/autofill/core/browser/field_types.cc;l=38).
+
+---
+
+## Browser domain — permissions, downloads, window control
+
+### Browser.setPermission — grant any permission without the OS dialog ⭐
+```js
+await CDP('Browser.setPermission', {
+  permission: { name: 'clipboard-read' },   // or clipboard-write, camera, microphone, geolocation, notifications...
+  setting: 'granted',                        // 'granted' | 'denied' | 'prompt'
+  origin: 'https://example.com'             // omit = all origins
+});
+```
+**Useful for**: granting clipboard access so `navigator.clipboard.writeText/readText` works without a prompt; granting camera for WebRTC tests; granting notifications.
+
+Full `name` values: `clipboard-read`, `clipboard-write`, `camera`, `microphone`, `geolocation`, `notifications`, `midi`, `sensors`, `backgroundSync`, `periodicBackgroundSync`, `nfc`, `keyboardLock`, `idleDetection`, `displayCapture`, `durableStorage`, `payment-handler`, `smartCard`.
+
+### Browser.setDownloadBehavior — control file download destination ⭐
+```js
+await CDP('Browser.setDownloadBehavior', {
+  behavior: 'allowAndName',    // 'allow' | 'deny' | 'allowAndName' | 'default'
+  downloadPath: '/tmp/agent-downloads',
+  eventsEnabled: true          // fires Browser.downloadProgress events
+});
+```
+Events: `Browser.downloadWillBegin` (has `url`, `suggestedFilename`, `guid`), `Browser.downloadProgress` (has `receivedBytes`, `totalBytes`, `state`).
+
+**cancelDownload**: `Browser.cancelDownload({ guid })`.
+
+### Browser.setWindowBounds — resize/move the browser window
+```js
+const { windowId } = await CDP('Browser.getWindowForTarget');
+await CDP('Browser.setWindowBounds', {
+  windowId,
+  bounds: { left: 0, top: 0, width: 1280, height: 900, windowState: 'normal' }
+  // windowState: 'normal' | 'minimized' | 'maximized' | 'fullscreen'
+});
+```
+
+### Browser.resetPermissions — clear all permission overrides
+```js
+await CDP('Browser.resetPermissions', {});
+```
+
+---
+
+## CSS domain — pseudo-states and computed styles
+
+### CSS.forcePseudoState — trigger hover/focus menus ⭐
+Force CSS pseudo-classes on an element without actually hovering. Essential for expanding dropdown menus that only appear on `:hover`.
+
+```js
+await CDP('CSS.enable');
+
+// Get nodeId via DOM first
+const { root } = await CDP('DOM.getDocument');
+const { nodeId } = await CDP('DOM.querySelector', { nodeId: root.nodeId, selector: '.nav-menu' });
+
+// Force :hover — exposes dropdown sub-items
+await CDP('CSS.forcePseudoState', {
+  nodeId,
+  forcedPseudoClasses: ['hover']   // array: 'active', 'focus', 'focus-within', 'focus-visible', 'hover', 'visited', 'target', 'enabled', 'disabled', 'checked'
+});
+
+// After clicking the sub-item, release the forced state
+await CDP('CSS.forcePseudoState', { nodeId, forcedPseudoClasses: [] });
+```
+
+### CSS.getComputedStyleForNode — read final resolved styles
+```js
+const { computedStyle } = await CDP('CSS.getComputedStyleForNode', { nodeId });
+// computedStyle = [{ name: 'display', value: 'flex' }, { name: 'color', value: 'rgb(0,0,0)' }, ...]
+const display = computedStyle.find(p => p.name === 'display')?.value;
+```
+
+### CSS.getMatchedStylesForNode — see exactly which rules apply
+Returns inline styles, matched CSS rules, pseudo-element styles, inherited chain. Useful for debugging why an element looks a certain way.
+
+---
+
+## Debugger domain — live JavaScript patching
+
+### Debugger.setScriptSource — edit live JavaScript on a running page ⭐
+Replace the source of any already-loaded script. The change takes effect immediately — no reload required. Useful for patching rate limits, disabling confirmations, or injecting helper code.
+
+```js
+await CDP('Debugger.enable');
+
+// 1. Listen for Debugger.scriptParsed to capture script IDs:
+//    { scriptId, url, ... }
+
+// 2. Patch a specific script
+await CDP('Debugger.setScriptSource', {
+  scriptId: '42',
+  scriptSource: '...new source code...',
+  dryRun: false   // true = validate only, false = apply for real
+});
+// Returns: { status: 'Ok' | 'CompileError' | 'BlockedByActiveFunction' | ... }
+```
+
+**Limitation**: cannot edit a function that is currently on the call stack (returns `BlockedByActiveFunction`).
+
+### Debugger.evaluateOnCallFrame — run code in a paused frame
+Only works when execution is paused (after a breakpoint). Evaluates in the full local/closure scope of that frame — can read/write local variables.
+```js
+const { result } = await CDP('Debugger.evaluateOnCallFrame', {
+  callFrameId: frame.callFrameId,
+  expression: 'localVariable',
+  returnByValue: true
+});
+```
+
+### Debugger.setBreakpointByUrl — set a persistent breakpoint
+```js
+const { breakpointId } = await CDP('Debugger.setBreakpointByUrl', {
+  url: 'https://example.com/app.js',
+  lineNumber: 42,
+  condition: 'amount > 1000'  // optional — only break if true
+});
+```
+
+---
+
+## Console domain (deprecated — prefer Log or Runtime)
+
+`Console.enable` then listen for `Console.messageAdded` events:
+```js
+// event payload:
+{ message: {
+    source: 'javascript' | 'network' | 'console-api' | ...,
+    level: 'log' | 'warning' | 'error' | 'debug' | 'info',
+    text: 'the message string',
+    url, line, column
+} }
+```
+**Better alternative**: `Runtime.enable` + listen for `Runtime.consoleAPICalled` and `Runtime.exceptionThrown` — richer data including stack traces and object references.
+
+---
+
+## CacheStorage domain — inspect/clear Service Worker caches
+
+```js
+// List all caches for an origin
+const { caches } = await CDP('CacheStorage.requestCacheNames', {
+  storageKey: 'https://example.com'
+});
+
+// Read entries from a cache
+const { cacheDataEntries } = await CDP('CacheStorage.requestEntries', {
+  cacheId: caches[0].cacheId,
+  pageSize: 100
+});
+
+// Delete a specific cached response
+await CDP('CacheStorage.deleteEntry', {
+  cacheId: caches[0].cacheId,
+  request: 'https://example.com/api/data'
+});
+
+// Delete an entire cache
+await CDP('CacheStorage.deleteCache', { cacheId: caches[0].cacheId });
+```
+
+**Useful for**: forcing a fresh fetch by clearing cached responses; inspecting what a PWA has stored.
+
+---
+
+## BackgroundService domain — monitor Service Worker background events
+
+```js
+await CDP('BackgroundService.startObserving', { service: 'backgroundSync' });
+// services: backgroundFetch, backgroundSync, pushMessaging, notifications, paymentHandler, periodicBackgroundSync
+
+// Event: BackgroundService.backgroundServiceEventReceived
+// { backgroundServiceEvent: { timestamp, origin, eventName, instanceId, eventMetadata: [{key,value}] } }
+
+await CDP('BackgroundService.stopObserving', { service: 'backgroundSync' });
+await CDP('BackgroundService.clearEvents', { service: 'backgroundSync' });
+```
+
+---
+
+## DeviceAccess domain — handle USB/Bluetooth device prompts
+
+When a page calls `navigator.usb.requestDevice()` or `navigator.bluetooth.requestDevice()`, Chrome shows a picker. CDP can intercept and auto-select.
+
+```js
+await CDP('DeviceAccess.enable');
+// Listen for DeviceAccess.deviceRequestPrompted:
+// { id: RequestId, devices: [{ id: DeviceId, name: string }] }
+
+// Auto-select the first matching device
+await CDP('DeviceAccess.selectPrompt', { id: requestId, deviceId: devices[0].id });
+// Or dismiss it
+await CDP('DeviceAccess.cancelPrompt', { id: requestId });
+
+await CDP('DeviceAccess.disable');
+```
