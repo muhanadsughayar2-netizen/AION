@@ -4590,13 +4590,30 @@
           element.dispatchEvent(new InputEvent('input', { bubbles: true, data: params.text }));
         }
         
-        // Press Enter if requested or looks like a search box
-        if (params.pressEnter || element.getAttribute('type') === 'search') {
-          await new Promise(r => setTimeout(r, 300));
+        // Auto-detect search boxes and press Enter automatically.
+        // Catches: type="search", name="q" (Google/Bing), form action contains
+        // "search", aria-label contains "search", or explicit pressEnter param.
+        const looksLikeSearch = (
+          element.getAttribute('type') === 'search' ||
+          (element.getAttribute('name') || '').toLowerCase() === 'q' ||
+          (element.getAttribute('aria-label') || '').toLowerCase().includes('search') ||
+          (element.getAttribute('placeholder') || '').toLowerCase().includes('search') ||
+          (() => {
+            const form = element.closest('form');
+            return form && (form.getAttribute('action') || '').toLowerCase().includes('search');
+          })()
+        );
+        if (params.pressEnter || looksLikeSearch) {
+          await new Promise(r => setTimeout(r, 350));
           showAgentBanner('Pressing Enter…');
           element.dispatchEvent(new KeyboardEvent('keydown',  { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
           element.dispatchEvent(new KeyboardEvent('keypress', { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
           element.dispatchEvent(new KeyboardEvent('keyup',    { key: 'Enter', code: 'Enter', keyCode: 13, bubbles: true }));
+          // For search engines that navigate on submit — also try form.submit()
+          const form = element.closest('form');
+          if (form) {
+            try { form.submit(); } catch (_) {}
+          }
         }
         
         return { success: true };
