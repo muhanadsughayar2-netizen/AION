@@ -10336,7 +10336,9 @@ Rules:
 - If a page repeatedly returns no readable text or the same action fails the same way more than once in a row, stop retrying blindly — call "finish" and explain what's blocking you.
 - Keep your reasoning to yourself; only function calls and the final "finish" summary are shown to the user.
 - DOCUMENT EDITORS (Google Docs, Word Online): These apps use a virtual canvas — there is no real DOM text field for the document body. The document TITLE is a real input (avoid clicking it). To write into the document body: use "type" with your text and no selector — the agent automatically uses the correct keyboard injection method. Do NOT try to click on text inside the document or search for a body element by name. Just call "type" directly after the page loads.
-- GOOGLE DOCS TITLE vs BODY: The element labelled "Untitled document" or the document name at the top is the TITLE — clicking it types into the title. To type in the document BODY, use "type" without clicking the title first — the agent will find and click the correct document canvas area automatically.
+- GOOGLE DOCS TITLE RENAME: To rename a Google Doc, click on the title at the top of the page (it will say "Untitled document" or the current name), then immediately use pressKey("ctrl+a") to select all the existing title text, then type the new name, then pressKey("enter"). Do this sequence ONCE and stop — do NOT retry it more than once if it appears to succeed.
+- GOOGLE DOCS MENUS: Google Docs menus (Insert, Format, Tools, etc.) are real HTML buttons — use click to open them. After a menu opens, use click (NOT hover) to choose the sub-item (e.g. click "Image", click "Drawing"). The hover tool does NOT work for Google Docs menu items because they render inside a floating layer. If a popup or dialog appears unexpectedly, pressKey("escape") once to dismiss it, then retry your original action.
+- GOOGLE DOCS TITLE vs BODY: To type in the document BODY, use "type" directly — do NOT click on the document canvas first.
 - SAVING DOCUMENTS: To save in Word Online, Excel Online, Google Docs, or any web editor — use pressKey with key "ctrl+s". Do NOT click File > Save manually; the keyboard shortcut is faster and more reliable. Always pressKey("ctrl+s") after finishing a typing task in an editor.
 - WORD ONLINE — attachments & templates: Word Online menus (Insert, File, etc.) are real HTML buttons. Use "click" with the menu name (e.g. click "Insert"), then click the sub-item (e.g. click "Pictures" or "From computer"). For templates: navigate to office.com, find the template in the gallery, then click to open it — do NOT try to access templates from within an already-open document.
 - EXCEL ONLINE — entering data into cells: Always use the "cell" parameter to specify WHERE to start typing (e.g. cell:"A1", cell:"B2"). Use "\t" (tab) to separate values going RIGHT across columns, and "\n" (newline) to move DOWN to the next row. Example — fill a 3-column table starting at A1: type({cell:"A1", text:"Name\tAge\tCity\nAlice\t30\tLondon\nBob\t25\tParis"}). This fills A1=Name, B1=Age, C1=City, A2=Alice, B2=30, C2=London, A3=Bob, B3=25, C3=Paris — all in ONE call. Do NOT call "type" once per cell; fill the whole range in one shot. After filling, pressKey("ctrl+s") to save.
@@ -10419,20 +10421,45 @@ function setupAutopilotMiniBar() {
 }
 setupAutopilotMiniBar();
 
+// Autopilot step log container — one shared block per task run,
+// so all steps appear as a clean compact list instead of a wall of agent faces.
+let _agentLogContainer = null;
+let _agentStepCount = 0;
+
+function resetAgentStepLog() {
+  _agentLogContainer = null;
+  _agentStepCount = 0;
+}
+
 function addAgentStepBubble(thread, text, kind) {
-  const bubble = document.createElement('div');
-  bubble.className = 'chat-bubble ai agent-step';
-  bubble.style.cssText = 'background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.22);font-size:12.5px;color:rgba(255,255,255,0.85);padding:8px 12px;display:flex;align-items:flex-start;gap:7px;';
-  const iconHtml = kind === 'error'
-    ? '<span style="font-size:14px;line-height:1;flex-shrink:0;">⚠️</span>'
-    : kind === 'done'
-      ? '<span style="font-size:14px;line-height:1;flex-shrink:0;">✅</span>'
-      : `<img src="${chrome.runtime.getURL('icons/agent-avatar.png')}" alt="" style="width:16px;height:16px;flex-shrink:0;margin-top:1px;">`;
-  bubble.innerHTML = `${iconHtml}<span>${text}</span>`;
+  // done / error messages are standalone full-width bubbles
+  if (kind === 'done' || kind === 'error') {
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-bubble ai agent-step';
+    const icon = kind === 'done' ? '✅' : '⚠️';
+    bubble.style.cssText = 'background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.22);font-size:12.5px;color:rgba(255,255,255,0.85);padding:9px 13px;border-radius:10px;margin-bottom:3px;';
+    bubble.innerHTML = `<span style="margin-right:6px;">${icon}</span>${text}`;
+    updateAutopilotMiniStatus(text);
+    thread.appendChild(bubble);
+    thread.scrollTop = thread.scrollHeight;
+    return bubble;
+  }
+
+  // Normal steps: append as a compact row inside ONE shared log block
+  if (!_agentLogContainer || !_agentLogContainer.isConnected) {
+    _agentLogContainer = document.createElement('div');
+    _agentLogContainer.style.cssText = 'background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.18);border-radius:10px;padding:8px 12px;font-size:12px;color:rgba(255,255,255,0.75);margin-bottom:3px;display:flex;flex-direction:column;gap:3px;';
+    thread.appendChild(_agentLogContainer);
+  }
+
+  _agentStepCount++;
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;align-items:baseline;gap:6px;line-height:1.4;';
+  row.innerHTML = `<span style="color:rgba(56,189,248,0.5);font-size:10px;flex-shrink:0;">${_agentStepCount}.</span><span>${text}</span>`;
+  _agentLogContainer.appendChild(row);
   updateAutopilotMiniStatus(text);
-  thread.appendChild(bubble);
   thread.scrollTop = thread.scrollHeight;
-  return bubble;
+  return row;
 }
 
 async function getActiveTabPageText(tabId) {
@@ -10590,6 +10617,7 @@ async function runAgentTask(prompt, thread) {
   if (!apiKey) { showGeminiModal(); return; }
 
   agentStopRequested = false;
+  resetAgentStepLog();
   const stopBtn = document.createElement('button');
   stopBtn.textContent = '■ Stop Autopilot';
   stopBtn.className = 'agent-stop-btn';
@@ -10641,6 +10669,9 @@ async function runAgentTask(prompt, thread) {
         : `TASK: ${prompt}\n\nCURRENT PAGE (${tab.url}):\n${pageText || '(no readable text found)'}`
     }]
   });
+
+  let consecutiveFailures = 0;
+  const actionFailCounts = {}; // key: "actionName:argText" → count
 
   for (let step = 0; step < AGENT_MAX_STEPS; step++) {
     if (agentStopRequested) {
@@ -10713,7 +10744,28 @@ async function runAgentTask(prompt, thread) {
     }
 
     if (!execResult || execResult.success !== true) {
-      addAgentStepBubble(thread, `Step failed: ${execResult?.error || 'unknown error'} — trying a different approach…`, 'error');
+      consecutiveFailures++;
+      const failKey = `${name}:${String(args?.text || args?.selector || args?.description || '')}`;
+      actionFailCounts[failKey] = (actionFailCounts[failKey] || 0) + 1;
+
+      // Show inline warning inside the log (not a loud standalone bubble)
+      if (_agentLogContainer && _agentLogContainer.isConnected) {
+        const warn = document.createElement('div');
+        warn.style.cssText = 'font-size:11px;color:rgba(255,180,50,0.75);padding-left:16px;';
+        warn.textContent = `⚠ ${execResult?.error || 'failed'} — trying differently…`;
+        _agentLogContainer.appendChild(warn);
+        thread.scrollTop = thread.scrollHeight;
+      }
+
+      // Hard stop: 3 consecutive failures = agent is genuinely stuck
+      if (consecutiveFailures >= 3) {
+        addAgentStepBubble(thread,
+          `Stopped after 3 failed steps in a row. I'm stuck and can't get past this point automatically — you may need to do this step manually.`,
+          'error');
+        break;
+      }
+    } else {
+      consecutiveFailures = 0;
     }
 
     // If navigate opened a NEW tab (system-page fallback path), switch control
@@ -10759,10 +10811,18 @@ async function runAgentTask(prompt, thread) {
           name,
           response: execResult && execResult.success
             ? { success: true,
-                // Pass through any data returned by readText/waitForElement/select
                 ...(execResult.data != null ? { data: String(execResult.data) } : {}),
                 pageNow: pageText.slice(0, 4000) }
-            : { success: false, error: execResult?.error || 'unknown error', pageNow: pageText.slice(0, 4000) }
+            : { success: false,
+                error: execResult?.error || 'unknown error',
+                // Tell Gemini which actions have already failed so it stops repeating them
+                ...(Object.keys(actionFailCounts).length
+                  ? { alreadyFailed: Object.entries(actionFailCounts)
+                        .filter(([,c]) => c > 1)
+                        .map(([k,c]) => `${k} (×${c})`)
+                        .join(', ') || undefined }
+                  : {}),
+                pageNow: pageText.slice(0, 4000) }
         }
       }]
     });
