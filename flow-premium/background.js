@@ -1013,16 +1013,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
 
             // ── Google Sheets inline paste ──────────────────────────────────────
+            // Uses clipboard paste — Sheets handles TSV (tab-separated) natively
+            // for 2D range fill. Tab = next column, newline = next row.
             if (tabHost.includes('docs.google.com') && tabUrl.includes('/spreadsheets/')) {
               const text = String(params && params.text ? params.text : '');
+              // Respect params.cell — navigate to that cell first, defaulting to A1
+              const targetCell = (params.cell && /^[A-Za-z]+\d+$/.test(String(params.cell).trim()))
+                ? String(params.cell).trim().toUpperCase()
+                : 'A1';
               try {
                 const results = await chrome.scripting.executeScript({
                   target: { tabId },
-                  func: async (textToType) => {
+                  func: async (textToType, cell) => {
                     const sleep = ms => new Promise(res => setTimeout(res, ms));
 
-                    // Stage text without needing document focus — navigator.clipboard.writeText
-                    // throws "Document is not focused" when called from executeScript.
+                    // Stage text without needing real clipboard API (avoids "Document not focused" error)
                     const stageClipboard = (txt) => {
                       const ta = document.createElement('textarea');
                       ta.value = txt;
@@ -1034,45 +1039,52 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     };
 
                     try {
-                      // Split by newline OR comma+space so agent can pass "Jan\nFeb" or "Jan, Feb"
-                      const values = textToType.split(/\n|,\s*/).map(v => v.trim()).filter(Boolean);
-
-                      // Find the Name Box input to navigate to a starting cell
+                      // ── 1. Navigate to target cell via Name Box ────────────────
                       const nameBox = document.querySelector(
                         '#t-name-box, [id="t-name-box"], .docs-objectbox-container input, [aria-label="Name Box"]'
                       );
-
-                      if (values.length > 1 && nameBox) {
-                        // Multi-value: paste all as newline-separated → Sheets splits into rows
-                        nameBox.click(); nameBox.focus(); await sleep(100);
-                        nameBox.value = 'A1';
+                      if (nameBox) {
+                        nameBox.click(); nameBox.focus(); await sleep(120);
+                        nameBox.value = cell;
                         nameBox.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', keyCode:13, bubbles:true }));
                         nameBox.dispatchEvent(new KeyboardEvent('keyup',   { key:'Enter', keyCode:13, bubbles:true }));
-                        await sleep(300);
-                        stageClipboard(values.join('\n'));
-                        await sleep(100);
-                        document.execCommand('paste');
-                        await sleep(500);
-                        return { success: true, method: 'sheets-paste-column' };
+                        await sleep(350);
                       }
 
-                      // Single value: navigate to A1 then paste
-                      if (nameBox) {
-                        nameBox.click(); nameBox.focus(); await sleep(100);
-                        nameBox.value = 'A1';
-                        nameBox.dispatchEvent(new KeyboardEvent('keydown', { key:'Enter', keyCode:13, bubbles:true }));
-                        await sleep(200);
+                      // ── 2. Prepare paste content ────────────────────────────────
+                      // TSV (has \t): paste as-is — Sheets handles 2D TSV natively
+                      //   "Month\tPrice\nJan\t100\nFeb\t120"  →  A1=Month B1=Price A2=Jan B2=100 ...
+                      // Rows only (has \n, no \t): paste as column
+                      // Space-separated (neither): split on whitespace into a column
+                      let pasteContent;
+                      if (textToType.includes('\t')) {
+                        // True TSV — preserve exactly; Sheets parses rows + columns
+                        pasteContent = textToType;
+                      } else if (textToType.includes('\n')) {
+                        // Rows only — each line is one cell going down column A
+                        pasteContent = textToType;
+                      } else {
+                        // Fallback: space-separated — each word becomes its own row
+                        const parts = textToType.split(/\s+/).filter(Boolean);
+                        pasteContent = parts.length > 1 ? parts.join('\n') : textToType;
                       }
-                      stageClipboard(textToType);
-                      await sleep(100);
+
+                      // ── 3. Paste ────────────────────────────────────────────────
+                      stageClipboard(pasteContent);
+                      await sleep(150);
                       document.execCommand('paste');
-                      await sleep(300);
-                      return { success: true, method: 'sheets-single-paste' };
+                      await sleep(600);
+                      return {
+                        success: true,
+                        method: pasteContent.includes('\t') ? 'sheets-tsv-2d' : 'sheets-column',
+                        cell,
+                        rows: pasteContent.split('\n').length
+                      };
                     } catch (e) {
                       return { success: false, error: String(e && e.message || e) };
                     }
                   },
-                  args: [text]
+                  args: [text, targetCell]
                 });
                 sendResponse(results?.[0]?.result || { success: false });
               } catch (e) {
