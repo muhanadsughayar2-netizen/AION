@@ -2205,6 +2205,69 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    // ── readStorage ────────────────────────────────────────────────────────────
+    // Reads localStorage, sessionStorage, and cookies — lets the agent check
+    // auth state, session tokens, feature flags, and saved user settings.
+    if (executeAction === 'readStorage') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const target = (params.target || 'all').toLowerCase(); // 'local' | 'session' | 'cookies' | 'all'
+          const filterKey = (params.key || '').toLowerCase();    // optional: only return keys containing this string
+          const maxChars = Math.min(8000, parseInt(params.maxChars) || 3000);
+
+          const evalRes = await cdpC('Runtime.evaluate', {
+            expression: `(function(target, filter, max) {
+              const out = {};
+              const pick = (store, name) => {
+                const obj = {};
+                for (let i = 0; i < store.length; i++) {
+                  const k = store.key(i);
+                  if (!filter || k.toLowerCase().includes(filter)) obj[k] = store.getItem(k);
+                }
+                if (Object.keys(obj).length) out[name] = obj;
+              };
+              if (target === 'all' || target === 'local')   try { pick(localStorage, 'localStorage'); }   catch(_) {}
+              if (target === 'all' || target === 'session') try { pick(sessionStorage, 'sessionStorage'); } catch(_) {}
+              if (target === 'all' || target === 'cookies') {
+                try {
+                  const cobj = {};
+                  document.cookie.split(';').forEach(c => {
+                    const [k, ...v] = c.trim().split('=');
+                    if (k && (!filter || k.toLowerCase().includes(filter))) cobj[k] = v.join('=');
+                  });
+                  if (Object.keys(cobj).length) out['cookies'] = cobj;
+                } catch(_) {}
+              }
+              return JSON.stringify(out).slice(0, max);
+            })(${JSON.stringify(target)}, ${JSON.stringify(filterKey)}, ${maxChars})`,
+            returnByValue: true
+          });
+
+          const raw = evalRes?.result?.value;
+          if (!raw) { sendResponse({ success: false, error: 'Could not read storage' }); return; }
+          let parsed;
+          try { parsed = JSON.parse(raw); } catch (_) { parsed = raw; }
+          const isEmpty = typeof parsed === 'object' && Object.keys(parsed).length === 0;
+          if (isEmpty) {
+            sendResponse({ success: true, data: `No storage entries found${filterKey ? ' matching "' + filterKey + '"' : ''}.` });
+            return;
+          }
+          sendResponse({ success: true, data: JSON.stringify(parsed, null, 2).slice(0, maxChars) });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
     if (executeAction === 'doubleClick') {
       // Content-script click/dblclick events are ALWAYS isTrusted:false — no
       // amount of synthetic dispatchEvent() can change that. Security-sensitive

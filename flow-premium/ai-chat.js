@@ -10336,6 +10336,28 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'readStorage',
+      description: 'Read the current page\'s localStorage, sessionStorage, and/or cookies. Use this to check if a user is logged in, read saved settings, inspect session tokens, or see what state the page has stored. Filter by key name to avoid noise.',
+      parameters: {
+        type: 'object',
+        properties: {
+          target: {
+            type: 'string',
+            enum: ['all', 'local', 'session', 'cookies'],
+            description: '"all" returns everything (default). "local" = localStorage only. "session" = sessionStorage only. "cookies" = document cookies only.'
+          },
+          key: {
+            type: 'string',
+            description: 'Optional: only return entries whose key contains this string. Example: "auth" returns only auth-related keys. Leave blank to return all keys.'
+          },
+          maxChars: {
+            type: 'number',
+            description: 'Max characters to return (default 3000). Increase if you need more data.'
+          }
+        }
+      }
+    },
+    {
       name: 'scroll',
       description: 'Scroll the current page.',
       parameters: {
@@ -10422,7 +10444,8 @@ Rules:
 - READING API DATA: To get accurate data (prices, search results, flight info) directly from the server response — call readNetworkResponse FIRST (before triggering the request), then click the search/submit button. The interceptor captures the raw JSON response and returns it. Example: readNetworkResponse({url:"api/search", timeout:10}) then click("Search").
 - DEEP ELEMENT SEARCH: If click or hover cannot find an element (returns "not found"), try findElement({query:".class-name"}) or findElement({query:"button text"}) — it searches shadow DOM and hidden layers. Use the returned tag/id info to build a better selector for your next click.
 - MOBILE MODE: If a site has a hamburger menu, shows content differently on mobile, or hides features behind a mobile-only UI — use setMobileMode({enabled:true}) to switch to iPhone viewport. Switch back with setMobileMode({enabled:false}) when done.
-- DEEP PAGE SNAPSHOT: If the page context seems incomplete or you cannot find elements you can see in the screenshot, call snapshotPage() — it returns a richer structured DOM snapshot that includes hidden input values, shadow DOM text, and element roles the regular page text misses.`;
+- DEEP PAGE SNAPSHOT: If the page context seems incomplete or you cannot find elements you can see in the screenshot, call snapshotPage() — it returns a richer structured DOM snapshot that includes hidden input values, shadow DOM text, and element roles the regular page text misses.
+- CHECKING AUTH / STATE: To check if a user is logged in, find a session token, or read what a site has saved, use readStorage. Examples: readStorage({target:"cookies", key:"auth"}) to find auth cookies, readStorage({target:"local", key:"user"}) to find saved user data, readStorage({target:"all"}) to see everything. Use the key filter to avoid getting thousands of unrelated entries.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
