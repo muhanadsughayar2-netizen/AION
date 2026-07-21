@@ -10336,6 +10336,18 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'writeChunk',
+      description: 'Append a chunk of text to the currently focused input, textarea, or document editor WITHOUT clearing what is already there. Use this for long writing tasks — call it multiple times in sequence to build up a full article, report, or document that exceeds a single response limit. Works in Google Docs, Notion, textareas, and any contenteditable element.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'The chunk of text to insert at the current cursor position. Can be a paragraph, a section, or any length of content.' },
+          selector: { type: 'string', description: 'CSS selector of the element to focus before inserting, e.g. "textarea", ".ql-editor". Leave blank if the correct element is already focused.' }
+        },
+        required: ['text']
+      }
+    },
+    {
       name: 'readStorage',
       description: 'Read the current page\'s localStorage, sessionStorage, and/or cookies. Use this to check if a user is logged in, read saved settings, inspect session tokens, or see what state the page has stored. Filter by key name to avoid noise.',
       parameters: {
@@ -10445,6 +10457,7 @@ Rules:
 - DEEP ELEMENT SEARCH: If click or hover cannot find an element (returns "not found"), try findElement({query:".class-name"}) or findElement({query:"button text"}) — it searches shadow DOM and hidden layers. Use the returned tag/id info to build a better selector for your next click.
 - MOBILE MODE: If a site has a hamburger menu, shows content differently on mobile, or hides features behind a mobile-only UI — use setMobileMode({enabled:true}) to switch to iPhone viewport. Switch back with setMobileMode({enabled:false}) when done.
 - DEEP PAGE SNAPSHOT: If the page context seems incomplete or you cannot find elements you can see in the screenshot, call snapshotPage() — it returns a richer structured DOM snapshot that includes hidden input values, shadow DOM text, and element roles the regular page text misses.
+- LONG CONTENT WRITING: When writing long articles, reports, or documents (more than ~600 words), use writeChunk instead of type. First click or focus the target field, then call writeChunk multiple times — each call appends to what is already there without clearing it. Example flow: click the editor → writeChunk({text:"Introduction paragraph..."}) → writeChunk({text:"Section 2 content..."}) → writeChunk({text:"Conclusion..."}). This bypasses the single-turn output limit and lets you build unlimited-length documents.
 - CHECKING AUTH / STATE: To check if a user is logged in, find a session token, or read what a site has saved, use readStorage. Examples: readStorage({target:"cookies", key:"auth"}) to find auth cookies, readStorage({target:"local", key:"user"}) to find saved user data, readStorage({target:"all"}) to see everything. Use the key filter to avoid getting thousands of unrelated entries.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────

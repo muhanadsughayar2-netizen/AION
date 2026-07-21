@@ -1475,8 +1475,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
           }
 
-          // Step 3: Direct coordinate click — if the agent supplied x,y from the
-          // screenshot, use those as a last resort rather than returning failure.
+          // ── Step 3: DOM.performSearch fallback ─────────────────────────────
+          // Searches the full DOM tree (incl. shadow roots) by text or selector.
+          // Catches elements the AX tree misses — custom components, hidden layers.
+          if (searchLabel) {
+            try {
+              const sr = await cdpCmd('DOM.performSearch', { query: searchLabel, includeUserAgentShadowDOM: true });
+              if (sr && sr.resultCount > 0) {
+                const hits = await cdpCmd('DOM.getSearchResults', { searchId: sr.searchId, fromIndex: 0, toIndex: Math.min(sr.resultCount, 5) });
+                await cdpCmd('DOM.discardSearchResults', { searchId: sr.searchId }).catch(() => {});
+                for (const nodeId of (hits.nodeIds || [])) {
+                  try {
+                    try { await cdpCmd('DOM.scrollIntoViewIfNeeded', { nodeId }); } catch (_) {}
+                    await new Promise(r => setTimeout(r, 60));
+                    const box = await cdpCmd('DOM.getBoxModel', { nodeId });
+                    if (!box?.model?.content) continue;
+                    const [x1, y1, x2, , , y3] = box.model.content;
+                    const cx = (x1 + x2) / 2, cy = (y1 + y3) / 2;
+                    if (cx > 0 && cy > 0 && cx < 8000 && cy < 6000) {
+                      await cdpMouseClick(cx, cy);
+                      sendResponse({ success: true });
+                      return;
+                    }
+                  } catch (_) { continue; }
+                }
+              }
+            } catch (_) {}
+          }
+
+          // ── Step 4: Direct coordinate click — agent supplied x,y ───────────
           if (typeof params.x === 'number' && typeof params.y === 'number') {
             await cdpMouseClick(params.x, params.y);
             sendResponse({ success: true });
@@ -1484,7 +1511,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
 
           // Nothing worked — tell the AI so it can try a different approach
-          sendResponse({ success: false, error: `Element "${params.text || params.description || '?'}" not found via DOM or Accessibility tree` });
+          sendResponse({ success: false, error: `Element "${params.text || params.description || '?'}" not found via DOM, Accessibility tree, or DOM search` });
 
         } catch (e) {
           console.warn('[Aion Agent] CDP click failed:', e && e.message);
@@ -2199,6 +2226,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
           await new Promise(r => setTimeout(r, 100));
           sendResponse({ success: true, data: `Dragged from (${Math.round(from.x)},${Math.round(from.y)}) to (${Math.round(to.x)},${Math.round(to.y)})` });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── writeChunk ─────────────────────────────────────────────────────────────
+    // Appends text to the currently focused element without clearing it.
+    // Uses CDP Input.insertText — bypasses Gemini's ~800-word-per-turn limit
+    // by letting the agent call this multiple times to build long documents.
+    if (executeAction === 'writeChunk') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const text = String(params.text || '');
+          if (!text) { sendResponse({ success: false, error: 'No text provided' }); return; }
+
+          // If a selector/target is given, focus it first
+          if (params.selector || params.text_target) {
+            const sel = params.selector || params.text_target;
+            await cdpC('Runtime.evaluate', {
+              expression: `(function(s){const el=document.querySelector(s);if(el){el.focus();return true;}return false;})(${JSON.stringify(sel)})`
+            }).catch(() => {});
+            await new Promise(r => setTimeout(r, 60));
+          }
+
+          // Input.insertText inserts at cursor without clearing existing content.
+          // Works in textareas, contenteditable divs, Google Docs, Notion, etc.
+          await cdpC('Input.insertText', { text });
+          sendResponse({ success: true, data: `Inserted ${text.length} characters` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
       })();
