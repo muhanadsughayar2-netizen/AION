@@ -1819,6 +1819,392 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    // ── autofill ───────────────────────────────────────────────────────────────
+    // Fills an entire HTML form in one shot by matching field labels to values.
+    // Much faster than clicking + typing into each field individually.
+    if (executeAction === 'autofill') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const fields = params.fields || {};
+          const evalRes = await cdpC('Runtime.evaluate', {
+            expression: `(function(fields) {
+              let filled = 0, failed = [];
+              const inputs = Array.from(document.querySelectorAll(
+                'input:not([type=hidden]):not([type=submit]):not([type=button]):not([type=reset]):not([type=file]), textarea, select'
+              ));
+              for (const [label, value] of Object.entries(fields)) {
+                const lbl = label.toLowerCase();
+                const el = inputs.find(inp => {
+                  const al = (inp.getAttribute('aria-label') || '').toLowerCase();
+                  const ph = (inp.placeholder || '').toLowerCase();
+                  const nm = (inp.name || '').toLowerCase();
+                  const id = (inp.id || '').toLowerCase();
+                  const la = (document.querySelector('label[for="'+inp.id+'"]')?.textContent || '').toLowerCase();
+                  const pl = (inp.closest('label')?.textContent || '').toLowerCase();
+                  const pp = (inp.parentElement?.querySelector('label')?.textContent || '').toLowerCase();
+                  return al.includes(lbl)||ph.includes(lbl)||nm.includes(lbl)||id.includes(lbl)||la.includes(lbl)||pl.includes(lbl)||pp.includes(lbl);
+                });
+                if (!el) { failed.push(label); continue; }
+                if (el.tagName === 'SELECT') {
+                  const opt = Array.from(el.options).find(o =>
+                    o.text.toLowerCase().includes(value.toLowerCase()) || o.value.toLowerCase().includes(value.toLowerCase())
+                  );
+                  if (opt) { el.value = opt.value; el.dispatchEvent(new Event('change',{bubbles:true})); filled++; }
+                  else failed.push(label);
+                } else {
+                  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value')?.set
+                    || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype,'value')?.set;
+                  if (setter) setter.call(el, value); else el.value = value;
+                  el.dispatchEvent(new Event('input',{bubbles:true}));
+                  el.dispatchEvent(new Event('change',{bubbles:true}));
+                  filled++;
+                }
+              }
+              return JSON.stringify({ filled, failed, total: Object.keys(fields).length });
+            })(${JSON.stringify(fields)})`,
+            returnByValue: true
+          });
+          const r = evalRes?.result?.value ? JSON.parse(evalRes.result.value) : null;
+          if (!r) { sendResponse({ success: false, error: 'Autofill script returned no result' }); return; }
+          sendResponse({
+            success: r.filled > 0,
+            data: `Filled ${r.filled}/${r.total} fields` + (r.failed.length ? `. Not found: ${r.failed.join(', ')}` : '')
+          });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── snapshotPage ───────────────────────────────────────────────────────────
+    // DOMSnapshot.captureSnapshot returns the full structured DOM with element
+    // positions, roles, and text — far richer than innerText for Gemini.
+    if (executeAction === 'snapshotPage') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          await cdpC('DOM.enable');
+          const snap = await cdpC('DOMSnapshot.captureSnapshot', {
+            computedStyles: ['display', 'visibility'],
+            includeDOMRects: false,
+            includeBlendedBackgroundColors: false
+          });
+          const strings = snap?.strings || [];
+          const lines = new Set();
+          for (const doc of (snap?.documents || [])) {
+            const nodes = doc.nodes || {};
+            for (const vi of (nodes.textValue?.value || [])) {
+              const t = (strings[vi] || '').trim();
+              if (t.length > 1) lines.add(t);
+            }
+            for (const vi of (nodes.inputValue?.value || [])) {
+              const v = (strings[vi] || '').trim();
+              if (v) lines.add('[Input: "' + v + '"]');
+            }
+          }
+          sendResponse({ success: true, data: [...lines].join('\n').slice(0, 6000) });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── exportPDF ──────────────────────────────────────────────────────────────
+    // Page.printToPDF exports any open page as a PDF and triggers a download.
+    if (executeAction === 'exportPDF') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const filename = ((params.filename || 'export') + '.pdf').replace(/[^a-z0-9_\-\.]/gi, '-');
+          const result = await cdpC('Page.printToPDF', {
+            landscape: !!params.landscape,
+            printBackground: true,
+            paperWidth: 8.5, paperHeight: 11,
+            marginTop: 0.4, marginBottom: 0.4, marginLeft: 0.4, marginRight: 0.4
+          });
+          if (!result?.data) { sendResponse({ success: false, error: 'No PDF data returned from CDP' }); return; }
+          // Trigger download inside the tab via a blob URL
+          await cdpC('Runtime.evaluate', {
+            expression: `(function(b64, fname) {
+              const bytes = atob(b64), arr = new Uint8Array(bytes.length);
+              for (let i = 0; i < bytes.length; i++) arr[i] = bytes.charCodeAt(i);
+              const url = URL.createObjectURL(new Blob([arr], { type:'application/pdf' }));
+              Object.assign(document.createElement('a'), { href: url, download: fname }).click();
+              setTimeout(() => URL.revokeObjectURL(url), 6000);
+            })(${JSON.stringify(result.data)}, ${JSON.stringify(filename)})`
+          });
+          sendResponse({ success: true, data: 'PDF downloaded: ' + filename });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── findElement ────────────────────────────────────────────────────────────
+    // DOM.performSearch searches the entire DOM tree including shadow roots —
+    // finds elements that AX tree / CSS selectors miss (hidden components, etc).
+    if (executeAction === 'findElement') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          await cdpC('DOM.enable');
+          const query = String(params.query || params.text || params.selector || '');
+          if (!query) { sendResponse({ success: false, error: 'Provide query, text, or selector' }); return; }
+          const searchRes = await cdpC('DOM.performSearch', { query, includeUserAgentShadowDOM: true });
+          const { searchId, resultCount } = searchRes;
+          if (!resultCount) {
+            await cdpC('DOM.discardSearchResults', { searchId }).catch(() => {});
+            sendResponse({ success: false, error: `Nothing found for: "${query}"` });
+            return;
+          }
+          const items = await cdpC('DOM.getSearchResults', { searchId, fromIndex: 0, toIndex: Math.min(resultCount, 5) });
+          await cdpC('DOM.discardSearchResults', { searchId }).catch(() => {});
+          const summaries = [];
+          for (const nodeId of (items.nodeIds || [])) {
+            try {
+              const { node } = await cdpC('DOM.describeNode', { nodeId, depth: 1 });
+              const attrs = node?.attributes || [];
+              const am = {};
+              for (let i = 0; i < attrs.length - 1; i += 2) am[attrs[i]] = attrs[i+1];
+              const tag = node?.localName || '?';
+              const hint = am.id ? '#'+am.id : am.class ? '.'+am.class.split(' ')[0] : '';
+              const txt = (node?.children?.[0]?.nodeValue || am['aria-label'] || am.value || '').slice(0, 50);
+              summaries.push(`<${tag}${hint}> "${txt}"`);
+              if (summaries.length === 1) {
+                try { await cdpC('DOM.scrollIntoViewIfNeeded', { nodeId }); } catch (_) {}
+              }
+            } catch (_) {}
+          }
+          sendResponse({ success: true, data: `${resultCount} match(es) for "${query}":\n` + summaries.join('\n') });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── setMobileMode ──────────────────────────────────────────────────────────
+    // Emulation.setDeviceMetricsOverride switches the viewport to mobile size,
+    // letting the agent access mobile-only menus, layouts, and features.
+    if (executeAction === 'setMobileMode') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const enable = params.enabled !== false;
+          if (enable) {
+            await cdpC('Emulation.setDeviceMetricsOverride', {
+              width: params.width || 390, height: params.height || 844,
+              deviceScaleFactor: 2, mobile: true
+            });
+            await cdpC('Emulation.setUserAgentOverride', {
+              userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_6 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.6 Mobile/15E148 Safari/604.1'
+            });
+            sendResponse({ success: true, data: 'Mobile mode ON — 390×844, iPhone UA' });
+          } else {
+            await cdpC('Emulation.clearDeviceMetricsOverride');
+            await cdpC('Emulation.setUserAgentOverride', { userAgent: '' });
+            sendResponse({ success: true, data: 'Mobile mode OFF — desktop view restored' });
+          }
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── readNetworkResponse ────────────────────────────────────────────────────
+    // Intercepts the next fetch/XHR response matching a URL pattern and returns
+    // the raw body — reads prices, search results, API data without OCR.
+    if (executeAction === 'readNetworkResponse') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const pattern   = String(params.url || params.pattern || '');
+          const maxChars  = Math.min(8000, parseInt(params.maxChars) || 4000);
+          const timeoutMs = Math.min(30000, (parseInt(params.timeout) || 10) * 1000);
+          // Inject fetch + XHR interceptors that capture the next matching response
+          await cdpC('Runtime.evaluate', {
+            expression: `(function(pat) {
+              window.__aionNet = undefined;
+              window.__aionNetPat = pat;
+              // fetch interceptor
+              const _f = window._aionOrigFetch || window.fetch;
+              window._aionOrigFetch = _f;
+              window.fetch = async function(...a) {
+                const url = typeof a[0]==='string' ? a[0] : (a[0]?.url||'');
+                const r = await _f.apply(this, a);
+                if (!window.__aionNet && (!pat || url.includes(pat))) {
+                  try {
+                    const ct = r.headers.get('content-type')||'';
+                    const body = ct.includes('json') ? JSON.stringify(await r.clone().json()) : await r.clone().text();
+                    window.__aionNet = { url, body: body.slice(0, ${maxChars}) };
+                  } catch(_) {}
+                }
+                return r;
+              };
+              // XHR interceptor
+              const _open = XMLHttpRequest.prototype.open;
+              const _send = XMLHttpRequest.prototype.send;
+              XMLHttpRequest.prototype.open = function(m,u,...rest){ this._au=u; return _open.apply(this,[m,u,...rest]); };
+              XMLHttpRequest.prototype.send = function(...a) {
+                this.addEventListener('load', function() {
+                  if (!window.__aionNet && (!pat||(this._au||'').includes(pat)))
+                    try { window.__aionNet = { url:this._au, body:this.responseText.slice(0,${maxChars}) }; } catch(_){}
+                });
+                return _send.apply(this, a);
+              };
+            })(${JSON.stringify(pattern)})`,
+            returnByValue: true
+          });
+          // Poll until response captured or timeout
+          const deadline = Date.now() + timeoutMs;
+          let captured = null;
+          while (Date.now() < deadline) {
+            await new Promise(r => setTimeout(r, 400));
+            const poll = await cdpC('Runtime.evaluate', {
+              expression: 'window.__aionNet ? JSON.stringify(window.__aionNet) : null',
+              returnByValue: true
+            });
+            if (poll?.result?.value) { captured = JSON.parse(poll.result.value); break; }
+          }
+          // Clean up interceptors
+          await cdpC('Runtime.evaluate', {
+            expression: 'if(window._aionOrigFetch){window.fetch=window._aionOrigFetch;delete window._aionOrigFetch;} delete window.__aionNet; delete window.__aionNetPat;'
+          }).catch(() => {});
+          if (!captured) {
+            sendResponse({ success: false, error: `No network response captured within ${timeoutMs/1000}s${pattern ? ' for pattern "'+pattern+'"' : ''}` });
+            return;
+          }
+          sendResponse({ success: true, data: `[from: ${captured.url}]\n${captured.body}` });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── drag (real CDP) ────────────────────────────────────────────────────────
+    // Uses Input.dispatchDragEvent for genuine drag-and-drop that works on
+    // Trello, kanban boards, file upload zones, sliders, and reorder lists.
+    if (executeAction === 'drag') {
+      (async () => {
+        // Resolve from/to coordinates — try AX tree first, fall back to params
+        const resolveCoord = async (textParam, selectorParam, xParam, yParam, debuggee, cdpC) => {
+          if (typeof xParam === 'number' && typeof yParam === 'number') return { x: xParam, y: yParam };
+          const label = String(textParam || selectorParam || '');
+          if (!label) return null;
+          try {
+            await cdpC('Accessibility.enable');
+            await cdpC('DOM.enable');
+            const r = await cdpC('Accessibility.queryAXTree', { accessibleName: label });
+            for (const node of (r?.nodes || [])) {
+              if (!node.backendDOMNodeId) continue;
+              try {
+                await cdpC('DOM.scrollIntoViewIfNeeded', { backendNodeId: node.backendDOMNodeId }).catch(()=>{});
+                const box = await cdpC('DOM.getBoxModel', { backendNodeId: node.backendDOMNodeId });
+                const [x1,y1,x2,,, y3] = box?.model?.content || [];
+                if (x1 && y1) return { x: (x1+x2)/2, y: (y1+y3)/2 };
+              } catch (_) {}
+            }
+          } catch (_) {}
+          return null;
+        };
+
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const from = await resolveCoord(params.fromText, params.fromSelector, params.fromX, params.fromY, debuggee, cdpC);
+          const to   = await resolveCoord(params.toText,   params.toSelector,   params.toX,   params.toY,   debuggee, cdpC);
+          if (!from) { sendResponse({ success: false, error: 'Could not find drag source element' }); return; }
+          if (!to)   { sendResponse({ success: false, error: 'Could not find drag target element' }); return; }
+
+          // Full CDP drag sequence: dragIntercepted → dragEnter → drag → drop
+          await cdpC('Input.dispatchDragEvent', {
+            type: 'dragEnter', x: from.x, y: from.y,
+            data: { items: [], dragOperationsMask: 1 }
+          });
+          await new Promise(r => setTimeout(r, 50));
+          // Glide in 5 steps for smooth drag
+          const steps = 5;
+          for (let i = 1; i <= steps; i++) {
+            const sx = from.x + (to.x - from.x) * (i / steps);
+            const sy = from.y + (to.y - from.y) * (i / steps);
+            await cdpC('Input.dispatchDragEvent', {
+              type: 'drag', x: sx, y: sy,
+              data: { items: [], dragOperationsMask: 1 }
+            });
+            await new Promise(r => setTimeout(r, 30));
+          }
+          await cdpC('Input.dispatchDragEvent', {
+            type: 'dragOver', x: to.x, y: to.y,
+            data: { items: [], dragOperationsMask: 1 }
+          });
+          await new Promise(r => setTimeout(r, 80));
+          await cdpC('Input.dispatchDragEvent', {
+            type: 'drop', x: to.x, y: to.y,
+            data: { items: [], dragOperationsMask: 1 }
+          });
+          await new Promise(r => setTimeout(r, 100));
+          sendResponse({ success: true, data: `Dragged from (${Math.round(from.x)},${Math.round(from.y)}) to (${Math.round(to.x)},${Math.round(to.y)})` });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
     if (executeAction === 'doubleClick') {
       // Content-script click/dblclick events are ALWAYS isTrusted:false — no
       // amount of synthetic dispatchEvent() can change that. Security-sensitive

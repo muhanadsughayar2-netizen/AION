@@ -10271,6 +10271,71 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'autofill',
+      description: 'Fill an entire HTML form in one shot by passing field labels and their values. Far faster than clicking and typing into each field one by one. Works on contact forms, signup forms, checkout forms, and any page with <input>, <textarea>, or <select> elements.',
+      parameters: {
+        type: 'object',
+        properties: {
+          fields: {
+            type: 'object',
+            description: 'Object mapping field labels to values. The label should match the visible label, placeholder, or name attribute of the field. Example: {"First name":"Joseph","Email":"joseph@example.com","Country":"Jordan","Message":"Hello"}'
+          }
+        },
+        required: ['fields']
+      }
+    },
+    {
+      name: 'snapshotPage',
+      description: 'Take a deep structured snapshot of the current page using the browser\'s DOM engine — returns all visible text, input values, and element roles in a rich format. Use this when the regular page context seems incomplete, when elements are hidden in shadow DOM, or when you need to understand a complex page layout before acting.',
+      parameters: { type: 'object', properties: {} }
+    },
+    {
+      name: 'exportPDF',
+      description: 'Export the current page as a PDF file and download it. Works on any page — articles, invoices, reports, Google Docs, spreadsheets, web apps. One call, no menus needed.',
+      parameters: {
+        type: 'object',
+        properties: {
+          filename: { type: 'string', description: 'Name for the downloaded PDF file (without .pdf extension), e.g. "invoice-march" or "search-results"' },
+          landscape: { type: 'boolean', description: 'If true, exports in landscape orientation. Default is portrait.' }
+        }
+      }
+    },
+    {
+      name: 'findElement',
+      description: 'Search the entire DOM tree (including shadow roots and hidden layers) for elements matching a CSS selector, XPath, or text string. Returns up to 5 matches with their tag, id, class, and text. Use when click/hover cannot find an element — this searches places the accessibility tree cannot reach.',
+      parameters: {
+        type: 'object',
+        properties: {
+          query: { type: 'string', description: 'CSS selector, XPath expression, or plain text to search for, e.g. ".submit-btn", "//button[@aria-label=\'Close\']", or "Accept cookies"' }
+        },
+        required: ['query']
+      }
+    },
+    {
+      name: 'setMobileMode',
+      description: 'Switch the current page to a mobile phone viewport (390×844, iPhone user-agent) or back to desktop. Use when a site hides features behind a hamburger menu, has a mobile-only interface, or when the desktop layout makes elements hard to find.',
+      parameters: {
+        type: 'object',
+        properties: {
+          enabled: { type: 'boolean', description: 'true = enable mobile mode, false = restore desktop view' },
+          width:   { type: 'number', description: 'Mobile viewport width in pixels (default 390)' },
+          height:  { type: 'number', description: 'Mobile viewport height in pixels (default 844)' }
+        }
+      }
+    },
+    {
+      name: 'readNetworkResponse',
+      description: 'Capture the next API/XHR/fetch response from the page and return its raw body. Use BEFORE triggering the request (e.g. before clicking Search or Submit) so the interceptor is ready. Perfect for reading search results, prices, flight data, or any data the page loads from a server — far more accurate than reading rendered text.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url:     { type: 'string', description: 'URL pattern to filter responses, e.g. "api/search" or "flights". Leave empty to capture the very next response.' },
+          timeout: { type: 'number', description: 'Seconds to wait for a matching response (default 10, max 30)' },
+          maxChars:{ type: 'number', description: 'Max characters of response body to return (default 4000)' }
+        }
+      }
+    },
+    {
       name: 'scroll',
       description: 'Scroll the current page.',
       parameters: {
@@ -10351,7 +10416,13 @@ Rules:
 - WAITING FOR CONTENT: After a click that triggers a page load, form submit, or AJAX request, use waitForElement before your next action. Example: waitForElement({text:"Search results", timeout:10}). Without this, you risk clicking elements that have not loaded yet.
 - READING DATA: Use readText to extract exact values from the page — a price, a number, a field value — when the screenshot alone is not precise enough. The extracted text is returned directly in the tool response so you can use it in your next step. Example: readText({selector:".total-price"}) or readText({text:"Balance"}). 
 - REPLACING FIELD VALUES: When typing into a field that already has content (a search box, a form field with a pre-filled value), add clearFirst:true to "type" to erase the old value before typing. Example: type({text:"new search", clearFirst:true}).
-- COORDINATE CLICK: If you have tried text/selector and an element still cannot be found, use click with x and y coordinates from the screenshot. Example: click({x:540, y:320}). Use this as a last resort only.`;
+- COORDINATE CLICK: If you have tried text/selector and an element still cannot be found, use click with x and y coordinates from the screenshot. Example: click({x:540, y:320}). Use this as a last resort only.
+- FORM FILLING: When a task involves filling multiple fields on a form, use autofill with a fields object — one call fills everything. Example: autofill({fields:{"First name":"Joseph","Email":"j@example.com","Country":"Jordan"}}). Only fall back to typing field-by-field if autofill fails.
+- PAGE PDF EXPORT: To save any page as a PDF, call exportPDF({filename:"my-file"}). Works on articles, invoices, Docs, spreadsheets — no need to open menus or find a print button.
+- READING API DATA: To get accurate data (prices, search results, flight info) directly from the server response — call readNetworkResponse FIRST (before triggering the request), then click the search/submit button. The interceptor captures the raw JSON response and returns it. Example: readNetworkResponse({url:"api/search", timeout:10}) then click("Search").
+- DEEP ELEMENT SEARCH: If click or hover cannot find an element (returns "not found"), try findElement({query:".class-name"}) or findElement({query:"button text"}) — it searches shadow DOM and hidden layers. Use the returned tag/id info to build a better selector for your next click.
+- MOBILE MODE: If a site has a hamburger menu, shows content differently on mobile, or hides features behind a mobile-only UI — use setMobileMode({enabled:true}) to switch to iPhone viewport. Switch back with setMobileMode({enabled:false}) when done.
+- DEEP PAGE SNAPSHOT: If the page context seems incomplete or you cannot find elements you can see in the screenshot, call snapshotPage() — it returns a richer structured DOM snapshot that includes hidden input values, shadow DOM text, and element roles the regular page text misses.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
