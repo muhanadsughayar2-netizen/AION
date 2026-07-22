@@ -1,0 +1,452 @@
+Project # 1 Under AI Stream
+AI Integration in Business Development
+
+Department Workflows
+
+Project Objective
+The purpose of this project is to improve the process and output of proposal development, through the
+integration of Artificial Intelligence (AI)–driven workflows into BDO Jordan’s Business Development
+Department.
+The AI team aims to identify areas where AI can streamline routine tasks, enhance knowledge
+management, and expand access to institutional information. This includes automating CV updates,
+accelerating proposal content development, intelligently retrieving past project credentials, and
+enabling data-driven decision-making across the proposal lifecycle.
+Aspects that will be improved through this project are::
+ RFP will be automatically summarized and tagged, with key requirements extracted to speed
+up opportunity assessment.
+ RFP will be intelligently matched with past projects and consultant profiles using semantic
+search,
+ Consultant CVs will be automatically updated and tailored to the specific RFP based on their
+actual engagement history.
+ AI-generated compliance checklists will support the team in ensuring all client requirements
+are fully addressed before submission, and
+ Proposals will be auto-classified and indexed into a centralized, searchable repository.
+
+Pre-Requisites for project
+1- To fully utilize and activate Tashriq, as it will become an important data source and provide
+workflow management for the BD Department and any future AI-integration projects.
+2- To allow the AI team enough time (among their other responsibilities) to work on this project.
+3- Access to selected BD records by AI team during implementation.
+
+Proposal-Development Improvements VIA AI project
+The following table provides an overview of selected proposal-writing steps currently followed within
+the Business Development Department. The table outlines the key activities involved, the limitations
+or challenges faced in each step, and the potential areas where AI can introduce meaningful
+improvements:
+Activity
+
+Current
+Workflow
+Description
+
+Limitations /
+Challenges
+
+AI Improvement
+Opportunities Output/Enhancemen
+t
+
+Proposal
+Intake &amp;
+Opportunity
+Review
+
+Business
+Development
+receives RFPs,
+reviews
+requirements,
+and coordinates
+with service
+lines.
+
+
+Manual review
+is time-
+consuming 
+Difficulty
+identifying
+hidden
+requirements 
+inconsistent
+extraction of
+key points
+
+(1) AI-powered RFP
+summarization,
+requirement
+extraction, and
+automated
+opportunity tagging.
+
+ Faster/Efficient
+review time (A
+quick glance over
+the summary will
+be sufficient to
+understand the
+context).
+ A record of the
+review is recorded
+in a database
+alongside the tags
+for future
+reference.
+
+Proposal
+Planning &amp;
+Coordination
+
+BD prepares a
+checklist,
+allocates
+responsibilities,
+and requests
+input from
+technical
+teams.
+
+
+Follow-up is
+manual
+
+Delays in
+receiving
+input
+
+Lack of
+visibility on
+progress
+
+By activating
+Tashriq, follow-ups,
+progress tracking,
+and submission will
+become highly
+automated and
+efficient.
+
+Credentials &amp;
+Past Projects
+Retrieval
+
+BD searches
+internal data
+for relevant
+previous
+projects and
+team
+credentials.
+
+Search is
+manual and
+time-
+consuming 
+Risk of missing
+relevant
+projects 
+Inconsistent
+record
+structure
+
+By activating
+Tashriq, each
+opportunity is
+mapped with
+internal and external
+staff records which
+enables
+(2) AI search
+engines, semantic
+search, and
+intelligent matching
+of past projects to
+RFP requirements.
+
+ An automatically
+generated list of
+previous projects
+that matches the
+new opportunity
+with a tailored
+description that
+fits as a credential
+for the proposal.
+
+CV
+Preparation &amp;
+Formatting
+
+BD drafts or
+updates
+consultant CVs
+and adjusts
+them to the
+proposal
+
+ Manual CV
+updates
+ CVs are not
+always up to
+date
+
+(3) Automated CV
+generation and
+dynamic skills
+extraction from past
+projects tailored for
+each proposal.
+
+ Each CV will be
+tailored to fit the
+new opportunity
+(CVs will be written
+based on what the
+expert previously
+
+template. worked on while
+also considering the
+RFP requirements)
+
+Proposal
+Writing
+(Methodology
+)
+
+Technical teams
+draft
+narratives; BD
+reviews for
+consistency and
+coherence.
+
+ Time-
+consuming;
+writing quality
+varies
+ Lack of
+standardized
+language
+
+This will be covered
+in a future project.
+
+Document
+Assembly &amp;
+Formatting
+
+BD compiles
+multiple
+sections,
+formats the
+final document,
+and ensures
+compliance
+with submission
+guidelines.
+
+Formatting
+inconsistencies 
+Repetitive
+layout tasks 
+Time pressure
+before
+deadline
+
+This will be covered
+in a future project.
+
+Quality
+Review &amp;
+Compliance
+Check
+
+BD conducts
+final review for
+completeness
+and adherence
+to
+requirements.
+
+Manual
+compliance
+check can
+miss small
+details 
+Repetitive
+checks
+
+(4) Auto generated
+(AI Generated)
+compliance
+checklist which is
+generated then
+filled by the
+Business
+Development Team.
+
+ Ensuring that all
+requirements and
+documents are
+ready to submit the
+proposal.
+
+Submission &amp;
+Archiving
+
+Proposal is
+submitted and
+stored in
+internal folders.
+
+Files scattered
+across systems 
+Difficulty
+retrieving past
+submissions
+
+(5) AI-based
+document
+classification,
+tagging, and
+centralized proposal
+indexing.
+
+ This enables
+searching using
+context instead of
+exact keyworks (e.g
+“Proposal that
+involves interviews
+over the phone”).
+
+Post-
+Submission
+Tracking &amp;
+Contract
+Management
+
+BD follows up
+on results and
+manages
+contract
+documents
+when awarded.
+
+ Manual follow-
+up
+ Limited
+analytics
+
+Through the
+workflow pipeline
+and followup
+reminders in Tashriq,
+the Business
+Development team
+will have a very
+efficient followup
+mechanism and
+opportunity status
+update. This will
+enable us to create
+an (6) AI-driven
+analytics of all
+opportunities that
+BDO Jordan engages
+with.
+
+ Reporting for
+granted and not
+granted
+opportunities
+categorized by
+service, department
+or any other
+parameter.
+ When searching for
+previous proposals
+the status will
+provide an insight
+of how the proposal
+performed.
+
+Proposal Phases and Timeline
+Below is a tentative plan that will be updated based on progress and identified limitations during
+implementation.
+# Steps Responsibility Deadline
+
+1
+Document project concept and stages
+
+Lutfi Sayegh
+Ashraf Khasawneh
+Leen Samman
+
+Week 3 Nov 25
+
+2 Present concept to management
+
+Lutfi Sayegh
+Ashraf Khasawneh
+Leen Samman
+
+Week 1 Dec 25
+3 Approval to kickstart Rami Samman Week 1 Dec 25
+4
+Meet with the Business Development Team to
+discuss and map their current workflow and
+amend the plan accordingly
+
+Lutfi Sayegh
+Ashraf Khasawneh
+Leen Samman
+
+Week 2 Dec 25
+
+5
+Meet with Tashriq development team to discuss
+their current and future progress and suggest
+changes and amendments to Tashriq and align the
+plan accordingly
+
+Lutfi Sayegh
+Ashraf Khasawneh
+Leen Samman
+
+Week 3 Dec 25
+
+6
+Prepare a list of alternatives and technical
+documentation with a revised timeline for the
+project (A detailed plan highlighting a deadline
+for each activity will be provided)
+
+Ashraf Khasawneh
+Leen Samman Week 4 Dec 25
+
+7 Design proof of concept and present demo Ashraf Khasawneh
+
+Leen Samman Week 1 Jan 26
+8 Final approval for the project Rami Samman Week 2 Jan 26
+9 Start project implementation Ashraf Khasawneh
+
+Leen Samman Week 3 Jan 26
+
+10 Provide monthly progress update
+
+Lutfi Sayegh
+Ashraf Khasawneh
+Leen Samman
+
+Week 4 Feb 26
+Week 4 Mar 26
+
+11 Present project output – Draft for Feedback Ashraf Khasawneh
+
+Leen Samman Week 2 April 26
+
+12 Refine project output based on feedback Ashraf Khasawneh
+
+Leen Samman Week 4 April 26
+13 Test output by BD team BD Team Week 1 May 25
