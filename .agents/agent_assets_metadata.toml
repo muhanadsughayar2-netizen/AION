@@ -95,3 +95,9 @@ id = "R8nGUC9f3cPwaYBtF6cUt"
 uri = "file://attached_assets/autopilot_sheets_docs_typing_issue.md"
 type = "text"
 title = "Autopilot Sheets/Docs Typing Issue — Full Writeup"
+
+[[outputs]]
+id = "Z5fk8KjEkfV36d2l-xRsi"
+uri = "file://aion_ai_showcase.pdf"
+type = "pdf"
+title = "Aion AI — One-Page Showcase"
