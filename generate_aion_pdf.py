@@ -3,13 +3,13 @@ from reportlab.lib import colors
 from reportlab.lib.units import mm
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import ParagraphStyle
-from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_RIGHT
+from reportlab.lib.enums import TA_LEFT, TA_CENTER
 from reportlab.platypus import Flowable
 import math
 
 W, H = A4
 
-# ── Palette (bright, Google-inspired) ───────────────────────────────────────
+# ── Palette ──────────────────────────────────────────────────────────────────
 G_BLUE   = colors.HexColor('#4285F4')
 G_RED    = colors.HexColor('#EA4335')
 G_YELLOW = colors.HexColor('#FBBC05')
@@ -18,383 +18,392 @@ PURPLE   = colors.HexColor('#7C3AED')
 TEAL     = colors.HexColor('#0EA5E9')
 PINK     = colors.HexColor('#EC4899')
 ORANGE   = colors.HexColor('#F97316')
-INDIGO   = colors.HexColor('#6366F1')
-
-BG       = colors.HexColor('#F8FAFF')
-CARD_BG  = colors.white
-BORDER   = colors.HexColor('#E2E8F0')
-TEXT     = colors.HexColor('#1E293B')
-TEXT2    = colors.HexColor('#475569')
-TEXT3    = colors.HexColor('#94A3B8')
+INDIGO   = colors.HexColor('#818CF8')
+DARK     = colors.HexColor('#0F1117')
+CARD     = colors.HexColor('#1A1D27')
+CARD2    = colors.HexColor('#13161F')
+BORDER   = colors.HexColor('#2A2D3A')
+TEXT_W   = colors.HexColor('#F1F5F9')
+TEXT_DIM = colors.HexColor('#94A3B8')
+TEXT_MUT = colors.HexColor('#475569')
 WHITE    = colors.white
 
+HEX = {
+    G_BLUE:'4285F4', G_RED:'EA4335', G_YELLOW:'FBBC05', G_GREEN:'34A853',
+    PURPLE:'7C3AED', TEAL:'0EA5E9', PINK:'EC4899', ORANGE:'F97316',
+    INDIGO:'818CF8',
+}
+
+def h(c): return HEX.get(c,'4285F4')
+
 # ── Styles ───────────────────────────────────────────────────────────────────
-def sty(name, **kw):
-    return ParagraphStyle(name, **kw)
+def sty(name,**kw): return ParagraphStyle(name,**kw)
+s_h1   = sty('h1', fontSize=26,leading=32,textColor=WHITE,       fontName='Helvetica-Bold',alignment=TA_CENTER)
+s_sub  = sty('sub',fontSize=9, leading=12,textColor=TEXT_DIM,    fontName='Helvetica',     alignment=TA_CENTER)
+s_sec  = sty('sec',fontSize=9, leading=12,textColor=TEXT_W,      fontName='Helvetica-Bold',alignment=TA_LEFT)
+s_body = sty('bod',fontSize=7.5,leading=11,textColor=TEXT_DIM,   fontName='Helvetica',     alignment=TA_LEFT)
+s_tag  = sty('tag',fontSize=6.5,leading=8,textColor=WHITE,       fontName='Helvetica-Bold',alignment=TA_CENTER)
+s_foot = sty('ft', fontSize=7.5,leading=10,textColor=TEXT_DIM,   fontName='Helvetica',     alignment=TA_CENTER)
+s_cta  = sty('ct', fontSize=9,  leading=12,textColor=G_BLUE,     fontName='Helvetica-Bold',alignment=TA_CENTER)
 
-s_title   = sty('T',  fontSize=22, leading=28, textColor=WHITE,  fontName='Helvetica-Bold', alignment=TA_CENTER)
-s_tagline = sty('TL', fontSize=9.5,leading=13, textColor=colors.HexColor('#CBD5E1'), fontName='Helvetica', alignment=TA_CENTER)
-s_name    = sty('N',  fontSize=8,  leading=11, textColor=colors.HexColor('#93C5FD'), fontName='Helvetica-Bold', alignment=TA_CENTER)
-s_sec     = sty('SH', fontSize=10, leading=13, textColor=TEXT,   fontName='Helvetica-Bold', alignment=TA_LEFT)
-s_body    = sty('B',  fontSize=7.5,leading=11, textColor=TEXT2,  fontName='Helvetica', alignment=TA_LEFT)
-s_small   = sty('SM', fontSize=6.5,leading=9,  textColor=TEXT3,  fontName='Helvetica', alignment=TA_LEFT)
-s_badge   = sty('BD', fontSize=6.5,leading=8,  textColor=WHITE,  fontName='Helvetica-Bold', alignment=TA_CENTER)
-s_tool    = sty('TL2',fontSize=7,  leading=9,  textColor=G_BLUE, fontName='Helvetica-Bold', alignment=TA_CENTER)
-s_card_h  = sty('CH', fontSize=8.5,leading=11, textColor=TEXT,   fontName='Helvetica-Bold', alignment=TA_LEFT)
-s_card_b  = sty('CB', fontSize=7,  leading=10, textColor=TEXT2,  fontName='Helvetica', alignment=TA_LEFT)
-s_center  = sty('CC', fontSize=7.5,leading=10, textColor=TEXT2,  fontName='Helvetica', alignment=TA_CENTER)
-s_footer  = sty('FT', fontSize=7,  leading=10, textColor=TEXT3,  fontName='Helvetica', alignment=TA_CENTER)
-s_free    = sty('FR', fontSize=11, leading=14, textColor=G_GREEN, fontName='Helvetica-Bold', alignment=TA_CENTER)
+# ── Draw the AION spiral logo (4-arc swirl matching the screenshot) ──────────
+class AionLogo(Flowable):
+    def __init__(self, size=14*mm):
+        super().__init__()
+        self.size = size
+        self.width = self.height = size
 
+    def draw(self):
+        c = self.canv
+        cx = self.size / 2
+        cy = self.size / 2
+        r  = self.size * 0.42
+        arc_colors = [G_BLUE, G_RED, G_YELLOW, G_GREEN]
+        # Draw 4 thick arcs, each 90°, offset by 90°
+        for i, ac in enumerate(arc_colors):
+            c.setStrokeColor(ac)
+            c.setLineWidth(self.size * 0.14)
+            start = 90 * i
+            c.arc(cx - r, cy - r, cx + r, cy + r,
+                  startAng=start, extent=80)
+        # Inner white circle
+        c.setFillColor(CARD)
+        c.setStrokeColor(CARD)
+        c.circle(cx, cy, r * 0.35, fill=1, stroke=0)
+
+# ── Hero block ────────────────────────────────────────────────────────────────
 class HeroBlock(Flowable):
     def __init__(self, pw):
         super().__init__()
-        self.width = pw
-        self.height = 52*mm
+        self.width  = pw
+        self.height = 58*mm
+
     def draw(self):
         c = self.canv
-        # Gradient background (simulated with layered rects)
-        steps = 30
+        pw = self.width
+        h_  = self.height
+
+        # Background
+        c.setFillColor(DARK)
+        c.rect(0, 0, pw, h_, fill=1, stroke=0)
+
+        # Top gradient strip
+        steps = 20
         for i in range(steps):
-            t = i / steps
-            r = 0.259 + t*(0.486 - 0.259)
-            g = 0.522 + t*(0.102 - 0.522)
-            b = 0.957 + t*(0.937 - 0.957)
-            c.setFillColorRGB(r, g, b)
-            y0 = (self.height / steps) * i
-            c.rect(0, y0, self.width, self.height/steps + 1, fill=1, stroke=0)
-        # Decorative circles
-        c.setFillColor(colors.HexColor('#FFFFFF'))
-        c.setFillAlpha = lambda a: None
-        for cx2, cy2, r2, alpha in [(self.width*0.85, self.height*0.7, 18*mm, 0.07),
-                                     (self.width*0.1,  self.height*0.3, 12*mm, 0.05),
-                                     (self.width*0.5,  self.height*1.1, 25*mm, 0.04)]:
-            c.setFillColor(colors.HexColor('#FFFFFF' ))
-            c.circle(cx2, cy2, r2, fill=1, stroke=0)
-        # Camera emoji + title
+            t = i/steps
+            # Blue to purple gradient top band
+            r_v = 0.259 + t*0.227
+            g_v = 0.522 - t*0.336
+            b_v = 0.957 - t*0.108
+            c.setFillColorRGB(r_v, g_v, b_v, alpha=0.18)
+            yy = h_ - (h_*0.35/steps)*(i+1)
+            c.rect(0, yy, pw, h_*0.35/steps+1, fill=1, stroke=0)
+
+        # Decorative subtle glow circles
+        for (gx, gy, gr, ga, gc) in [
+            (pw*0.12, h_*0.75, 20*mm, 0.06, G_BLUE),
+            (pw*0.88, h_*0.30, 16*mm, 0.05, PURPLE),
+            (pw*0.50, h_*0.10, 22*mm, 0.04, G_GREEN),
+        ]:
+            c.setFillColor(gc)
+            c.circle(gx, gy, gr, fill=1, stroke=0)
+
+        # Logo spiral arcs
+        lx = pw/2 - 8*mm
+        ly = h_ - 18*mm
+        lr = 7*mm
+        arc_col = [G_BLUE, G_RED, G_YELLOW, G_GREEN]
+        c.setLineWidth(lr*0.30)
+        for i, ac in enumerate(arc_col):
+            c.setStrokeColor(ac)
+            start = 90*i
+            c.arc(lx-lr, ly-lr, lx+lr, ly+lr, startAng=start, extent=80)
+
+        # AION text
         c.setFillColor(WHITE)
-        c.setFont('Helvetica-Bold', 24)
-        c.drawCentredString(self.width/2, self.height - 16*mm, '\U0001f4f8  Aion AI')
-        c.setFillColor(colors.HexColor('#CBD5E1'))
-        c.setFont('Helvetica', 9)
-        c.drawCentredString(self.width/2, self.height - 24*mm,
-            'AI-Powered Chrome Extension  \u00b7  Browser Automation  \u00b7  Multi-Modal Intelligence')
-        # FREE badge
-        c.setFillColor(G_GREEN)
-        bw, bh = 22*mm, 7*mm
-        bx = self.width/2 - bw/2
-        by = self.height - 34*mm
-        c.roundRect(bx, by, bw, bh, 3, fill=1, stroke=0)
-        c.setFillColor(WHITE)
-        c.setFont('Helvetica-Bold', 8)
-        c.drawCentredString(self.width/2, by + 1.8*mm, '100% FREE')
-        # Name
-        c.setFillColor(colors.HexColor('#93C5FD'))
-        c.setFont('Helvetica-Bold', 8)
-        c.drawCentredString(self.width/2, self.height - 44*mm, 'Built by Muhanad Sughayar  \u00b7  AI Developer & Automation Engineer')
+        c.setFont('Helvetica-Bold', 22)
+        c.drawString(pw/2 + 1*mm, ly - 2*mm, 'AION')
 
-class ColoredRect(Flowable):
-    def __init__(self, w, h, fill, radius=4, stroke_color=None):
-        super().__init__()
-        self.width, self.height = w, h
-        self.fill, self.radius, self.stroke_color = fill, radius, stroke_color
-    def draw(self):
-        c = self.canv
-        c.setFillColor(self.fill)
-        if self.stroke_color:
-            c.setStrokeColor(self.stroke_color)
-            c.roundRect(0, 0, self.width, self.height, self.radius, fill=1, stroke=1)
-        else:
-            c.roundRect(0, 0, self.width, self.height, self.radius, fill=1, stroke=0)
+        # "POWERED BY GOOGLE AI STUDIO"
+        c.setFont('Helvetica', 6.5)
+        px = pw/2 + 1*mm
+        py_txt = ly - 7.5*mm
+        label = 'POWERED BY '
+        c.setFillColor(TEXT_DIM)
+        c.drawString(px, py_txt, label)
+        lw = c.stringWidth(label, 'Helvetica', 6.5)
+        for word, col_c in [('GOOGLE ', G_RED),('AI ', G_BLUE),('STUDIO', G_GREEN)]:
+            c.setFillColor(col_c)
+            c.setFont('Helvetica-Bold', 6.5)
+            c.drawString(px + lw, py_txt, word)
+            lw += c.stringWidth(word, 'Helvetica-Bold', 6.5)
 
-COLOR_HEX = {
-    G_BLUE: '4285F4', G_RED: 'EA4335', G_YELLOW: 'FBBC05', G_GREEN: '34A853',
-    PURPLE: '7C3AED', TEAL: '0EA5E9', PINK: 'EC4899', ORANGE: 'F97316',
-    INDIGO: '6366F1',
-}
+        # Tagline
+        c.setFillColor(TEXT_DIM)
+        c.setFont('Helvetica', 8.5)
+        c.drawCentredString(pw/2, h_ - 28*mm,
+            'Run Gemini, Veo & Lyria directly with your free API key')
 
-def section_header(title, color=G_BLUE):
-    h = COLOR_HEX.get(color, '4285F4')
-    return Paragraph(f'<font color="#{h}"><b>{title}</b></font>', s_sec)
+        # Badge row
+        badges = [
+            ('Zero Subscriptions', G_GREEN),
+            ('100% Private', G_BLUE),
+            ('Free API Key', PURPLE),
+            ('No Middleman', G_RED),
+        ]
+        bw, bh = 28*mm, 5.5*mm
+        total = len(badges)*bw + (len(badges)-1)*3*mm
+        bx = pw/2 - total/2
+        by = h_ - 39*mm
+        for label2, bc in badges:
+            c.setFillColor(bc)
+            c.roundRect(bx, by, bw, bh, 2, fill=1, stroke=0)
+            c.setFillColor(WHITE)
+            c.setFont('Helvetica-Bold', 6.5)
+            c.drawCentredString(bx + bw/2, by + 1.6*mm, label2)
+            bx += bw + 3*mm
 
-def card(icon, title, bullets, accent=G_BLUE):
-    h = COLOR_HEX.get(accent, '4285F4')
-    lines = [f'<font color="#475569" size="7">\u2022 {b}</font>' for b in bullets]
-    txt = f'<font color="#{h}"><b>{icon}  {title}</b></font><br/>' + '<br/>'.join(lines)
+        # Name line
+        c.setFillColor(TEXT_DIM)
+        c.setFont('Helvetica', 7.5)
+        c.drawCentredString(pw/2, h_ - 50*mm,
+            'Built by  Muhanad Sughayar  \u00b7  AI Developer & Automation Engineer  \u00b7  Available for Custom AI Projects')
+
+# ── Card helper ───────────────────────────────────────────────────────────────
+def card(icon, title, bullets, accent_hex):
+    lines = [f'<font color="#64748B" size="7">\u2022 {b}</font>' for b in bullets]
+    txt = (f'<font color="#{accent_hex}"><b>{icon}  {title}</b></font><br/>'
+           + '<br/>'.join(lines))
     return Paragraph(txt, s_body)
+
+def card_table(rows_data, col_widths, border_colors):
+    t = Table(rows_data, colWidths=col_widths)
+    ts = [
+        ('TOPPADDING',    (0,0),(-1,-1), 6),
+        ('BOTTOMPADDING', (0,0),(-1,-1), 6),
+        ('LEFTPADDING',   (0,0),(-1,-1), 6),
+        ('RIGHTPADDING',  (0,0),(-1,-1), 5),
+        ('VALIGN',        (0,0),(-1,-1), 'TOP'),
+        ('BACKGROUND',    (0,0),(-1,-1), CARD),
+    ]
+    for col_i, bc in enumerate(border_colors):
+        ts.append(('LINEBELOW', (col_i,0),(col_i,0), 1.5, colors.HexColor('#'+bc)))
+    t.setStyle(TableStyle(ts))
+    return t
+
+def section_label(icon, title, col='4285F4'):
+    return Paragraph(f'<font color="#{col}"><b>{icon}  {title}</b></font>', s_sec)
 
 def build_pdf(path):
     doc = SimpleDocTemplate(path, pagesize=A4,
-        leftMargin=12*mm, rightMargin=12*mm, topMargin=0, bottomMargin=8*mm)
-    pw = W - 24*mm
+        leftMargin=11*mm, rightMargin=11*mm, topMargin=0, bottomMargin=6*mm)
+    pw = W - 22*mm
     story = []
 
     # ── HERO ─────────────────────────────────────────────────────────────────
     story.append(HeroBlock(pw))
     story.append(Spacer(1, 4*mm))
 
-    # ── ROW 1: Screenshots + Upload + Autopilot Agent ─────────────────────────
-    story.append(section_header('⚡  Core Features', G_BLUE))
-    story.append(Spacer(1, 2*mm))
+    # ── SNAP & BUILD ROW ──────────────────────────────────────────────────────
+    story.append(section_label('📸', 'SNAP & BUILD SYSTEM  —  Your Superpower', '4285F4'))
+    story.append(Spacer(1, 1.5*mm))
 
-    col3 = pw/3 - 2*mm
-    feat_data = [[
-        card('📸', 'Screenshot Capture', [
-            'Full page & region snip capture',
-            'Queue up to 10 screenshots',
-            'Drag & drop reordering',
-            'Multi-select operations',
-            'Annotation tools & stickers',
-            'Privacy-first (session storage)',
-        ], G_BLUE),
-        card('🚀', 'Batch AI Upload', [
-            'Auto-detects ChatGPT, Claude, Grok',
-            'One-click batch upload',
-            'Upload Mode with smart detection',
-            'Works on all major AI platforms',
-            'No backend needed for capture',
-            'Instant multi-image delivery',
-        ], G_RED),
-        card('🤖', 'AI Autopilot Agent', [
-            'Natural language task input',
-            '20+ CDP browser tools',
-            '4-step click fallback chain',
-            'Smart wait after every action',
-            '3-failure safety stop guard',
-            'Powered by Gemini 2.5 Pro',
-        ], PURPLE),
+    c3 = pw/3 - 1.5*mm
+    snap_row = [[
+        card('🎯', 'Snap Vision', [
+            'Snip any part of your screen instantly',
+            'Analyze bugs, docs, layouts in seconds',
+            'Answers, translations, or fixes on the spot',
+            'Batch-upload to ChatGPT, Claude, Grok',
+            'Full page & region capture modes',
+        ], '4285F4'),
+        card('🏗️', 'Live App Builder', [
+            'Describe any tool in plain English',
+            'AI writes the code & launches it live',
+            'Build websites, games, calculators',
+            'Real interactive code, one-click publish',
+            'Live preview inside your browser',
+        ], '34A853'),
+        card('⚙️', 'Quick Actions', [
+            'Build  \u2014 generate a working app',
+            'Research  \u2014 deep web research',
+            'Search  \u2014 smart search results',
+            'Read  \u2014 summarise any page',
+            'Code  \u2014 write & debug code',
+        ], 'F97316'),
     ]]
-    feat_table = Table(feat_data, colWidths=[col3]*3, spaceBefore=0)
-    feat_table.setStyle(TableStyle([
-        ('BACKGROUND',    (0,0),(-1,-1), CARD_BG),
-        ('TOPPADDING',    (0,0),(-1,-1), 5),
-        ('BOTTOMPADDING', (0,0),(-1,-1), 5),
-        ('LEFTPADDING',   (0,0),(-1,-1), 5),
-        ('RIGHTPADDING',  (0,0),(-1,-1), 5),
-        ('VALIGN',        (0,0),(-1,-1), 'TOP'),
-        ('BOX',           (0,0),(0,0),   0.5, colors.HexColor('#E0F2FE')),
-        ('BOX',           (1,0),(1,0),   0.5, colors.HexColor('#FEE2E2')),
-        ('BOX',           (2,0),(2,0),   0.5, colors.HexColor('#EDE9FE')),
-        ('ROUNDEDCORNERS',[4]),
-    ]))
-    story.append(feat_table)
+    story.append(card_table(snap_row, [c3]*3, ['4285F4','34A853','F97316']))
     story.append(Spacer(1, 3*mm))
 
-    # ── ROW 2: AI MODES ───────────────────────────────────────────────────────
-    story.append(section_header('🧠  Multi-Modal AI  —  4 Studio Modes', PURPLE))
-    story.append(Spacer(1, 2*mm))
+    # ── AI STUDIOS ROW ────────────────────────────────────────────────────────
+    story.append(section_label('🎨', 'THE CREATIVE SUITE  —  4 Professional AI Studios', 'EC4899'))
+    story.append(Spacer(1, 1.5*mm))
 
-    col4 = pw/4 - 1.5*mm
-    ai_data = [[
-        card('👁️', 'Vision Mode', [
-            'Gemini 2.5 Pro reads screenshots',
-            'Understands any page or doc',
-            'Answers questions about images',
-            'Context-aware responses',
-        ], G_BLUE),
-        card('🎨', 'Image Studio', [
-            'AI image generation',
-            'Gemini image models',
-            'Multiple styles & prompts',
-            'Download & share results',
-        ], PINK),
-        card('🎵', 'Song Studio', [
-            'Text-to-speech music',
-            'Natural voice TTS',
-            'Chunked audio playback',
-            'Multiple voice styles',
-        ], G_GREEN),
-        card('🎬', 'Video Studio', [
-            'Google Veo video generation',
-            'Multi-clip chaining',
-            '16:9 / 9:16 / 1:1 ratios',
-            'Storyboard editor + AI director',
-        ], ORANGE),
+    c4 = pw/4 - 1.5*mm
+    studio_row = [[
+        card('🎬', 'Veo 3.1 Video Studio', [
+            'Text-to-cinematic video generation',
+            'High-quality sound auto-synced',
+            'Multi-clip storyboard editor',
+            '16:9 / 9:16 / 1:1 aspect ratios',
+            'AI director expands your brief',
+        ], 'EA4335'),
+        card('🎙️', 'Broadcast Studio', [
+            'Any file or image → AI podcast',
+            'Multi-voice talk show format',
+            'Hosts: Zephyr, Kore, Fenrir',
+            'Studio-quality audio output',
+            'Custom scripts & formats',
+        ], 'FBBC05'),
+        card('🍌', 'Nano Banana Images', [
+            'Photorealistic image generation',
+            'Edit, upscale, create precision',
+            'Professional studio quality',
+            'Multiple styles in seconds',
+            'Gemini Imagen models',
+        ], 'F97316'),
+        card('🎵', 'Lyria Music Studio', [
+            'Compose studio-grade music',
+            'Describe the "vibe" → full track',
+            'Background music & soundscapes',
+            "Google's Lyria model direct",
+            'Unlimited creative generation',
+        ], '34A853'),
     ]]
-    ai_table = Table(ai_data, colWidths=[col4]*4)
-    ai_table.setStyle(TableStyle([
-        ('BACKGROUND',    (0,0),(-1,-1), CARD_BG),
-        ('TOPPADDING',    (0,0),(-1,-1), 5),
-        ('BOTTOMPADDING', (0,0),(-1,-1), 5),
-        ('LEFTPADDING',   (0,0),(-1,-1), 5),
-        ('RIGHTPADDING',  (0,0),(-1,-1), 5),
-        ('VALIGN',        (0,0),(-1,-1), 'TOP'),
-        ('BOX',           (0,0),(0,0),   0.5, colors.HexColor('#E0F2FE')),
-        ('BOX',           (1,0),(1,0),   0.5, colors.HexColor('#FCE7F3')),
-        ('BOX',           (2,0),(2,0),   0.5, colors.HexColor('#DCFCE7')),
-        ('BOX',           (3,0),(3,0),   0.5, colors.HexColor('#FFEDD5')),
-        ('ROUNDEDCORNERS',[4]),
-    ]))
-    story.append(ai_table)
+    story.append(card_table(studio_row, [c4]*4, ['EA4335','FBBC05','F97316','34A853']))
     story.append(Spacer(1, 3*mm))
 
-    # ── CDP AUTOMATION TOOLS GRID ─────────────────────────────────────────────
-    story.append(section_header('🔬  Chrome DevTools Protocol  —  21 Automation Tools', TEAL))
-    story.append(Spacer(1, 2*mm))
+    # ── AUTOPILOT AGENT ───────────────────────────────────────────────────────
+    story.append(section_label('🤖', 'AUTOPILOT AGENT  —  21 CDP Browser Automation Tools', '7C3AED'))
+    story.append(Spacer(1, 1.5*mm))
 
     tools = [
-        ('click','Trusted CDP click'),('doubleClick','True double-click'),
-        ('type','Smart text input'),('pressKey','Key combos Ctrl+S'),
-        ('hover','Hover & reveal menus'),('select','HTML dropdowns'),
-        ('drag','Real CDP drag & drop'),('scroll','Page scrolling'),
-        ('navigate','URL navigation'),('waitForElement','Async load waits'),
-        ('readText','Extract exact text'),('autofill','Fill forms in 1 call'),
-        ('snapshotPage','Deep DOM snapshot'),('exportPDF','Any page → PDF'),
-        ('findElement','Shadow DOM search'),('setMobileMode','iPhone viewport'),
-        ('readNetworkResponse','Intercept API JSON'),('readStorage','localStorage + cookies'),
-        ('writeChunk','Append long content'),('screenshot','Visual context'),
-        ('getPageContext','Full page state'),
+        ('click','Trusted CDP click'), ('type','Smart text input'), ('autofill','Forms in 1 call'),
+        ('drag','Real CDP drag/drop'), ('navigate','URL navigation'), ('pressKey','Key combos Ctrl+S'),
+        ('hover','Reveal menus'), ('select','HTML dropdowns'), ('waitForElement','Async waits'),
+        ('readText','Extract exact text'), ('snapshotPage','Deep DOM snapshot'), ('exportPDF','Any page → PDF'),
+        ('findElement','Shadow DOM search'), ('setMobileMode','iPhone viewport'), ('readNetworkResponse','Intercept API JSON'),
+        ('readStorage','localStorage + cookies'), ('writeChunk','Build long documents'), ('doubleClick','True dbl-click'),
+        ('scroll','Page scrolling'), ('screenshot','Visual context'), ('getPageContext','Full page state'),
     ]
     per_row = 7
     tool_rows = []
     for i in range(0, len(tools), per_row):
-        row_tools = tools[i:i+per_row]
-        while len(row_tools) < per_row:
-            row_tools.append(('',''))
+        chunk = tools[i:i+per_row]
+        while len(chunk) < per_row: chunk.append(('',''))
         cells = []
-        for name, desc in row_tools:
+        for name, desc in chunk:
             if name:
-                txt = (f'<font color="#4285F4"><b>{name}</b></font><br/>'
-                       f'<font color="#94A3B8" size="5.5">{desc}</font>')
+                cells.append(Paragraph(
+                    f'<font color="#818CF8"><b>{name}</b></font><br/>'
+                    f'<font color="#475569" size="5.5">{desc}</font>', s_body))
             else:
-                txt = ''
-            cells.append(Paragraph(txt, s_card_b))
+                cells.append(Paragraph('', s_body))
         tool_rows.append(cells)
 
-    tool_table = Table(tool_rows, colWidths=[pw/per_row]*per_row)
-    tool_table.setStyle(TableStyle([
-        ('BACKGROUND',    (0,0),(-1,-1), colors.HexColor('#F0F9FF')),
+    tool_t = Table(tool_rows, colWidths=[pw/per_row]*per_row)
+    tool_t.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0),(-1,-1), CARD2),
         ('TOPPADDING',    (0,0),(-1,-1), 4),
         ('BOTTOMPADDING', (0,0),(-1,-1), 4),
         ('LEFTPADDING',   (0,0),(-1,-1), 4),
         ('RIGHTPADDING',  (0,0),(-1,-1), 3),
-        ('GRID',          (0,0),(-1,-1), 0.4, colors.HexColor('#BAE6FD')),
+        ('GRID',          (0,0),(-1,-1), 0.4, BORDER),
         ('VALIGN',        (0,0),(-1,-1), 'TOP'),
     ]))
-    story.append(tool_table)
+    story.append(tool_t)
     story.append(Spacer(1, 3*mm))
 
-    # ── ROW 3: Enterprise + UX + Global ──────────────────────────────────────
-    col3b = pw/3 - 2*mm
-    feat2_data = [[
-        card('🌍', 'Global Ready', [
-            '55 languages supported',
-            'RTL language support',
-            'Pre-rendered SEO HTML per lang',
-            'Canonical URLs + hreflang tags',
-            'XML sitemap + robots.txt',
-            'Google Search Console linked',
-        ], G_GREEN),
-        card('🏢', 'Enterprise / White-Label', [
-            'Multi-tenant institutions',
-            'Role-based access control',
-            'Per-member access expiry',
-            'Custom branding per org',
-            'Admin dashboard',
-            'Email-only member onboarding',
-        ], INDIGO),
-        card('✨', 'UI / UX Features', [
-            'Glassmorphism dark popup',
-            'Right-click Mouse Wand Menu',
-            'Chrome side-panel (Sidebar)',
-            'Light & dark theme system',
-            'In-app video tutorials',
-            'Review prompting system',
-        ], PINK),
+    # ── PRIVACY + MODELS ROW ─────────────────────────────────────────────────
+    c2a = pw * 0.38
+    c2b = pw * 0.62 - 2*mm
+    priv_model_row = [[
+        card('🔐', 'Privacy First', [
+            'API key stays in YOUR browser',
+            'We never see your data',
+            'Direct connection to Google',
+            'No accounts, no middleman',
+            '$300 Google Cloud free credits',
+            'Zero subscriptions needed',
+        ], '34A853'),
+        card('⚡', 'Google AI Models Integrated', [
+            'Gemini 2.5 Pro  \u2014  reasoning & code',
+            'Gemini 3 Flash (Preview)  \u2014  speed',
+            'Gemini 2.5 Flash  \u2014  balanced',
+            'Veo 3.1  \u2014  cinematic video generation',
+            'Lyria  \u2014  studio music & audio',
+            'Nano Banana (Imagen)  \u2014  photorealistic images',
+        ], '4285F4'),
     ]]
-    feat2_table = Table(feat2_data, colWidths=[col3b]*3)
-    feat2_table.setStyle(TableStyle([
-        ('BACKGROUND',    (0,0),(-1,-1), CARD_BG),
-        ('TOPPADDING',    (0,0),(-1,-1), 5),
-        ('BOTTOMPADDING', (0,0),(-1,-1), 5),
-        ('LEFTPADDING',   (0,0),(-1,-1), 5),
-        ('RIGHTPADDING',  (0,0),(-1,-1), 5),
-        ('VALIGN',        (0,0),(-1,-1), 'TOP'),
-        ('BOX',           (0,0),(0,0),   0.5, colors.HexColor('#DCFCE7')),
-        ('BOX',           (1,0),(1,0),   0.5, colors.HexColor('#E0E7FF')),
-        ('BOX',           (2,0),(2,0),   0.5, colors.HexColor('#FCE7F3')),
-        ('ROUNDEDCORNERS',[4]),
-    ]))
-    story.append(feat2_table)
+    story.append(card_table(priv_model_row, [c2a, c2b], ['34A853','4285F4']))
     story.append(Spacer(1, 3*mm))
 
-    # ── TECH STACK BADGES ────────────────────────────────────────────────────
-    story.append(section_header('⚙️  Technology Stack', G_YELLOW))
-    story.append(Spacer(1, 2*mm))
+    # ── TECH STACK STRIP ─────────────────────────────────────────────────────
+    story.append(section_label('⚙️', 'TECHNOLOGY STACK', 'FBBC05'))
+    story.append(Spacer(1, 1.5*mm))
 
     tech = [
-        ('Chrome MV3',          G_BLUE),
-        ('Gemini 2.5 Pro',      PURPLE),
-        ('Gemini 2.5 Flash',    INDIGO),
-        ('Google Veo',          PINK),
-        ('CDP Debugger API',    TEAL),
-        ('Flask Python',        G_GREEN),
-        ('PostgreSQL',          colors.HexColor('#336791')),
-        ('Google OAuth',        G_RED),
-        ('Whop Payments',       ORANGE),
-        ('Service Workers',     G_BLUE),
-        ('Canvas + MediaRec',   PURPLE),
-        ('55-Lang SEO',         G_GREEN),
+        ('Chrome MV3',       '#4285F4'), ('Gemini 2.5 Pro',    '#7C3AED'),
+        ('Gemini 3 Flash',   '#818CF8'), ('Google Veo 3.1',    '#EA4335'),
+        ('Lyria Audio AI',   '#34A853'), ('Nano Banana Img',   '#F97316'),
+        ('CDP Debugger',     '#0EA5E9'), ('Flask + PostgreSQL','#10B981'),
+        ('Google OAuth',     '#EA4335'), ('Service Workers',   '#4285F4'),
+        ('Canvas+MediaRec',  '#7C3AED'), ('EBML WebM Parser',  '#FBBC05'),
     ]
     per_row_t = 6
     badge_rows = []
+    bg_map = []
     for i in range(0, len(tech), per_row_t):
-        row = tech[i:i+per_row_t]
-        cells = []
-        for label, col_c in row:
-            cells.append(Paragraph(
-                f'<font color="white"><b>{label}</b></font>',
-                s_badge
-            ))
-        badge_rows.append(cells)
+        chunk = tech[i:i+per_row_t]
+        row = [Paragraph(f'<font color="white"><b>{label}</b></font>', s_tag) for label, _ in chunk]
+        badge_rows.append(row)
+        bg_map.append([colors.HexColor(c_) for _, c_ in chunk])
 
-    bw = pw / per_row_t
-
-    # Build badge table with alternating colors
-    badge_table = Table(badge_rows, colWidths=[bw]*per_row_t)
-    ts = [
+    bw2 = pw / per_row_t
+    b_table = Table(badge_rows, colWidths=[bw2]*per_row_t)
+    ts2 = [
         ('TOPPADDING',    (0,0),(-1,-1), 4),
         ('BOTTOMPADDING', (0,0),(-1,-1), 4),
         ('LEFTPADDING',   (0,0),(-1,-1), 2),
         ('RIGHTPADDING',  (0,0),(-1,-1), 2),
         ('ALIGN',         (0,0),(-1,-1), 'CENTER'),
         ('VALIGN',        (0,0),(-1,-1), 'MIDDLE'),
-        ('GRID',          (0,0),(-1,-1), 1, WHITE),
+        ('GRID',          (0,0),(-1,-1), 1, DARK),
     ]
-    for i, (row_items) in enumerate(badge_rows):
-        for j, (label, col_c) in enumerate(tech[i*per_row_t:(i+1)*per_row_t]):
-            ts.append(('BACKGROUND', (j,i),(j,i), col_c))
-    badge_table.setStyle(TableStyle(ts))
-    story.append(badge_table)
+    for ri, row_cols in enumerate(bg_map):
+        for ci, bg_c in enumerate(row_cols):
+            ts2.append(('BACKGROUND', (ci,ri),(ci,ri), bg_c))
+    b_table.setStyle(TableStyle(ts2))
+    story.append(b_table)
     story.append(Spacer(1, 3*mm))
 
     # ── FOOTER ────────────────────────────────────────────────────────────────
-    footer_data = [[
+    footer_t = Table([[
         Paragraph(
-            '<b><font color="#4285F4">Muhanad Sughayar</font></b>  '
-            '<font color="#94A3B8">\u00b7  AI Developer & Automation Engineer\u00b7  '
-            'Available for custom AI solutions, browser automation, and business workflow AI</font>',
-            sty('FT2', fontSize=7.5, leading=10, fontName='Helvetica', alignment=TA_CENTER, textColor=TEXT2)
-        )
-    ]]
-    footer_table = Table(footer_data, colWidths=[pw])
-    footer_table.setStyle(TableStyle([
-        ('BACKGROUND',    (0,0),(-1,-1), colors.HexColor('#EFF6FF')),
-        ('TOPPADDING',    (0,0),(-1,-1), 5),
-        ('BOTTOMPADDING', (0,0),(-1,-1), 5),
+            '<b><font color="#4285F4" size="9">Muhanad Sughayar</font></b>  '
+            '<font color="#64748B" size="7.5">\u00b7  AI Developer & Automation Engineer  '
+            '\u00b7  Custom AI Workflows  \u00b7  Browser Automation  '
+            '\u00b7  Business Process AI  \u00b7  Available for Projects</font>',
+            sty('ftx', fontSize=8, leading=11, fontName='Helvetica',
+                alignment=TA_CENTER, textColor=colors.HexColor('#94A3B8')))
+    ]], colWidths=[pw])
+    footer_t.setStyle(TableStyle([
+        ('BACKGROUND',    (0,0),(-1,-1), CARD),
+        ('TOPPADDING',    (0,0),(-1,-1), 6),
+        ('BOTTOMPADDING', (0,0),(-1,-1), 6),
         ('LEFTPADDING',   (0,0),(-1,-1), 8),
         ('RIGHTPADDING',  (0,0),(-1,-1), 8),
-        ('LINEABOVE',     (0,0),(-1,0),  1.5, G_BLUE),
+        ('LINEABOVE',     (0,0),(-1,0),  2, G_BLUE),
     ]))
-    story.append(footer_table)
+    story.append(footer_t)
 
-    def bg(canvas, doc):
+    def bg(canvas, _doc):
         canvas.saveState()
-        canvas.setFillColor(BG)
+        canvas.setFillColor(DARK)
         canvas.rect(0, 0, W, H, fill=1, stroke=0)
         canvas.restoreState()
 
     doc.build(story, onFirstPage=bg, onLaterPages=bg)
-    print('✅  PDF ready:', path)
+    print('PDF ready:', path)
 
 build_pdf('aion_ai_showcase.pdf')
