@@ -10489,6 +10489,115 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'auditPage',
+      description: 'Collect browser-detected issues on the current page: CSP violations, mixed content, broken cookies, CORS errors, deprecation warnings, low-contrast text — everything Chrome DevTools flags in the Issues panel. Optionally reload the page first to capture all issues fresh.',
+      parameters: {
+        type: 'object',
+        properties: {
+          type:     { type: 'string', description: 'Filter by issue type keyword, e.g. "cookie", "cors", "csp", "mixed". Leave blank for all issues.' },
+          reload:   { type: 'boolean', description: 'Set true to reload the page before auditing so all issues are re-triggered (default false).' },
+          wait:     { type: 'number', description: 'Seconds to listen for issues (default 3, max 10).' },
+          maxChars: { type: 'number', description: 'Max characters to return (default 4000).' }
+        }
+      }
+    },
+    {
+      name: 'readCache',
+      description: 'List and read files stored in Service Worker caches — offline pages, cached API responses, PWA assets. Use to see what a Progressive Web App has cached, check if stale content is being served, or verify that a cache was cleared.',
+      parameters: {
+        type: 'object',
+        properties: {
+          cache:       { type: 'string', description: 'Filter by cache name (partial match). Leave blank to list all caches.' },
+          maxEntries:  { type: 'number', description: 'Max entries to return per cache (default 20, max 100).' }
+        }
+      }
+    },
+    {
+      name: 'getEventListeners',
+      description: 'List ALL JavaScript event listeners attached to any element — click, submit, keydown, custom events, and more. Shows exactly what code will run when you interact with the element. Essential for debugging "why doesn\'t this button do anything" or finding hidden form handlers.',
+      parameters: {
+        type: 'object',
+        properties: {
+          selector: { type: 'string', description: 'CSS selector of the element, e.g. "#submit-btn" or ".nav-link". Defaults to "document" (lists all listeners on the document).' },
+          depth:    { type: 'number', description: 'How many levels deep to search into the DOM tree (default 1).' }
+        }
+      }
+    },
+    {
+      name: 'snapshotHeap',
+      description: 'Force garbage collection then report JavaScript heap memory usage, node/iframe/script counts, and top memory allocation call sites. Use to detect memory leaks, check if a page is consuming excessive RAM, or confirm GC ran before a memory-sensitive test.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    {
+      name: 'readBrowserLog',
+      description: 'Capture browser-generated log entries — network errors, Content Security Policy violations, deprecation warnings, blocked requests, security errors. These appear in DevTools Console with shield/warning icons and are NOT the same as console.log output (use captureConsole for that).',
+      parameters: {
+        type: 'object',
+        properties: {
+          level:    { type: 'string', enum: ['all', 'error', 'warning', 'info', 'verbose'], description: 'Which log level to capture (default: all).' },
+          reload:   { type: 'boolean', description: 'Set true to reload the page before capturing so all issues are re-triggered (default false).' },
+          wait:     { type: 'number', description: 'Seconds to listen (default 3, max 15).' },
+          maxLines: { type: 'number', description: 'Max log lines to return (default 50, max 200).' }
+        }
+      }
+    },
+    {
+      name: 'getSecurityInfo',
+      description: 'Get the security state of the current page: HTTPS certificate details (subject, valid from/to), cipher suite, protocol (TLS version), mixed content warnings, and whether the connection is truly secure. Use before automating sensitive form submissions to confirm you\'re on a real HTTPS page.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    {
+      name: 'manageServiceWorker',
+      description: 'List, update, stop, or unregister Service Workers for the current page. Use when: a PWA is stuck serving stale cached content and needs a force-update, you want to unregister a broken SW, or you need to see which SW scope is controlling the page.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action: {
+            type: 'string',
+            enum: ['list', 'unregister', 'update', 'skipWaiting'],
+            description: '"list" (default) — show all registered SWs. "unregister" — remove the SW. "update" — force the SW to check for an update. "skipWaiting" — activate a waiting SW immediately.'
+          },
+          scope: { type: 'string', description: 'Filter by SW scope URL (partial match) when multiple SWs exist. Leave blank to target the first one found.' }
+        }
+      }
+    },
+    {
+      name: 'listTargets',
+      description: 'List all open browser targets — tabs, iframes, web workers, service workers. Use to discover what tabs are currently open, find an iframe\'s target ID for debugging, or identify which tab to direct the agent to next.',
+      parameters: {
+        type: 'object',
+        properties: {
+          type: {
+            type: 'string',
+            enum: ['', 'page', 'iframe', 'worker', 'service_worker', 'background_page'],
+            description: 'Filter by target type. Leave blank to list all targets.'
+          }
+        }
+      }
+    },
+    {
+      name: 'highlightElement',
+      description: 'Draw a native Chrome highlight box around any CSS-selected element — the same highlight Chrome DevTools draws. More reliable than the ghost cursor because it works inside iframes, canvas apps, and pages with strict CSP. Use to visually confirm which element the agent is targeting before acting on it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          selector: { type: 'string', description: 'CSS selector of the element to highlight, e.g. "#submit" or ".product-card:first-child".' },
+          duration: { type: 'number', description: 'How many seconds to show the highlight (default 2, max 10).' },
+          r:        { type: 'number', description: 'Red channel of highlight colour 0-255 (default 66 — Google blue).' },
+          g:        { type: 'number', description: 'Green channel 0-255 (default 133).' },
+          b:        { type: 'number', description: 'Blue channel 0-255 (default 244).' },
+          a:        { type: 'number', description: 'Alpha/opacity 0-1 (default 0.3).' }
+        },
+        required: ['selector']
+      }
+    },
+    {
       name: 'switchSheet',
       description: 'Switch to a different sheet tab inside Excel Online or Google Sheets by its name. Use this when the task mentions "Sheet2", "Budget tab", "Q3", or any named sheet that is not currently active. Always call this BEFORE typing into a sheet to make sure you are on the right one.',
       parameters: {
