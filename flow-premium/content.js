@@ -4288,6 +4288,36 @@
           return { success: true, x: window.innerWidth * 0.5, y: window.innerHeight * 0.4, mode: 'word' };
         }
 
+        // ── GOOGLE AI STUDIO ─────────────────────────────────────────────────
+        if (host.includes('aistudio.google.com')) {
+          // The prompt/app-description input is a textarea or contenteditable.
+          // Try the most common selectors across AI Studio's layouts.
+          const aiInput = findVisible([
+            'textarea[placeholder]',
+            'textarea[aria-label]',
+            'div[contenteditable="true"][aria-multiline]',
+            'div[contenteditable="true"]',
+            'textarea',
+            'ms-prompt-input textarea',
+            '[data-testid="prompt-input"] textarea',
+            '[class*="prompt"] textarea',
+            '[class*="input"] textarea',
+          ]);
+          let x, y;
+          if (aiInput) {
+            const r = aiInput.getBoundingClientRect();
+            x = r.left + r.width * 0.5;
+            y = r.top  + r.height * 0.5;
+            highlightElement(aiInput);
+          } else {
+            // Safe centre — AI Studio's main input is always roughly here
+            x = window.innerWidth  * 0.5;
+            y = window.innerHeight * 0.65;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'aistudio' };
+        }
+
         // ── GOOGLE DOCS (canvas tiles) ───────────────────────────────────────
         if (isDocs) {
           const target = findVisible([
@@ -4559,16 +4589,29 @@
         element.focus();
         
         if (element.tagName === 'INPUT' || element.tagName === 'TEXTAREA') {
-          // Clear then set value — fire input/change so React/Vue pick it up
-          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set
-            || Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
-          if (nativeInputValueSetter) {
-            nativeInputValueSetter.call(element, params.text);
-          } else {
-            element.value = params.text;
+          // Clear then set value — fire input/change so React/Vue pick it up.
+          // Wrap in try/catch: calling the prototype setter on an element from a
+          // different frame context throws "Illegal invocation" — fall back to
+          // clipboard paste in that case so we always succeed.
+          let nativeSet = false;
+          try {
+            const tag = element.tagName === 'TEXTAREA' ? 'HTMLTextAreaElement' : 'HTMLInputElement';
+            const setter = Object.getOwnPropertyDescriptor(window[tag].prototype, 'value')?.set;
+            if (setter) {
+              setter.call(element, params.text);
+              nativeSet = true;
+            }
+          } catch (_) { /* cross-frame element — fall through to clipboard */ }
+          if (!nativeSet) {
+            try { element.value = params.text; nativeSet = true; } catch (_) {}
           }
-          element.dispatchEvent(new Event('input',  { bubbles: true }));
-          element.dispatchEvent(new Event('change', { bubbles: true }));
+          if (nativeSet) {
+            element.dispatchEvent(new Event('input',  { bubbles: true }));
+            element.dispatchEvent(new Event('change', { bubbles: true }));
+          } else {
+            // Last resort: clipboard paste
+            await pasteViaClipboard(params.text, element);
+          }
         } else {
           // Contenteditable: use execCommand to INSERT at cursor (not replace all content)
           element.focus();

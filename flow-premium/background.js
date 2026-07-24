@@ -1120,7 +1120,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           const isCanvasApp = tabHostname.includes('docs.google.com')
             || tabHostname.includes('office.com')
-            || tabHostname.includes('live.com');
+            || tabHostname.includes('live.com')
+            || tabHostname.includes('aistudio.google.com');
 
           if (!isCanvasApp) {
             runFallbackType();
@@ -1174,10 +1175,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               });
             });
 
-            const text     = String(params.text ?? '');
-            const isDocs   = tabHostname.includes('docs.google.com') && tabPath.includes('/document/');
-            const isGrid   = (mode === 'sheets');
-            const isExcel  = (mode === 'excel');
+            const text      = String(params.text ?? '');
+            const isDocs    = tabHostname.includes('docs.google.com') && tabPath.includes('/document/');
+            const isGrid    = (mode === 'sheets');
+            const isExcel   = (mode === 'excel');
+            const isAiStudio = (mode === 'aistudio');
 
             // clearFirst: select all + delete before typing, so existing field
             // content is replaced instead of appended.
@@ -1205,7 +1207,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               }
             };
 
-            if (isDocs) {
+            if (isAiStudio) {
+              // ── GOOGLE AI STUDIO ──────────────────────────────────────────────
+              // CDP mouse click focuses the textarea, then Input.insertText drops
+              // the whole string in one shot — no char-by-char, no "Illegal invocation".
+              // This is the only method that works reliably on React-controlled inputs.
+              await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+              await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+              await new Promise(r => setTimeout(r, 300));
+              if (params.clearFirst) {
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+                await new Promise(r => setTimeout(r, 80));
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
+                await new Promise(r => setTimeout(r, 80));
+              }
+              // Input.insertText sends the full string as a single trusted insertion —
+              // React's synthetic event system receives it as a normal user input.
+              await send('Input.insertText', { text });
+              sendResponse({ success: true });
+
+            } else if (isDocs) {
               // ── GOOGLE DOCS ──────────────────────────────────────────────────
               // Focus the hidden texteventtarget-iframe body via Runtime.evaluate
               // so CDP char events land in Docs' own keyboard router.
