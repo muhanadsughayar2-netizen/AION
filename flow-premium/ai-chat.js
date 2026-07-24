@@ -10402,6 +10402,93 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'readIndexedDB',
+      description: 'Read data from IndexedDB databases stored by the current page — used by Gmail (email drafts), Notion (page cache), Figma (file data), and most Progressive Web Apps (PWAs) for offline storage. More powerful than readStorage because it accesses data JS cannot easily reach.',
+      parameters: {
+        type: 'object',
+        properties: {
+          database: { type: 'string', description: 'Filter by database name (partial match). Leave blank to list all databases.' },
+          store:    { type: 'string', description: 'Filter by object store name (partial match). Leave blank to read all stores.' },
+          maxRows:  { type: 'number', description: 'Max rows to return per store (default 10, max 50).' },
+          maxChars: { type: 'number', description: 'Max characters to return total (default 4000).' }
+        }
+      }
+    },
+    {
+      name: 'interceptRequest',
+      description: 'Intercept the next outgoing network request from the page. Can read it, block it, or modify its headers/body before it is sent. Use to: inject an Authorization header, block an ad/tracker request, or swap a form body before submission.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url:     { type: 'string', description: 'URL pattern to match, e.g. "api/submit" or "checkout". Supports * wildcards. Leave blank to catch the very next request.' },
+          action:  { type: 'string', enum: ['continue', 'block'], description: '"continue" (default) lets the request through (optionally modified). "block" cancels it.' },
+          headers: { type: 'object', description: 'Headers to add or override, e.g. {"Authorization":"Bearer xyz","X-Custom":"value"}' },
+          body:    { type: 'string', description: 'New request body to send instead of the original (replaces it entirely).' },
+          timeout: { type: 'number', description: 'Seconds to wait for a matching request (default 10).' }
+        }
+      }
+    },
+    {
+      name: 'getComputedStyle',
+      description: 'Read the actual browser-computed CSS values for any element — including properties that are inherited, set by media queries, or not visible in the HTML source. Use to confirm an element is truly visible/hidden, read its exact color, font size, z-index, or any CSS property.',
+      parameters: {
+        type: 'object',
+        properties: {
+          selector:   { type: 'string', description: 'CSS selector of the element, e.g. ".submit-btn" or "#header".' },
+          properties: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'List of CSS property names to return, e.g. ["display","visibility","color","font-size"]. Leave blank to return all computed properties.'
+          }
+        },
+        required: ['selector']
+      }
+    },
+    {
+      name: 'getCookies',
+      description: 'Read ALL cookies for the current page — including HttpOnly cookies that JavaScript cannot access (auth tokens, session IDs, CSRF tokens). Use to check if a user is logged in, inspect security flags (Secure, SameSite), or read session data.',
+      parameters: {
+        type: 'object',
+        properties: {
+          key: { type: 'string', description: 'Filter by cookie name (partial match), e.g. "session" or "auth". Leave blank to return all cookies.' }
+        }
+      }
+    },
+    {
+      name: 'captureConsole',
+      description: 'Capture console.log, console.warn, and console.error messages from the current page for a short window. Use to debug a broken page, see what errors are being thrown, confirm a script ran, or read data the app logs to the console.',
+      parameters: {
+        type: 'object',
+        properties: {
+          level:    { type: 'string', enum: ['all', 'log', 'warn', 'error'], description: 'Which console messages to capture (default: all).' },
+          wait:     { type: 'number', description: 'Seconds to listen for messages (default 2, max 10). Trigger the action you want to debug BEFORE calling this, then call captureConsole immediately after.' },
+          maxLines: { type: 'number', description: 'Max number of log lines to return (default 30, max 100).' }
+        }
+      }
+    },
+    {
+      name: 'clearSiteData',
+      description: 'Clear cached data, cookies, localStorage, sessionStorage, IndexedDB, or service workers for the current page origin. Use to force a fresh login, reset a broken app state, or test a page as a brand-new user.',
+      parameters: {
+        type: 'object',
+        properties: {
+          types: {
+            type: 'string',
+            enum: ['all', 'cache', 'cookies', 'storage', 'local', 'session', 'idb', 'sw'],
+            description: '"all" clears everything. "cache" = browser cache. "cookies" = cookies only. "storage" = localStorage + sessionStorage + IndexedDB. "idb" = IndexedDB only. "sw" = service workers. Default: "all".'
+          }
+        }
+      }
+    },
+    {
+      name: 'getPerformance',
+      description: 'Get real browser performance metrics for the current page: page load time, time-to-first-byte, DOM ready time, transfer size, JS heap memory, node count, and layout count. Use to benchmark a page, check if it loaded fully, or detect memory leaks.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    {
       name: 'switchSheet',
       description: 'Switch to a different sheet tab inside Excel Online or Google Sheets by its name. Use this when the task mentions "Sheet2", "Budget tab", "Q3", or any named sheet that is not currently active. Always call this BEFORE typing into a sheet to make sure you are on the right one.',
       parameters: {

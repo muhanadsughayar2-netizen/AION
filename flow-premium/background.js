@@ -2573,6 +2573,375 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    // ── readIndexedDB ── IndexedDB domain ──────────────────────────────────────
+    // Reads data from IndexedDB databases used by Gmail, Notion, Figma, PWAs.
+    // Runtime.evaluate cannot read IndexedDB reliably — the CDP IndexedDB domain
+    // has direct access to the storage engine without JS injection.
+    if (executeAction === 'readIndexedDB') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const tab = await chrome.tabs.get(tabId);
+          const origin = new URL(tab.url).origin;
+          const filterDb    = (params.database || '').toLowerCase();
+          const filterStore = (params.store    || '').toLowerCase();
+          const maxRows     = Math.min(50, parseInt(params.maxRows) || 10);
+
+          await cdpC('IndexedDB.enable');
+          const { databaseNames } = await cdpC('IndexedDB.requestDatabaseNames', {
+            securityOrigin: origin
+          });
+          if (!databaseNames || databaseNames.length === 0) {
+            sendResponse({ success: true, data: 'No IndexedDB databases found for this origin.' });
+            return;
+          }
+          const results = {};
+          for (const dbName of databaseNames) {
+            if (filterDb && !dbName.toLowerCase().includes(filterDb)) continue;
+            const { databaseWithObjectStores } = await cdpC('IndexedDB.requestDatabase', {
+              securityOrigin: origin, databaseName: dbName
+            });
+            const stores = (databaseWithObjectStores?.objectStores || []);
+            results[dbName] = {};
+            for (const store of stores) {
+              if (filterStore && !store.name.toLowerCase().includes(filterStore)) continue;
+              const { objectStoreDataEntries } = await cdpC('IndexedDB.requestData', {
+                securityOrigin: origin, databaseName: dbName,
+                objectStoreName: store.name, indexName: '',
+                skipCount: 0, pageSize: maxRows
+              });
+              results[dbName][store.name] = (objectStoreDataEntries || []).map(e => ({
+                key:   e.key?.value,
+                value: e.value?.value
+              }));
+            }
+          }
+          const maxChars = Math.min(8000, parseInt(params.maxChars) || 4000);
+          sendResponse({ success: true, data: JSON.stringify(results, null, 2).slice(0, maxChars) });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally {
+          chrome.debugger.sendCommand(debuggee, 'IndexedDB.disable', {}, () => {});
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── interceptRequest ── Fetch domain ───────────────────────────────────────
+    // Pauses the NEXT outgoing request matching a URL pattern, lets the agent
+    // optionally modify headers/body, then continues it. Unlike readNetworkResponse
+    // (which only READS responses), this can CHANGE the request before it leaves.
+    if (executeAction === 'interceptRequest') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const urlFilter  = params.url     || '*';
+          const modHeaders = params.headers || null; // { 'Authorization': 'Bearer ...' }
+          const modBody    = params.body    || null; // string, replaces request body
+          const action     = params.action  || 'continue'; // 'continue' | 'block'
+          const timeoutMs  = Math.min(30000, (parseInt(params.timeout) || 10) * 1000);
+
+          await cdpC('Fetch.enable', {
+            patterns: [{ urlPattern: urlFilter.includes('*') ? urlFilter : `*${urlFilter}*`, requestStage: 'Request' }]
+          });
+
+          const intercepted = await new Promise((resolve, reject) => {
+            const timer = setTimeout(() => {
+              chrome.debugger.onEvent.removeListener(listener);
+              reject(new Error(`No matching request within ${timeoutMs / 1000}s`));
+            }, timeoutMs);
+
+            function listener(source, evtName, evtParams) {
+              if (source.tabId !== tabId) return;
+              if (evtName !== 'Fetch.requestPaused') return;
+              clearTimeout(timer);
+              chrome.debugger.onEvent.removeListener(listener);
+              resolve(evtParams);
+            }
+            chrome.debugger.onEvent.addListener(listener);
+          });
+
+          const { requestId, request } = intercepted;
+          if (action === 'block') {
+            await cdpC('Fetch.failRequest', { requestId, errorReason: 'BlockedByClient' });
+            sendResponse({ success: true, data: `Blocked: ${request.url}` });
+            return;
+          }
+
+          // Build modified headers if requested
+          let headers = request.headers;
+          if (modHeaders) {
+            const merged = { ...headers, ...modHeaders };
+            headers = Object.entries(merged).map(([name, value]) => ({ name, value }));
+          }
+
+          await cdpC('Fetch.continueRequest', {
+            requestId,
+            ...(modHeaders ? { headers } : {}),
+            ...(modBody    ? { postData: btoa(modBody) } : {})
+          });
+
+          sendResponse({ success: true, data: `Intercepted and continued: ${request.url} [${request.method}]` });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally {
+          try { await cdpC('Fetch.disable', {}); } catch (_) {}
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── getComputedStyle ── CSS domain ─────────────────────────────────────────
+    // Returns actual browser-computed CSS values for any element — including
+    // properties not visible in the HTML (inherited, pseudo-class, media-query-
+    // dependent). Useful for confirming an element is truly visible/hidden,
+    // reading colors, fonts, or layout values the agent needs.
+    if (executeAction === 'getComputedStyle') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const selector  = params.selector  || '';
+          const propNames = params.properties // ['display','color','font-size'] or empty = all
+            ? (Array.isArray(params.properties) ? params.properties : [params.properties])
+            : [];
+
+          await cdpC('DOM.enable');
+          await cdpC('CSS.enable');
+
+          // Resolve the selector to a nodeId
+          const { root } = await cdpC('DOM.getDocument', { depth: 0 });
+          const query = selector
+            ? await cdpC('DOM.querySelector',  { nodeId: root.nodeId, selector })
+            : { nodeId: root.nodeId };
+
+          if (!query?.nodeId) {
+            sendResponse({ success: false, error: `Element not found: "${selector}"` });
+            return;
+          }
+
+          const { computedStyle } = await cdpC('CSS.getComputedStyleForNode', { nodeId: query.nodeId });
+          const filtered = propNames.length
+            ? computedStyle.filter(p => propNames.includes(p.name))
+            : computedStyle;
+
+          const out = {};
+          for (const { name, value } of filtered) out[name] = value;
+          sendResponse({ success: true, data: JSON.stringify(out, null, 2).slice(0, 4000) });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally {
+          try { chrome.debugger.sendCommand(debuggee, 'CSS.disable', {}, () => {}); } catch(_) {}
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── getCookies ── Network domain ────────────────────────────────────────────
+    // Returns ALL cookies for the current page including HttpOnly ones that
+    // document.cookie (and readStorage) cannot access. Useful for checking auth
+    // tokens, session IDs, and security flags (Secure, SameSite).
+    if (executeAction === 'getCookies') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const filterKey = (params.key || '').toLowerCase();
+          await cdpC('Network.enable', {});
+          const { cookies } = await cdpC('Network.getCookies');
+          const filtered = (cookies || [])
+            .filter(c => !filterKey || c.name.toLowerCase().includes(filterKey))
+            .map(c => ({
+              name:     c.name,
+              value:    c.value,
+              domain:   c.domain,
+              path:     c.path,
+              httpOnly: c.httpOnly,
+              secure:   c.secure,
+              sameSite: c.sameSite,
+              expires:  c.expires > 0 ? new Date(c.expires * 1000).toISOString() : 'session'
+            }));
+          if (filtered.length === 0) {
+            sendResponse({ success: true, data: `No cookies found${filterKey ? ` matching "${filterKey}"` : ''}.` });
+            return;
+          }
+          sendResponse({ success: true, data: JSON.stringify(filtered, null, 2).slice(0, 6000) });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── captureConsole ── Runtime domain (console capture) ─────────────────────
+    // Captures recent console.log / warn / error messages from the page.
+    // Useful for debugging: see what errors the page is throwing, what the app
+    // is logging, or confirming a function ran.
+    if (executeAction === 'captureConsole') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const maxLines  = Math.min(100, parseInt(params.maxLines) || 30);
+          const level     = (params.level || 'all').toLowerCase(); // 'all'|'error'|'warn'|'log'
+          const waitMs    = Math.min(10000, (parseInt(params.wait) || 2) * 1000);
+
+          const messages = [];
+          function onEvent(source, evtName, evtParams) {
+            if (source.tabId !== tabId) return;
+            if (evtName !== 'Runtime.consoleAPICalled') return;
+            if (level !== 'all' && evtParams.type !== level) return;
+            const text = (evtParams.args || [])
+              .map(a => a.value !== undefined ? String(a.value) : a.description || '')
+              .join(' ');
+            messages.push(`[${evtParams.type.toUpperCase()}] ${text}`);
+          }
+          chrome.debugger.onEvent.addListener(onEvent);
+
+          await cdpC('Runtime.enable');
+          await new Promise(r => setTimeout(r, waitMs));
+
+          chrome.debugger.onEvent.removeListener(onEvent);
+          const out = messages.slice(-maxLines);
+          sendResponse({
+            success: true,
+            data: out.length ? out.join('\n') : `No console messages captured in ${waitMs / 1000}s.`
+          });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── clearSiteData ── Storage domain ────────────────────────────────────────
+    // Clears cache, cookies, localStorage, sessionStorage, or IndexedDB for the
+    // current page's origin. Use before testing a fresh login, clearing a broken
+    // app state, or resetting a site's local data.
+    if (executeAction === 'clearSiteData') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const tab    = await chrome.tabs.get(tabId);
+          const origin = new URL(tab.url).origin;
+          // types: 'appcache','cookies','file_systems','indexeddb','local_storage',
+          //        'shader_cache','websql','service_workers','cache_storage','all','other'
+          const requested = (params.types || 'all').toLowerCase();
+          const typeMap = {
+            'all':      'cookies,local_storage,session_storage,indexeddb,cache_storage,service_workers',
+            'cache':    'cache_storage',
+            'cookies':  'cookies',
+            'storage':  'local_storage,session_storage,indexeddb',
+            'local':    'local_storage',
+            'session':  'session_storage',
+            'idb':      'indexeddb',
+            'sw':       'service_workers',
+          };
+          const storageTypes = typeMap[requested] || requested;
+          await cdpC('Storage.clearDataForOrigin', { origin, storageTypes });
+          sendResponse({ success: true, data: `Cleared [${storageTypes}] for ${origin}` });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── getPerformance ── Performance domain ───────────────────────────────────
+    // Returns real browser performance metrics: FCP, LCP, DOM size, JS heap,
+    // layout count, and more. Use to benchmark a page, check memory usage, or
+    // verify a page actually loaded completely.
+    if (executeAction === 'getPerformance') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          await cdpC('Performance.enable');
+          const { metrics } = await cdpC('Performance.getMetrics');
+          // Also get navigation timing via Runtime for human-readable load times
+          const timingRes = await cdpC('Runtime.evaluate', {
+            expression: `JSON.stringify((function(){
+              const t = performance.timing;
+              const n = performance.getEntriesByType('navigation')[0];
+              return {
+                pageLoadMs:    Math.round(t.loadEventEnd - t.navigationStart),
+                domReadyMs:    Math.round(t.domContentLoadedEventEnd - t.navigationStart),
+                ttfbMs:        Math.round(t.responseStart - t.navigationStart),
+                transferBytes: n ? n.transferSize : null,
+                resourceCount: performance.getEntriesByType('resource').length
+              };
+            })())`,
+            returnByValue: true
+          });
+          const timing = JSON.parse(timingRes?.result?.value || '{}');
+          const interesting = ['JSHeapUsedSize','JSHeapTotalSize','Nodes','LayoutCount',
+                               'TaskDuration','ScriptDuration','RecalcStyleCount'];
+          const cdpMet = {};
+          for (const m of (metrics || [])) {
+            if (interesting.includes(m.name)) cdpMet[m.name] = m.value;
+          }
+          sendResponse({
+            success: true,
+            data: JSON.stringify({ ...timing, ...cdpMet }, null, 2)
+          });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally {
+          try { chrome.debugger.sendCommand(debuggee, 'Performance.disable', {}, () => {}); } catch(_) {}
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
     if (executeAction === 'doubleClick') {
       // Content-script click/dblclick events are ALWAYS isTrusted:false — no
       // amount of synthetic dispatchEvent() can change that. Security-sensitive
