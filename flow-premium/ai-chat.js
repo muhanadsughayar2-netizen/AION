@@ -10873,6 +10873,64 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'planTask',
+      description: 'Lay out a numbered step-by-step plan before executing a complex multi-step task (5+ steps). Call this FIRST — before any clicks or navigation — so you stay oriented across long sessions. The plan is shown to the user and tracked with checkPlan.',
+      parameters: {
+        type: 'object',
+        properties: {
+          steps:   { type: 'array', items: { type: 'string' }, description: 'Ordered list of concrete steps. Each step = one specific action or milestone. Example: ["Navigate to gmail.com", "Click Compose", "Fill To field", "Fill Subject", "Type body", "Click Send"]' },
+          summary: { type: 'string', description: 'One-sentence description of the overall goal, shown to the user.' }
+        },
+        required: ['steps']
+      }
+    },
+    {
+      name: 'checkPlan',
+      description: 'Mark a plan step as complete and confirm which step to work on next. Call this after finishing each milestone to track progress through a long task.',
+      parameters: {
+        type: 'object',
+        properties: {
+          stepIndex: { type: 'number', description: 'Zero-based index of the step just completed (0 = first step).' },
+          note:      { type: 'string', description: 'Optional note about what happened, was found, or should be remembered for the next step.' }
+        },
+        required: ['stepIndex']
+      }
+    },
+    {
+      name: 'openTab',
+      description: 'Open a URL in a new browser tab. By default opens in the background so the agent stays on the current tab. Use switchTab afterwards to move focus there.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url:        { type: 'string', description: 'Full URL to open, e.g. "https://competitor.com". https:// is added automatically if missing.' },
+          background: { type: 'boolean', description: 'Open without switching browser focus (default true = background). Set false to make the browser jump to the new tab immediately.' },
+          switchTo:   { type: 'boolean', description: 'Also move the agent focus to the new tab right away (default false). Equivalent to openTab + switchTab in one call.' }
+        },
+        required: ['url']
+      }
+    },
+    {
+      name: 'switchTab',
+      description: 'Move the agent\'s focus to a different browser tab. All subsequent actions (click, type, scroll, etc.) will target that tab. Use listTargets to discover available tab IDs and URLs.',
+      parameters: {
+        type: 'object',
+        properties: {
+          tabId: { type: 'number', description: 'Numeric tab ID to switch to (from listTargets output or openTab response).' },
+          url:   { type: 'string', description: 'Partial URL to match — switches to the first open tab whose URL contains this string. Use instead of tabId when you don\'t know the exact ID.' }
+        }
+      }
+    },
+    {
+      name: 'closeTab',
+      description: 'Close a browser tab. If closing the tab the agent is currently controlling, it automatically moves focus to the next available tab.',
+      parameters: {
+        type: 'object',
+        properties: {
+          tabId: { type: 'number', description: 'Tab ID to close. If omitted, closes the tab the agent is currently controlling.' }
+        }
+      }
+    },
+    {
       name: 'finish',
       description: 'Call this when the task is complete, impossible, or you need to stop and tell the user something.',
       parameters: {
@@ -10891,7 +10949,9 @@ const AGENT_SYSTEM_PROMPT = `You are an in-browser automation agent controlling 
 Rules:
 - Each turn you are given BOTH a text snapshot of the page AND a real screenshot image of what it currently looks like. Use the screenshot to visually confirm where you actually are (e.g. did the click really open the product page, are you still on a search results list, did a popup/modal appear) before deciding your next move — don't rely on text alone.
 - If the screenshot and the text disagree, or the screenshot shows you're not where you expected, trust the screenshot and re-orient (e.g. close a popup, scroll, or navigate again) instead of repeating the same action blindly.
-- Call exactly ONE function per turn: click, doubleClick, drag, type, scroll, navigate, or finish.
+- PARALLEL EXECUTION: You CAN call multiple independent functions in a single turn — do this whenever actions don't depend on each other's results. Examples: call readNetworkResponse AND click together to intercept an API; call snapshotPage AND getCookies AND getSecurityInfo all at once for a site audit; run two unrelated clicks in the same turn. Use single-action turns only when each step depends on the prior result (e.g. click → wait for result → type into what appeared).
+- PLANNING: For tasks with more than 5 steps, call planTask FIRST to lay out a numbered plan before executing anything. Use checkPlan after completing each milestone to track progress and stay oriented across long sessions.
+- MULTI-TAB: Use openTab to open a URL in a new browser tab, switchTab to move the agent's focus to a different tab, closeTab to close one. Use listTargets to see all open tabs and their IDs. This lets you work across multiple sites in one session — open a reference page alongside the current one, fill forms in parallel across tabs, or compare two sites.
 - If the task asks you to go to a specific website/URL that is not the current page, use "navigate" with the full address — do NOT try to fake it by typing the URL into a search box or link on the page.
 - Use "doubleClick" (not "click") when a single click would only select/highlight an item and it actually needs to be OPENED — e.g. opening a file or folder in Google Drive, launching an item from a file list.
 - Use "drag" for anything that requires picking something up and moving it — e.g. moving a chess/game piece from one square to another, dragging a slider, or reordering a list. A plain "click" cannot do this.
@@ -11252,6 +11312,7 @@ async function runAgentTask(prompt, thread) {
 
   let consecutiveFailures = 0;
   const actionFailCounts = {}; // key: "actionName:argText" → count
+  let agentPlan = null;        // [{step, done, note}] set by planTask tool
 
   for (let step = 0; step < AGENT_MAX_STEPS; step++) {
     if (agentStopRequested) {
@@ -11287,128 +11348,193 @@ async function runAgentTask(prompt, thread) {
     }
 
     const candidateParts = data.candidates?.[0]?.content?.parts || [];
-    const fnCallPart = candidateParts.find(p => p.functionCall);
+    // PARALLEL: collect ALL function calls Gemini returned in this turn
+    const fnCallParts = candidateParts.filter(p => p.functionCall);
 
-    if (!fnCallPart) {
-      // Model replied with plain text instead of a function call — show it and stop.
+    if (fnCallParts.length === 0) {
       const text = candidateParts.find(p => p.text)?.text || 'No action taken.';
       addAgentStepBubble(thread, text, 'done');
       break;
     }
 
-    const { name, args } = fnCallPart.functionCall;
-    // Preserve the full model turn (including thoughtSignature, if the model
-    // returned one) instead of rebuilding a stripped-down functionCall part.
-    // Gemini's thinking models attach a thoughtSignature to function calls so
-    // they can track their own reasoning across steps; dropping it causes
-    // "missing thought_signature" warnings and degraded multi-step behavior.
+    // Preserve full model turn (including thoughtSignature for thinking models)
     contents.push({ role: 'model', parts: candidateParts });
 
-    if (name === 'finish') {
-      addAgentStepBubble(thread, args?.summary || 'Task finished.', 'done');
+    // ── finish ─────────────────────────────────────────────────────────────────
+    const finishCall = fnCallParts.find(p => p.functionCall.name === 'finish');
+    if (finishCall) {
+      addAgentStepBubble(thread, finishCall.functionCall.args?.summary || 'Task finished.', 'done');
       break;
     }
 
-    addAgentStepBubble(thread, `${name}${args?.text ? `: "${args.text}"` : args?.direction ? `: ${args.direction}` : args?.selector || args?.description ? '' : ''}`.trim());
-
-    let execResult;
-    try {
-      execResult = await chrome.runtime.sendMessage({
-        action: 'agentExecute',
-        tabId: tab.id,
-        executeAction: name,
-        params: args || {}
-      });
-    } catch (e) {
-      execResult = { success: false, error: e.message };
+    // ── planTask (client-side, no CDP needed) ──────────────────────────────────
+    const planCall = fnCallParts.find(p => p.functionCall.name === 'planTask');
+    if (planCall) {
+      const { steps = [], summary = '' } = planCall.functionCall.args || {};
+      agentPlan = steps.map(s => ({ step: s, done: false, note: '' }));
+      const planLines = steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+      addAgentStepBubble(thread, `📋 Plan${summary ? ': ' + summary : ''}:\n${planLines}`);
+      contents.push({ role: 'user', parts: [{ functionResponse: { name: 'planTask',
+        response: { success: true, data: `Plan recorded (${steps.length} steps). Begin executing step 1 now.` } } }] });
+      continue;
     }
 
-    if (!execResult || execResult.success !== true) {
-      consecutiveFailures++;
-      const failKey = `${name}:${String(args?.text || args?.selector || args?.description || '')}`;
-      actionFailCounts[failKey] = (actionFailCounts[failKey] || 0) + 1;
-
-      // Show inline warning inside the log (not a loud standalone bubble)
-      if (_agentLogContainer && _agentLogContainer.isConnected) {
-        const warn = document.createElement('div');
-        warn.style.cssText = 'font-size:11px;color:rgba(255,180,50,0.75);padding-left:16px;';
-        warn.textContent = `⚠ ${execResult?.error || 'failed'} — trying differently…`;
-        _agentLogContainer.appendChild(warn);
-        thread.scrollTop = thread.scrollHeight;
-      }
-
-      // Hard stop: 3 consecutive failures = agent is genuinely stuck
-      if (consecutiveFailures >= 3) {
-        addAgentStepBubble(thread,
-          `Stopped after 3 failed steps in a row. I'm stuck and can't get past this point automatically — you may need to do this step manually.`,
-          'error');
-        break;
-      }
-    } else {
-      consecutiveFailures = 0;
+    // ── checkPlan (client-side) ────────────────────────────────────────────────
+    const checkCall = fnCallParts.find(p => p.functionCall.name === 'checkPlan');
+    if (checkCall) {
+      const { stepIndex = 0, note = '' } = checkCall.functionCall.args || {};
+      if (agentPlan?.[stepIndex]) { agentPlan[stepIndex].done = true; agentPlan[stepIndex].note = note; }
+      const done = agentPlan?.filter(s => s.done).length ?? 0;
+      const total = agentPlan?.length ?? 0;
+      const next = agentPlan?.find(s => !s.done);
+      addAgentStepBubble(thread, `✅ Step ${stepIndex + 1} done (${done}/${total})${next ? ` — Next: ${next.step}` : ' — All done!'}`);
+      contents.push({ role: 'user', parts: [{ functionResponse: { name: 'checkPlan',
+        response: { success: true, data: next ? `Next step: ${next.step}` : 'All steps complete — call finish.' } } }] });
+      continue;
     }
 
-    // If navigate opened a NEW tab (system-page fallback path), switch control
-    // to that tab immediately so all subsequent actions target it correctly.
-    if (execResult && execResult.success && execResult.newTabId) {
-      try {
-        const newTabInfo = await chrome.tabs.get(execResult.newTabId);
-        if (newTabInfo && newTabInfo.id) {
-          tab = newTabInfo;
-          addAgentStepBubble(thread, `Opened in new tab: ${newTabInfo.url || 'loading...'}`);
+    // ── Filter to executable CDP/tab tools only ───────────────────────────────
+    const executableCalls = fnCallParts.filter(p =>
+      !['finish', 'planTask', 'checkPlan'].includes(p.functionCall.name)
+    );
+    if (executableCalls.length === 0) continue;
+
+    // Show action bubbles
+    for (const part of executableCalls) {
+      const { name, args } = part.functionCall;
+      addAgentStepBubble(thread,
+        `${name}${args?.text ? `: "${args.text}"` : args?.url ? `: ${args.url}` : args?.direction ? `: ${args.direction}` : ''}`.trim()
+      );
+    }
+
+    // ── PARALLEL execution of all CDP calls ───────────────────────────────────
+    const settledResults = await Promise.allSettled(
+      executableCalls.map(part =>
+        chrome.runtime.sendMessage({
+          action: 'agentExecute',
+          tabId: tab.id,
+          executeAction: part.functionCall.name,
+          params: part.functionCall.args || {}
+        }).catch(e => ({ success: false, error: e.message }))
+      )
+    );
+
+    // ── Process results + self-healing ────────────────────────────────────────
+    let anyFailed = false;
+    const responseParts = [];
+
+    for (let ri = 0; ri < executableCalls.length; ri++) {
+      const { name, args } = executableCalls[ri].functionCall;
+      const settled = settledResults[ri];
+      let execResult = settled.status === 'fulfilled'
+        ? settled.value
+        : { success: false, error: settled.reason?.message || 'Promise rejected' };
+
+      // ── Tab management: update agent's tab reference ──────────────────────
+      if (execResult?.success) {
+        if (execResult.switchedTabId) {
+          try {
+            const t = await chrome.tabs.get(execResult.switchedTabId);
+            if (t?.id) { tab = t; }
+          } catch (_) {}
+        } else if (execResult.newTabId && (name === 'navigate' || name === 'openTab')) {
+          try {
+            const t = await chrome.tabs.get(execResult.newTabId);
+            if (t?.id) {
+              addAgentStepBubble(thread, `Opened tab: ${t.url || 'loading...'}`);
+              if (args?.switchTo || name === 'navigate') tab = t;
+            }
+          } catch (_) {}
         }
-      } catch (_) {}
+      }
+
+      // ── Self-healing selectors: on "not found", auto-run findElement ──────
+      if (!execResult?.success && /not found|not visible|no element|couldn.t find/i.test(execResult?.error || '')) {
+        const query = args?.selector || args?.text || args?.description || '';
+        if (query) {
+          try {
+            const heal = await chrome.runtime.sendMessage({
+              action: 'agentExecute', tabId: tab.id,
+              executeAction: 'findElement', params: { query }
+            });
+            if (heal?.success && heal?.data) {
+              execResult = { ...execResult,
+                healSuggestion: `Auto-findElement result: ${heal.data} — try clicking by coordinates or use a more specific description` };
+            }
+          } catch (_) {}
+        }
+      }
+
+      // ── Track failures ────────────────────────────────────────────────────
+      if (!execResult?.success) {
+        anyFailed = true;
+        consecutiveFailures++;
+        const failKey = `${name}:${String(args?.text || args?.selector || args?.description || '')}`;
+        actionFailCounts[failKey] = (actionFailCounts[failKey] || 0) + 1;
+        if (_agentLogContainer?.isConnected) {
+          const warn = document.createElement('div');
+          warn.style.cssText = 'font-size:11px;color:rgba(255,180,50,0.75);padding-left:16px;';
+          warn.textContent = `⚠ ${execResult?.error || 'failed'} — trying differently…`;
+          _agentLogContainer.appendChild(warn);
+          thread.scrollTop = thread.scrollHeight;
+        }
+      }
+
+      responseParts.push({
+        functionResponse: {
+          name,
+          response: execResult?.success
+            ? { success: true, ...(execResult.data != null ? { data: String(execResult.data) } : {}), pageNow: '' }
+            : { success: false,
+                error: execResult?.error || 'unknown error',
+                ...(execResult?.healSuggestion ? { healSuggestion: execResult.healSuggestion } : {}),
+                ...(Object.keys(actionFailCounts).length
+                  ? { alreadyFailed: Object.entries(actionFailCounts)
+                        .filter(([, c]) => c > 1).map(([k, c]) => `${k} (×${c})`).join(', ') || undefined }
+                  : {}),
+                pageNow: '' }
+        }
+      });
     }
 
-    await smartWaitAfterAction(tab.id, name); // wait for nav or settle
+    if (!anyFailed) consecutiveFailures = 0;
 
-    // Some links/buttons open a NEW tab instead of navigating the current
-    // one (very common on channel/video pages, search results, etc). If we
-    // kept driving the old tab it would just sit there doing nothing while
-    // the real content loaded elsewhere. Re-detect which tab is actually
-    // active/focused now and follow it, so Autopilot moves with the user
-    // through new tabs instead of getting stuck on the original page.
+    // Hard stop: 5 consecutive failures = genuinely stuck
+    // (raised from 3 — gives agent more room to try alternative approaches)
+    if (consecutiveFailures >= 5) {
+      addAgentStepBubble(thread,
+        `Stuck after ${consecutiveFailures} failed steps in a row. Try using highlightElement to confirm the target, coordinate-based click, or a different selector strategy.`,
+        'error');
+      break;
+    }
+
+    // Wait for navigation / DOM settle, then re-detect which tab is active
+    await smartWaitAfterAction(tab.id, executableCalls[0]?.functionCall?.name);
+
     try {
       const followWindows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
       const followCandidates = followWindows
         .flatMap(w => (w.tabs || []).filter(t => t.active).map(t => ({ ...t, _focused: w.focused })))
         .sort((a, b) => (b._focused ? 1 : 0) - (a._focused ? 1 : 0) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
       const freshTab = followCandidates[0];
-      if (freshTab && freshTab.id && !/^(chrome|chrome-extension|edge|about):/.test(freshTab.url || '')) {
-        if (freshTab.id !== tab.id) {
-          addAgentStepBubble(thread, `Followed into new tab: ${freshTab.title || freshTab.url}`);
-        }
+      if (freshTab?.id && !/^(chrome|chrome-extension|edge|about):/.test(freshTab.url || '')) {
+        if (freshTab.id !== tab.id) addAgentStepBubble(thread, `Followed into new tab: ${freshTab.title || freshTab.url}`);
         tab = freshTab;
       }
-    } catch (_) { /* keep driving the previous tab if this lookup fails */ }
+    } catch (_) {}
 
     pageText = await getActiveTabPageText(tab.id);
 
-    contents.push({
-      role: 'user',
-      parts: [{
-        functionResponse: {
-          name,
-          response: execResult && execResult.success
-            ? { success: true,
-                ...(execResult.data != null ? { data: String(execResult.data) } : {}),
-                pageNow: pageText.slice(0, 4000) }
-            : { success: false,
-                error: execResult?.error || 'unknown error',
-                // Tell Gemini which actions have already failed so it stops repeating them
-                ...(Object.keys(actionFailCounts).length
-                  ? { alreadyFailed: Object.entries(actionFailCounts)
-                        .filter(([,c]) => c > 1)
-                        .map(([k,c]) => `${k} (×${c})`)
-                        .join(', ') || undefined }
-                  : {}),
-                pageNow: pageText.slice(0, 4000) }
-        }
-      }]
-    });
+    // Inject fresh page text into all response parts
+    for (const rp of responseParts) {
+      rp.functionResponse.response.pageNow = pageText.slice(0,
+        rp.functionResponse.response.success ? 4000 : 2000);
+    }
+
+    contents.push({ role: 'user', parts: responseParts });
 
     if (step === AGENT_MAX_STEPS - 1) {
-      addAgentStepBubble(thread, `Stopped after ${AGENT_MAX_STEPS} steps to avoid running forever. Tell me to continue if it's not done.`, 'error');
+      addAgentStepBubble(thread, `Stopped after ${AGENT_MAX_STEPS} steps. Tell me to continue if not done.`, 'error');
     }
   }
 

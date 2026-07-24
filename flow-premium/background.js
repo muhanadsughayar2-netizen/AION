@@ -848,6 +848,58 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       })();
       return true;
     }
+
+    // ── openTab ────────────────────────────────────────────────────────────────
+    if (executeAction === 'openTab') {
+      (async () => {
+        try {
+          let url = (params.url || '').trim();
+          if (!url) { sendResponse({ success: false, error: 'No URL provided' }); return; }
+          if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+          const active = !(params.background !== false); // default: open in background
+          const currentTab = await chrome.tabs.get(tabId).catch(() => null);
+          const newTab = await chrome.tabs.create({ url, active, windowId: currentTab?.windowId });
+          // Wait for it to load
+          await new Promise(resolve => {
+            const t = setTimeout(() => { chrome.tabs.onUpdated.removeListener(fn); resolve(); }, 15000);
+            function fn(id, info) { if (id === newTab.id && info.status === 'complete') { clearTimeout(t); chrome.tabs.onUpdated.removeListener(fn); resolve(); } }
+            chrome.tabs.onUpdated.addListener(fn);
+          });
+          sendResponse({ success: true, newTabId: newTab.id, data: `New tab opened: ${url} (tabId: ${newTab.id})` });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+      })(); return true;
+    }
+
+    // ── switchTab ──────────────────────────────────────────────────────────────
+    if (executeAction === 'switchTab') {
+      (async () => {
+        try {
+          let targetId = params.tabId ? parseInt(params.tabId) : null;
+          if (!targetId && params.url) {
+            const allTabs = await chrome.tabs.query({});
+            const match = allTabs.find(t => t.url && t.url.includes(params.url));
+            if (!match) { sendResponse({ success: false, error: `No tab found with URL containing "${params.url}"` }); return; }
+            targetId = match.id;
+          }
+          if (!targetId) { sendResponse({ success: false, error: 'Provide tabId or url to switch to' }); return; }
+          await chrome.tabs.update(targetId, { active: true });
+          const info = await chrome.tabs.get(targetId);
+          sendResponse({ success: true, switchedTabId: targetId, data: `Switched to tab ${targetId}: ${info.url}` });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+      })(); return true;
+    }
+
+    // ── closeTab ───────────────────────────────────────────────────────────────
+    if (executeAction === 'closeTab') {
+      (async () => {
+        try {
+          const idToClose = params.tabId ? parseInt(params.tabId) : tabId;
+          await chrome.tabs.remove(idToClose);
+          sendResponse({ success: true, data: `Closed tab ${idToClose}` });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+      })(); return true;
+    }
+
     if (executeAction === 'type') {
       // Google Sheets/Docs draw their real content on <canvas>, so they
       // don't have a normal input to set .value on — the plain content-script
