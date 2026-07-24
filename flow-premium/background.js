@@ -1121,7 +1121,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const isCanvasApp = tabHostname.includes('docs.google.com')
             || tabHostname.includes('office.com')
             || tabHostname.includes('live.com')
-            || tabHostname.includes('aistudio.google.com');
+            // ── Google AI / Gemini ecosystem ──────────────────────────────────
+            || tabHostname.includes('aistudio.google.com')   // AI Studio (app builder)
+            || tabHostname.includes('gemini.google.com')     // Gemini chat
+            || tabHostname.includes('makersuite.google.com') // AI Studio (old name)
+            || tabHostname.includes('notebooklm.google.com') // NotebookLM
+            || tabHostname.includes('labs.google.com')       // Google Labs
+            || tabHostname.includes('colab.research.google.com') // Colab
+            || tabHostname.includes('idx.google.com')        // Project IDX
+            // ── Other major AI chat platforms ─────────────────────────────────
+            || tabHostname.includes('chatgpt.com')           // ChatGPT
+            || tabHostname.includes('chat.openai.com')       // ChatGPT (old)
+            || tabHostname.includes('claude.ai')             // Claude
+            || tabHostname.includes('grok.com')              // Grok
+            || tabHostname.includes('perplexity.ai')         // Perplexity
+            || tabHostname.includes('copilot.microsoft.com') // Microsoft Copilot
+            || tabHostname.includes('bing.com');             // Bing Copilot
 
           if (!isCanvasApp) {
             runFallbackType();

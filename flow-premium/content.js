@@ -4288,20 +4288,17 @@
           return { success: true, x: window.innerWidth * 0.5, y: window.innerHeight * 0.4, mode: 'word' };
         }
 
-        // ── GOOGLE AI STUDIO ─────────────────────────────────────────────────
-        if (host.includes('aistudio.google.com')) {
-          // The prompt/app-description input is a textarea or contenteditable.
-          // Try the most common selectors across AI Studio's layouts.
+        // ── GOOGLE AI STUDIO / MAKERSUITE ────────────────────────────────────
+        if (host.includes('aistudio.google.com') || host.includes('makersuite.google.com')) {
           const aiInput = findVisible([
-            'textarea[placeholder]',
+            'ms-prompt-input textarea',
             'textarea[aria-label]',
+            'textarea[placeholder]',
+            '[data-testid="prompt-input"] textarea',
+            '[class*="prompt"] textarea',
             'div[contenteditable="true"][aria-multiline]',
             'div[contenteditable="true"]',
             'textarea',
-            'ms-prompt-input textarea',
-            '[data-testid="prompt-input"] textarea',
-            '[class*="prompt"] textarea',
-            '[class*="input"] textarea',
           ]);
           let x, y;
           if (aiInput) {
@@ -4310,9 +4307,209 @@
             y = r.top  + r.height * 0.5;
             highlightElement(aiInput);
           } else {
-            // Safe centre — AI Studio's main input is always roughly here
-            x = window.innerWidth  * 0.5;
+            x = window.innerWidth * 0.5;
             y = window.innerHeight * 0.65;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'aistudio' };
+        }
+
+        // ── GEMINI CHAT (gemini.google.com) ──────────────────────────────────
+        if (host.includes('gemini.google.com')) {
+          const input = findVisible([
+            'rich-textarea div[contenteditable="true"]',
+            '.ql-editor',
+            'div[contenteditable="true"][role="textbox"]',
+            'div[contenteditable="true"]',
+            'textarea',
+          ]);
+          let x, y;
+          if (input) {
+            const r = input.getBoundingClientRect();
+            x = r.left + r.width * 0.5;
+            y = r.top  + r.height * 0.5;
+            highlightElement(input);
+          } else {
+            x = window.innerWidth * 0.5;
+            y = window.innerHeight * 0.85;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'aistudio' };
+        }
+
+        // ── NOTEBOOKLM ───────────────────────────────────────────────────────
+        if (host.includes('notebooklm.google.com')) {
+          const input = findVisible([
+            'textarea[placeholder]',
+            'div[contenteditable="true"]',
+            'textarea',
+          ]);
+          let x, y;
+          if (input) {
+            const r = input.getBoundingClientRect();
+            x = r.left + r.width * 0.5;
+            y = r.top  + r.height * 0.5;
+            highlightElement(input);
+          } else {
+            x = window.innerWidth * 0.5;
+            y = window.innerHeight * 0.80;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'aistudio' };
+        }
+
+        // ── GOOGLE COLAB ─────────────────────────────────────────────────────
+        if (host.includes('colab.research.google.com')) {
+          const input = findVisible([
+            '.cell-output-area div[contenteditable="true"]',
+            'div.CodeMirror-code',
+            'div[contenteditable="true"]',
+            'textarea.CodeMirror-line',
+            'textarea',
+          ]);
+          let x, y;
+          if (input) {
+            const r = input.getBoundingClientRect();
+            x = r.left + r.width * 0.4;
+            y = r.top  + r.height * 0.3;
+            highlightElement(input);
+          } else {
+            x = window.innerWidth * 0.5;
+            y = window.innerHeight * 0.4;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'aistudio' };
+        }
+
+        // ── PROJECT IDX ──────────────────────────────────────────────────────
+        if (host.includes('idx.google.com')) {
+          const input = findVisible([
+            'textarea[placeholder]',
+            'div[contenteditable="true"]',
+            '.monaco-editor textarea',
+            'textarea',
+          ]);
+          let x, y;
+          if (input) {
+            const r = input.getBoundingClientRect();
+            x = r.left + r.width * 0.5;
+            y = r.top  + r.height * 0.5;
+            highlightElement(input);
+          } else {
+            x = window.innerWidth * 0.5;
+            y = window.innerHeight * 0.5;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'aistudio' };
+        }
+
+        // ── CHATGPT ──────────────────────────────────────────────────────────
+        if (host.includes('chatgpt.com') || host.includes('chat.openai.com')) {
+          const input = findVisible([
+            '#prompt-textarea',
+            'textarea[data-id="root"]',
+            'div[contenteditable="true"][aria-label]',
+            'div[contenteditable="true"]',
+            'textarea[placeholder]',
+            'textarea',
+          ]);
+          let x, y;
+          if (input) {
+            const r = input.getBoundingClientRect();
+            x = r.left + r.width * 0.5;
+            y = r.top  + r.height * 0.5;
+            highlightElement(input);
+          } else {
+            x = window.innerWidth * 0.5;
+            y = window.innerHeight * 0.88;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'aistudio' };
+        }
+
+        // ── CLAUDE ───────────────────────────────────────────────────────────
+        if (host.includes('claude.ai')) {
+          const input = findVisible([
+            'div.ProseMirror[contenteditable="true"]',
+            'div[contenteditable="true"][role="textbox"]',
+            'div[contenteditable="true"]',
+            'textarea',
+          ]);
+          let x, y;
+          if (input) {
+            const r = input.getBoundingClientRect();
+            x = r.left + r.width * 0.5;
+            y = r.top  + r.height * 0.5;
+            highlightElement(input);
+          } else {
+            x = window.innerWidth * 0.5;
+            y = window.innerHeight * 0.88;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'aistudio' };
+        }
+
+        // ── GROK ─────────────────────────────────────────────────────────────
+        if (host.includes('grok.com')) {
+          const input = findVisible([
+            'textarea[aria-label]',
+            'div[contenteditable="true"]',
+            'textarea[placeholder]',
+            'textarea',
+          ]);
+          let x, y;
+          if (input) {
+            const r = input.getBoundingClientRect();
+            x = r.left + r.width * 0.5;
+            y = r.top  + r.height * 0.5;
+            highlightElement(input);
+          } else {
+            x = window.innerWidth * 0.5;
+            y = window.innerHeight * 0.88;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'aistudio' };
+        }
+
+        // ── PERPLEXITY ───────────────────────────────────────────────────────
+        if (host.includes('perplexity.ai')) {
+          const input = findVisible([
+            'textarea[placeholder]',
+            'div[contenteditable="true"]',
+            'textarea',
+          ]);
+          let x, y;
+          if (input) {
+            const r = input.getBoundingClientRect();
+            x = r.left + r.width * 0.5;
+            y = r.top  + r.height * 0.5;
+            highlightElement(input);
+          } else {
+            x = window.innerWidth * 0.5;
+            y = window.innerHeight * 0.88;
+          }
+          moveGhostCursor(x, y);
+          return { success: true, x, y, mode: 'aistudio' };
+        }
+
+        // ── MICROSOFT COPILOT / BING ──────────────────────────────────────────
+        if (host.includes('copilot.microsoft.com') || host.includes('bing.com')) {
+          const input = findVisible([
+            'textarea[id*="search"]',
+            'div[contenteditable="true"]',
+            '#searchbox',
+            'textarea[placeholder]',
+            'textarea',
+          ]);
+          let x, y;
+          if (input) {
+            const r = input.getBoundingClientRect();
+            x = r.left + r.width * 0.5;
+            y = r.top  + r.height * 0.5;
+            highlightElement(input);
+          } else {
+            x = window.innerWidth * 0.5;
+            y = window.innerHeight * 0.88;
           }
           moveGhostCursor(x, y);
           return { success: true, x, y, mode: 'aistudio' };
