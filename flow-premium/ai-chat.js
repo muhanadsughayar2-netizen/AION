@@ -10402,6 +10402,28 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'switchSheet',
+      description: 'Switch to a different sheet tab inside Excel Online or Google Sheets by its name. Use this when the task mentions "Sheet2", "Budget tab", "Q3", or any named sheet that is not currently active. Always call this BEFORE typing into a sheet to make sure you are on the right one.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'The exact or partial name of the sheet tab to switch to, e.g. "Sheet2", "Budget", "Q3 Sales"' }
+        },
+        required: ['name']
+      }
+    },
+    {
+      name: 'switchDocTab',
+      description: 'Switch to a different Document Tab inside a Google Docs document. Google Docs supports multiple tabs within one document (visible in the left sidebar). Use this when the task references a specific section, chapter, or named tab in the document.',
+      parameters: {
+        type: 'object',
+        properties: {
+          name: { type: 'string', description: 'The name or partial name of the document tab to switch to, e.g. "Chapter 2", "Introduction", "Appendix"' }
+        },
+        required: ['name']
+      }
+    },
+    {
       name: 'finish',
       description: 'Call this when the task is complete, impossible, or you need to stop and tell the user something.',
       parameters: {

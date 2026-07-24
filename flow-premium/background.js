@@ -1561,6 +1561,208 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    if (executeAction === 'switchSheet') {
+      // Switch to a named sheet tab in Excel Online or Google Sheets.
+      // Both apps expose sheet tabs as real DOM buttons/list-items — we find
+      // the one whose text matches params.name and CDP-click it.
+      (async () => {
+        const targetName = String(params.name || '').trim().toLowerCase();
+        if (!targetName) { sendResponse({ success: false, error: 'No sheet name provided' }); return; }
+
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) {}
+
+        const cdpCmd = (method, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, method, p || {}, (r) => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+
+        try {
+          await cdpCmd('Runtime.enable', {});
+          const result = await cdpCmd('Runtime.evaluate', {
+            expression: `(async () => {
+              const target = ${JSON.stringify(targetName)};
+              // ── Google Sheets sheet tabs ──────────────────────────────────
+              // Each tab is a <li> with class docs-sheet-tab; the label is in a span
+              const sheetTabs = [
+                ...document.querySelectorAll(
+                  '.docs-sheet-tab, [data-id][role="tab"], ' +
+                  'li.docs-sheet-tab, .sheet-tab-button'
+                )
+              ];
+              for (const tab of sheetTabs) {
+                if ((tab.textContent || '').trim().toLowerCase().includes(target)) {
+                  const r = tab.getBoundingClientRect();
+                  return { x: r.left + r.width/2, y: r.top + r.height/2, found: true, via: 'sheets-tab' };
+                }
+              }
+              // ── Excel Online sheet tabs ───────────────────────────────────
+              // Excel renders tabs as <button> or <span> elements in a tab bar
+              const excelTabs = [
+                ...document.querySelectorAll(
+                  '[data-sheet-id], .tab-button, .tab-label, ' +
+                  'button[class*="sheet"], span[class*="sheet-name"], ' +
+                  '[role="tab"], .awsui-tabs-tab, li[class*="tab"]'
+                )
+              ];
+              for (const tab of excelTabs) {
+                if ((tab.textContent || '').trim().toLowerCase().includes(target)) {
+                  const r = tab.getBoundingClientRect();
+                  return { x: r.left + r.width/2, y: r.top + r.height/2, found: true, via: 'excel-tab' };
+                }
+              }
+              // ── Generic: any clickable element whose text matches ─────────
+              const all = [...document.querySelectorAll('button, li, a, [role="tab"], [class*="tab"]')];
+              for (const el of all) {
+                const t = (el.textContent || '').trim().toLowerCase();
+                if (t === target || t.includes(target)) {
+                  const r = el.getBoundingClientRect();
+                  if (r.width > 10 && r.height > 5) {
+                    return { x: r.left + r.width/2, y: r.top + r.height/2, found: true, via: 'generic' };
+                  }
+                }
+              }
+              return { found: false };
+            })()`,
+            awaitPromise: true,
+            returnByValue: true
+          });
+
+          const loc = result && result.result && result.result.value;
+          if (!loc || !loc.found) {
+            sendResponse({ success: false, error: `Sheet tab "${params.name}" not found on page.` });
+            return;
+          }
+
+          const { x, y } = loc;
+          await cdpCmd('Input.dispatchMouseEvent', { type: 'mousePressed',  x, y, button: 'left', buttons: 1, clickCount: 1 });
+          await cdpCmd('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+          await new Promise(r => setTimeout(r, 400));
+          sendResponse({ success: true, message: `Switched to sheet "${params.name}" via ${loc.via}` });
+        } catch (e) {
+          sendResponse({ success: false, error: e.message });
+        } finally {
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    if (executeAction === 'switchDocTab') {
+      // Switch to a named Document Tab in Google Docs (the left-sidebar tabs
+      // introduced in 2024). Uses Accessibility.queryAXTree first (most reliable
+      // because the tab title IS the accessible name), then falls back to
+      // Runtime.evaluate text search.
+      (async () => {
+        const targetName = String(params.name || '').trim().toLowerCase();
+        if (!targetName) { sendResponse({ success: false, error: 'No tab name provided' }); return; }
+
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) {}
+
+        const cdpCmd = (method, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, method, p || {}, (r) => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+
+        try {
+          // ── Step 1: Accessibility tree search (finds by visible tab name) ──
+          await cdpCmd('Accessibility.enable', {});
+          let axResult = null;
+          try {
+            axResult = await cdpCmd('Accessibility.queryAXTree', {
+              accessibleName: params.name,
+              role: 'treeitem'
+            });
+          } catch (_) {}
+
+          // Also try with role 'tab'
+          if (!axResult || !axResult.nodes || axResult.nodes.length === 0) {
+            try {
+              axResult = await cdpCmd('Accessibility.queryAXTree', {
+                accessibleName: params.name,
+                role: 'tab'
+              });
+            } catch (_) {}
+          }
+
+          if (axResult && axResult.nodes && axResult.nodes.length > 0) {
+            const node = axResult.nodes[0];
+            if (node.backendDOMNodeId) {
+              const boxResult = await cdpCmd('DOM.getBoxModel', { backendNodeId: node.backendDOMNodeId });
+              if (boxResult && boxResult.model && boxResult.model.content) {
+                const [x1, y1, x2, y2, x3, y3, x4, y4] = boxResult.model.content;
+                const x = (x1 + x3) / 2;
+                const y = (y1 + y3) / 2;
+                await cdpCmd('Input.dispatchMouseEvent', { type: 'mousePressed',  x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await cdpCmd('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await new Promise(r => setTimeout(r, 500));
+                sendResponse({ success: true, message: `Switched to doc tab "${params.name}" via accessibility tree` });
+                return;
+              }
+            }
+          }
+
+          // ── Step 2: Runtime JS fallback — search all sidebar tab elements ──
+          await cdpCmd('Runtime.enable', {});
+          const rtResult = await cdpCmd('Runtime.evaluate', {
+            expression: `(async () => {
+              const target = ${JSON.stringify(targetName)};
+              // Google Docs tab sidebar selectors (2024 tabs feature)
+              const candidates = [
+                ...document.querySelectorAll(
+                  '[class*="docs-tab"], [class*="tab-title"], [role="treeitem"], ' +
+                  '[data-tab-id], [class*="document-tab"], [role="tab"], ' +
+                  '.kix-appview-tab, [jsname][class*="tab"]'
+                )
+              ];
+              for (const el of candidates) {
+                if ((el.textContent || '').trim().toLowerCase().includes(target)) {
+                  const r = el.getBoundingClientRect();
+                  if (r.width > 5 && r.height > 5) {
+                    return { x: r.left + r.width/2, y: r.top + r.height/2, found: true };
+                  }
+                }
+              }
+              // Wider search: any visible element with matching text in the left ~250px
+              const all = [...document.querySelectorAll('[role="button"], button, li, div[tabindex]')];
+              for (const el of all) {
+                const t = (el.textContent || '').trim().toLowerCase();
+                const r = el.getBoundingClientRect();
+                if (t.includes(target) && r.left < 300 && r.width > 5 && r.height > 5) {
+                  return { x: r.left + r.width/2, y: r.top + r.height/2, found: true, via: 'left-panel' };
+                }
+              }
+              return { found: false };
+            })()`,
+            awaitPromise: true,
+            returnByValue: true
+          });
+
+          const loc = rtResult && rtResult.result && rtResult.result.value;
+          if (!loc || !loc.found) {
+            sendResponse({ success: false, error: `Document tab "${params.name}" not found. Make sure the Tabs panel is open in Google Docs (View → Show document tabs).` });
+            return;
+          }
+
+          const { x, y } = loc;
+          await cdpCmd('Input.dispatchMouseEvent', { type: 'mousePressed',  x, y, button: 'left', buttons: 1, clickCount: 1 });
+          await cdpCmd('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+          await new Promise(r => setTimeout(r, 500));
+          sendResponse({ success: true, message: `Switched to doc tab "${params.name}"` });
+        } catch (e) {
+          sendResponse({ success: false, error: e.message });
+        } finally {
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
     if (executeAction === 'pressKey') {
       // Fire a keyboard shortcut via CDP — the ONLY way to reliably send
       // modifier key combos (Ctrl+S, Ctrl+Z, etc.) to canvas-based apps.
