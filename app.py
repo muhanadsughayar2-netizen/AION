@@ -1451,6 +1451,11 @@ def add_headers(response):
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
 
+@app.route('/accounting')
+def accounting_app():
+    """Simple accounting app"""
+    return send_from_directory('.', 'accounting.html')
+
 @app.route('/health')
 def health():
     """Health check endpoint for deployment"""
