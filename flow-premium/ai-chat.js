@@ -10575,8 +10575,8 @@ const AGENT_TOOLS = [{
         properties: {
           type: {
             type: 'string',
-            enum: ['', 'page', 'iframe', 'worker', 'service_worker', 'background_page'],
-            description: 'Filter by target type. Leave blank to list all targets.'
+            enum: ['page', 'iframe', 'worker', 'service_worker', 'background_page'],
+            description: 'Filter by target type. Omit this parameter to list all targets.'
           }
         }
       }
