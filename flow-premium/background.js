@@ -2942,6 +2942,514 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    // ── auditPage ── Audits domain ─────────────────────────────────────────────
+    // Collects browser-detected issues: CSP violations, mixed content, broken
+    // cookies, CORS errors, deprecation warnings, low-contrast text — everything
+    // Chrome DevTools flags in the Issues panel. Uses the real CDP Audits domain
+    // (stable 1.3+) — not a Lighthouse run, but near-instant browser audit.
+    if (executeAction === 'auditPage') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const waitMs   = Math.min(10000, (parseInt(params.wait) || 3) * 1000);
+          const filterType = (params.type || '').toLowerCase();
+          const issues = [];
+
+          function onEvent(source, evtName, evtParams) {
+            if (source.tabId !== tabId || evtName !== 'Audits.issueAdded') return;
+            const d = evtParams?.issue?.details || {};
+            const type = evtParams?.issue?.code || 'Unknown';
+            if (filterType && !type.toLowerCase().includes(filterType)) return;
+            const detail = d.cookieIssueDetails || d.mixedContentDetails ||
+                           d.blockedByResponseIssueDetails || d.contentSecurityPolicyIssueDetails ||
+                           d.corsIssueDetails || d.deprecationIssueDetails ||
+                           d.genericIssueDetails || {};
+            issues.push({ type, detail });
+          }
+          chrome.debugger.onEvent.addListener(onEvent);
+          await cdpC('Audits.enable');
+          // Reload page to re-trigger all issues, or just wait for live ones
+          const reload = params.reload === true || params.reload === 'true';
+          if (reload) await cdpC('Page.reload', { ignoreCache: true });
+          await new Promise(r => setTimeout(r, waitMs));
+          chrome.debugger.onEvent.removeListener(onEvent);
+
+          if (issues.length === 0) {
+            sendResponse({ success: true, data: `No issues detected in ${waitMs / 1000}s${filterType ? ` (filter: ${filterType})` : ''}.` });
+            return;
+          }
+          const maxChars = Math.min(8000, parseInt(params.maxChars) || 4000);
+          sendResponse({ success: true, data: JSON.stringify(issues, null, 2).slice(0, maxChars) });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally {
+          try { chrome.debugger.sendCommand(debuggee, 'Audits.disable', {}, () => {}); } catch (_) {}
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── readCache ── CacheStorage domain ───────────────────────────────────────
+    // Lists and reads files stored in Service Worker caches — offline pages,
+    // cached API responses, PWA assets. Useful for seeing what a PWA has cached
+    // or checking if stale content is being served.
+    if (executeAction === 'readCache') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const tab    = await chrome.tabs.get(tabId);
+          const securityOrigin = new URL(tab.url).origin;
+          const filterCache = (params.cache || '').toLowerCase();
+          const maxEntries  = Math.min(100, parseInt(params.maxEntries) || 20);
+
+          const { caches } = await cdpC('CacheStorage.requestCacheNames', { securityOrigin });
+          if (!caches || caches.length === 0) {
+            sendResponse({ success: true, data: 'No Service Worker caches found for this origin.' });
+            return;
+          }
+          const result = {};
+          for (const c of caches) {
+            if (filterCache && !c.cacheName.toLowerCase().includes(filterCache)) continue;
+            const { cacheDataEntries } = await cdpC('CacheStorage.requestEntries', {
+              cacheId: c.cacheId, skipCount: 0, pageSize: maxEntries
+            });
+            result[c.cacheName] = (cacheDataEntries || []).map(e => ({
+              url:          e.requestURL,
+              responseType: e.responseType,
+              responseTime: e.responseTime
+                ? new Date(e.responseTime * 1000).toISOString()
+                : null
+            }));
+          }
+          sendResponse({ success: true, data: JSON.stringify(result, null, 2).slice(0, 6000) });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── getEventListeners ── DOMDebugger domain ────────────────────────────────
+    // Returns ALL JavaScript event listeners attached to an element — click,
+    // submit, keydown, custom events, etc. Tells you exactly what code runs when
+    // you interact with any element. Indispensable for debugging "why doesn't this
+    // button do anything" or finding hidden form submission handlers.
+    if (executeAction === 'getEventListeners') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const selector  = params.selector || 'document';
+          const depth     = parseInt(params.depth) || 1; // pierce shadow roots etc.
+
+          await cdpC('DOM.enable');
+          await cdpC('Runtime.enable');
+
+          // Resolve selector to a remote object for DOMDebugger.getEventListeners
+          const expr = selector === 'document'
+            ? 'document'
+            : `document.querySelector(${JSON.stringify(selector)})`;
+          const { result: obj } = await cdpC('Runtime.evaluate', {
+            expression: expr, objectGroup: 'evtQuery'
+          });
+          if (!obj?.objectId) {
+            sendResponse({ success: false, error: `Element not found: "${selector}"` });
+            return;
+          }
+
+          const { listeners } = await cdpC('DOMDebugger.getEventListeners', {
+            objectId: obj.objectId,
+            depth,
+            pierce: true
+          });
+          await cdpC('Runtime.releaseObjectGroup', { objectGroup: 'evtQuery' });
+
+          const summary = (listeners || []).map(l => ({
+            type:       l.type,
+            useCapture: l.useCapture,
+            passive:    l.passive,
+            once:       l.once,
+            scriptId:   l.handler?.scriptId,
+            location:   l.location ? `${l.location.scriptId}:${l.location.lineNumber}:${l.location.columnNumber}` : null
+          }));
+          sendResponse({
+            success: true,
+            data: summary.length
+              ? JSON.stringify(summary, null, 2).slice(0, 4000)
+              : `No event listeners found on "${selector}".`
+          });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── snapshotHeap ── HeapProfiler domain ────────────────────────────────────
+    // Forces garbage collection then reports JS heap usage, retained object counts,
+    // and memory pressure. Use to detect memory leaks, check if a page is
+    // consuming excessive RAM, or confirm GC ran before a memory-sensitive test.
+    if (executeAction === 'snapshotHeap') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          await cdpC('HeapProfiler.enable');
+          // Force GC so we see true live usage, not pre-GC noise
+          await cdpC('HeapProfiler.collectGarbage');
+
+          // Read JS heap stats via Runtime (HeapProfiler.getObjectByHeapObjectId
+          // requires a prior snapshot which is heavy; sampling stats are sufficient)
+          const { result } = await cdpC('Runtime.evaluate', {
+            expression: `JSON.stringify((function(){
+              const m = performance.memory || {};
+              return {
+                jsHeapUsedMB:  parseFloat((m.usedJSHeapSize  / 1048576).toFixed(2)) || null,
+                jsHeapTotalMB: parseFloat((m.totalJSHeapSize / 1048576).toFixed(2)) || null,
+                jsHeapLimitMB: parseFloat((m.jsHeapSizeLimit / 1048576).toFixed(2)) || null,
+                nodeCount:     document.querySelectorAll('*').length,
+                iframeCount:   document.querySelectorAll('iframe').length,
+                scriptCount:   document.querySelectorAll('script').length
+              };
+            })())`,
+            returnByValue: true
+          });
+          const stats = JSON.parse(result?.value || '{}');
+
+          // Sampling-based heap profile for top object allocation sites
+          await cdpC('HeapProfiler.startSampling', { samplingInterval: 32768 });
+          await new Promise(r => setTimeout(r, 1000)); // 1s sample
+          const { profile } = await cdpC('HeapProfiler.stopSampling');
+
+          // Summarise top allocation call frames
+          const topNodes = [];
+          function walkTree(node, depth) {
+            if (!node || depth > 3) return;
+            if (node.selfSize > 0) {
+              const f = node.callFrame;
+              topNodes.push({
+                selfKB: Math.round(node.selfSize / 1024),
+                fn:     f?.functionName || '(anonymous)',
+                url:    f?.url ? f.url.split('/').slice(-2).join('/') : ''
+              });
+            }
+            for (const child of (node.children || [])) walkTree(child, depth + 1);
+          }
+          if (profile?.head) walkTree(profile.head, 0);
+          topNodes.sort((a, b) => b.selfKB - a.selfKB);
+
+          sendResponse({
+            success: true,
+            data: JSON.stringify({ ...stats, topAllocations: topNodes.slice(0, 15) }, null, 2)
+          });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally {
+          try { chrome.debugger.sendCommand(debuggee, 'HeapProfiler.disable', {}, () => {}); } catch(_) {}
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── readBrowserLog ── Log domain ───────────────────────────────────────────
+    // Captures browser-generated log entries: network errors, CSP violations,
+    // deprecation warnings, blocked requests, security errors — things that appear
+    // in DevTools Console with the 🛡/⚠ icons but are NOT from console.log calls.
+    // Complements captureConsole (which reads JS console output).
+    if (executeAction === 'readBrowserLog') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const waitMs   = Math.min(15000, (parseInt(params.wait) || 3) * 1000);
+          const level    = (params.level  || 'all').toLowerCase(); // 'all'|'error'|'warning'|'info'
+          const maxLines = Math.min(200, parseInt(params.maxLines) || 50);
+          const entries  = [];
+
+          function onEvent(source, evtName, evtParams) {
+            if (source.tabId !== tabId || evtName !== 'Log.entryAdded') return;
+            const e = evtParams?.entry || {};
+            if (level !== 'all' && e.level !== level) return;
+            entries.push({
+              level:  e.level,
+              source: e.source,
+              text:   e.text,
+              url:    e.url || null,
+              line:   e.lineNumber || null
+            });
+          }
+          chrome.debugger.onEvent.addListener(onEvent);
+          await cdpC('Log.enable');
+          const reload = params.reload === true || params.reload === 'true';
+          if (reload) await cdpC('Page.reload', { ignoreCache: true });
+          await new Promise(r => setTimeout(r, waitMs));
+          chrome.debugger.onEvent.removeListener(onEvent);
+
+          const out = entries.slice(-maxLines);
+          sendResponse({
+            success: true,
+            data: out.length
+              ? out.map(e => `[${e.level?.toUpperCase()}][${e.source}] ${e.text}${e.url ? ` (${e.url}:${e.line})` : ''}`).join('\n')
+              : `No browser log entries in ${waitMs / 1000}s.`
+          });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally {
+          try { chrome.debugger.sendCommand(debuggee, 'Log.disable', {}, () => {}); } catch(_) {}
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── getSecurityInfo ── Security domain ─────────────────────────────────────
+    // Returns the page's security state: HTTPS cert details, mixed content
+    // warnings, cert validity, cipher suite, whether the connection is truly
+    // secure. Use before automating form submissions to confirm you're on HTTPS.
+    if (executeAction === 'getSecurityInfo') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          await cdpC('Security.enable');
+          const state = await cdpC('Security.getSecurityState');
+          const tab   = await chrome.tabs.get(tabId);
+          const url   = tab.url;
+          const isHttps = url.startsWith('https://');
+          const out = {
+            url,
+            isHttps,
+            securityState:       state?.securityState,
+            summary:             state?.summary,
+            certificateSubject:  state?.certificateSecurityState?.certificate?.[0] || null,
+            protocol:            state?.certificateSecurityState?.protocol || null,
+            keyExchange:         state?.certificateSecurityState?.keyExchange || null,
+            cipher:              state?.certificateSecurityState?.cipher || null,
+            validFrom:           state?.certificateSecurityState?.validFrom
+              ? new Date(state.certificateSecurityState.validFrom * 1000).toISOString() : null,
+            validTo:             state?.certificateSecurityState?.validTo
+              ? new Date(state.certificateSecurityState.validTo * 1000).toISOString() : null,
+            mixedContent:        state?.mixedContentStatus || null,
+            explanations:        (state?.explanations || []).map(x => ({ state: x.securityState, summary: x.summary }))
+          };
+          sendResponse({ success: true, data: JSON.stringify(out, null, 2) });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally {
+          try { chrome.debugger.sendCommand(debuggee, 'Security.disable', {}, () => {}); } catch(_) {}
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── manageServiceWorker ── ServiceWorker domain ────────────────────────────
+    // List, inspect, update, stop, or unregister Service Workers for the page.
+    // Useful when: a PWA is stuck serving stale cached content, you want to force
+    // a fresh update, or you need to see which SW scope is controlling the page.
+    if (executeAction === 'manageServiceWorker') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const action = (params.action || 'list').toLowerCase(); // 'list'|'unregister'|'update'|'skipWaiting'
+          const waitMs = 2000;
+          const workers = [];
+
+          function onWorkerEvent(source, evtName, evtParams) {
+            if (source.tabId !== tabId) return;
+            if (evtName === 'ServiceWorker.workerRegistrationUpdated') {
+              for (const r of (evtParams.registrations || [])) {
+                workers.push({ scopeURL: r.scopeURL, registrationId: r.registrationId });
+              }
+            }
+            if (evtName === 'ServiceWorker.workerVersionUpdated') {
+              for (const v of (evtParams.versions || [])) {
+                const w = workers.find(x => x.registrationId === v.registrationId);
+                if (w) Object.assign(w, { status: v.status, runningStatus: v.runningStatus, scriptURL: v.scriptURL, versionId: v.versionId });
+              }
+            }
+          }
+          chrome.debugger.onEvent.addListener(onWorkerEvent);
+          await cdpC('ServiceWorker.enable');
+          await new Promise(r => setTimeout(r, waitMs));
+          chrome.debugger.onEvent.removeListener(onWorkerEvent);
+
+          if (action === 'list') {
+            sendResponse({
+              success: true,
+              data: workers.length
+                ? JSON.stringify(workers, null, 2)
+                : 'No Service Workers registered for this page.'
+            });
+            return;
+          }
+          if ((action === 'unregister' || action === 'update' || action === 'skipWaiting') && workers.length === 0) {
+            sendResponse({ success: false, error: 'No Service Workers found to ' + action }); return;
+          }
+          const target = workers.find(w => params.scope ? w.scopeURL.includes(params.scope) : true) || workers[0];
+          if (action === 'unregister') {
+            await cdpC('ServiceWorker.unregister', { scopeURL: target.scopeURL });
+            sendResponse({ success: true, data: `Unregistered SW: ${target.scopeURL}` });
+          } else if (action === 'update') {
+            await cdpC('ServiceWorker.updateRegistration', { scopeURL: target.scopeURL });
+            sendResponse({ success: true, data: `Update triggered for SW: ${target.scopeURL}` });
+          } else if (action === 'skipWaiting') {
+            await cdpC('ServiceWorker.skipWaiting', { scopeURL: target.scopeURL });
+            sendResponse({ success: true, data: `skipWaiting sent to SW: ${target.scopeURL}` });
+          }
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally {
+          try { chrome.debugger.sendCommand(debuggee, 'ServiceWorker.disable', {}, () => {}); } catch(_) {}
+          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
+      })();
+      return true;
+    }
+
+    // ── listTargets ── Target domain ───────────────────────────────────────────
+    // Returns all open browser targets: tabs, iframes, workers, extensions.
+    // Use to: discover what tabs are open, find an iframe's target to debug it,
+    // or get the targetId needed to attach the agent to a specific tab/frame.
+    if (executeAction === 'listTargets') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const filterType = (params.type || '').toLowerCase(); // 'page'|'iframe'|'worker'|'service_worker'|''
+          const { targetInfos } = await cdpC('Target.getTargets');
+          const filtered = (targetInfos || [])
+            .filter(t => !filterType || t.type === filterType)
+            .map(t => ({
+              targetId: t.targetId,
+              type:     t.type,
+              title:    t.title,
+              url:      t.url,
+              attached: t.attached,
+              openerId: t.openerId || null
+            }));
+          sendResponse({
+            success: true,
+            data: filtered.length
+              ? JSON.stringify(filtered, null, 2).slice(0, 6000)
+              : `No targets found${filterType ? ` of type "${filterType}"` : ''}.`
+          });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── highlightElement ── Overlay domain ─────────────────────────────────────
+    // Uses Chrome's native Overlay domain to draw a coloured highlight box around
+    // any CSS-selected element — the same highlight DevTools draws. More reliable
+    // than the JS-based ghost cursor highlight because it works in iframes, canvas
+    // apps, and pages with strict CSP. Use to visually confirm which element the
+    // agent is targeting before acting on it.
+    if (executeAction === 'highlightElement') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const selector  = params.selector || '';
+          const durationMs = Math.min(10000, (parseFloat(params.duration) || 2) * 1000);
+          const color = {
+            r: parseInt(params.r ?? 66),
+            g: parseInt(params.g ?? 133),
+            b: parseInt(params.b ?? 244),
+            a: parseFloat(params.a ?? 0.3)
+          };
+
+          await cdpC('DOM.enable');
+          const { root } = await cdpC('DOM.getDocument', { depth: 0 });
+          const { nodeId } = selector
+            ? await cdpC('DOM.querySelector', { nodeId: root.nodeId, selector })
+            : { nodeId: root.nodeId };
+
+          if (!nodeId) {
+            sendResponse({ success: false, error: `Element not found: "${selector}"` }); return;
+          }
+
+          await cdpC('Overlay.highlightNode', {
+            highlightConfig: {
+              showInfo: true,
+              contentColor:  color,
+              paddingColor:  { r: color.r, g: color.g, b: color.b, a: 0.1 },
+              borderColor:   { r: color.r, g: color.g, b: color.b, a: 0.8 }
+            },
+            nodeId
+          });
+
+          await new Promise(r => setTimeout(r, durationMs));
+          await cdpC('Overlay.hideHighlight');
+          sendResponse({ success: true, data: `Highlighted "${selector || 'document'}" for ${durationMs / 1000}s.` });
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
     if (executeAction === 'doubleClick') {
       // Content-script click/dblclick events are ALWAYS isTrusted:false — no
       // amount of synthetic dispatchEvent() can change that. Security-sensitive
