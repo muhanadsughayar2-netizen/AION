@@ -10159,7 +10159,7 @@ let agentStopRequested = false;
 // searching, waiting for pages to load, and scrolling to find things. 10 was
 // too tight and cut sequences off before they finished — 25 gives real
 // multi-stage tasks room to complete while still capping runaway loops.
-const AGENT_MAX_STEPS = 25;
+const AGENT_MAX_STEPS = 60;
 
 const AGENT_TOOLS = [{
   functionDeclarations: [
@@ -11313,6 +11313,7 @@ async function runAgentTask(prompt, thread) {
   let consecutiveFailures = 0;
   const actionFailCounts = {}; // key: "actionName:argText" → count
   let agentPlan = null;        // [{step, done, note}] set by planTask tool
+  const recentActions = [];    // loop detection: last 12 "action:arg" strings
 
   for (let step = 0; step < AGENT_MAX_STEPS; step++) {
     if (agentStopRequested) {
@@ -11529,6 +11530,28 @@ async function runAgentTask(prompt, thread) {
     for (const rp of responseParts) {
       rp.functionResponse.response.pageNow = pageText.slice(0,
         rp.functionResponse.response.success ? 4000 : 2000);
+    }
+
+    // ── Loop detection ────────────────────────────────────────────────────────
+    // Track recent actions and warn Gemini when it's clearly repeating itself
+    for (const part of executableCalls) {
+      const { name, args } = part.functionCall;
+      const sig = `${name}:${String(args?.text || args?.selector || args?.url || args?.description || args?.direction || '').slice(0, 60)}`;
+      recentActions.push(sig);
+      if (recentActions.length > 12) recentActions.shift();
+    }
+    // Count how many of the last 12 actions are the same as the most recent one
+    const lastSig = recentActions[recentActions.length - 1];
+    const repeatCount = recentActions.filter(s => s === lastSig).length;
+    if (repeatCount >= 3) {
+      // Inject a strong anti-loop warning into the last response part
+      const last = responseParts[responseParts.length - 1];
+      if (last?.functionResponse?.response) {
+        last.functionResponse.response.LOOP_WARNING =
+          `⚠ You have called "${lastSig}" ${repeatCount} times without progress. STOP doing this. ` +
+          `Try a completely different approach: use snapshotPage to see what is actually on screen, ` +
+          `try coordinate-based click, navigate to a different URL, or call finish to report what is blocking you.`;
+      }
     }
 
     contents.push({ role: 'user', parts: responseParts });

@@ -2056,7 +2056,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
         });
         try {
-          const target      = String(params.text || params.selector || '');
+          const target      = String(params.text || params.selector || '').trim();
+          if (!target) {
+            sendResponse({ success: false, error: 'waitForElement requires a non-empty "text" or "selector" — specify what to wait for' });
+            return;
+          }
           const useSelector = !params.text && !!params.selector;
           const timeoutSec  = Math.min(30, Math.max(1, parseInt(params.timeout) || 10));
           const deadline    = Date.now() + timeoutSec * 1000;
