@@ -10598,6 +10598,259 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'getSystemInfo',
+      description: 'Get Chrome browser version, GPU hardware info, codec support (video/image encoding & decoding capabilities). Use to confirm the browser environment before running tests, or check if a specific codec is hardware-accelerated.',
+      parameters: { type: 'object', properties: {} }
+    },
+    {
+      name: 'setBrowserWindow',
+      description: 'Resize, move, minimize, maximize, or fullscreen the browser window. Use to test responsive layouts at specific pixel dimensions, or simulate a specific screen size.',
+      parameters: {
+        type: 'object',
+        properties: {
+          width:  { type: 'number', description: 'Window width in pixels.' },
+          height: { type: 'number', description: 'Window height in pixels.' },
+          left:   { type: 'number', description: 'Window left position in pixels.' },
+          top:    { type: 'number', description: 'Window top position in pixels.' },
+          state:  { type: 'string', enum: ['normal', 'minimized', 'maximized', 'fullscreen'], description: 'Window state.' }
+        }
+      }
+    },
+    {
+      name: 'grantPermission',
+      description: 'Grant browser permissions to the current page without showing a popup dialog — camera, microphone, geolocation, notifications, clipboard, etc. Use before testing features that require permission prompts.',
+      parameters: {
+        type: 'object',
+        properties: {
+          permissions: {
+            type: 'array',
+            items: { type: 'string' },
+            description: 'List of permissions to grant. Options: "geolocation", "camera", "microphone", "notifications", "clipboardReadWrite", "clipboardSanitizedWrite", "accessibilityEvents", "sensors", "backgroundSync", "backgroundFetch", "nfc", "periodicBackgroundSync", "midi", "midiSysex".'
+          },
+          permission: { type: 'string', description: 'Single permission to grant (use "permissions" for multiple).' }
+        }
+      }
+    },
+    {
+      name: 'readDOMStorage',
+      description: 'Read localStorage or sessionStorage using the native CDP DOMStorage domain — more reliable than readStorage on pages that sandbox JavaScript execution (e.g. strict CSP pages). Returns raw key-value pairs directly from the storage engine.',
+      parameters: {
+        type: 'object',
+        properties: {
+          target:   { type: 'string', enum: ['all', 'local', 'session'], description: 'Which storage to read (default: all).' },
+          key:      { type: 'string', description: 'Filter by key name (partial match). Leave blank to return all keys.' },
+          maxChars: { type: 'number', description: 'Max characters to return (default 3000).' }
+        }
+      }
+    },
+    {
+      name: 'setDeviceOrientation',
+      description: 'Emulate device tilt and gyroscope orientation — useful for testing apps that respond to physical device movement (maps, AR, compass apps, games). Alpha = compass heading, Beta = front/back tilt, Gamma = left/right tilt.',
+      parameters: {
+        type: 'object',
+        properties: {
+          alpha: { type: 'number', description: 'Z-axis rotation (compass heading), 0–360 degrees.' },
+          beta:  { type: 'number', description: 'X-axis tilt (front/back), –180 to 180 degrees.' },
+          gamma: { type: 'number', description: 'Y-axis tilt (left/right), –90 to 90 degrees.' },
+          clear: { type: 'boolean', description: 'Set true to remove the orientation override and restore real device sensors.' }
+        }
+      }
+    },
+    {
+      name: 'getAnimations',
+      description: 'Detect and describe all CSS/Web Animations running on the current page — name, type, duration, delay, iteration count, and play state. Use to confirm animations are running, find stalled animations, or debug animation performance.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wait: { type: 'number', description: 'Seconds to listen for animation events (default 2).' }
+        }
+      }
+    },
+    {
+      name: 'setAnimationSpeed',
+      description: 'Globally speed up, slow down, or pause all CSS and Web Animations on the page. Speed 0 = paused, 1 = normal, 2 = double speed, 0.1 = slow motion. Great for debugging animations or taking screenshots at precise animation frames.',
+      parameters: {
+        type: 'object',
+        properties: {
+          speed: { type: 'number', description: 'Playback rate multiplier. 0 = paused, 1 = normal speed, 2 = 2× speed, 0.5 = half speed (slow motion).' }
+        },
+        required: ['speed']
+      }
+    },
+    {
+      name: 'triggerAutofill',
+      description: 'Trigger Chrome\'s native autofill on a form field using the browser\'s stored autofill data (name, address, card info). More reliable than simulating keystrokes for autofill testing since it uses the real Chrome autofill engine.',
+      parameters: {
+        type: 'object',
+        properties: {
+          selector: { type: 'string', description: 'CSS selector of the input field to trigger autofill on (default: first input with autocomplete attribute).' }
+        }
+      }
+    },
+    {
+      name: 'readBackgroundEvents',
+      description: 'Observe Background Service events — background sync, push messaging, background fetch, payment handlers, periodic background sync. Use to verify a service worker\'s background jobs are registering and firing correctly.',
+      parameters: {
+        type: 'object',
+        properties: {
+          service: { type: 'string', enum: ['backgroundSync', 'backgroundFetch', 'pushMessaging', 'notifications', 'paymentHandler', 'periodicBackgroundSync'], description: 'Which background service to observe (default: backgroundSync).' },
+          wait:    { type: 'number', description: 'Seconds to listen for events (default 3, max 10).' }
+        }
+      }
+    },
+    {
+      name: 'pauseOnException',
+      description: 'Wait for an uncaught JavaScript exception or Promise rejection to occur, then capture the error message and call stack. Use to diagnose crashes — describe what action triggers the error, then call this tool immediately before performing that action.',
+      parameters: {
+        type: 'object',
+        properties: {
+          state: { type: 'string', enum: ['uncaught', 'all', 'none'], description: '"uncaught" (default) catches unhandled exceptions. "all" catches every throw including caught ones.' },
+          wait:  { type: 'number', description: 'Seconds to wait for an exception (default 5, max 30).' }
+        }
+      }
+    },
+    {
+      name: 'setEventBreakpoint',
+      description: 'Pause page execution the moment a specific DOM or JavaScript event fires, then capture the call stack at that exact moment. Use to find what code runs when a button is clicked, a form is submitted, or a fetch is made.',
+      parameters: {
+        type: 'object',
+        properties: {
+          eventName: { type: 'string', description: 'Event to intercept. DOM events: "click", "submit", "keydown". JS events: "fetch", "xmlhttpRequestSend", "requestAnimationFrame", "setTimeout", "setInterval". Default: "click".' },
+          wait:      { type: 'number', description: 'Seconds to wait for the event to fire (default 10, max 30).' }
+        }
+      }
+    },
+    {
+      name: 'getFedCmInfo',
+      description: 'Detect and inspect Federated Credential Management (FedCM) login dialogs — the "Sign in with Google/Apple/etc." pop-ups that Chrome shows natively. Use to check if a FedCM dialog appeared and what identity providers it offers.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wait: { type: 'number', description: 'Seconds to wait for a FedCM dialog to appear (default 3).' }
+        }
+      }
+    },
+    {
+      name: 'getFileSystem',
+      description: 'List files and directories stored in the page\'s origin private file system (OPFS) — used by modern PWAs (Figma, Notion, VS Code Web) to store files locally in the browser without the user\'s file picker.',
+      parameters: {
+        type: 'object',
+        properties: {
+          bucket: { type: 'string', description: 'Storage bucket name (default: "default").' },
+          path:   { type: 'string', description: 'Directory path within the bucket, e.g. "documents/2024". Leave blank for root.' }
+        }
+      }
+    },
+    {
+      name: 'getLayerTree',
+      description: 'Inspect the browser\'s compositor layer tree — shows how the page is split into GPU layers, which elements create their own layers (due to transforms, will-change, video, canvas), and layer dimensions. Use to debug rendering performance and layer explosion.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    {
+      name: 'inspectMedia',
+      description: 'Inspect all <video> and <audio> elements on the page — current playback state, codec, resolution, buffered ranges, errors, and player events. Use to check if a video is playing, stalled, or erroring, and what format it\'s using.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wait: { type: 'number', description: 'Seconds to listen for media player events (default 2).' }
+        }
+      }
+    },
+    {
+      name: 'getMemoryInfo',
+      description: 'Get precise DOM memory counters directly from the browser engine: total DOM node count, active event listener count, open document count. Optionally force a garbage collection first. More accurate than snapshotHeap for counting DOM objects.',
+      parameters: {
+        type: 'object',
+        properties: {
+          gc: { type: 'boolean', description: 'Set true to force JavaScript memory purge before reading counters (default false).' }
+        }
+      }
+    },
+    {
+      name: 'trackWebVitals',
+      description: 'Track real Core Web Vitals events as they happen: Largest Contentful Paint (LCP), Cumulative Layout Shift (CLS), First Input Delay (FID). Use after a page load or navigation to capture the actual performance metrics Chrome measures.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wait: { type: 'number', description: 'Seconds to listen for web vital events after the page loads (default 5, max 15).' }
+        }
+      }
+    },
+    {
+      name: 'getPreloadRules',
+      description: 'Inspect the page\'s Speculation Rules — prefetch and prerender rules that Chrome uses to proactively load the next page before the user navigates. Use to verify speculation rules are active and check their status.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    {
+      name: 'profileCPU',
+      description: 'Record a CPU profile showing which JavaScript functions are consuming the most execution time. Use to find performance bottlenecks — the top functions by hit count are the ones slowing the page down.',
+      parameters: {
+        type: 'object',
+        properties: {
+          duration: { type: 'number', description: 'How many seconds to record (default 3, max 15). Trigger the slow action during this window.' },
+          interval: { type: 'number', description: 'Sampling interval in microseconds (default 100 = 10kHz).' }
+        }
+      }
+    },
+    {
+      name: 'getPWAInfo',
+      description: 'Check if the current site is a Progressive Web App: whether it has a manifest, if it\'s currently running in standalone (installed) mode, and its OS installation state. Use to verify PWA installability or check if a site is being used as an installed app.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    {
+      name: 'getCDPSchema',
+      description: 'List all CDP (Chrome DevTools Protocol) domains and their versions that this version of Chrome supports. Use to check which CDP domains are available before calling them, or to see what the current Chrome build supports.',
+      parameters: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    {
+      name: 'recordTrace',
+      description: 'Record a Chrome performance trace for a few seconds and return a summary of the top event types (layout, paint, script, GC, etc.). Use to diagnose what Chrome is spending its time on during a slow interaction — a high-level flamechart in text form.',
+      parameters: {
+        type: 'object',
+        properties: {
+          duration: { type: 'number', description: 'Seconds to record (default 3, max 10). Trigger the slow action during this window.' }
+        }
+      }
+    },
+    {
+      name: 'inspectWebAudio',
+      description: 'Detect and inspect Web Audio API contexts on the page — AudioContext state (running/suspended/closed), sample rate, buffer size, and all audio nodes in the graph. Use to debug audio apps, music players, or voice features.',
+      parameters: {
+        type: 'object',
+        properties: {
+          wait: { type: 'number', description: 'Seconds to listen for audio contexts (default 2).' }
+        }
+      }
+    },
+    {
+      name: 'emulateWebAuthn',
+      description: 'Add or remove a virtual WebAuthn/FIDO2 authenticator in Chrome for testing passwordless login flows (passkeys, security keys, biometrics) without needing real hardware. Use to test that a site\'s login works with passkeys.',
+      parameters: {
+        type: 'object',
+        properties: {
+          action:          { type: 'string', enum: ['add', 'remove'], description: '"add" creates a virtual authenticator. "remove" deletes it by ID.' },
+          protocol:        { type: 'string', enum: ['ctap2', 'u2f'], description: 'Authenticator protocol (default: ctap2 for passkeys).' },
+          transport:       { type: 'string', enum: ['internal', 'usb', 'ble', 'nfc', 'cable'], description: 'Transport type. "internal" = platform authenticator (Face ID / fingerprint style). Default: "internal".' },
+          residentKey:     { type: 'boolean', description: 'Whether the authenticator supports discoverable credentials/passkeys (default true).' },
+          userVerification:{ type: 'boolean', description: 'Whether to require user verification (biometric/PIN) (default true).' },
+          authenticatorId: { type: 'string', description: 'ID of authenticator to remove (returned by a prior "add" call).' },
+          enableUI:        { type: 'boolean', description: 'Show the WebAuthn DevTools UI panel (default false).' }
+        }
+      }
+    },
+    {
       name: 'switchSheet',
       description: 'Switch to a different sheet tab inside Excel Online or Google Sheets by its name. Use this when the task mentions "Sheet2", "Budget tab", "Q3", or any named sheet that is not currently active. Always call this BEFORE typing into a sheet to make sure you are on the right one.',
       parameters: {
