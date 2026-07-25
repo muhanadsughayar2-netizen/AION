@@ -1209,8 +1209,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           catch (_e) { await clearAndInject(tabId); loc = await locate(); }
 
           if (!loc || !loc.success || typeof loc.x !== 'number' || typeof loc.y !== 'number') {
-            runFallbackType();
-            return;
+            // For Google Docs: even without DOM coordinates we can type via CDP —
+            // the isDocs branch uses Runtime.evaluate to focus the texteventtarget-iframe
+            // and then dispatchKeyEvent char-by-char. No mouse click coordinates needed.
+            // Skip runFallbackType() (execCommand / synthetic Ctrl+V) — those are
+            // isTrusted:false and Google Docs silently ignores them.
+            const isDocsUrl = tabHostname.includes('docs.google.com') && tabPath.includes('/document/');
+            if (!isDocsUrl) {
+              runFallbackType();
+              return;
+            }
+            // Provide dummy coords — the Docs CDP path doesn't use them
+            loc = { success: true, x: 400, y: 400, mode: 'docs' };
           }
 
           const { x, y, mode } = loc;
