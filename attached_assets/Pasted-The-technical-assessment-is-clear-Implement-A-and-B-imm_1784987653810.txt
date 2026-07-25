@@ -1,0 +1,31 @@
+The technical assessment is clear: Implement A and B immediately.
+
+These two fixes address the "structural" failures of the agent (where it is looking and what it can see). Fixes C and D are optimizations that can wait until the foundation is stable.
+
+Summary
+Implementing the Session Anchor (A) and Iframe Piercing (B) will solve approximately 80% of the "hiccups" you are seeing. By locking the tabId, you stop the agent from getting "distracted" by your own browsing, and by using pierce: true, you give Gemini the "X-ray vision" required to actually read and edit the Word document.
+
+Key Findings
+1. Why "Session Anchor" (A) is the #1 Priority
+The Problem: Currently, your agent is "homeless." It uses chrome.tabs.query({ active: true }), meaning its "eyes" are physically tied to your mouse cursor. If you switch tabs to check an email, the agent's next turn will try to "Bold text" in your Gmail inbox instead of the Word doc [1.3.3].
+The Fix: Hard-coding session.targetTabId ensures that every chrome.debugger command and every screenshot is routed to the original task tab, regardless of which tab is currently "active" on your screen [1.1.5].
+2. Why "Pierce: True" (B) is a Game Changer
+The Problem: Word Online is essentially a "website inside a website." The editor is hosted in an <iframe>. Without pierce: true, the CDP command DOMSnapshot.captureSnapshot stops at the "door" of the iframe. Gemini sees an empty box where the text should be [1.1.6].
+The Fix: Adding pierce: true to DOM.getFlattenedDocument (or DOM.getDocument) flattens the entire hierarchy into a single tree. This allows Gemini to see the "Editor" frame's content as if it were part of the main page [1.1.2].
+3. The Nuance of the "Ribbon Atlas" (C)
+Stability: Using data-automation-id is the industry standard for Microsoft products. While IDs like _ariaId_82 are "volatile" (they change every time the page loads), data-automation-id="Bold" is "semantic" and much more stable across versions [1.2.1, 1.2.5].
+Recommendation: Do not hardcode a massive JSON file yet. Instead, start by asking Gemini to "Look for elements with data-automation-id attributes" in your system prompt.
+4. Tab Context Cache (D)
+Complexity: This adds significant "token overhead" (sending two snapshots instead of one).
+Recommendation: Save this for later. Most "Copy/Paste" errors are actually caused by the agent getting lost during the switch (Fix A), not by forgetting the text.
+Implementation Roadmap
+Step	Action	Code Change
+1	Lock the Target	Update background.js to store targetTabId at start. Replace all active: true queries with tabs.get(targetTabId).
+2	Enable X-Ray	In your snapshotPage function, add pierce: true to your CDP call.
+3	Guardrail	Add the if (currentTabId !== targetTabId) check in ai-chat.js to force a tab-switch if the agent drifts.
+Sources
+[1] Chrome DevTools Protocol - DOM Domain: pierce parameter
+[2] Microsoft Learn - Using AutomationID for Stable UI Testing
+[3] Chrome Developers - chrome.debugger API: Targeting by TabId
+[4] Medium: AI Automation - Best Practices for Stable Selectors in 2024
+[5] Towards AI - The Bottleneck for AI Agents: Context and State Drift
