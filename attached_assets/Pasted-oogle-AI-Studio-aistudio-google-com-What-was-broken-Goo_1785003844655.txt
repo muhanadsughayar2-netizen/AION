@@ -1,0 +1,24 @@
+oogle AI Studio (aistudio.google.com)
+What was broken: Google AI Studio is built with Lit & Angular Web Components (<ms-prompt-editor>) that encapsulate the prompt input inside Shadow DOM roots. Standard DOM queries (document.querySelector) are blind to Shadow Roots, so your agent was clicking wrapper <div> tags or failing to locate the ProseMirror editor.
+How the fix works (ai-studio-adapter.js):
+Implements a recursive Shadow DOM traverser (deepShadowQuery) that pierces shadow boundaries to find .ProseMirror and [contenteditable="true"].
+Focuses the inner editor via a trusted CDP click, dispatches Input.insertText, and fires Ctrl+Enter via CDP key modifiers to execute the prompt cleanly.
+2. ⚡ Chrome CDP Flashing & Race Conditions
+What was broken: Your background.js called chrome.debugger.attach and detach on almost every single click, type, and select action. Rapid actions caused "Debugger is already attached" crashes, flashing Chrome infobars, and dropped typing events.
+How the fix works (background-fixed.js):
+Introduces a Persistent CDP Session Pool (CdpSessionPool) with a per-tab Promise Mutex queue.
+Reuses active debugger sessions across sequential actions and only detaches after 10 seconds of idle time, eliminating attach/detach churn and race conditions.
+3. 📄 Google Docs (docs.google.com)
+What was broken: Google Docs renders document text on HTML5 Canvas tiles and routes keyboard input through a hidden iframe (.docs-texteventtarget-iframe). When typing was triggered, the agent often focused whichever input was active—frequently typing inside the document title box ("Untitled document").
+How the fix works (sheets-docs-adapter.js):
+Explicitly checks for and focuses .docs-texteventtarget-iframe.contentDocument.body before typing.
+Uses trusted CDP key events directly into the editor event target, ensuring text stays inside the document body.
+4. 📊 Google Sheets & Excel Online
+What was broken: Your code tried to double-click guessed (x, y) pixel coordinates on canvas tiles. Zoom levels, scrolled views, or frozen panes caused misclicks and typed data to land in wrong cells or get crammed into a single cell as space-separated text.
+How the fix works (office-online-adapter.js / sheets-docs-adapter.js):
+Deterministic Name Box Navigation: Replaces coordinate guessing by focusing the Name Box (#t-name-box-input / input[aria-label="Name Box"]), typing the exact cell (e.g. B3), and pressing Enter.
+TSV Range Stream: Sends Tab-Separated Values (\t for columns, \n for rows), allowing the agent to populate multi-row, multi-column tables in a single API call.
+5. 📝 MS Word Online (word.office.com)
+What was broken: Office Online wraps documents inside cross-origin WAC frames (.WACViewPanel). Top-level content scripts could not access ribbon elements or the document body.
+How the fix works (office-online-adapter.js):
+Uses CDP Accessibility.queryAXTree and DOM.getBoxModel with cross-frame piercing to inspect and control ribbon controls and document inputs regardless of iframe boundaries.

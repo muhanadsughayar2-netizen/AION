@@ -1350,12 +1350,43 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
             if (isAiStudio) {
               // ── GOOGLE AI STUDIO ──────────────────────────────────────────────
-              // CDP mouse click focuses the textarea, then Input.insertText drops
-              // the whole string in one shot — no char-by-char, no "Illegal invocation".
-              // This is the only method that works reliably on React-controlled inputs.
-              await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
-              await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
-              await new Promise(r => setTimeout(r, 300));
+              // AI Studio uses Lit/Angular Web Components (<ms-prompt-editor>)
+              // with nested Shadow Roots. Standard querySelector is blind to shadow
+              // boundaries, so content.js often returns the outer wrapper coords.
+              // We pierce Shadow Roots recursively to find the real ProseMirror /
+              // Monaco editor and focus it directly before inserting text.
+              const aisFocusRes = await chrome.scripting.executeScript({
+                target: { tabId },
+                func: () => {
+                  function deepShadowQuery(root, selector) {
+                    if (!root) return null;
+                    const direct = root.querySelector(selector);
+                    if (direct) return direct;
+                    for (const el of root.querySelectorAll('*')) {
+                      if (el.shadowRoot) {
+                        const found = deepShadowQuery(el.shadowRoot, selector);
+                        if (found) return found;
+                      }
+                    }
+                    return null;
+                  }
+                  const editor = deepShadowQuery(document,
+                    '.ProseMirror, ms-prompt-editor [contenteditable="true"], ' +
+                    '.monaco-editor textarea, textarea[aria-label*="Prompt"], ' +
+                    '[contenteditable="true"][class*="editor"], [role="textbox"]');
+                  if (editor) { editor.focus(); return { found: true, tag: editor.tagName }; }
+                  return { found: false };
+                }
+              }).catch(() => [{ result: { found: false } }]);
+              const shadowFocused = aisFocusRes?.[0]?.result?.found;
+
+              if (!shadowFocused) {
+                // Fall back to CDP coordinate click if shadow search failed
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+              }
+              await new Promise(r => setTimeout(r, 200));
+
               if (params.clearFirst) {
                 await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
                 await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
@@ -1364,10 +1395,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
                 await new Promise(r => setTimeout(r, 80));
               }
-              // Input.insertText sends the full string as a single trusted insertion —
-              // React's synthetic event system receives it as a normal user input.
               await send('Input.insertText', { text });
-              sendResponse({ success: true });
+
+              // If params.run is true, fire Ctrl+Enter to submit the prompt
+              if (params.run) {
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, modifiers: 2 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, modifiers: 2 });
+              }
+              sendResponse({ success: true, data: shadowFocused ? 'Typed via shadow-piercing focus' : 'Typed via coordinate fallback' });
 
             } else if (isDocs) {
               // ── GOOGLE DOCS ──────────────────────────────────────────────────
@@ -1435,21 +1470,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
             } else if (isGrid) {
               // ── GOOGLE SHEETS ─────────────────────────────────────────────────
-              // If a target cell is specified, navigate there via the Name Box first.
-              // The Sheets Name Box is a real DOM input — focus it, type the address,
-              // press Enter, wait for the grid to scroll to that cell.
+              // Deterministic Name Box Navigation (spec fix):
+              // Google Sheets draws cells on a WebGL/Canvas surface — guessing (x,y)
+              // pixel coords fails under zoom, frozen panes, or scrolled views.
+              // Instead: focus the Name Box (real DOM input), type the cell address,
+              // press Enter to navigate, then use Input.insertText for the value.
+              // Tab-separated values (\t = next column, \n = next row) let the agent
+              // populate multi-row/column tables in a single call.
               const sheetsCell = (params.cell && /^[A-Za-z]+\d+$/.test(params.cell.trim()))
                 ? params.cell.trim().toUpperCase()
                 : null;
+
+              // Navigate to target cell via Name Box (always, when cell is given)
               if (sheetsCell) {
                 await send('Runtime.enable', {});
                 await sendR('Runtime.evaluate', {
                   expression: `(async () => {
-                    const sleep = ms => new Promise(r => setTimeout(r, ms));
-                    // Sheets Name Box selectors
                     const nb = document.querySelector(
                       '#t-name-box-input, .docs-input-label-input, input[aria-label*="cell"], ' +
-                      '.t-name-box-input, div.cell-input input, .goog-toolbar-combo-button input'
+                      '.t-name-box-input, div.cell-input input, .goog-toolbar-combo-button input, ' +
+                      'input[aria-label="Cell reference"]'
                     );
                     if (nb) { nb.focus(); nb.select(); return 'ok'; }
                     return 'no-namebox';
@@ -1465,33 +1505,48 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
                 await new Promise(r => setTimeout(r, 250));
               }
-              // Double-click enters edit mode; then use keyDown+text (more reliable
-              // than char events for Sheets' canvas input handler).
-              for (let ci = 1; ci <= 2; ci++) {
-                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: ci });
-                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: ci });
-                if (ci < 2) await new Promise(r => setTimeout(r, 100));
-              }
-              await new Promise(r => setTimeout(r, 200));
-              for (const ch of text) {
-                if (ch === '\n') {
-                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-                } else if (ch === '\t') {
-                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
-                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Tab', code: 'Tab', windowsVirtualKeyCode: 9 });
-                } else {
-                  await send('Input.dispatchKeyEvent', { type: 'keyDown', text: ch, unmodifiedText: ch });
-                  await send('Input.dispatchKeyEvent', { type: 'keyUp',   text: ch, unmodifiedText: ch });
-                }
-              }
+
+              // Insert text via trusted Input.insertText — avoids canvas coordinate
+              // guessing entirely. Tabs/newlines in the string move columns/rows naturally.
+              await send('Input.insertText', { text });
 
             } else {
               // ── WORD ONLINE / other canvas apps ──────────────────────────────
-              await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
-              await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
-              await new Promise(r => setTimeout(r, 200));
-              await typeChars(text);
+              // Word Online wraps documents inside cross-origin WAC frames
+              // (.WACViewPanel). Top-level content scripts can't reach inside, so we
+              // use allFrames:true to focus the contenteditable edit area, then
+              // Input.insertText for reliable trusted-event text insertion.
+              const isWordOnline = tabHostname.includes('word.office.com')
+                || tabHostname.includes('word.live.com')
+                || tabHostname.includes('sharepoint.com')
+                || tabHostname.includes('cloud.microsoft')
+                || tabHostname.includes('microsoft365.com')
+                || tabHostname.includes('office365.com');
+
+              if (isWordOnline) {
+                await chrome.scripting.executeScript({
+                  target: { tabId, allFrames: true },
+                  func: () => {
+                    // WAC frame selectors — try most specific first
+                    const el = document.querySelector(
+                      '.WACViewPanel [contenteditable="true"], ' +
+                      '[class*="EditArea"] [contenteditable="true"], ' +
+                      'div[contenteditable="true"][class*="Word"], ' +
+                      'div[contenteditable="true"]'
+                    );
+                    if (el) { el.focus(); return true; }
+                    return false;
+                  }
+                }).catch(() => {});
+                await new Promise(r => setTimeout(r, 150));
+                await send('Input.insertText', { text });
+              } else {
+                // Generic canvas / unknown app — CDP coordinate click then char-by-char
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await new Promise(r => setTimeout(r, 200));
+                await typeChars(text);
+              }
             }
 
             // Sheets / Excel: press Enter to COMMIT the cell value.

@@ -11644,6 +11644,36 @@ async function runAgentTask(prompt, thread) {
         }
       }
 
+      // ── Build self-healing diagnostic hint ────────────────────────────────
+      // Give Gemini specific guidance on WHY the action failed and WHAT to try
+      // next, so it stops looping with the same failing strategy.
+      let selfHealingHint = '';
+      let suggestedAction = '';
+      if (!execResult?.success) {
+        const errMsg = (execResult?.error || '').toLowerCase();
+        if (execResult?.healSuggestion) {
+          selfHealingHint = execResult.healSuggestion;
+        } else if (/shadow|lit|angular|web.?component|ms-prompt/i.test(errMsg)) {
+          selfHealingHint = 'Element is inside a Shadow DOM root (e.g. <ms-prompt-editor>). Use snapshotPage() to find the accessible name, then click by AX label.';
+          suggestedAction = 'snapshotPage then click by accessible name';
+        } else if (/iframe|frame|wac|cross.?origin/i.test(errMsg)) {
+          selfHealingHint = 'Element is inside a cross-origin iframe (e.g. Office WAC frame). Use type() with the word-online path, or pressKey() to send shortcuts.';
+          suggestedAction = 'type with text parameter, or pressKey';
+        } else if (/not found|no element|couldn.t find|not visible/i.test(errMsg)) {
+          selfHealingHint = 'Element not found in DOM or Accessibility tree. It may be inside a Shadow Root or hidden. Try snapshotPage() to check what is actually visible, or waitForElement() if it is still loading.';
+          suggestedAction = 'snapshotPage or waitForElement then retry';
+        } else if (/formula bar|cell did not receive|empty after/i.test(errMsg)) {
+          selfHealingHint = 'Sheets/Excel cell input failed silently. The cell was likely not focused. Call goToCell() first, then type() with the cell parameter.';
+          suggestedAction = 'goToCell then type';
+        } else if (/attach|debugger|cdp/i.test(errMsg)) {
+          selfHealingHint = 'CDP attach failed — DevTools may be open on this tab. Close DevTools and retry, or use a scripting-only action like navigate or pressKey.';
+          suggestedAction = 'close DevTools then retry';
+        } else {
+          selfHealingHint = 'Target may be inside Shadow DOM or iframe. Use snapshotPage() to inspect the Accessibility Tree and find the correct accessible name.';
+          suggestedAction = 'snapshotPage to diagnose';
+        }
+      }
+
       responseParts.push({
         functionResponse: {
           name,
@@ -11651,7 +11681,8 @@ async function runAgentTask(prompt, thread) {
             ? { success: true, ...(execResult.data != null ? { data: String(execResult.data) } : {}), pageNow: '' }
             : { success: false,
                 error: execResult?.error || 'unknown error',
-                ...(execResult?.healSuggestion ? { healSuggestion: execResult.healSuggestion } : {}),
+                selfHealingHint,
+                ...(suggestedAction ? { suggestedAction } : {}),
                 ...(Object.keys(actionFailCounts).length
                   ? { alreadyFailed: Object.entries(actionFailCounts)
                         .filter(([, c]) => c > 1).map(([k, c]) => `${k} (×${c})`).join(', ') || undefined }

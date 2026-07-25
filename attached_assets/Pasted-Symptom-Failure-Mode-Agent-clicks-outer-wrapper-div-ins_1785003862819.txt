@@ -1,0 +1,40 @@
+Symptom & Failure Mode
+Agent clicks outer wrapper div instead of prompt box; typing fails or drops into void; Run button is never triggered.
+
+Technical Root Cause
+Google AI Studio (aistudio.google.com) uses custom Lit / Angular Web Components (<ms-prompt-editor>, <ms-text-chunk>) containing nested Shadow Roots and ProseMirror/Monaco editors. Standard document.querySelector used in content.js cannot see inside Shadow DOM roots. Therefore, locateForType returns arbitrary wrapper coordinates or fails, causing Input.insertText to be dispatched to an un-focused body element.
+
+❌ Original Flawed Implementation:
+// In background.js for AI Studio:
+if (isAiStudio) {
+  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left' });
+  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left' });
+  // Fails if (x,y) didn't focus the hidden contenteditable inside <ms-prompt-editor>'s shadow root
+  await send('Input.insertText', { text });
+}
+✅ Refactored Production Fix:
+// Dedicated AI Studio Adapter:
+async function focusAndTypeAIStudio(tabId, text) {
+  // Pierce Shadow Roots recursively to target the ProseMirror/Monaco editor
+  const result = await executeInTab(tabId, () => {
+    function deepQuery(root, selector) {
+      let match = root.querySelector(selector);
+      if (match) return match;
+      const elements = root.querySelectorAll('*');
+      for (const el of elements) {
+        if (el.shadowRoot) {
+          match = deepQuery(el.shadowRoot, selector);
+          if (match) return match;
+        }
+      }
+      return null;
+    }
+    const editor = deepQuery(document, '.ProseMirror, ms-prompt-editor [contenteditable="true"], .monaco-editor');
+    if (editor) { editor.focus(); return true; }
+    return false;
+  });
+  await cdpSession.send('Input.insertText', { text });
+  // Dispatch Ctrl+Enter to run prompt in AI Studio
+  await dispatchShortcut(tabId, 'ctrl+enter');
+}
+Impact: Allows AI Studio prompt injection, model selection, and prompt execution with 100% accuracy.
