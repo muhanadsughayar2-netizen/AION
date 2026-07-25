@@ -1016,8 +1016,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     activeEl.dispatchEvent(new KeyboardEvent('keydown', { key:'v', code:'KeyV', ctrlKey:true, bubbles:true, cancelable:true }));
                     activeEl.dispatchEvent(new KeyboardEvent('keyup',   { key:'v', code:'KeyV', ctrlKey:true, bubbles:true }));
                     await sleep(400);
-                    showBanner('✅ Aion: paste sent');
-                    return { success: true, method: 'ctrl-v-fallback' };
+                    // Synthetic Ctrl+V is isTrusted:false — canvas editors silently ignore it.
+                    // Return false so the brain retries via real CDP, not a lying success.
+                    showBanner('⚠️ Aion: synthetic paste blocked — CDP required');
+                    return { success: false, error: 'Synthetic paste (isTrusted:false) ignored by canvas editor — CDP path required.' };
                   },
                   args: [text]
                 });
@@ -1173,6 +1175,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const isCanvasApp = tabHostname.includes('docs.google.com')
             || tabHostname.includes('office.com')
             || tabHostname.includes('live.com')
+            || tabHostname.includes('sharepoint.com')       // SharePoint Online
+            || tabHostname.includes('cloud.microsoft')       // Microsoft 365 cloud
+            || tabHostname.includes('microsoft365.com')      // Microsoft 365 tenant URLs
             // ── Google AI / Gemini ecosystem ──────────────────────────────────
             || tabHostname.includes('aistudio.google.com')   // AI Studio (app builder)
             || tabHostname.includes('gemini.google.com')     // Gemini chat
@@ -1435,6 +1440,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               await new Promise(r => setTimeout(r, 100));
               await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
               await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+            }
+
+            // ── Sheets/Excel: verify text actually landed ─────────────────────
+            // Read the Formula Bar after commit. If we typed something non-empty
+            // but the bar shows nothing, the events were silently ignored —
+            // return false so the brain retries instead of building on a lie.
+            if ((isGrid || isExcel) && text.trim().length > 0) {
+              try {
+                await new Promise(r => setTimeout(r, 300)); // let cell update
+                const verifyExpr = isGrid
+                  ? `document.querySelector('#t-formula-bar-input-container input, [id*="formula-bar"] input, .cell-display')?.value || ''`
+                  : `document.querySelector('[data-automation-id="formulaBarInput"]')?.textContent?.trim() || document.querySelector('[data-automation-id="formulaBarInput"] input')?.value || ''`;
+                const vr = await sendR('Runtime.evaluate', { expression: verifyExpr, returnByValue: true });
+                const barVal = (vr?.result?.value || '').trim();
+                if (barVal.length === 0) {
+                  sendResponse({ success: false, error: 'Formula Bar is empty after typing — cell did not receive input. Call goToCell first to focus the target cell, then type.' });
+                  return;
+                }
+              } catch (_) { /* verification optional — network/DOM issue, proceed as success */ }
             }
 
             sendResponse({ success: true });
@@ -2403,8 +2427,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         let attached = false;
         try {
           // ── Step 1: Find the Name Box coords via content script ──────────────
+          // allFrames:true covers Excel Online where the Name Box lives inside an iframe
           const locResult = await chrome.scripting.executeScript({
-            target: { tabId },
+            target: { tabId, allFrames: true },
             func: () => {
               const nb = document.querySelector(
                 '#t-name-box, input[aria-label="Name Box"], input[id*="name-box"], ' +
@@ -2416,7 +2441,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
             }
           });
-          const coords = locResult?.[0]?.result;
+          // allFrames returns one result per frame — take the first non-null one
+          const coords = locResult?.find(r => r.result != null)?.result;
           if (!coords) { sendResponse({ success: false, error: 'Name Box not found — is this a Sheets or Excel tab?' }); return; }
 
           // ── Step 2: CDP click + clear + type char-by-char ────────────────────

@@ -11339,8 +11339,21 @@ async function buildRequestContentsWithScreenshot(baseContents, tab) {
   if (!screenshot) return baseContents;
   const cloned = baseContents.map(c => ({ ...c, parts: c.parts.slice() }));
   const last = cloned[cloned.length - 1];
-  last.parts.push({ inlineData: { mimeType: 'image/jpeg', data: screenshot.split(',')[1] } });
-  last.parts.push({ text: '(Screenshot of the current page attached above for visual reference.)' });
+
+  // Fix 5: screenshots must ONLY go on plain user text turns.
+  // Adding inlineData to a functionResponse turn creates an invalid Gemini
+  // API request that causes silent failures or protocol errors. If the last
+  // turn has functionResponse parts, add a fresh user turn for the screenshot.
+  const hasFunctionResponse = last.parts.some(p => p.functionResponse);
+  if (hasFunctionResponse) {
+    cloned.push({ role: 'user', parts: [
+      { inlineData: { mimeType: 'image/jpeg', data: screenshot.split(',')[1] } },
+      { text: '(Screenshot of the current page for visual reference.)' }
+    ]});
+  } else {
+    last.parts.push({ inlineData: { mimeType: 'image/jpeg', data: screenshot.split(',')[1] } });
+    last.parts.push({ text: '(Screenshot of the current page attached above for visual reference.)' });
+  }
   return cloned;
 }
 
@@ -11450,12 +11463,23 @@ async function runAgentTask(prompt, thread) {
       break;
     }
 
-    const candidateParts = data.candidates?.[0]?.content?.parts || [];
+    // Fix 8: empty/blocked candidates → error, not silent "done"
+    if (!data.candidates?.length) {
+      const reason = data.promptFeedback?.blockReason || 'response blocked or empty';
+      addAgentStepBubble(thread, `Model returned no candidates (${reason}) — stopping.`, 'error');
+      break;
+    }
+
+    const candidateParts = data.candidates[0]?.content?.parts || [];
     // PARALLEL: collect ALL function calls Gemini returned in this turn
     const fnCallParts = candidateParts.filter(p => p.functionCall);
 
     if (fnCallParts.length === 0) {
-      const text = candidateParts.find(p => p.text)?.text || 'No action taken.';
+      const text = candidateParts.find(p => p.text)?.text?.trim() || '';
+      if (!text) {
+        addAgentStepBubble(thread, 'Model returned no action and no text — possible protocol error.', 'error');
+        break;
+      }
       addAgentStepBubble(thread, text, 'done');
       break;
     }
@@ -11470,19 +11494,21 @@ async function runAgentTask(prompt, thread) {
       break;
     }
 
-    // ── planTask (client-side, no CDP needed) ──────────────────────────────────
+    // ── planTask + checkPlan (client-side, no CDP needed) ─────────────────────
+    // Fix 6: collect responses for ALL client-side calls in this turn so they
+    // go back to Gemini in ONE user turn, even if CDP calls are also present.
+    const clientSideResponses = [];
+
     const planCall = fnCallParts.find(p => p.functionCall.name === 'planTask');
     if (planCall) {
       const { steps = [], summary = '' } = planCall.functionCall.args || {};
       agentPlan = steps.map(s => ({ step: s, done: false, note: '' }));
       const planLines = steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
       addAgentStepBubble(thread, `📋 Plan${summary ? ': ' + summary : ''}:\n${planLines}`);
-      contents.push({ role: 'user', parts: [{ functionResponse: { name: 'planTask',
-        response: { success: true, data: `Plan recorded (${steps.length} steps). Begin executing step 1 now.` } } }] });
-      continue;
+      clientSideResponses.push({ functionResponse: { name: 'planTask',
+        response: { success: true, data: `Plan recorded (${steps.length} steps). Begin executing step 1 now.` } } });
     }
 
-    // ── checkPlan (client-side) ────────────────────────────────────────────────
     const checkCall = fnCallParts.find(p => p.functionCall.name === 'checkPlan');
     if (checkCall) {
       const { stepIndex = 0, note = '' } = checkCall.functionCall.args || {};
@@ -11491,15 +11517,20 @@ async function runAgentTask(prompt, thread) {
       const total = agentPlan?.length ?? 0;
       const next = agentPlan?.find(s => !s.done);
       addAgentStepBubble(thread, `✅ Step ${stepIndex + 1} done (${done}/${total})${next ? ` — Next: ${next.step}` : ' — All done!'}`);
-      contents.push({ role: 'user', parts: [{ functionResponse: { name: 'checkPlan',
-        response: { success: true, data: next ? `Next step: ${next.step}` : 'All steps complete — call finish.' } } }] });
-      continue;
+      clientSideResponses.push({ functionResponse: { name: 'checkPlan',
+        response: { success: true, data: next ? `Next step: ${next.step}` : 'All steps complete — call finish.' } } });
     }
 
     // ── Filter to executable CDP/tab tools only ───────────────────────────────
     const executableCalls = fnCallParts.filter(p =>
       !['finish', 'planTask', 'checkPlan'].includes(p.functionCall.name)
     );
+
+    // If only client-side calls this turn, push their responses and loop
+    if (clientSideResponses.length > 0 && executableCalls.length === 0) {
+      contents.push({ role: 'user', parts: clientSideResponses });
+      continue;
+    }
     if (executableCalls.length === 0) continue;
 
     // Show action bubbles
@@ -11509,6 +11540,11 @@ async function runAgentTask(prompt, thread) {
         `${name}${args?.text ? `: "${args.text}"` : args?.url ? `: ${args.url}` : args?.direction ? `: ${args.direction}` : ''}`.trim()
       );
     }
+
+    // Fix 7: focus the task tab before each round of CDP actions so DevTools
+    // Protocol commands land on the right page (some CDP ops require the tab
+    // to be the active/focused tab in its window).
+    try { await chrome.tabs.update(tab.id, { active: true }); } catch (_) {}
 
     // ── PARALLEL execution of all CDP calls ───────────────────────────────────
     const settledResults = await Promise.allSettled(
@@ -11707,7 +11743,13 @@ async function runAgentTask(prompt, thread) {
       }
     }
 
-    contents.push({ role: 'user', parts: responseParts });
+    // Fix 6 (cont): if planTask/checkPlan ran alongside CDP calls this turn,
+    // merge their responses into the same user turn so Gemini sees one reply
+    // per function call (required by the tool-use protocol).
+    const allResponseParts = clientSideResponses.length > 0
+      ? [...clientSideResponses, ...responseParts]
+      : responseParts;
+    contents.push({ role: 'user', parts: allResponseParts });
 
     if (step === AGENT_MAX_STEPS - 1) {
       addAgentStepBubble(thread, `Stopped after ${AGENT_MAX_STEPS} steps. Tell me to continue if not done.`, 'error');

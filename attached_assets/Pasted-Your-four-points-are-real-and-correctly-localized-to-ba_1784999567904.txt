@@ -1,0 +1,118 @@
+Your four points are real and correctly localized to background.js. Here’s the tight verification against the code, plus what the surgical edits should look like.
+1. Success without verification — confirmed
+The Ctrl+V fallback is exactly as you quoted: synthetic paste, sleep 400ms, { success: true } with no read-back.
+Same pattern on the “good” CDP branches — after typeChars / Input.insertText / Sheets paste, it’s an unconditional sendResponse({ success: true }). No Formula Bar / Name Box / iframe body re-read.
+So the brain’s loop is not random; it’s trusting a lie. When the page ignores the events, the next plan is built on a false world state.
+2. Domain gate too narrow — confirmed
+isCanvasApp keys off office.com / live.com (plus Google Docs hosts). It does not include:
+
+sharepoint.com
+*.sharepoint.com
+cloud.microsoft
+microsoft365.com / office365.com variants many tenants still hit
+
+If the real tab hostname is one of those, type never takes the CDP path and falls straight into the synthetic path in #1.
+3. goToCell top-frame only — confirmed
+The Name Box lookup is a single-frame executeScript (no allFrames: true). Sheets’ #t-name-box is listed first — clearly Sheets-first design. If Excel’s Name Box lives in an iframe, the query misses it and typing lands wherever focus already is (often wrong).
+4. CDP attach/detach races + DevTools — confirmed
+50+ independent attach/detach pairs, no shared session, detach is fire-and-forget. Second attach before first detach lands → fail. DevTools open on the tab → system-wide single-debugger rule → every attach fails → silent downgrade to weak fallback. Matches the “works sometimes / never when I’m debugging” feel.
+
+What this explains vs. what I flagged earlier
+Your list explains why actions look successful but the page doesn’t change (the “messy / random” failure mode).
+My earlier list still matters for why the loop dies or never starts (screenshot glued onto functionResponse turns, planTask early-continue leaving unanswered function calls, empty candidates treated as “done”). Those live in ai-chat.js and can stop the agent before your #1–#4 even matter.
+Together: brain can lie to itself (#1–#4) and the protocol between brain and Gemini can break (ai-chat issues).
+
+Surgical direction for #1 and #2 (background only)
+#2 (domain list) — expand the gate once:
+JavaScriptconst isCanvasApp =
+  tabHostname.includes('docs.google.com') ||
+  tabHostname.includes('office.com') ||
+  tabHostname.includes('live.com') ||
+  tabHostname.includes('sharepoint.com') ||
+  tabHostname.includes('cloud.microsoft') ||
+  tabHostname.includes('microsoft365.com') ||
+  // existing AI hosts if you still want CDP type there
+  ...;
+#1 (verify after type) — after the action, do a cheap read-back before claiming success:
+
+Sheets/Excel: re-read Formula Bar / active cell value; compare to intended text (or at least non-empty / changed).
+Docs: sample accessibility / iframe body text length or a short prefix of what was typed.
+Fallback path: if you know canvas apps ignore synthetic events, do not return success: true from that path — return success: false with a clear error so the brain retries via CDP or another strategy.
+
+Same idea for click / goToCell / pressKey: success only after a state check (URL change, focused cell, aria state, etc.), not after dispatch.
+
+Your message cut off at “and w…”. If you want the actual patches applied in background.js for #1 and #2 (and optionally a shared debugger session helper for #4), say so and I’ll write them against the real file paths.ok then give me the fill code to become the best agent in the world and work wellYou don’t need a full rewrite of 24k lines. You need a closed feedback loop: tools must tell the truth, and Gemini’s function-call protocol must stay valid.
+I put the complete, copy-paste patches here:
+/home/workdir/artifacts/AGENT_CRITICAL_FIXES.md
+Apply in this order
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+PriorityFileFix1background.jsExpand isCanvasApp (sharepoint / cloud.microsoft / microsoft365)2background.jsSynthetic Ctrl+V → success: false, never true3background.jsAfter Sheets/Excel type, read Formula Bar before success4background.jsgoToCell with allFrames: true5ai-chat.jsScreenshot on its own user turn, never on functionResponse6ai-chat.jsAnswer every function call (no planTask early continue)7ai-chat.jsFocus task tab before capture + each tool8ai-chat.jsEmpty/blocked candidates → error, not “done”
+Why this makes it “work well”
+
+Background stops lying → agent only plans the next step when text actually landed.
+ai-chat stops breaking the Gemini tool protocol → the loop doesn’t die after step 1.
+Real focus + multi-frame Name Box → Excel/Word/SharePoint stop failing silently.
+
+Still required outside these two files
+
+manifest.json: "debugger" permission
+content.js: locateForClick / locateForType / scroll handlers, ideally all_frames on Office/Docs
+Close DevTools on the target tab while testing (one debugger client per tab)
+
+30-second smoke test
+
+Close DevTools on the page.
+Autopilot: click the first link → URL should change.
+Sheet/Excel: go to B2 and type hello → Formula Bar shows hello, tool returns success: true only then.
+Second step still gets a model reply (not “No action taken”).
+
+If you want, I can next apply these patches directly into your background.js / ai-chat.js files line-by-line so you don’t have to merge by hand.
