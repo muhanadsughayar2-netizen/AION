@@ -1,0 +1,22 @@
+To solve this, we need to understand the "brain" of the agent and the "eyes" it uses to see the screen. Since the screenshot shows a Replit tab titled "AION," the issue likely lies in how the Replit environment is communicating with the browser.
+
+Please provide the answers to these 10 diagnostic questions. This "big picture" will allow me to pinpoint exactly where the code is failing.
+
+Category 1: The Architecture (How it's built)
+Is this a "Replit Agent" or a Custom Script? Are you using the built-in Replit Agent tool (where you talk to it to build things), or is this a Python/Node.js script you wrote yourself using libraries like Playwright, Selenium, or Puppeteer?
+What is "AION"? The tab says aion_ai_showcase.pdf. Is AION a specific framework you are building, or a third-party tool you are trying to automate?
+Web Word vs. Desktop Word: Is the agent supposed to open Office 365 (Word Online) in the browser, or is it trying to control the Microsoft Word App installed on your computer?
+Category 2: The Navigation Logic (The "Path")
+The Starting URL: What is the very first URL the agent is told to visit? Does it go straight to a Word document link, or does it start at Google?
+The "New Tab" Trigger: In the screenshot, the agent is on a "New Tab" page. Did the agent click a link that opened a new tab, and then "lost" its place because it didn't switch its focus to that new tab?
+Authentication/Login: Does the Word document require a login? Often, agents get stuck on the Google/Microsoft login screen, fail to log in, and then default to a blank New Tab page.
+Category 3: The Code/Instructions (The "Brain")
+The System Prompt: If you are using an LLM (like GPT-4o or Claude) to drive the agent, what are the exact instructions you gave it regarding the Word document?
+Wait Times/Timeouts: Does the code have "Sleep" or "Wait" commands? (e.g., time.sleep(5)). If the Word document takes 10 seconds to load but the agent only waits 5, it will think the page is empty and fail.
+Error Logs: Does the Replit console show any red text or "TimeoutErrors"? If so, please copy and paste the last 5-10 lines of the console log.
+Category 4: The Environment
+Headless vs. Headed: Is the agent running in "Headless" mode (invisible) or "Headed" mode (where you can see the browser moving)? The screenshot suggests you are watching it—are you manually opening tabs while the agent is running? (This can confuse the agent’s "focus").
+What to do next:
+If you have the code: Copy and paste the section where the agent opens the browser or navigates to the URL.
+If you are using the Replit Agent (Chat): Tell me what the last thing you told the Agent to do was before it ended up on that Google page.
+Once you provide these details, I can give you the specific code fix or prompt adjustment to "tether" the agent to the Word document.
