@@ -1,0 +1,58 @@
+// Office Online Automation Driver (Word & Excel)
+// Handles .WACViewPanel iframes, Name Box navigation, and cell table fill
+
+export class OfficeOnlineAdapter {
+  constructor(tabId, cdpSession) {
+    this.tabId = tabId;
+    this.cdp = cdpSession;
+  }
+
+  // Excel Online: Navigate to cell (e.g., 'B3') via Name Box and insert table
+  async excelNavigateAndFill(cellAddress, tsvData) {
+    // 1. Target Name Box
+    const [nameBoxRes] = await chrome.scripting.executeScript({
+      target: { tabId: this.tabId, allFrames: true },
+      func: (cell) => {
+        const nb = document.querySelector('input[aria-label="Name Box"], input#NameBox, .formulaBar input');
+        if (nb) {
+          nb.focus();
+          nb.value = cell;
+          nb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+          return true;
+        }
+        return false;
+      },
+      args: [cellAddress]
+    });
+
+    await new Promise(r => setTimeout(r, 200));
+
+    // 2. Type TSV data into grid (Tab = next column, Enter = next row)
+    await this.cdp.send('Input.insertText', { text: tsvData });
+    await this.cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', windowsVirtualKeyCode: 13 });
+    await this.cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', windowsVirtualKeyCode: 13 });
+
+    // Save document (Ctrl+S)
+    await this.cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 's', windowsVirtualKeyCode: 83, modifiers: 2 });
+    await this.cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 's', windowsVirtualKeyCode: 83, modifiers: 2 });
+
+    return { status: 'success', cell: cellAddress };
+  }
+
+  // Word Online: Type text inside editor iframe
+  async wordTypeText(text) {
+    // Ensure focus inside Word WAC EditArea
+    await chrome.scripting.executeScript({
+      target: { tabId: this.tabId, allFrames: true },
+      func: () => {
+        const editArea = document.querySelector('.WACViewPanel, [class*="EditArea"], div[contenteditable="true"]');
+        if (editArea) {
+          editArea.focus();
+        }
+      }
+    });
+
+    await this.cdp.send('Input.insertText', { text });
+    return { status: 'success' };
+  }
+}

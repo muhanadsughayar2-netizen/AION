@@ -1,0 +1,74 @@
+// AI Studio Automation Adapter
+// Designed specifically for aistudio.google.com (Lit / Angular / ProseMirror)
+
+export class AIStudioAdapter {
+  constructor(tabId, cdpSession) {
+    this.tabId = tabId;
+    this.cdp = cdpSession;
+  }
+
+  // Deeply traverses Shadow Roots to find the prompt input element
+  async findPromptElement() {
+    const [res] = await chrome.scripting.executeScript({
+      target: { tabId: this.tabId },
+      func: () => {
+        function searchShadow(root) {
+          if (!root) return null;
+          // AI Studio ProseMirror or contenteditable input
+          const target = root.querySelector('.ProseMirror, ms-prompt-editor [contenteditable="true"], textarea[aria-label*="Prompt"]');
+          if (target) {
+            const rect = target.getBoundingClientRect();
+            return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, isEditable: true };
+          }
+          const children = root.querySelectorAll('*');
+          for (const child of children) {
+            if (child.shadowRoot) {
+              const found = searchShadow(child.shadowRoot);
+              if (found) return found;
+            }
+          }
+          return null;
+        }
+        return searchShadow(document);
+      }
+    });
+    return res?.result || null;
+  }
+
+  // Injects prompt text and triggers Run (Ctrl+Enter or Run button)
+  async injectPromptAndRun(promptText) {
+    const pos = await this.findPromptElement();
+    if (!pos) {
+      throw new Error('AI Studio prompt editor not found in Shadow DOM');
+    }
+
+    // 1. Focus prompt editor via CDP mouse click
+    await this.cdp.send('Input.dispatchMouseEvent', {
+      type: 'mousePressed', x: pos.x, y: pos.y, button: 'left', buttons: 1, clickCount: 1
+    });
+    await this.cdp.send('Input.dispatchMouseEvent', {
+      type: 'mouseReleased', x: pos.x, y: pos.y, button: 'left', buttons: 1, clickCount: 1
+    });
+
+    await new Promise(r => setTimeout(r, 150));
+
+    // 2. Clear existing prompt if needed
+    await this.cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'a', windowsVirtualKeyCode: 65, modifiers: 2 });
+    await this.cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'a', windowsVirtualKeyCode: 65, modifiers: 2 });
+    await this.cdp.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Delete', windowsVirtualKeyCode: 46 });
+    await this.cdp.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Delete', windowsVirtualKeyCode: 46 });
+
+    // 3. Insert text as trusted input
+    await this.cdp.send('Input.insertText', { text: promptText });
+
+    // 4. Run prompt via Ctrl+Enter
+    await this.cdp.send('Input.dispatchKeyEvent', {
+      type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, modifiers: 2 // Ctrl modifier
+    });
+    await this.cdp.send('Input.dispatchKeyEvent', {
+      type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, modifiers: 2
+    });
+
+    return { status: 'success', textInsertedLength: promptText.length };
+  }
+}

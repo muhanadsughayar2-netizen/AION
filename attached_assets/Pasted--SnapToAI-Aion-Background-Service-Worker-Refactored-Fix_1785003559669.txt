@@ -1,0 +1,281 @@
+// SnapToAI / Aion Background Service Worker (Refactored & Fixed)
+// Includes Persistent CDP Session Pool, Mutex Queue, Shadow DOM Traverser, and App Adapters
+
+const CAPTURE_COOLDOWN = 700;
+let lastCaptureTime = 0;
+
+// ============================================================================
+// 1. PERSISTENT CDP SESSION MANAGER (Eliminates attach/detach flashing & race conditions)
+// ============================================================================
+class CdpSessionPool {
+  constructor() {
+    this.sessions = new Map(); // tabId -> { count: number, timeout: Timer, attached: boolean }
+    this.locks = new Map();    // tabId -> Promise chain for serial execution
+  }
+
+  async acquire(tabId) {
+    // Serialized mutex per tab ID
+    let lock = this.locks.get(tabId) || Promise.resolve();
+    let releaseLock;
+    const nextLock = new Promise(resolve => { releaseLock = resolve; });
+    this.locks.set(tabId, lock.then(() => nextLock));
+
+    await lock; // Wait for previous action on this tab to complete
+
+    try {
+      let session = this.sessions.get(tabId);
+      if (!session) {
+        session = { count: 0, timeout: null, attached: false };
+        this.sessions.set(tabId, session);
+      }
+
+      if (session.timeout) {
+        clearTimeout(session.timeout);
+        session.timeout = null;
+      }
+
+      if (!session.attached) {
+        await chrome.debugger.attach({ tabId }, '1.3');
+        session.attached = true;
+        console.log(`[Aion CDP] Attached to tab ${tabId}`);
+      }
+
+      session.count++;
+
+      const send = (method, params = {}) => new Promise((resolve, reject) => {
+        chrome.debugger.sendCommand({ tabId }, method, params, (res) => {
+          if (chrome.runtime.lastError) {
+            reject(new Error(chrome.runtime.lastError.message));
+          } else {
+            resolve(res);
+          }
+        });
+      });
+
+      const release = () => {
+        session.count--;
+        if (session.count <= 0) {
+          // Keep attached for 10 seconds of idle time to avoid constant re-attaching
+          session.timeout = setTimeout(async () => {
+            if (session.count <= 0 && session.attached) {
+              try {
+                await chrome.debugger.detach({ tabId });
+                console.log(`[Aion CDP] Safely detached idle tab ${tabId}`);
+              } catch (_) {}
+              session.attached = false;
+              this.sessions.delete(tabId);
+            }
+          }, 10000);
+        }
+        releaseLock(); // Unlock next queued action
+      };
+
+      return { send, release, tabId };
+    } catch (err) {
+      releaseLock();
+      throw err;
+    }
+  }
+}
+
+const cdpPool = new CdpSessionPool();
+
+// ============================================================================
+// 2. UNIVERSAL SHADOW DOM & IFRAME ELEMENT LOCATOR
+// ============================================================================
+async function findElementInTab(tabId, selector, searchText) {
+  const [result] = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: (sel, text) => {
+      function searchDeep(root) {
+        if (!root) return null;
+
+        // 1. Direct query if selector provided
+        if (sel) {
+          const el = root.querySelector(sel);
+          if (el) {
+            const r = el.getBoundingClientRect();
+            if (r.width > 0 && r.height > 0) return { x: r.left + r.width/2, y: r.top + r.height/2, tag: el.tagName };
+          }
+        }
+
+        // 2. Search by text content
+        if (text) {
+          const lower = text.toLowerCase();
+          const all = root.querySelectorAll('button, a, input, textarea, [role="button"], [contenteditable="true"], span, div');
+          for (const el of all) {
+            const elText = (el.innerText || el.textContent || el.getAttribute('aria-label') || '').trim().toLowerCase();
+            if (elText === lower || (elText.length < 100 && elText.includes(lower))) {
+              const r = el.getBoundingClientRect();
+              if (r.width > 0 && r.height > 0) return { x: r.left + r.width/2, y: r.top + r.height/2, tag: el.tagName };
+            }
+          }
+        }
+
+        // 3. Recurse into Shadow Roots
+        const children = root.querySelectorAll('*');
+        for (const child of children) {
+          if (child.shadowRoot) {
+            const found = searchDeep(child.shadowRoot);
+            if (found) return found;
+          }
+        }
+
+        return null;
+      }
+
+      return searchDeep(document);
+    },
+    args: [selector || '', searchText || '']
+  });
+
+  return result?.result || null;
+}
+
+// ============================================================================
+// 3. SPECIALIZED APP ADAPTERS (AI Studio, Docs, Sheets, Office Online)
+// ============================================================================
+
+// --- GOOGLE AI STUDIO ADAPTER ---
+async function handleAIStudioType(tabId, text, cdpSession) {
+  const { send } = cdpSession;
+
+  // Step 1: Deep focus on prompt editor inside Lit Shadow Root / ProseMirror
+  const focused = await chrome.scripting.executeScript({
+    target: { tabId },
+    func: () => {
+      function deepFocusPrompt(root) {
+        const editor = root.querySelector('.ProseMirror, ms-prompt-editor [contenteditable="true"], textarea, [aria-label*="Prompt"]');
+        if (editor) {
+          editor.focus();
+          return true;
+        }
+        const all = root.querySelectorAll('*');
+        for (const child of all) {
+          if (child.shadowRoot) {
+            if (deepFocusPrompt(child.shadowRoot)) return true;
+          }
+        }
+        return false;
+      }
+      return deepFocusPrompt(document);
+    }
+  });
+
+  // Step 2: Input text using trusted CDP
+  await send('Input.insertText', { text });
+
+  // Step 3: Run prompt shortcut (Ctrl+Enter) if user requested execution
+  return { success: true, method: 'aistudio-shadow-prosemirror' };
+}
+
+// --- GOOGLE SHEETS ADAPTER ---
+async function handleSheetsType(tabId, cell, text, cdpSession) {
+  const { send } = cdpSession;
+
+  if (cell) {
+    // Navigate via Name Box first
+    await chrome.scripting.executeScript({
+      target: { tabId },
+      func: (targetCell) => {
+        const nb = document.querySelector('#t-name-box-input, .docs-input-label-input, input[aria-label*="cell"]');
+        if (nb) {
+          nb.focus(); nb.select(); nb.value = targetCell;
+          nb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+        }
+      },
+      args: [cell]
+    });
+    await new Promise(r => setTimeout(r, 200));
+  }
+
+  // Type TSV formatted data into cell/formula bar
+  await send('Input.insertText', { text });
+  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', windowsVirtualKeyCode: 13 });
+  await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', windowsVirtualKeyCode: 13 });
+
+  return { success: true, method: 'sheets-namebox-tsv' };
+}
+
+// ============================================================================
+// 4. MAIN AGENT EXECUTE ROUTER
+// ============================================================================
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'agentExecute') {
+    (async () => {
+      const { tabId, executeAction, params } = request;
+      const tab = await chrome.tabs.get(tabId).catch(() => null);
+      if (!tab) { sendResponse({ success: false, error: 'Tab not found' }); return; }
+
+      const url = new URL(tab.url || 'https://localhost');
+      const host = url.hostname;
+
+      let session;
+      try {
+        session = await cdpPool.acquire(tabId);
+        const { send } = session;
+
+        // Route by Action & Host
+        if (executeAction === 'type') {
+          if (host.includes('aistudio.google.com')) {
+            const res = await handleAIStudioType(tabId, params.text, session);
+            sendResponse({ success: true, data: res });
+            return;
+          }
+          if (host.includes('docs.google.com') && url.pathname.includes('/spreadsheets/')) {
+            const res = await handleSheetsType(tabId, params.cell || 'A1', params.text, session);
+            sendResponse({ success: true, data: res });
+            return;
+          }
+
+          // Universal typing fallback: find element -> click -> insertText
+          let loc = await findElementInTab(tabId, params.selector, params.placeholder);
+          if (loc) {
+            await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: loc.x, y: loc.y, button: 'left', clickCount: 1 });
+            await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: loc.x, y: loc.y, button: 'left', clickCount: 1 });
+            await new Promise(r => setTimeout(r, 100));
+          }
+          await send('Input.insertText', { text: params.text });
+          if (params.pressEnter) {
+            await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', windowsVirtualKeyCode: 13 });
+            await send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', windowsVirtualKeyCode: 13 });
+          }
+          sendResponse({ success: true });
+          return;
+        }
+
+        if (executeAction === 'click') {
+          let loc = await findElementInTab(tabId, params.selector, params.text || params.description);
+          if (loc) {
+            await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: loc.x, y: loc.y, button: 'left', clickCount: 1 });
+            await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: loc.x, y: loc.y, button: 'left', clickCount: 1 });
+            sendResponse({ success: true });
+            return;
+          }
+
+          // CDP Accessibility fallback
+          await send('Accessibility.enable');
+          const ax = await send('Accessibility.queryAXTree', { accessibleName: params.text || params.description });
+          if (ax && ax.nodes && ax.nodes[0] && ax.nodes[0].backendDOMNodeId) {
+            const box = await send('DOM.getBoxModel', { backendNodeId: ax.nodes[0].backendDOMNodeId });
+            const [x1, y1, x2, , , y3] = box.model.content;
+            const cx = (x1+x2)/2, cy = (y1+y3)/2;
+            await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: cx, y: cy, button: 'left', clickCount: 1 });
+            await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: cx, y: cy, button: 'left', clickCount: 1 });
+            sendResponse({ success: true });
+            return;
+          }
+
+          sendResponse({ success: false, error: `Element "${params.text || params.selector}" not found` });
+          return;
+        }
+
+      } catch (err) {
+        sendResponse({ success: false, error: err.message });
+      } finally {
+        if (session) session.release();
+      }
+    })();
+    return true;
+  }
+});

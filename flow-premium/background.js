@@ -1,44 +1,71 @@
 // SnapToAI Background Service Worker
 // Handles screenshot capture, storage management, downloads, and messaging
 
-// ── Shared CDP session helpers ─────────────────────────────────────────────
-// Reduces attach/detach races: if a tab is already attached, reuse the session
-// rather than failing. On "already attached" errors, mark it attached and continue.
-const _cdpAttached = new Map(); // tabId -> true
+// ── Persistent CDP Session Pool ────────────────────────────────────────────
+// Eliminates per-action attach/detach flashing and race conditions.
+// • Reuses the connection for the same tab (ref-counted).
+// • Serialises commands on a per-tab mutex so rapid/parallel actions never race.
+// • Schedules idle detach 10 s after the last release to avoid constant re-attaching.
+class CdpSessionPool {
+  constructor() {
+    this.sessions = new Map(); // tabId -> { count, timeout, attached }
+    this.locks    = new Map(); // tabId -> Promise chain (mutex)
+  }
 
-async function cdpAttach(tabId) {
-  const debuggee = { tabId };
-  if (_cdpAttached.get(tabId)) return debuggee;
-  try {
-    await chrome.debugger.attach(debuggee, '1.3');
-    _cdpAttached.set(tabId, true);
-    return debuggee;
-  } catch (e) {
-    const msg = (e && e.message) || String(e);
-    if (/already attached|Another debugger/i.test(msg)) {
-      _cdpAttached.set(tabId, true);
-      return debuggee;
+  async acquire(tabId) {
+    // Serialised mutex per tab
+    let releaseLock;
+    const prev = this.locks.get(tabId) || Promise.resolve();
+    const next  = new Promise(r => { releaseLock = r; });
+    this.locks.set(tabId, prev.then(() => next));
+    await prev;
+
+    try {
+      let s = this.sessions.get(tabId);
+      if (!s) { s = { count: 0, timeout: null, attached: false }; this.sessions.set(tabId, s); }
+      if (s.timeout) { clearTimeout(s.timeout); s.timeout = null; }
+      if (!s.attached) {
+        try {
+          await chrome.debugger.attach({ tabId }, '1.3');
+        } catch (e) {
+          const msg = (e && e.message) || String(e);
+          if (!/already attached|Another debugger/i.test(msg)) { releaseLock(); throw e; }
+          // already attached by another path — reuse
+        }
+        s.attached = true;
+      }
+      s.count++;
+
+      const send = (method, params) => new Promise((resolve, reject) => {
+        chrome.debugger.sendCommand({ tabId }, method, params || {}, result => {
+          if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+          else resolve(result);
+        });
+      });
+
+      const release = () => {
+        s.count = Math.max(0, s.count - 1);
+        if (s.count === 0) {
+          s.timeout = setTimeout(async () => {
+            if (s.count === 0 && s.attached) {
+              try { await chrome.debugger.detach({ tabId }); } catch (_) {}
+              s.attached = false;
+              this.sessions.delete(tabId);
+            }
+          }, 10000);
+        }
+        releaseLock();
+      };
+
+      return { send, release };
+    } catch (err) {
+      releaseLock();
+      throw err;
     }
-    throw e;
   }
 }
 
-function cdpDetach(tabId) {
-  if (!_cdpAttached.get(tabId)) return;
-  chrome.debugger.detach({ tabId }, () => {
-    void chrome.runtime.lastError;
-    _cdpAttached.delete(tabId);
-  });
-}
-
-function cdpSend(tabId, method, params) {
-  return new Promise((resolve, reject) => {
-    chrome.debugger.sendCommand({ tabId }, method, params || {}, (result) => {
-      if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-      else resolve(result);
-    });
-  });
-}
+const cdpPool = new CdpSessionPool();
 
 const MAX_SNAPS = 10;
 const AI_SITES = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'specode.ai'];
@@ -1275,10 +1302,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           const { x, y, mode } = loc;
 
-          // Attach CDP. Fails if DevTools is already open on this tab.
-          const debuggee = { tabId };
+          // Attach CDP via persistent session pool (no per-action flash/race).
+          let session;
           try {
-            await chrome.debugger.attach(debuggee, '1.3');
+            session = await cdpPool.acquire(tabId);
           } catch (attachErr) {
             console.warn('[Aion Agent] CDP attach failed:', attachErr.message);
             runFallbackType();
@@ -1286,21 +1313,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
 
           try {
-            // send: fire a CDP command, resolve when done (no return value needed)
-            const send = (method, p) => new Promise((resolve, reject) => {
-              chrome.debugger.sendCommand(debuggee, method, p, () => {
-                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-                else resolve();
-              });
-            });
-
-            // sendR: fire a CDP command AND return its result object
-            const sendR = (method, p) => new Promise((resolve, reject) => {
-              chrome.debugger.sendCommand(debuggee, method, p, (res) => {
-                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-                else resolve(res);
-              });
-            });
+            const send  = session.send; // fire CDP command (returns result)
+            const sendR = session.send; // alias — pool.send always returns result
 
             const text      = String(params.text ?? '');
             const isDocs    = tabHostname.includes('docs.google.com') && tabPath.includes('/document/');
@@ -1508,7 +1522,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
             sendResponse({ success: true });
           } finally {
-            chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+            if (session) session.release();
           }
         } catch (e) {
           console.warn('[Aion Agent] CDP type failed, using paste fallback:', e && e.message);
@@ -1553,23 +1567,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           try { await clearAndInject(tabId); loc = await locateViaContent(); } catch (_) {}
         }
 
-        const debuggee = { tabId };
-        let attached = false;
+        let session;
         try {
-          await chrome.debugger.attach(debuggee, '1.3');
-          attached = true;
+          session = await cdpPool.acquire(tabId);
         } catch (_) {
-          // DevTools open — fall straight to synthetic
+          // DevTools open / attach failed — fall straight to synthetic
           fallbackSynthetic();
           return;
         }
 
-        const cdpCmd = (method, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, method, p || {}, (r) => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpCmd = session.send;
 
         const cdpMouseClick = async (x, y) => {
           const base = { x, y, button: 'left', buttons: 1, clickCount: 1 };
@@ -1686,7 +1693,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           console.warn('[Aion Agent] CDP click failed:', e && e.message);
           fallbackSynthetic();
         } finally {
-          if (attached) chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) session.release();
         }
       })();
       return true;
@@ -1700,15 +1707,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const targetName = String(params.name || '').trim().toLowerCase();
         if (!targetName) { sendResponse({ success: false, error: 'No sheet name provided' }); return; }
 
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) {}
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) {}
 
-        const cdpCmd = (method, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, method, p || {}, (r) => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpCmd = session ? session.send : () => Promise.reject(new Error('CDP unavailable'));
 
         try {
           await cdpCmd('Runtime.enable', {});
@@ -1775,7 +1777,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         } catch (e) {
           sendResponse({ success: false, error: e.message });
         } finally {
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) session.release();
         }
       })();
       return true;
@@ -1790,15 +1792,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const targetName = String(params.name || '').trim().toLowerCase();
         if (!targetName) { sendResponse({ success: false, error: 'No tab name provided' }); return; }
 
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) {}
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) {}
 
-        const cdpCmd = (method, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, method, p || {}, (r) => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpCmd = session ? session.send : () => Promise.reject(new Error('CDP unavailable'));
 
         try {
           // ── Step 1: Accessibility tree search (finds by visible tab name) ──
@@ -1888,7 +1885,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         } catch (e) {
           sendResponse({ success: false, error: e.message });
         } finally {
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) session.release();
         }
       })();
       return true;
@@ -1957,32 +1954,28 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const mapped = KEY_MAP[keyName];
         if (!mapped) { sendResponse({ success: false, error: `Unknown key: "${keyName}" in combo "${combo}"` }); return; }
         const finalKey = (modifiers & 8) && mapped.key.length === 1 ? mapped.key.toUpperCase() : mapped.key;
-        const debuggee = { tabId };
+        let session;
         try {
-          await chrome.debugger.attach(debuggee, '1.3');
+          session = await cdpPool.acquire(tabId);
         } catch (_e) {
           sendResponse({ success: false, error: 'CDP attach failed (DevTools open?)' });
           return;
         }
         try {
-          const sendKey = (type) => new Promise((res, rej) => {
-            chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent', {
-              type,
-              modifiers,
-              key: finalKey,
-              code: mapped.code,
-              windowsVirtualKeyCode: mapped.kc,
-              nativeVirtualKeyCode: mapped.kc
-            }, () => {
-              if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-              else res();
-            });
+          const cdpSendKey = session.send;
+          const sendKey = (type) => cdpSendKey('Input.dispatchKeyEvent', {
+            type,
+            modifiers,
+            key: finalKey,
+            code: mapped.code,
+            windowsVirtualKeyCode: mapped.kc,
+            nativeVirtualKeyCode: mapped.kc
           });
           await sendKey('rawKeyDown');
           await sendKey('keyUp');
           sendResponse({ success: true });
         } finally {
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) session.release();
         }
       })();
       return true;
@@ -2008,16 +2001,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           try { await clearAndInject(tabId); loc = await locateViaContent(); } catch (_) {}
         }
 
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
 
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
 
         try {
           let cx, cy;
@@ -2055,7 +2043,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         } catch (e) {
           sendResponse({ success: false, error: e.message });
         } finally {
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) session.release();
         }
       })();
       return true;
@@ -2066,15 +2054,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Much more reliable than trying to click tiny <option> elements.
     if (executeAction === 'select') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const label = String(params.label || params.text || '');
           const value = String(params.value || '');
@@ -2114,7 +2097,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         } catch (e) {
           sendResponse({ success: false, error: e.message });
         } finally {
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) session.release();
         }
       })();
       return true;
@@ -2125,15 +2108,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // element.  Prevents the agent from clicking things mid-load.
     if (executeAction === 'waitForElement') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const target      = String(params.text || params.selector || '').trim();
           if (!target) {
@@ -2158,7 +2136,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         } catch (e) {
           sendResponse({ success: false, error: e.message });
         } finally {
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) session.release();
         }
       })();
       return true;
@@ -2170,15 +2148,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // screenshot OCR.  Returns the data field in the tool response.
     if (executeAction === 'readText') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const selector = String(params.selector || '');
           const label    = String(params.text || params.label || '');
@@ -2215,7 +2188,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         } catch (e) {
           sendResponse({ success: false, error: e.message });
         } finally {
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) session.release();
         }
       })();
       return true;
@@ -2226,15 +2199,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Much faster than clicking + typing into each field individually.
     if (executeAction === 'autofill') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const fields = params.fields || {};
           const evalRes = await cdpC('Runtime.evaluate', {
@@ -2282,7 +2250,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             data: `Filled ${r.filled}/${r.total} fields` + (r.failed.length ? `. Not found: ${r.failed.join(', ')}` : '')
           });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -2292,15 +2260,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // positions, roles, and text — far richer than innerText for Gemini.
     if (executeAction === 'snapshotPage') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           await cdpC('DOM.enable');
           const snap = await cdpC('DOMSnapshot.captureSnapshot', {
@@ -2355,7 +2318,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
           sendResponse({ success: true, data: ([...lines].join('\n') + axSection).slice(0, 8000) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -2367,14 +2330,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     //                the Formula Bar (standard HTML — always visible).
     if (executeAction === 'readDocContent') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) {}
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) {}
+        const cdpC = session ? session.send : () => Promise.reject(new Error('CDP unavailable'));
         try {
           const tabInfo = await chrome.tabs.get(tabId).catch(() => ({}));
           const url = tabInfo.url || '';
@@ -2452,7 +2410,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               : 'Document appears empty or content is not yet accessible via AXTree.' });
           }
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -2468,11 +2426,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const cell = String(params.cell || '').trim().toUpperCase();
         if (!cell) { sendResponse({ success: false, error: 'cell parameter is required' }); return; }
 
-        const debuggee = { tabId };
-        let attached = false;
+        let session;
+        // ── Step 1: Find the Name Box coords via content script ──────────────
+        // allFrames:true covers Excel Online where the Name Box lives inside an iframe
         try {
-          // ── Step 1: Find the Name Box coords via content script ──────────────
-          // allFrames:true covers Excel Online where the Name Box lives inside an iframe
           const locResult = await chrome.scripting.executeScript({
             target: { tabId, allFrames: true },
             func: () => {
@@ -2491,19 +2448,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           if (!coords) { sendResponse({ success: false, error: 'Name Box not found — is this a Sheets or Excel tab?' }); return; }
 
           // ── Step 2: CDP click + clear + type char-by-char ────────────────────
-          try { await chrome.debugger.attach(debuggee, '1.3'); attached = true; } catch (_) {}
-          const cdpK = (type, char) => new Promise((res, rej) => {
+          try { session = await cdpPool.acquire(tabId); } catch (_) {}
+          const cdpK = (type, char) => {
             const code = char.toUpperCase().charCodeAt(0);
-            chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent', {
+            return session.send('Input.dispatchKeyEvent', {
               type, text: char, unmodifiedText: char,
               windowsVirtualKeyCode: code, nativeVirtualKeyCode: code
-            }, r => chrome.runtime.lastError ? rej(new Error(chrome.runtime.lastError.message)) : res(r));
-          });
-          const cdpMouse = (type, x, y) => new Promise((res, rej) => {
-            chrome.debugger.sendCommand(debuggee, 'Input.dispatchMouseEvent',
-              { type, x, y, button: 'left', clickCount: 1 },
-              r => chrome.runtime.lastError ? rej(new Error(chrome.runtime.lastError.message)) : res(r));
-          });
+            });
+          };
+          const cdpMouse = (type, x, y) => session.send('Input.dispatchMouseEvent',
+            { type, x, y, button: 'left', clickCount: 1 });
 
           // Click the Name Box to focus it
           await cdpMouse('mousePressed', coords.x, coords.y);
@@ -2511,12 +2465,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await new Promise(r => setTimeout(r, 150));
 
           // Select-all to clear existing content (Ctrl+A)
-          await new Promise((res, rej) => chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent',
-            { type: 'keyDown', key: 'a', windowsVirtualKeyCode: 65, modifiers: 2 },
-            r => chrome.runtime.lastError ? rej() : res()));
-          await new Promise((res, rej) => chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent',
-            { type: 'keyUp', key: 'a', windowsVirtualKeyCode: 65, modifiers: 2 },
-            r => chrome.runtime.lastError ? rej() : res()));
+          await session.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'a', windowsVirtualKeyCode: 65, modifiers: 2 });
+          await session.send('Input.dispatchKeyEvent', { type: 'keyUp',   key: 'a', windowsVirtualKeyCode: 65, modifiers: 2 });
           await new Promise(r => setTimeout(r, 80));
 
           // Type each character of the cell reference (e.g. "B3" → 'B', '3')
@@ -2527,12 +2477,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
 
           // Press Enter to confirm navigation
-          await new Promise((res, rej) => chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent',
-            { type: 'keyDown', key: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 },
-            r => chrome.runtime.lastError ? rej() : res()));
-          await new Promise((res, rej) => chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent',
-            { type: 'keyUp', key: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 },
-            r => chrome.runtime.lastError ? rej() : res()));
+          await session.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
+          await session.send('Input.dispatchKeyEvent', { type: 'keyUp',   key: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 });
 
           await new Promise(r => setTimeout(r, 500)); // let Sheets scroll & focus
           sendResponse({ success: true, data: `Navigated to cell ${cell}. Read Formula Bar with readDocContent() to see the value.` });
@@ -2565,7 +2511,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
           } catch (e2) { sendResponse({ success: false, error: e2.message }); }
         } finally {
-          if (attached) chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) session.release();
         }
       })();
       return true;
@@ -2575,15 +2521,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Page.printToPDF exports any open page as a PDF and triggers a download.
     if (executeAction === 'exportPDF') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const filename = ((params.filename || 'export') + '.pdf').replace(/[^a-z0-9_\-\.]/gi, '-');
           const result = await cdpC('Page.printToPDF', {
@@ -2605,7 +2546,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
           sendResponse({ success: true, data: 'PDF downloaded: ' + filename });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -2615,15 +2556,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // finds elements that AX tree / CSS selectors miss (hidden components, etc).
     if (executeAction === 'findElement') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           await cdpC('DOM.enable');
           const query = String(params.query || params.text || params.selector || '');
@@ -2655,7 +2591,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
           sendResponse({ success: true, data: `${resultCount} match(es) for "${query}":\n` + summaries.join('\n') });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -2665,15 +2601,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // letting the agent access mobile-only menus, layouts, and features.
     if (executeAction === 'setMobileMode') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const enable = params.enabled !== false;
           if (enable) {
@@ -2691,7 +2622,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: true, data: 'Mobile mode OFF — desktop view restored' });
           }
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -2701,15 +2632,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // the raw body — reads prices, search results, API data without OCR.
     if (executeAction === 'readNetworkResponse') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const pattern   = String(params.url || params.pattern || '');
           const maxChars  = Math.min(8000, parseInt(params.maxChars) || 4000);
@@ -2769,7 +2695,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
           sendResponse({ success: true, data: `[from: ${captured.url}]\n${captured.body}` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -2780,7 +2706,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (executeAction === 'drag') {
       (async () => {
         // Resolve from/to coordinates — try AX tree first, fall back to params
-        const resolveCoord = async (textParam, selectorParam, xParam, yParam, debuggee, cdpC) => {
+        const resolveCoord = async (textParam, selectorParam, xParam, yParam, cdpC) => {
           if (typeof xParam === 'number' && typeof yParam === 'number') return { x: xParam, y: yParam };
           const label = String(textParam || selectorParam || '');
           if (!label) return null;
@@ -2801,18 +2727,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           return null;
         };
 
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
-          const from = await resolveCoord(params.fromText, params.fromSelector, params.fromX, params.fromY, debuggee, cdpC);
-          const to   = await resolveCoord(params.toText,   params.toSelector,   params.toX,   params.toY,   debuggee, cdpC);
+          const from = await resolveCoord(params.fromText, params.fromSelector, params.fromX, params.fromY, cdpC);
+          const to   = await resolveCoord(params.toText,   params.toSelector,   params.toX,   params.toY,   cdpC);
           if (!from) { sendResponse({ success: false, error: 'Could not find drag source element' }); return; }
           if (!to)   { sendResponse({ success: false, error: 'Could not find drag target element' }); return; }
 
@@ -2845,7 +2766,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await new Promise(r => setTimeout(r, 100));
           sendResponse({ success: true, data: `Dragged from (${Math.round(from.x)},${Math.round(from.y)}) to (${Math.round(to.x)},${Math.round(to.y)})` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -2856,15 +2777,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // by letting the agent call this multiple times to build long documents.
     if (executeAction === 'writeChunk') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const text = String(params.text || '');
           if (!text) { sendResponse({ success: false, error: 'No text provided' }); return; }
@@ -2883,7 +2799,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await cdpC('Input.insertText', { text });
           sendResponse({ success: true, data: `Inserted ${text.length} characters` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -2893,15 +2809,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // auth state, session tokens, feature flags, and saved user settings.
     if (executeAction === 'readStorage') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const target = (params.target || 'all').toLowerCase(); // 'local' | 'session' | 'cookies' | 'all'
           const filterKey = (params.key || '').toLowerCase();    // optional: only return keys containing this string
@@ -2946,7 +2857,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
           sendResponse({ success: true, data: JSON.stringify(parsed, null, 2).slice(0, maxChars) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -2957,15 +2868,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // has direct access to the storage engine without JS injection.
     if (executeAction === 'readIndexedDB') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const tab = await chrome.tabs.get(tabId);
           const origin = new URL(tab.url).origin;
@@ -3006,8 +2912,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true, data: JSON.stringify(results, null, 2).slice(0, maxChars) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          chrome.debugger.sendCommand(debuggee, 'IndexedDB.disable', {}, () => {});
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) { try { await session.send('IndexedDB.disable'); } catch (_) {} session.release(); }
         }
       })();
       return true;
@@ -3019,15 +2924,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // (which only READS responses), this can CHANGE the request before it leaves.
     if (executeAction === 'interceptRequest') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const urlFilter  = params.url     || '*';
           const modHeaders = params.headers || null; // { 'Authorization': 'Bearer ...' }
@@ -3078,8 +2978,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true, data: `Intercepted and continued: ${request.url} [${request.method}]` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { await cdpC('Fetch.disable', {}); } catch (_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) { try { await session.send('Fetch.disable'); } catch (_) {} session.release(); }
         }
       })();
       return true;
@@ -3092,15 +2991,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // reading colors, fonts, or layout values the agent needs.
     if (executeAction === 'getComputedStyle') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const selector  = params.selector  || '';
           const propNames = params.properties // ['display','color','font-size'] or empty = all
@@ -3131,8 +3025,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true, data: JSON.stringify(out, null, 2).slice(0, 4000) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { chrome.debugger.sendCommand(debuggee, 'CSS.disable', {}, () => {}); } catch(_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) { try { await session.send('CSS.disable'); } catch (_) {} session.release(); }
         }
       })();
       return true;
@@ -3144,15 +3037,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // tokens, session IDs, and security flags (Secure, SameSite).
     if (executeAction === 'getCookies') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const filterKey = (params.key || '').toLowerCase();
           await cdpC('Network.enable', {});
@@ -3175,7 +3063,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
           sendResponse({ success: true, data: JSON.stringify(filtered, null, 2).slice(0, 6000) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -3186,15 +3074,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // is logging, or confirming a function ran.
     if (executeAction === 'captureConsole') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const maxLines  = Math.min(100, parseInt(params.maxLines) || 30);
           const level     = (params.level || 'all').toLowerCase(); // 'all'|'error'|'warn'|'log'
@@ -3222,7 +3105,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             data: out.length ? out.join('\n') : `No console messages captured in ${waitMs / 1000}s.`
           });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -3233,15 +3116,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // app state, or resetting a site's local data.
     if (executeAction === 'clearSiteData') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const tab    = await chrome.tabs.get(tabId);
           const origin = new URL(tab.url).origin;
@@ -3262,7 +3140,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await cdpC('Storage.clearDataForOrigin', { origin, storageTypes });
           sendResponse({ success: true, data: `Cleared [${storageTypes}] for ${origin}` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -3273,15 +3151,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // verify a page actually loaded completely.
     if (executeAction === 'getPerformance') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           await cdpC('Performance.enable');
           const { metrics } = await cdpC('Performance.getMetrics');
@@ -3313,8 +3186,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { chrome.debugger.sendCommand(debuggee, 'Performance.disable', {}, () => {}); } catch(_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) { try { await session.send('Performance.disable'); } catch (_) {} session.release(); }
         }
       })();
       return true;
@@ -3327,15 +3199,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // (stable 1.3+) — not a Lighthouse run, but near-instant browser audit.
     if (executeAction === 'auditPage') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const waitMs   = Math.min(10000, (parseInt(params.wait) || 3) * 1000);
           const filterType = (params.type || '').toLowerCase();
@@ -3368,8 +3235,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true, data: JSON.stringify(issues, null, 2).slice(0, maxChars) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { chrome.debugger.sendCommand(debuggee, 'Audits.disable', {}, () => {}); } catch (_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) { try { await session.send('Audits.disable'); } catch (_) {} session.release(); }
         }
       })();
       return true;
@@ -3381,15 +3247,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // or checking if stale content is being served.
     if (executeAction === 'readCache') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const tab    = await chrome.tabs.get(tabId);
           const securityOrigin = new URL(tab.url).origin;
@@ -3417,7 +3278,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
           sendResponse({ success: true, data: JSON.stringify(result, null, 2).slice(0, 6000) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -3429,15 +3290,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // button do anything" or finding hidden form submission handlers.
     if (executeAction === 'getEventListeners') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const selector  = params.selector || 'document';
           const depth     = parseInt(params.depth) || 1; // pierce shadow roots etc.
@@ -3479,7 +3335,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               : `No event listeners found on "${selector}".`
           });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -3490,15 +3346,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // consuming excessive RAM, or confirm GC ran before a memory-sensitive test.
     if (executeAction === 'snapshotHeap') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           await cdpC('HeapProfiler.enable');
           // Force GC so we see true live usage, not pre-GC noise
@@ -3550,8 +3401,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { chrome.debugger.sendCommand(debuggee, 'HeapProfiler.disable', {}, () => {}); } catch(_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) { try { await session.send('HeapProfiler.disable'); } catch (_) {} session.release(); }
         }
       })();
       return true;
@@ -3564,15 +3414,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Complements captureConsole (which reads JS console output).
     if (executeAction === 'readBrowserLog') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const waitMs   = Math.min(15000, (parseInt(params.wait) || 3) * 1000);
           const level    = (params.level  || 'all').toLowerCase(); // 'all'|'error'|'warning'|'info'
@@ -3607,8 +3452,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { chrome.debugger.sendCommand(debuggee, 'Log.disable', {}, () => {}); } catch(_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) { try { await session.send('Log.disable'); } catch (_) {} session.release(); }
         }
       })();
       return true;
@@ -3620,15 +3464,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // secure. Use before automating form submissions to confirm you're on HTTPS.
     if (executeAction === 'getSecurityInfo') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           await cdpC('Security.enable');
           const state = await cdpC('Security.getSecurityState');
@@ -3654,8 +3493,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true, data: JSON.stringify(out, null, 2) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { chrome.debugger.sendCommand(debuggee, 'Security.disable', {}, () => {}); } catch(_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          try { await session.send('Security.disable'); } catch (_) {}
+          if (session) session.release();
         }
       })();
       return true;
@@ -3667,15 +3506,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // a fresh update, or you need to see which SW scope is controlling the page.
     if (executeAction === 'manageServiceWorker') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const action = (params.action || 'list').toLowerCase(); // 'list'|'unregister'|'update'|'skipWaiting'
           const waitMs = 2000;
@@ -3725,8 +3559,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { chrome.debugger.sendCommand(debuggee, 'ServiceWorker.disable', {}, () => {}); } catch(_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          try { await session.send('ServiceWorker.disable'); } catch (_) {}
+          if (session) session.release();
         }
       })();
       return true;
@@ -3738,15 +3572,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // or get the targetId needed to attach the agent to a specific tab/frame.
     if (executeAction === 'listTargets') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const filterType = (params.type || '').toLowerCase(); // 'page'|'iframe'|'worker'|'service_worker'|''
           const { targetInfos } = await cdpC('Target.getTargets');
@@ -3767,7 +3596,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               : `No targets found${filterType ? ` of type "${filterType}"` : ''}.`
           });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -3780,15 +3609,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // agent is targeting before acting on it.
     if (executeAction === 'highlightElement') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); }
+        let session;
+        try { session = await cdpPool.acquire(tabId); }
         catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => {
-          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
-            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
-            else res(r);
-          });
-        });
+        const cdpC = session.send;
         try {
           const selector  = params.selector || '';
           const durationMs = Math.min(10000, (parseFloat(params.duration) || 2) * 1000);
@@ -3823,7 +3647,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await cdpC('Overlay.hideHighlight');
           sendResponse({ success: true, data: `Highlighted "${selector || 'document'}" for ${durationMs / 1000}s.` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })();
       return true;
     }
@@ -3831,9 +3655,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // ── getSystemInfo ── SystemInfo domain ────────────────────────────────────
     if (executeAction === 'getSystemInfo') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const info = await cdpC('SystemInfo.getInfo');
           const ver  = await cdpC('Browser.getVersion');
@@ -3847,16 +3671,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             videoEncoding: info?.videoEncoding
           }, null, 2) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── setBrowserWindow ── Browser domain ────────────────────────────────────
     if (executeAction === 'setBrowserWindow') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const { windowId } = await cdpC('Browser.getWindowForTarget');
           const bounds = {};
@@ -3868,16 +3692,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await cdpC('Browser.setWindowBounds', { windowId, bounds });
           sendResponse({ success: true, data: `Window updated: ${JSON.stringify(bounds)}` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── grantPermission ── Browser domain ─────────────────────────────────────
     if (executeAction === 'grantPermission') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const tab = await chrome.tabs.get(tabId);
           const origin = new URL(tab.url).origin;
@@ -3886,7 +3710,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await cdpC('Browser.grantPermissions', { permissions: perms, origin });
           sendResponse({ success: true, data: `Granted [${perms.join(', ')}] for ${origin}` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
@@ -3895,9 +3719,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // JS-injection approach used by readStorage (works on pages that sandbox JS).
     if (executeAction === 'readDOMStorage') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const tab = await chrome.tabs.get(tabId);
           const securityOrigin = new URL(tab.url).origin;
@@ -3923,16 +3747,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               : `No DOMStorage entries found${filterKey ? ` matching "${filterKey}"` : ''}.`
           });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── setDeviceOrientation ── DeviceOrientation domain ──────────────────────
     if (executeAction === 'setDeviceOrientation') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           if (params.clear) {
             await cdpC('DeviceOrientation.clearDeviceOrientationOverride');
@@ -3945,16 +3769,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             sendResponse({ success: true, data: `Orientation set: alpha=${alpha} beta=${beta} gamma=${gamma}` });
           }
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── getAnimations ── Animation domain ─────────────────────────────────────
     if (executeAction === 'getAnimations') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const waitMs = Math.min(5000, (parseInt(params.wait) || 2) * 1000);
           const animations = [];
@@ -3986,32 +3810,32 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await cdpC('Animation.disable');
           sendResponse({ success: true, data: details.length ? JSON.stringify(details, null, 2) : 'No animations detected.' });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── setAnimationSpeed ── Animation domain ──────────────────────────────────
     if (executeAction === 'setAnimationSpeed') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const playbackRate = parseFloat(params.speed ?? 1); // 0 = pause, 1 = normal, 2 = 2x
           await cdpC('Animation.enable');
           await cdpC('Animation.setPlaybackRate', { playbackRate });
           sendResponse({ success: true, data: `Global animation playback rate set to ${playbackRate}x.` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── triggerAutofill ── Autofill domain ────────────────────────────────────
     if (executeAction === 'triggerAutofill') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const selector = params.selector || 'input[autocomplete]';
           await cdpC('DOM.enable');
@@ -4022,16 +3846,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await cdpC('Autofill.trigger', { fieldId: nodeId });
           sendResponse({ success: true, data: `Autofill triggered on "${selector}".` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── readBackgroundEvents ── BackgroundService domain ───────────────────────
     if (executeAction === 'readBackgroundEvents') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const waitMs = Math.min(10000, (parseInt(params.wait) || 3) * 1000);
           // service: 'backgroundFetch'|'backgroundSync'|'pushMessaging'|'notifications'|'paymentHandler'|'periodicBackgroundSync'
@@ -4052,16 +3876,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             data: events.length ? JSON.stringify(events, null, 2) : `No ${service} events in ${waitMs / 1000}s.`
           });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── pauseOnException ── Debugger domain ───────────────────────────────────
     if (executeAction === 'pauseOnException') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const waitMs = Math.min(30000, (parseInt(params.wait) || 5) * 1000);
           const state  = params.state || 'uncaught'; // 'none'|'uncaught'|'all'
@@ -4098,8 +3922,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { chrome.debugger.sendCommand(debuggee, 'Debugger.disable', {}, () => {}); } catch (_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) { try { await session.send('Debugger.disable'); } catch (_) {} session.release(); }
         }
       })(); return true;
     }
@@ -4107,9 +3930,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // ── setEventBreakpoint ── EventBreakpoints domain ──────────────────────────
     if (executeAction === 'setEventBreakpoint') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const eventName = params.eventName || 'click'; // 'click','submit','fetch','xmlhttpRequestSend'...
           const waitMs    = Math.min(30000, (parseInt(params.wait) || 10) * 1000);
@@ -4133,8 +3956,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true, data: caught ? JSON.stringify(caught, null, 2) : `No "${eventName}" event in ${waitMs / 1000}s.` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { chrome.debugger.sendCommand(debuggee, 'Debugger.disable', {}, () => {}); } catch (_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) { try { await session.send('Debugger.disable'); } catch (_) {} session.release(); }
         }
       })(); return true;
     }
@@ -4142,9 +3964,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // ── getFedCmInfo ── FedCm domain ───────────────────────────────────────────
     if (executeAction === 'getFedCmInfo') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const waitMs = Math.min(10000, (parseInt(params.wait) || 3) * 1000);
           const dialogs = [];
@@ -4160,8 +3982,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ success: true, data: dialogs.length ? JSON.stringify(dialogs, null, 2) : 'No FedCM dialogs detected.' });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { chrome.debugger.sendCommand(debuggee, 'FedCm.disable', {}, () => {}); } catch (_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) { try { await session.send('FedCm.disable'); } catch (_) {} session.release(); }
         }
       })(); return true;
     }
@@ -4169,9 +3990,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // ── getFileSystem ── FileSystem domain ────────────────────────────────────
     if (executeAction === 'getFileSystem') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const tab = await chrome.tabs.get(tabId);
           const { directory } = await cdpC('FileSystem.getDirectory', {
@@ -4183,16 +4004,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
           sendResponse({ success: true, data: JSON.stringify(directory, null, 2).slice(0, 4000) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── getLayerTree ── LayerTree domain ──────────────────────────────────────
     if (executeAction === 'getLayerTree') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const layers = [];
           function onEvent(source, evtName, evtParams) {
@@ -4208,16 +4029,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await cdpC('LayerTree.disable');
           sendResponse({ success: true, data: layers.length ? JSON.stringify(layers.slice(0, 50), null, 2) : 'No layers captured.' });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── inspectMedia ── Media domain ───────────────────────────────────────────
     if (executeAction === 'inspectMedia') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const waitMs = Math.min(5000, (parseInt(params.wait) || 2) * 1000);
           const players = {};
@@ -4241,16 +4062,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const list = Object.values(players);
           sendResponse({ success: true, data: list.length ? JSON.stringify(list, null, 2).slice(0, 4000) : 'No media players found.' });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── getMemoryInfo ── Memory domain ────────────────────────────────────────
     if (executeAction === 'getMemoryInfo') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const counters = await cdpC('Memory.getDOMCounters');
           if (params.gc) await cdpC('Memory.forciblyPurgeJavaScriptMemory');
@@ -4261,16 +4082,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const heap = JSON.parse(result?.value || '{}');
           sendResponse({ success: true, data: JSON.stringify({ domNodes: counters?.nodes, domEventListeners: counters?.jsEventListeners, documents: counters?.documents, ...heap }, null, 2) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── trackWebVitals ── PerformanceTimeline domain ───────────────────────────
     if (executeAction === 'trackWebVitals') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const waitMs = Math.min(15000, (parseInt(params.wait) || 5) * 1000);
           const events = [];
@@ -4285,16 +4106,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           chrome.debugger.onEvent.removeListener(onEvent);
           sendResponse({ success: true, data: events.length ? JSON.stringify(events, null, 2) : `No web vital events in ${waitMs / 1000}s.` });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── getPreloadRules ── Preload domain ─────────────────────────────────────
     if (executeAction === 'getPreloadRules') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const waitMs = 2000;
           const rules = [], statuses = [];
@@ -4311,16 +4132,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await cdpC('Preload.disable');
           sendResponse({ success: true, data: JSON.stringify({ rules, statuses }, null, 2).slice(0, 4000) || 'No preload rules found.' });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── profileCPU ── Profiler domain ─────────────────────────────────────────
     if (executeAction === 'profileCPU') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const durationMs = Math.min(15000, (parseInt(params.duration) || 3) * 1000);
           await cdpC('Profiler.enable');
@@ -4342,16 +4163,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           await cdpC('Profiler.disable');
           sendResponse({ success: true, data: JSON.stringify({ durationMs, totalSamples: profile?.samples?.length, topFunctions: top }, null, 2) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── getPWAInfo ── PWA domain ──────────────────────────────────────────────
     if (executeAction === 'getPWAInfo') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const tab = await chrome.tabs.get(tabId);
           let pwaState = null;
@@ -4366,31 +4187,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const pageInfo = JSON.parse(result?.value || '{}');
           sendResponse({ success: true, data: JSON.stringify({ ...pageInfo, pwaState }, null, 2) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── getCDPSchema ── Schema domain ─────────────────────────────────────────
     if (executeAction === 'getCDPSchema') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const { domains } = await cdpC('Schema.getDomains');
           const summary = (domains || []).map(d => ({ name: d.name, version: d.version }));
           sendResponse({ success: true, data: JSON.stringify(summary, null, 2) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── recordTrace ── Tracing domain ─────────────────────────────────────────
     if (executeAction === 'recordTrace') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const durationMs = Math.min(10000, (parseInt(params.duration) || 3) * 1000);
           const chunks = [];
@@ -4417,16 +4238,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const topEvents = Object.entries(typeCounts).sort((a, b) => b[1] - a[1]).slice(0, 20);
           sendResponse({ success: true, data: JSON.stringify({ totalEvents: chunks.length, durationMs, topEventTypes: topEvents.map(([name, count]) => ({ name, count })) }, null, 2) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── inspectWebAudio ── WebAudio domain ────────────────────────────────────
     if (executeAction === 'inspectWebAudio') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const waitMs = Math.min(5000, (parseInt(params.wait) || 2) * 1000);
           const contexts = {};
@@ -4457,16 +4278,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               : 'No Web Audio contexts found on this page.'
           });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
-        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+        finally { if (session) session.release(); }
       })(); return true;
     }
 
     // ── emulateWebAuthn ── WebAuthn domain ────────────────────────────────────
     if (executeAction === 'emulateWebAuthn') {
       (async () => {
-        const debuggee = { tabId };
-        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
-        const cdpC = (m, p) => new Promise((res, rej) => { chrome.debugger.sendCommand(debuggee, m, p || {}, r => { if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message)); else res(r); }); });
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (_) { sendResponse({ success: false, error: 'CDP attach failed' }); return; }
+        const cdpC = session.send;
         try {
           const action = (params.action || 'add').toLowerCase(); // 'add'|'remove'|'list'
           await cdpC('WebAuthn.enable', { enableUI: !!params.enableUI });
@@ -4489,8 +4310,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally {
-          try { chrome.debugger.sendCommand(debuggee, 'WebAuthn.disable', {}, () => {}); } catch (_) {}
-          chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+          if (session) { try { await session.send('WebAuthn.disable'); } catch (_) {} session.release(); }
         }
       })(); return true;
     }
@@ -4544,24 +4364,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
 
           const { x, y } = loc;
-          const debuggee = { tabId };
-          await chrome.debugger.attach(debuggee, '1.3');
+          let session;
+          try { session = await cdpPool.acquire(tabId); } catch (_) { fallbackToSyntheticDoubleClick(); return; }
           try {
-            const send = (params2) => new Promise((resolve, reject) => {
-              chrome.debugger.sendCommand(debuggee, 'Input.dispatchMouseEvent', params2, () => {
-                if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
-                else resolve();
-              });
-            });
             const base = { x, y, button: 'left', buttons: 1 };
-            await send({ ...base, type: 'mousePressed', clickCount: 1 });
-            await send({ ...base, type: 'mouseReleased', clickCount: 1 });
+            await session.send('Input.dispatchMouseEvent', { ...base, type: 'mousePressed',  clickCount: 1 });
+            await session.send('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased', clickCount: 1 });
             await new Promise(r => setTimeout(r, 60));
-            await send({ ...base, type: 'mousePressed', clickCount: 2 });
-            await send({ ...base, type: 'mouseReleased', clickCount: 2 });
+            await session.send('Input.dispatchMouseEvent', { ...base, type: 'mousePressed',  clickCount: 2 });
+            await session.send('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased', clickCount: 2 });
             sendResponse({ success: true });
           } finally {
-            chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+            if (session) session.release();
           }
         } catch (e) {
           console.warn('[SnapToAI Agent] Trusted double-click failed, falling back:', e && e.message);
