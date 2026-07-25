@@ -10977,7 +10977,10 @@ SKILL — GOOGLE DOCS: You are controlling a Google Docs document.
 - Find toolbar buttons by [aria-label] (e.g. aria-label="Bold"). The Accessibility Tree uses standard names.
 - Menus (Insert, Format, Tools) are real HTML buttons — click to open, then click the sub-item.
 - To rename: click the title bar, Ctrl+A, type new name, Enter.
-- Save: pressKey("ctrl+s"). Never use File > Save manually.`,
+- Save: pressKey("ctrl+s"). Never use File > Save manually.
+- INSERTING AN IMAGE BY URL: Exact sequence: (1) click("Insert") → (2) click("Image") → (3) click("By URL") — if "By URL" is not found, try click("From URL") or click("URL") → (4) type({text:"https://..."}) → (5) click("Insert image") — the confirm button is labelled "Insert image", NOT "INSERT IMAGE". If the dialog does not close after clicking "Insert image", pressKey("enter") once. Never attempt this sequence more than twice — if it fails twice, call finish() and report the exact error.
+- INSERTING AN IMAGE VIA SEARCH: (1) click("Insert") → (2) click("Image") → (3) click("Search the web") → (4) type({text:"your query"}) → (5) pressKey("enter") → (6) wait 1s then snapshotPage to see results → (7) click the first image result → (8) click("Insert") button at the bottom of the panel.
+- If any image dialog step fails twice in a row, do NOT keep repeating it — call finish() and explain what you tried.`,
 
   microsoft_word: `
 SKILL — WORD ONLINE: You are controlling a Microsoft Word Online document.
@@ -11655,24 +11658,52 @@ async function runAgentTask(prompt, thread) {
     }
 
     // ── Loop detection ────────────────────────────────────────────────────────
-    // Track recent actions and warn Gemini when it's clearly repeating itself
+    // Track recent actions and warn Gemini when it's clearly repeating itself.
+    // Detects two patterns:
+    //   A) Same single action repeated 3+ times: AAAAA
+    //   B) Same 2-action pair repeated 3+ times: ABABAB  (e.g. "click:Insert image" + "click:By URL" cycling)
     for (const part of executableCalls) {
       const { name, args } = part.functionCall;
       const sig = `${name}:${String(args?.text || args?.selector || args?.url || args?.description || args?.direction || '').slice(0, 60)}`;
       recentActions.push(sig);
       if (recentActions.length > 12) recentActions.shift();
     }
-    // Count how many of the last 12 actions are the same as the most recent one
+
+    let loopWarning = null;
+
+    // Pattern A: same single action 3+ times
     const lastSig = recentActions[recentActions.length - 1];
     const repeatCount = recentActions.filter(s => s === lastSig).length;
     if (repeatCount >= 3) {
-      // Inject a strong anti-loop warning into the last response part
+      loopWarning = `⚠ LOOP DETECTED: You have called "${lastSig}" ${repeatCount} times without progress. ` +
+        `STOP immediately. Do NOT call this again. You MUST try a completely different approach: ` +
+        `snapshotPage to see what is on screen, try a different selector/label, navigate away and back, ` +
+        `or call finish() to report what is blocking you.`;
+    }
+
+    // Pattern B: same 2-action sequence repeated 3+ times (ABABAB)
+    if (!loopWarning && recentActions.length >= 6) {
+      const n = recentActions.length;
+      const a = recentActions[n - 2];
+      const b = recentActions[n - 1];
+      if (a !== b) {
+        let pairCount = 0;
+        for (let i = 0; i + 1 < n; i += 2) {
+          if (recentActions[i] === a && recentActions[i + 1] === b) pairCount++;
+        }
+        if (pairCount >= 3) {
+          loopWarning = `⚠ LOOP DETECTED: You are cycling "${a}" → "${b}" repeatedly (${pairCount} times). ` +
+            `STOP this cycle immediately. This approach is NOT working. You MUST try something completely different: ` +
+            `snapshotPage first, try different element labels, use a keyboard shortcut instead of clicking, ` +
+            `or call finish() to explain what is blocking you.`;
+        }
+      }
+    }
+
+    if (loopWarning) {
       const last = responseParts[responseParts.length - 1];
       if (last?.functionResponse?.response) {
-        last.functionResponse.response.LOOP_WARNING =
-          `⚠ You have called "${lastSig}" ${repeatCount} times without progress. STOP doing this. ` +
-          `Try a completely different approach: use snapshotPage to see what is actually on screen, ` +
-          `try coordinate-based click, navigate to a different URL, or call finish to report what is blocking you.`;
+        last.functionResponse.response.LOOP_WARNING = loopWarning;
       }
     }
 
