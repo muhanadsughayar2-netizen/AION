@@ -1,0 +1,27 @@
+To give the AION Agent "full control" over Word Online and eliminate hiccups, we need to move from a "Passive Browser Observer" to an "Active Task Orchestrator."
+
+The core issue is that Word Online is not a standard webpage; it is a complex "Operating System" running inside an iframe. If your agent is looking at the top-level page, it’s like trying to drive a car by looking at the roof instead of the dashboard.
+
+Here are the final 7 high-impact technical questions I need answered to design the "Perfect Word Agent" architecture for you:
+
+1. The "Task Anchor" (Solving User Interference)
+The Question: Can we modify your background.js to store a LockedTabId when a task starts?
+The Goal: Currently, your agent follows the user’s focus. To stop it from "teleporting" to a New Tab, we need to force the agent to only use LockedTabId for its screenshots and CDP commands, even if the user is looking at a different tab. Is your current message-passing structure set up to target a specific tabId rather than just active: true?
+2. The "X-Ray" Vision (Word’s Nested iFrames)
+The Question: Does your snapshotPage CDP call use DOM.getFlattenedDocument with pierce: true?
+The Goal: Word Online uses nested iframes (often 2-3 layers deep). Standard content scripts only see the "outer shell." If we use the CDP "pierce" flag, Gemini will see the actual text inside the Word editor as if the iframes didn't exist. Does your CDP logic currently "pierce" through shadow DOMs and iframes?
+3. The "Ribbon Map" (The Buttons)
+The Question: When the agent needs to "Click the Bold button," does it search for the word "Bold" in the HTML, or does it have a map of the Word Ribbon?
+The Goal: Microsoft Word buttons often don't have clear text labels; they use cryptic IDs like id="_ariaId_82". We may need to inject a "Word-Specific Map" into the prompt that tells Gemini: "To Bold, look for the element with data-automation-id='Bold'." Do you have a way to inject "Site-Specific Hints" into the prompt based on the URL?
+4. Coordinate-Based Interaction
+The Question: Since Gemini sees a screenshot, can your agent click on (X, Y) coordinates instead of just CSS selectors?
+The Goal: Sometimes Word's DOM is too messy to find a button. If Gemini sees the "File" menu at the top left of the JPEG, it’s often more reliable to tell CDP to Input.dispatchMouseEvent at those exact coordinates. Does your click tool support X/Y coordinates?
+5. The "Word Specialist" Persona
+The Question: Can we implement a "Dynamic System Prompt" that changes when word.office.com is detected?
+The Goal: When on Word, the agent needs to know that "Typing" isn't just element.value = 'text'. In Word Online, you often have to simulate a "Keydown" event for the editor to register the character. Does your type tool use Element.value or does it simulate actual hardware keystrokes via CDP Input.dispatchKeyEvent?
+6. State Recovery (The "Oops" Loop)
+The Question: If the agent ends up on chrome://newtab (like in your screenshot), does it have a "Home" command?
+The Goal: We need a logic gate: If URL == "newtab" AND CurrentTask == "Word Edit" -> Action: navigateTo(OriginalWordDocURL). Does the agent have the authority to self-correct its URL if it realizes it is lost?
+7. Multi-Tab Awareness
+The Question: If the agent needs to "Copy from a PDF on Tab A and paste into Word on Tab B," can it hold two "Tab States" in its memory at once?
+The Goal: To function "perfectly all across," the agent needs to treat tabs like "Variables." (e.g., SourceTab and DestTab). Does your current ai-chat.js history keep track of multiple tab snapshots, or does it overwrite the old tab data with the new one?
