@@ -1,6 +1,45 @@
 // SnapToAI Background Service Worker
 // Handles screenshot capture, storage management, downloads, and messaging
 
+// ── Shared CDP session helpers ─────────────────────────────────────────────
+// Reduces attach/detach races: if a tab is already attached, reuse the session
+// rather than failing. On "already attached" errors, mark it attached and continue.
+const _cdpAttached = new Map(); // tabId -> true
+
+async function cdpAttach(tabId) {
+  const debuggee = { tabId };
+  if (_cdpAttached.get(tabId)) return debuggee;
+  try {
+    await chrome.debugger.attach(debuggee, '1.3');
+    _cdpAttached.set(tabId, true);
+    return debuggee;
+  } catch (e) {
+    const msg = (e && e.message) || String(e);
+    if (/already attached|Another debugger/i.test(msg)) {
+      _cdpAttached.set(tabId, true);
+      return debuggee;
+    }
+    throw e;
+  }
+}
+
+function cdpDetach(tabId) {
+  if (!_cdpAttached.get(tabId)) return;
+  chrome.debugger.detach({ tabId }, () => {
+    void chrome.runtime.lastError;
+    _cdpAttached.delete(tabId);
+  });
+}
+
+function cdpSend(tabId, method, params) {
+  return new Promise((resolve, reject) => {
+    chrome.debugger.sendCommand({ tabId }, method, params || {}, (result) => {
+      if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+      else resolve(result);
+    });
+  });
+}
+
 const MAX_SNAPS = 10;
 const AI_SITES = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'specode.ai'];
 const CAPTURE_COOLDOWN = 700; // Minimum 700ms between captures to avoid Chrome rate limit (MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND)
@@ -1032,7 +1071,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
 
             // ── Word Online inline paste ────────────────────────────────────────
-            if (tabHost.includes('word.office.com') || tabHost.includes('word.live.com')) {
+            if (tabHost.includes('word.office.com') || tabHost.includes('word.live.com')
+                || tabHost.includes('sharepoint.com') || tabHost.includes('cloud.microsoft')
+                || tabHost.includes('microsoft365.com') || tabHost.includes('office365.com')
+                || (tabHost.includes('office.com') && (tabUrl.includes('/word/') || tabUrl.includes('Word')))
+            ) {
               const text = String(params && params.text ? params.text : '');
               try {
                 const results = await chrome.scripting.executeScript({
@@ -1178,6 +1221,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             || tabHostname.includes('sharepoint.com')       // SharePoint Online
             || tabHostname.includes('cloud.microsoft')       // Microsoft 365 cloud
             || tabHostname.includes('microsoft365.com')      // Microsoft 365 tenant URLs
+            || tabHostname.includes('office365.com')         // Legacy Office 365 URLs
+            || tabHostname.includes('microsoftonline.com')   // Microsoft SSO / enterprise
             // ── Google AI / Gemini ecosystem ──────────────────────────────────
             || tabHostname.includes('aistudio.google.com')   // AI Studio (app builder)
             || tabHostname.includes('gemini.google.com')     // Gemini chat
@@ -2496,21 +2541,23 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           // ── Fallback: scripting.executeScript ────────────────────────────────
           try {
             const fb = await chrome.scripting.executeScript({
-              target: { tabId },
+              target: { tabId, allFrames: true },
               func: (cellRef) => {
                 const nb = document.querySelector(
                   '#t-name-box, input[aria-label="Name Box"], input[id*="name-box"], ' +
-                  '.cell-reference-input, [data-automation-id="NameBox"] input');
+                  '.cell-reference-input, [data-automation-id="NameBox"] input, ' +
+                  'input[aria-label="Cell reference"], input[aria-label*="Name box" i]');
                 if (!nb) return false;
-                const nativeSet = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-                nativeSet.call(nb, cellRef);
+                const desc = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+                if (desc && desc.set) desc.set.call(nb, cellRef);
+                else nb.value = cellRef;
                 nb.dispatchEvent(new Event('input', { bubbles: true }));
                 nb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
                 nb.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', keyCode: 13, bubbles: true }));
                 return true;
               }, args: [cell]
             });
-            if (fb?.[0]?.result) {
+            if ((fb || []).some(r => r && r.result)) {
               await new Promise(r => setTimeout(r, 500));
               sendResponse({ success: true, data: `Navigated to cell ${cell} (fallback method).` });
             } else {

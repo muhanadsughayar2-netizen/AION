@@ -11318,9 +11318,19 @@ function smartWaitAfterAction(tabId, actionName) {
   });
 }
 
+async function focusAgentTab(tab) {
+  if (!tab || !tab.id) return;
+  try {
+    if (tab.windowId != null) await chrome.windows.update(tab.windowId, { focused: true });
+    await chrome.tabs.update(tab.id, { active: true });
+    await new Promise(r => setTimeout(r, 120));
+  } catch (_) { /* non-fatal */ }
+}
+
 async function captureActiveTabScreenshot(tab) {
   try {
     if (!tab || !tab.windowId) return null;
+    await focusAgentTab(tab);
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 55 });
     return dataUrl || null;
   } catch (_e) {
@@ -11463,24 +11473,31 @@ async function runAgentTask(prompt, thread) {
       break;
     }
 
-    // Fix 8: empty/blocked candidates → error, not silent "done"
-    if (!data.candidates?.length) {
-      const reason = data.promptFeedback?.blockReason || 'response blocked or empty';
-      addAgentStepBubble(thread, `Model returned no candidates (${reason}) — stopping.`, 'error');
+    // 2.3: empty/blocked candidates → clear error, never silent "done"
+    const candidate = data.candidates?.[0];
+    const finishReason = candidate?.finishReason || '';
+    const candidateParts = candidate?.content?.parts || [];
+    const fnCallParts = candidateParts.filter(p => p.functionCall);
+
+    if (!candidate) {
+      const block = data.promptFeedback?.blockReason || data.promptFeedback?.blockReasonMessage || '';
+      addAgentStepBubble(thread,
+        block
+          ? `Model blocked the request (${block}). Try rephrasing the task.`
+          : 'Model returned no candidates — check key, quota, or safety filters.',
+        'error');
       break;
     }
 
-    const candidateParts = data.candidates[0]?.content?.parts || [];
-    // PARALLEL: collect ALL function calls Gemini returned in this turn
-    const fnCallParts = candidateParts.filter(p => p.functionCall);
-
     if (fnCallParts.length === 0) {
-      const text = candidateParts.find(p => p.text)?.text?.trim() || '';
-      if (!text) {
-        addAgentStepBubble(thread, 'Model returned no action and no text — possible protocol error.', 'error');
-        break;
+      const text = candidateParts.find(p => p.text)?.text;
+      if (text && (!finishReason || finishReason === 'STOP')) {
+        addAgentStepBubble(thread, text, 'done');
+      } else {
+        addAgentStepBubble(thread,
+          text || `No tool call (finishReason=${finishReason || 'unknown'}). Stopping.`,
+          'error');
       }
-      addAgentStepBubble(thread, text, 'done');
       break;
     }
 
@@ -11490,6 +11507,11 @@ async function runAgentTask(prompt, thread) {
     // ── finish ─────────────────────────────────────────────────────────────────
     const finishCall = fnCallParts.find(p => p.functionCall.name === 'finish');
     if (finishCall) {
+      // 2.4: push a functionResponse for finish before breaking (keeps protocol valid)
+      contents.push({ role: 'user', parts: [{ functionResponse: {
+        name: 'finish',
+        response: { success: true, data: finishCall.functionCall.args?.summary || 'done' }
+      }}]});
       addAgentStepBubble(thread, finishCall.functionCall.args?.summary || 'Task finished.', 'done');
       break;
     }
@@ -11541,10 +11563,8 @@ async function runAgentTask(prompt, thread) {
       );
     }
 
-    // Fix 7: focus the task tab before each round of CDP actions so DevTools
-    // Protocol commands land on the right page (some CDP ops require the tab
-    // to be the active/focused tab in its window).
-    try { await chrome.tabs.update(tab.id, { active: true }); } catch (_) {}
+    // 2.4: focus the task tab before each round of CDP actions (spec: focusAgentTab)
+    await focusAgentTab(tab);
 
     // ── PARALLEL execution of all CDP calls ───────────────────────────────────
     const settledResults = await Promise.allSettled(
@@ -11568,6 +11588,11 @@ async function runAgentTask(prompt, thread) {
       let execResult = settled.status === 'fulfilled'
         ? settled.value
         : { success: false, error: settled.reason?.message || 'Promise rejected' };
+
+      // 2.4: guard against undefined response (worker restart / message channel error)
+      if (!execResult || typeof execResult.success !== 'boolean') {
+        execResult = { success: false, error: 'No response from background tool handler (worker may have restarted). Retry.' };
+      }
 
       // ── Tab management: update agent's tab reference ──────────────────────
       if (execResult?.success) {
@@ -11638,6 +11663,13 @@ async function runAgentTask(prompt, thread) {
 
     if (!anyFailed) consecutiveFailures = 0;
 
+    // 2.4: if all calls were client-side (planTask/checkPlan only) and responseParts
+    // ended up empty, there's nothing to push — avoid an empty user turn
+    if (responseParts.length === 0 && clientSideResponses.length === 0) {
+      addAgentStepBubble(thread, 'No executable actions in this turn.', 'error');
+      break;
+    }
+
     // Hard stop: 5 consecutive failures = genuinely stuck
     // (raised from 3 — gives agent more room to try alternative approaches)
     if (consecutiveFailures >= 5) {
@@ -11681,6 +11713,7 @@ async function runAgentTask(prompt, thread) {
             addAgentStepBubble(thread, `↩ Staying on task tab: ${lockedTabInfo.title || lockedTabInfo.url}`);
           }
           tab = lockedTabInfo;
+          await focusAgentTab(tab); // spec 2.4: focus after session-anchor restore
         }
       }
     } catch (_) {}

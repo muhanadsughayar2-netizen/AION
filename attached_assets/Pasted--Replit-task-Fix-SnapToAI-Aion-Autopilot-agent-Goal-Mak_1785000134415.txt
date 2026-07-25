@@ -1,0 +1,571 @@
+# Replit task: Fix SnapToAI / Aion Autopilot agent
+
+## Goal
+
+Make the in-browser agent **honest and reliable**:
+- Only report `success: true` when the page actually changed
+- Work on real Excel/Word hosts (SharePoint, cloud.microsoft, etc.)
+- Keep Gemini function-calling protocol valid every step
+- Survive DevTools / CDP attach races better
+
+Do **not** rewrite the whole extension. Only change the sections below in:
+
+- `flow-premium/background.js` (or `background.js`)
+- `flow-premium/ai-chat.js` (or `ai-chat.js`)
+
+After edits, syntax-check both files. Do not invent new tools or change the system prompt unless required for a fix below.
+
+---
+
+## PART 1 — `background.js`
+
+### 1.1 Expand `isCanvasApp` domain gate
+
+Find the block that sets `isCanvasApp` (search for `const isCanvasApp = tabHostname.includes('docs.google.com')`).
+
+Replace the whole assignment with:
+
+```js
+          const isCanvasApp = tabHostname.includes('docs.google.com')
+            || tabHostname.includes('office.com')
+            || tabHostname.includes('live.com')
+            // Microsoft 365 / enterprise Excel & Word (most real business tabs)
+            || tabHostname.includes('sharepoint.com')
+            || tabHostname.includes('cloud.microsoft')
+            || tabHostname.includes('microsoft365.com')
+            || tabHostname.includes('office365.com')
+            || tabHostname.includes('microsoftonline.com')
+            // Google AI / Gemini ecosystem
+            || tabHostname.includes('aistudio.google.com')
+            || tabHostname.includes('gemini.google.com')
+            || tabHostname.includes('makersuite.google.com')
+            || tabHostname.includes('notebooklm.google.com')
+            || tabHostname.includes('labs.google.com')
+            || tabHostname.includes('colab.research.google.com')
+            || tabHostname.includes('idx.google.com')
+            // Other major AI chat platforms
+            || tabHostname.includes('chatgpt.com')
+            || tabHostname.includes('chat.openai.com')
+            || tabHostname.includes('claude.ai')
+            || tabHostname.includes('grok.com')
+            || tabHostname.includes('perplexity.ai')
+            || tabHostname.includes('copilot.microsoft.com')
+            || tabHostname.includes('bing.com');
+```
+
+Also expand any Word-only host checks that only list `word.office.com` / `word.live.com` to include `sharepoint.com`, `cloud.microsoft`, and paths containing `word` on `office.com` / `microsoft365.com`.
+
+### 1.2 Synthetic Ctrl+V must NOT return success
+
+In `runFallbackType` Docs “Method 3” (search for `ctrl-v-fallback` or the comment about clipboard stage → Ctrl+V), find:
+
+```js
+                    activeEl.dispatchEvent(new KeyboardEvent('keydown', { key:'v', code:'KeyV', ctrlKey:true, bubbles:true, cancelable:true }));
+                    activeEl.dispatchEvent(new KeyboardEvent('keyup',   { key:'v', code:'KeyV', ctrlKey:true, bubbles:true }));
+                    await sleep(400);
+                    showBanner('✅ Aion: paste sent');
+                    return { success: true, method: 'ctrl-v-fallback' };
+```
+
+Replace with:
+
+```js
+                    activeEl.dispatchEvent(new KeyboardEvent('keydown', { key:'v', code:'KeyV', ctrlKey:true, bubbles:true, cancelable:true }));
+                    activeEl.dispatchEvent(new KeyboardEvent('keyup',   { key:'v', code:'KeyV', ctrlKey:true, bubbles:true }));
+                    await sleep(400);
+                    // Canvas apps ignore isTrusted:false key events. Never lie to the agent brain.
+                    showBanner('⚠ Aion: synthetic paste may not land — need CDP');
+                    return {
+                      success: false,
+                      error: 'Synthetic Ctrl+V cannot type into canvas editors (Docs/Sheets/Word). Close DevTools on this tab and retry so CDP typing can run.',
+                      method: 'ctrl-v-fallback'
+                    };
+```
+
+Apply the same rule to any other path that only fires synthetic Ctrl+V for Word/Excel/Docs and currently returns `success: true` without verifying text landed.
+
+### 1.3 Verify Sheets/Excel type via Formula Bar before success
+
+In the CDP `type` success path (after typing chars / insertText, and after optional Enter commit for grid apps), **before** the unconditional:
+
+```js
+            sendResponse({ success: true });
+```
+
+Insert:
+
+```js
+            // Verify text actually landed (Sheets / Excel)
+            if (isGrid || isExcel) {
+              await new Promise(r => setTimeout(r, 350));
+              try {
+                const check = await chrome.scripting.executeScript({
+                  target: { tabId, allFrames: true },
+                  func: () => {
+                    const fb = document.querySelector(
+                      '#formula-bar-text, .cell-input, [aria-label="Formula bar"], [id*="formula-bar"], [aria-label*="formula" i]'
+                    );
+                    if (fb) return String(fb.value || fb.innerText || fb.textContent || '').trim();
+                    const active = document.activeElement;
+                    if (active && (active.tagName === 'INPUT' || active.tagName === 'TEXTAREA' || active.isContentEditable)) {
+                      return String(active.value || active.innerText || '').trim();
+                    }
+                    return '';
+                  }
+                });
+                const landed = (check || []).map(r => r && r.result).filter(Boolean).join(' ');
+                const expected = String(params.text || '').split(/\t|\n/)[0].trim();
+                if (expected && !landed) {
+                  sendResponse({
+                    success: false,
+                    error: 'Formula Bar is empty after typing — call goToCell first, then type again.'
+                  });
+                  return;
+                }
+                if (expected && landed && !landed.includes(expected.slice(0, Math.min(40, expected.length)))) {
+                  sendResponse({
+                    success: false,
+                    error: `Type did not stick. Formula Bar shows: "${landed.slice(0, 80)}"`
+                  });
+                  return;
+                }
+              } catch (_) { /* non-fatal */ }
+            }
+
+            sendResponse({ success: true });
+```
+
+Keep the existing `finally { chrome.debugger.detach(...) }` intact.
+
+### 1.4 `goToCell` — search all frames for Name Box
+
+Find `executeAction === 'goToCell'`.
+
+Replace the single-frame Name Box locate with:
+
+```js
+          const locResult = await chrome.scripting.executeScript({
+            target: { tabId, allFrames: true },
+            func: () => {
+              const nb = document.querySelector(
+                '#t-name-name-box, #t-name-box, input[aria-label="Name Box"], input[id*="name-box"], ' +
+                '.cell-reference-input, [data-automation-id="NameBox"] input, ' +
+                'input[aria-label="Cell reference"], input[aria-label*="Name box" i]'
+              );
+              if (!nb) return null;
+              const r = nb.getBoundingClientRect();
+              if (r.width < 2 || r.height < 2) return null;
+              return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+            }
+          });
+          const coords = (locResult || []).map(r => r && r.result).find(c => c && typeof c.x === 'number');
+          if (!coords) {
+            sendResponse({ success: false, error: 'Name Box not found in any frame — is this a Sheets or Excel tab?' });
+            return;
+          }
+```
+
+(Note: keep `#t-name-box` — fix typo if you accidentally write `#t-name-name-box` only; prefer both if unsure.)
+
+In the fallback `executeScript` inside the same handler, also use `allFrames: true` and succeed if **any** frame returns true:
+
+```js
+            const fb = await chrome.scripting.executeScript({
+              target: { tabId, allFrames: true },
+              func: (cellRef) => {
+                const nb = document.querySelector(
+                  '#t-name-box, input[aria-label="Name Box"], input[id*="name-box"], ' +
+                  '.cell-reference-input, [data-automation-id="NameBox"] input, ' +
+                  'input[aria-label="Cell reference"]'
+                );
+                if (!nb) return false;
+                const desc = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value');
+                if (desc && desc.set) desc.set.call(nb, cellRef);
+                else nb.value = cellRef;
+                nb.dispatchEvent(new Event('input', { bubbles: true }));
+                nb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+                nb.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', keyCode: 13, bubbles: true }));
+                return true;
+              },
+              args: [cell]
+            });
+            if ((fb || []).some(r => r && r.result)) {
+              await new Promise(r => setTimeout(r, 500));
+              sendResponse({ success: true, data: `Navigated to cell ${cell} (fallback method).` });
+            } else {
+              sendResponse({ success: false, error: e.message });
+            }
+```
+
+### 1.5 Shared CDP attach helper (reduce races)
+
+Near the top of `background.js` (module scope, with other helpers), add:
+
+```js
+// Single debugger session per tab — reduces attach/detach races.
+const _cdpAttached = new Map(); // tabId -> true
+
+async function cdpAttach(tabId) {
+  const debuggee = { tabId };
+  if (_cdpAttached.get(tabId)) return debuggee;
+  try {
+    await chrome.debugger.attach(debuggee, '1.3');
+    _cdpAttached.set(tabId, true);
+    return debuggee;
+  } catch (e) {
+    const msg = (e && e.message) || String(e);
+    if (/already attached|Another debugger/i.test(msg)) {
+      _cdpAttached.set(tabId, true);
+      return debuggee;
+    }
+    throw e;
+  }
+}
+
+function cdpDetach(tabId) {
+  if (!_cdpAttached.get(tabId)) return;
+  chrome.debugger.detach({ tabId }, () => {
+    void chrome.runtime.lastError;
+    _cdpAttached.delete(tabId);
+  });
+}
+
+function cdpSend(tabId, method, params) {
+  return new Promise((resolve, reject) => {
+    chrome.debugger.sendCommand({ tabId }, method, params || {}, (result) => {
+      if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
+      else resolve(result);
+    });
+  });
+}
+```
+
+Update the hot paths only (`click`, `type`, `pressKey`, `doubleClick`, `goToCell`) to use `cdpAttach` / `cdpDetach` instead of raw attach + fire-and-forget detach. If a path already has complex attach logic, at minimum: on attach failure with “already attached”, continue instead of immediately falling back to synthetic events.
+
+---
+
+## PART 2 — `ai-chat.js`
+
+### 2.1 Focus helper + honest screenshot capture
+
+Add (or replace existing helpers):
+
+```js
+async function focusAgentTab(tab) {
+  if (!tab || !tab.id) return;
+  try {
+    if (tab.windowId != null) {
+      await chrome.windows.update(tab.windowId, { focused: true });
+    }
+    await chrome.tabs.update(tab.id, { active: true });
+    await new Promise(r => setTimeout(r, 120));
+  } catch (_) { /* non-fatal */ }
+}
+
+async function captureActiveTabScreenshot(tab) {
+  try {
+    if (!tab || !tab.windowId) return null;
+    await focusAgentTab(tab);
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
+      format: 'jpeg',
+      quality: 55
+    });
+    return dataUrl || null;
+  } catch (_e) {
+    return null;
+  }
+}
+```
+
+### 2.2 Screenshot must never attach to functionResponse turns
+
+Replace `buildRequestContentsWithScreenshot` with:
+
+```js
+async function buildRequestContentsWithScreenshot(baseContents, tab) {
+  const screenshot = await captureActiveTabScreenshot(tab);
+  if (!screenshot) return baseContents;
+
+  const cloned = baseContents.map(c => ({
+    role: c.role,
+    parts: (c.parts || []).map(p => ({ ...p }))
+  }));
+
+  const last = cloned[cloned.length - 1];
+  const lastIsFunctionResponse =
+    last &&
+    last.role === 'user' &&
+    (last.parts || []).some(p => p.functionResponse);
+
+  const imagePart = {
+    inlineData: {
+      mimeType: 'image/jpeg',
+      data: screenshot.split(',')[1]
+    }
+  };
+  const notePart = {
+    text: '(Screenshot of the current page attached for visual reference.)'
+  };
+
+  if (lastIsFunctionResponse) {
+    // Tool-response turns must stay pure — add a separate user turn for the image.
+    cloned.push({ role: 'user', parts: [imagePart, notePart] });
+  } else if (last && last.role === 'user') {
+    last.parts.push(imagePart, notePart);
+  } else {
+    cloned.push({ role: 'user', parts: [imagePart, notePart] });
+  }
+  return cloned;
+}
+```
+
+### 2.3 Empty / blocked candidates are errors
+
+Inside `runAgentTask`, where you currently do:
+
+```js
+    const candidateParts = data.candidates?.[0]?.content?.parts || [];
+    const fnCallParts = candidateParts.filter(p => p.functionCall);
+
+    if (fnCallParts.length === 0) {
+      const text = candidateParts.find(p => p.text)?.text || 'No action taken.';
+      addAgentStepBubble(thread, text, 'done');
+      break;
+    }
+```
+
+Replace with:
+
+```js
+    const candidate = data.candidates?.[0];
+    const finishReason = candidate?.finishReason || '';
+    const candidateParts = candidate?.content?.parts || [];
+    const fnCallParts = candidateParts.filter(p => p.functionCall);
+
+    if (!candidate) {
+      const block = data.promptFeedback?.blockReason || data.promptFeedback?.blockReasonMessage || '';
+      addAgentStepBubble(
+        thread,
+        block
+          ? `Model blocked the request (${block}). Try rephrasing the task.`
+          : 'Model returned no candidates — check key, quota, or safety filters.',
+        'error'
+      );
+      break;
+    }
+
+    if (fnCallParts.length === 0) {
+      const text = candidateParts.find(p => p.text)?.text;
+      if (text && (!finishReason || finishReason === 'STOP')) {
+        addAgentStepBubble(thread, text, 'done');
+      } else {
+        addAgentStepBubble(
+          thread,
+          text || `No tool call (finishReason=${finishReason || 'unknown'}). Stopping.`,
+          'error'
+        );
+      }
+      break;
+    }
+```
+
+### 2.4 Answer EVERY function call in one user turn (critical)
+
+Remove the old pattern:
+
+```js
+if (planCall) { ... contents.push(...planTask...); continue; }
+if (checkCall) { ... contents.push(...checkPlan...); continue; }
+```
+
+Replace the section from after `contents.push({ role: 'model', parts: candidateParts })` through building `responseParts` with logic that:
+
+1. Handles `finish` (push functionResponse, break).
+2. For each `planTask` / `checkPlan`, pushes a `functionResponse` into a shared `responseParts` array (no `continue` out of the whole step).
+3. Collects other calls into `executableCalls`.
+4. Runs `await focusAgentTab(tab)` then `Promise.allSettled` of `chrome.runtime.sendMessage({ action: 'agentExecute', tabId: tab.id, executeAction, params })`.
+5. Treats missing/`undefined` message responses as `{ success: false, error: 'No response from background tool handler...' }`.
+6. Pushes one `functionResponse` per executable call into the same `responseParts`.
+7. **Once**, after all tools: `contents.push({ role: 'user', parts: responseParts })`.
+
+Reference implementation (adapt variable names to match the file):
+
+```js
+    contents.push({ role: 'model', parts: candidateParts });
+
+    const finishCall = fnCallParts.find(p => p.functionCall.name === 'finish');
+    if (finishCall) {
+      contents.push({
+        role: 'user',
+        parts: [{
+          functionResponse: {
+            name: 'finish',
+            response: { success: true, data: finishCall.functionCall.args?.summary || 'done' }
+          }
+        }]
+      });
+      addAgentStepBubble(thread, finishCall.functionCall.args?.summary || 'Task finished.', 'done');
+      break;
+    }
+
+    const responseParts = [];
+    const executableCalls = [];
+
+    for (const part of fnCallParts) {
+      const name = part.functionCall.name;
+      const args = part.functionCall.args || {};
+
+      if (name === 'planTask') {
+        const { steps = [], summary = '' } = args;
+        agentPlan = steps.map(s => ({ step: s, done: false, note: '' }));
+        const planLines = steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+        addAgentStepBubble(thread, `📋 Plan${summary ? ': ' + summary : ''}:\n${planLines}`);
+        responseParts.push({
+          functionResponse: {
+            name: 'planTask',
+            response: {
+              success: true,
+              data: `Plan recorded (${steps.length} steps). Begin executing step 1 now.`
+            }
+          }
+        });
+        continue;
+      }
+
+      if (name === 'checkPlan') {
+        const { stepIndex = 0, note = '' } = args;
+        if (agentPlan?.[stepIndex]) {
+          agentPlan[stepIndex].done = true;
+          agentPlan[stepIndex].note = note;
+        }
+        const done = agentPlan?.filter(s => s.done).length ?? 0;
+        const total = agentPlan?.length ?? 0;
+        const next = agentPlan?.find(s => !s.done);
+        addAgentStepBubble(
+          thread,
+          `✅ Step ${stepIndex + 1} done (${done}/${total})${next ? ` — Next: ${next.step}` : ' — All done!'}`
+        );
+        responseParts.push({
+          functionResponse: {
+            name: 'checkPlan',
+            response: {
+              success: true,
+              data: next ? `Next step: ${next.step}` : 'All steps complete — call finish.'
+            }
+          }
+        });
+        continue;
+      }
+
+      executableCalls.push(part);
+    }
+
+    for (const part of executableCalls) {
+      const { name, args } = part.functionCall;
+      addAgentStepBubble(
+        thread,
+        `${name}${args?.text ? `: "${args.text}"` : args?.url ? `: ${args.url}` : args?.direction ? `: ${args.direction}` : ''}`.trim()
+      );
+    }
+
+    await focusAgentTab(tab);
+
+    const settledResults = await Promise.allSettled(
+      executableCalls.map(part =>
+        chrome.runtime.sendMessage({
+          action: 'agentExecute',
+          tabId: tab.id,
+          executeAction: part.functionCall.name,
+          params: part.functionCall.args || {}
+        }).catch(e => ({ success: false, error: e.message }))
+      )
+    );
+
+    let anyFailed = false;
+
+    for (let ri = 0; ri < executableCalls.length; ri++) {
+      const { name, args } = executableCalls[ri].functionCall;
+      const settled = settledResults[ri];
+      let execResult = settled.status === 'fulfilled'
+        ? settled.value
+        : { success: false, error: settled.reason?.message || 'Promise rejected' };
+
+      if (!execResult || typeof execResult.success !== 'boolean') {
+        execResult = {
+          success: false,
+          error: 'No response from background tool handler (worker may have restarted). Retry.'
+        };
+      }
+
+      // Keep existing tab switch / newTabId / findElement heal logic here.
+
+      if (!execResult.success) {
+        anyFailed = true;
+        consecutiveFailures++;
+        // keep existing fail UI / actionFailCounts
+      }
+
+      responseParts.push({
+        functionResponse: {
+          name,
+          response: execResult.success
+            ? {
+                success: true,
+                ...(execResult.data != null ? { data: String(execResult.data) } : {}),
+                pageNow: ''
+              }
+            : {
+                success: false,
+                error: execResult.error || 'unknown error',
+                pageNow: ''
+              }
+        }
+      });
+    }
+
+    if (responseParts.length === 0) {
+      addAgentStepBubble(thread, 'No executable actions in this turn.', 'error');
+      break;
+    }
+
+    // ... existing consecutiveFailures / smartWait / session anchor / pageText inject ...
+
+    contents.push({ role: 'user', parts: responseParts });
+```
+
+Preserve existing loop-detection, session-anchor, and `pageNow` injection — just ensure they run **before** the single `contents.push({ role: 'user', parts: responseParts })` and that planTask no longer `continue`s past other tools.
+
+When session-anchor sets `tab = lockedTabInfo`, also call `await focusAgentTab(tab)`.
+
+---
+
+## PART 3 — Verification checklist (Replit must confirm)
+
+After applying:
+
+1. Search `background.js` for `ctrl-v-fallback` — must return `success: false`.
+2. Search for `sharepoint.com` and `cloud.microsoft` — must appear in `isCanvasApp`.
+3. Search `goToCell` — Name Box script must use `allFrames: true`.
+4. Search `ai-chat.js` for `lastIsFunctionResponse` or equivalent screenshot separation.
+5. Search for `planTask` — must not `continue` the whole agent step before answering other function calls.
+6. Node/syntax check both files (or browser extension reload with no console syntax errors).
+
+### Manual smoke test for the human
+
+1. Close DevTools on the target tab.
+2. Autopilot: “click the first link” → URL changes.
+3. Sheets/Excel: “go to cell B2 and type hello” → Formula Bar shows hello; tool only returns success when it does.
+4. Second agent step still gets a model response (not “No action taken” / silent stop).
+
+---
+
+## Out of scope (do not block on these)
+
+- Rewriting system prompts or skill library
+- New tools
+- content.js / manifest.json unless a change is strictly required for the patches above
+- “Best agent in the world” marketing — target is **honest success + stable multi-step loop**
+
+## Deliverable
+
+Return a short summary of every file changed and every search string that proves the 8 fixes are present.
