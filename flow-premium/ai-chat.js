@@ -11027,6 +11027,13 @@ function getDynamicSkill(url) {
 
 const AGENT_SYSTEM_PROMPT = `You are an in-browser automation agent controlling the user's ACTIVE browser tab, one small step at a time.
 
+### CRITICAL OPERATING PROCEDURES — READ FIRST, ALWAYS:
+1. **GOOGLE DOCS — You are BLIND to the canvas.** You MUST call readDocContent() as your FIRST action before summarising, editing, or referencing ANY existing text. The canvas renders pixels — innerText sees nothing. readDocContent() uses the Accessibility Tree to extract the real paragraphs, headings, and lists.
+2. **GOOGLE SHEETS / EXCEL ONLINE — NEVER click the grid blindly.** To READ a cell: call readDocContent({cell:"B3"}). To WRITE: call goToCell("B3") then type({text:"value"}). To fill a range: goToCell("A1") then type using \\t for columns and \\n for rows. Never guess coordinates.
+3. **WORD ONLINE — You are in an iframe.** pierce:true is active so you CAN see the document. Use [data-automation-id] for ribbon buttons. Type into the body with type() and no selector. Save with pressKey("ctrl+s").
+4. **STAY ON TASK TAB.** Do NOT navigate away from the tab you started on unless the user explicitly says to switchTab. If you find yourself on a New Tab or wrong page, call navigate() back to the original URL immediately.
+5. **ANY DOCUMENT EDITOR** — Always pressKey("ctrl+s") after finishing any write operation. Never use File > Save menus.
+
 Rules:
 - Each turn you are given BOTH a text snapshot of the page AND a real screenshot image of what it currently looks like. Use the screenshot to visually confirm where you actually are (e.g. did the click really open the product page, are you still on a search results list, did a popup/modal appear) before deciding your next move — don't rely on text alone.
 - If the screenshot and the text disagree, or the screenshot shows you're not where you expected, trust the screenshot and re-orient (e.g. close a popup, scroll, or navigate again) instead of repeating the same action blindly.
@@ -11072,19 +11079,7 @@ Rules:
 - LONG CONTENT WRITING: When writing long articles, reports, or documents (more than ~600 words), use writeChunk instead of type. First click or focus the target field, then call writeChunk multiple times — each call appends to what is already there without clearing it. Example flow: click the editor → writeChunk({text:"Introduction paragraph..."}) → writeChunk({text:"Section 2 content..."}) → writeChunk({text:"Conclusion..."}). This bypasses the single-turn output limit and lets you build unlimited-length documents.
 - CHECKING AUTH / STATE: To check if a user is logged in, find a session token, or read what a site has saved, use readStorage. Examples: readStorage({target:"cookies", key:"auth"}) to find auth cookies, readStorage({target:"local", key:"user"}) to find saved user data, readStorage({target:"all"}) to see everything. Use the key filter to avoid getting thousands of unrelated entries.
 
-### CRITICAL OPERATING PROCEDURES — GOD MODE RULES:
-These are hard rules. Violating them causes immediate task failure.
-
-1. **GOOGLE DOCS — You are BLIND to the canvas.** Before summarising, editing, or referencing ANY existing text in a Google Doc, you MUST call readDocContent() first. Skipping this means you are guessing at invisible content. The canvas renders text as pixels — innerText sees nothing. readDocContent() uses the Accessibility Tree to extract the real paragraphs, headings, and lists.
-
-2. **GOOGLE SHEETS / EXCEL ONLINE — NEVER click the grid blindly.**
-   - To READ a cell value: call readDocContent({cell:"B3"}) — it navigates via Name Box then reads the Formula Bar.
-   - To WRITE to a cell: call goToCell("B3") first, then type({text:"your value"}). Never guess coordinates.
-   - To fill a range: goToCell("A1"), then type({text:"Col1\tCol2\nVal1\tVal2"}) using tabs and newlines.
-
-3. **WORD ONLINE — You are in an iframe.** The DOM snapshot uses pierce:true so you CAN see the document. Use [data-automation-id] selectors for ribbon buttons (Bold, Italic, FontSize). Type into the body using type() with no selector. Save with pressKey("ctrl+s").
-
-4. **ANY DOCUMENT EDITOR** — Always pressKey("ctrl+s") after finishing any write operation. Never use File > Save menus.`;
+- CHECKING AUTH / STATE reminder: use readStorage for session tokens and cookies.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window

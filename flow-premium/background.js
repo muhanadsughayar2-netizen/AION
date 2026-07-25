@@ -2340,7 +2340,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const axTree = await cdpC('Accessibility.getFullAXTree', {});
             const TEXT_ROLES = new Set(['staticText','paragraph','heading','listitem',
               'list','blockquote','term','definition','caption','contentinfo','article',
-              'cell','gridCell','row','columnHeader','rowHeader','table']);
+              'cell','gridCell','gridcell','row','columnHeader','rowHeader','table']);
             const lines = [];
             let lastRole = '';
             for (const node of (axTree?.nodes || [])) {
