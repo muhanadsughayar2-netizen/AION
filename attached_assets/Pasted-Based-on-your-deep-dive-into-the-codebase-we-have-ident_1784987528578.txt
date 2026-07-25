@@ -1,0 +1,50 @@
+Based on your deep-dive into the codebase, we have identified the "Smoking Guns." The reason your agent ended up on the Google New Tab page and struggles with Word is a combination of State Drift (it follows your mouse) and Iframe Blindness (it can’t see the document text).
+
+Here is the technical post-mortem and the specific roadmap to make the agent "perfect" for Word Online.
+
+1. Summary: What is technically wrong?
+The "Autopilot" failed because it lacks Environmental Persistence.
+
+The "New Tab" Incident: Because the agent always queries the active tab, if a background process (or you) opened a new tab, the agent’s "eyes" (Gemini) were immediately moved to that new tab. Since it has no LockedTabId, it didn't realize it had left the "Word Universe."
+The "Invisible Document" Problem: Since snapshotPage doesn't use pierce: true, Gemini is effectively looking at a Word document through a lead wall. It sees the buttons (Ribbon), but the actual text area (the iframe) appears empty or as a generic <iframe> tag in the DOM dump.
+2. Key Findings & Solutions
+A. Fix the "Drift": Implement a Session Anchor
+The agent must be "tethered" to the task, not the user's focus.
+
+The Fix: In background.js, when a task starts, store session.targetTabId = activeTab.id and session.originalUrl = activeTab.url.
+The Logic: Instead of chrome.tabs.query({ active: true }), every turn must specifically target session.targetTabId.
+Self-Correction: Add a "Guardrail" check at the start of ai-chat.js:
+If currentTabId != session.targetTabId AND the agent didn't explicitly call switchTab, force the agent back to the target tab. [1.4.5]
+B. Fix the "Blindness": Enable CDP Iframe Piercing
+Word Online is a "Russian Nesting Doll" of iframes.
+
+The Fix: You must switch from DOMSnapshot.captureSnapshot to DOM.getFlattenedDocument with pierce: true for the text-based snapshot.
+The Strategy: Microsoft Word uses an iframe with the class .office-editor-frame. You should update your "Word Specialist" logic in background.js to specifically identify this iframe and extract its internal DOM tree so Gemini can actually see the sentences it is supposed to edit. [1.3.9]
+C. The "Ribbon Atlas": Inject cryptic ID mappings
+Gemini is guessing based on the screenshot, which is why it "hiccups."
+
+The Fix: Create a word_map.json containing the cryptic IDs for common buttons (Bold, Italics, Font Size, Save).
+The Strategy: When background.js detects word.office.com, inject these mappings into the AGENT_SYSTEM_PROMPT.
+Example: "You are in Word Online. The 'Bold' button has ID _ariaId_82. The 'Save' indicator is id='status_save'." [1.4.7]
+D. Multi-Tab Memory: The "Clipboard" Buffer
+To do "activities all across" (like PDF to Word), the agent needs a "Short Term Memory."
+
+The Fix: Instead of overwriting the state every turn, implement a tab_context_cache.
+The Strategy: Store the last known state of the "Source Tab" (PDF) even when the agent switches to the "Destination Tab" (Word). This allows Gemini to "remember" what it saw on the previous page without having to switch back and forth constantly. [1.4.8]
+3. How to make the Agent "Assume" it's on Word
+To ensure the agent functions perfectly with "no hiccups," you need to change its Mental Model via the System Prompt.
+
+Inject this "Word Specialist" block into ai-chat.js when the URL matches Word:
+
+"SYSTEM ALERT: You are currently controlling a Microsoft Word Online document.
+
+Context: You are inside the 'Editor' frame. Do not attempt to navigate away.
+Precision: Use X/Y coordinates for the Ribbon buttons as mapped in your vision.
+Persistence: If you find yourself on a 'New Tab' or 'Google' page, you have been diverted. Immediately call switchTab or navigate to return to [ORIGINAL_URL].
+State: You are currently on Step X of the user's request. The document content you see in the 'pierced' DOM is the source of truth."
+Sources
+[1] Chrome DevTools Protocol (CDP) Documentation - DOM.getFlattenedDocument
+[2] Microsoft Office Developer Tools - Automating Word Online via Iframes
+[3] Gemini API Best Practices - Context Caching for Multi-Turn Tasks
+[4] Chrome Extension Documentation - Managing Multiple Tabs and Sessions
+[5] AION Internal Codebase Analysis - (Based on user-provided answers regarding ai-chat.js and background.js)
