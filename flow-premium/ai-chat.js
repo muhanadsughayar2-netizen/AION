@@ -11613,26 +11613,33 @@ async function runAgentTask(prompt, thread) {
 
     try {
       const actionName = executableCalls[0]?.functionCall?.name || '';
-      const agentSwitchedTab = (actionName === 'switchTab' || actionName === 'openTab');
 
-      if (agentSwitchedTab) {
-        // Agent intentionally navigated to a new tab — follow it and update the lock
+      // Actions that intentionally move the agent to a different page/tab:
+      // navigate, openTab, switchTab all require us to follow and re-lock.
+      const agentMovedPage = (actionName === 'switchTab' || actionName === 'openTab' || actionName === 'navigate');
+
+      // Also follow if the current lock target is a system page (e.g. New Tab).
+      // We should NEVER restore to chrome://newtab — it has no content.
+      const lockedTabInfo = await chrome.tabs.get(lockedTabId).catch(() => null);
+      const lockedIsSystemPage = /^(chrome|chrome-extension|edge|about):/.test(lockedTabInfo?.url || 'chrome:');
+
+      if (agentMovedPage || lockedIsSystemPage) {
+        // Follow the agent to whichever real tab is now active and update the lock
         const followWindows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
         const followCandidates = followWindows
           .flatMap(w => (w.tabs || []).filter(t => t.active).map(t => ({ ...t, _focused: w.focused })))
           .sort((a, b) => (b._focused ? 1 : 0) - (a._focused ? 1 : 0) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
         const freshTab = followCandidates[0];
         if (freshTab?.id && !/^(chrome|chrome-extension|edge|about):/.test(freshTab.url || '')) {
-          if (freshTab.id !== tab.id) addAgentStepBubble(thread, `Switched to new tab: ${freshTab.title || freshTab.url}`);
+          if (freshTab.id !== tab.id) addAgentStepBubble(thread, `Navigated to: ${freshTab.title || freshTab.url}`);
           tab = freshTab;
-          lockedTabId = freshTab.id; // update the anchor to the new tab
+          lockedTabId = freshTab.id; // update the lock to the real page
         }
       } else {
         // User may have changed focus — silently restore to the locked task tab
-        const lockedTabInfo = await chrome.tabs.get(lockedTabId).catch(() => null);
         if (lockedTabInfo) {
           if (lockedTabInfo.id !== tab.id) {
-            addAgentStepBubble(thread, `↩ Staying on task tab: ${lockedTabInfo.title || lockedTabUrl}`);
+            addAgentStepBubble(thread, `↩ Staying on task tab: ${lockedTabInfo.title || lockedTabInfo.url}`);
           }
           tab = lockedTabInfo;
         }
