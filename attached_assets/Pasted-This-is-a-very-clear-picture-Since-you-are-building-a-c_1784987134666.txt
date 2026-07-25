@@ -1,0 +1,32 @@
+This is a very clear picture. Since you are building a custom Chrome Extension (AION) using Gemini and CDP (Chrome DevTools Protocol), the technical "disconnect" is happening in the bridge between your background.js (the orchestrator) and the content script (the eyes/hands).
+
+To solve the "New Tab" drift and the "Word Document" assumption, I need to understand the plumbing of your extension. Here are the 8 critical technical questions to give me the "Big View":
+
+1. The "Vision" Mechanism
+How does Gemini "see" the Word document? When the agent is triggered, do you send Gemini a full DOM snapshot (HTML), a plain text dump, or an Accessibility Tree?
+Why this matters: Word Online often uses nested iframes or even a canvas element. If your script isn't drilling into the iframes, Gemini is "blind" to the document content and defaults to the top-level page (which might be the New Tab).
+2. The CDP Implementation
+Are you using chrome.debugger or standard chrome.scripting? CDP allows for low-level events (like moving the mouse to coordinates), while chrome.scripting just injects JS.
+Why this matters: If you use chrome.debugger, you have to "attach" to a specific tabId. If the agent opens a new tab, is your code automatically "attaching" the debugger to the new tabId, or is it still trying to send commands to the old, now-hidden tab?
+3. State Awareness (The "Where am I?" check)
+Does your ai-chat.js check the URL before every turn? Does the prompt sent to Gemini include the current window.location.href?
+Why this matters: If Gemini doesn't know it's on chrome://newtab, it will try to "Click the File Menu" (a Word command) on a page that doesn't have one, leading to a waitForElement timeout.
+4. The "Word Document" Target
+How do you handle Word's iframes? Microsoft Word Online hosts the actual editor inside an iframe (usually with a class like office-editor-frame). Does your content-script have "all_frames": true in the manifest.json, or do you have logic to find and switch to the editor iframe?
+5. Tab Management Logic
+When openTab is called, what happens to the "Active Agent" context?
+Does the background.js update a global currentTaskTabId variable?
+Does the agent automatically re-inject the content script into the new tab, or does it wait for the user?
+6. The "Mental Model" Injection
+How is the "Task" passed to Gemini? You mentioned AGENT_SYSTEM_PROMPT. Does that prompt stay static, or do you append a "Current State" block?
+Example: Current URL: [URL], Current Tab Title: [Title], Visible Elements: [List].
+7. Handling User Interference
+What happens if the user clicks a different tab while the agent is "thinking"? Since it's "fully headed," if the user clicks away, does your fetch call to Gemini still use the activeTab (which is now the wrong one), or does it stay locked to the tabId where the session started?
+8. The "Finish" Condition
+How does the agent know it failed? If waitForElement fails or returns an error, what message does Gemini receive? Does it get a "Technical Error: Element not found" or does the script just hang?
+The "Word Document" Strategy (Immediate Thought)
+If you want the agent to assume it is on a Word document, we likely need to implement a "Context Lock."
+
+The Theory: Instead of the agent asking "What tab am I on?", the background.js should tell the agent: "Your target is Tab ID 105 (Word). Even if the user switches to Tab 106 (Google), all your 'click' and 'type' commands must be routed to Tab 105."
+
+Please answer as many of these as you can (especially #1, #4, and #5), and I will draft the specific architectural fix for your AION extension.
