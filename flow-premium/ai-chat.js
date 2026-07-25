@@ -11291,6 +11291,15 @@ async function runAgentTask(prompt, thread) {
     addAgentStepBubble(thread, "Couldn't find an active browser tab to control.", 'error');
     return;
   }
+
+  // ── Session Anchor ─────────────────────────────────────────────────────────
+  // Lock the agent to the tab it started on. Without this the agent follows
+  // the user's mouse — if the user switches tabs the next action fires on the
+  // wrong page. lockedTabId is only updated when the agent itself calls
+  // switchTab or openTab; user focus changes are silently ignored.
+  let lockedTabId = tab.id;
+  const lockedTabUrl = tab.url || '';
+
   const onSystemPage = /^(chrome|chrome-extension|edge|about):/.test(tab.url || '');
 
   const contents = [];
@@ -11509,18 +11518,34 @@ async function runAgentTask(prompt, thread) {
       break;
     }
 
-    // Wait for navigation / DOM settle, then re-detect which tab is active
+    // Wait for navigation / DOM settle, then enforce the Session Anchor
     await smartWaitAfterAction(tab.id, executableCalls[0]?.functionCall?.name);
 
     try {
-      const followWindows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
-      const followCandidates = followWindows
-        .flatMap(w => (w.tabs || []).filter(t => t.active).map(t => ({ ...t, _focused: w.focused })))
-        .sort((a, b) => (b._focused ? 1 : 0) - (a._focused ? 1 : 0) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
-      const freshTab = followCandidates[0];
-      if (freshTab?.id && !/^(chrome|chrome-extension|edge|about):/.test(freshTab.url || '')) {
-        if (freshTab.id !== tab.id) addAgentStepBubble(thread, `Followed into new tab: ${freshTab.title || freshTab.url}`);
-        tab = freshTab;
+      const actionName = executableCalls[0]?.functionCall?.name || '';
+      const agentSwitchedTab = (actionName === 'switchTab' || actionName === 'openTab');
+
+      if (agentSwitchedTab) {
+        // Agent intentionally navigated to a new tab — follow it and update the lock
+        const followWindows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
+        const followCandidates = followWindows
+          .flatMap(w => (w.tabs || []).filter(t => t.active).map(t => ({ ...t, _focused: w.focused })))
+          .sort((a, b) => (b._focused ? 1 : 0) - (a._focused ? 1 : 0) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
+        const freshTab = followCandidates[0];
+        if (freshTab?.id && !/^(chrome|chrome-extension|edge|about):/.test(freshTab.url || '')) {
+          if (freshTab.id !== tab.id) addAgentStepBubble(thread, `Switched to new tab: ${freshTab.title || freshTab.url}`);
+          tab = freshTab;
+          lockedTabId = freshTab.id; // update the anchor to the new tab
+        }
+      } else {
+        // User may have changed focus — silently restore to the locked task tab
+        const lockedTabInfo = await chrome.tabs.get(lockedTabId).catch(() => null);
+        if (lockedTabInfo) {
+          if (lockedTabInfo.id !== tab.id) {
+            addAgentStepBubble(thread, `↩ Staying on task tab: ${lockedTabInfo.title || lockedTabUrl}`);
+          }
+          tab = lockedTabInfo;
+        }
       }
     } catch (_) {}
 

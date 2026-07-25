@@ -2227,7 +2227,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const snap = await cdpC('DOMSnapshot.captureSnapshot', {
             computedStyles: ['display', 'visibility'],
             includeDOMRects: false,
-            includeBlendedBackgroundColors: false
+            includeBlendedBackgroundColors: false,
+            includeShadowTree: 'all'   // pierce shadow DOM + same-origin nested iframes
           });
           const strings = snap?.strings || [];
           const lines = new Set();
