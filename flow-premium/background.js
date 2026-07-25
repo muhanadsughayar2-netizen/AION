@@ -2265,6 +2265,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               axLines.push(`[AX:${role}] ${name}${extra}`);
               if (axLines.length >= 200) break; // cap to avoid token bloat
             }
+            // Must disable before detach — leaving Accessibility enabled breaks
+            // Google Docs canvas focus and causes CDP attach failures on next action
+            try { await cdpC('Accessibility.disable'); } catch (_) {}
           } catch (_) { /* AXTree optional — DOM snapshot already captured above */ }
 
           const axSection = axLines.length
@@ -2360,6 +2363,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               lastRole = role;
               if (lines.length > 300) break;
             }
+            // CRITICAL: disable Accessibility domain before detaching so the
+            // Docs canvas regains normal focus and CDP can re-attach cleanly
+            // for subsequent pressKey / type actions.
+            try { await cdpC('Accessibility.disable'); } catch (_) {}
             const docText = lines.join('\n').trim();
             sendResponse({ success: true, data: docText
               ? `Document content:\n${docText}`
