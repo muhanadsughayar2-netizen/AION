@@ -2339,7 +2339,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             await cdpC('Accessibility.enable');
             const axTree = await cdpC('Accessibility.getFullAXTree', {});
             const TEXT_ROLES = new Set(['staticText','paragraph','heading','listitem',
-              'list','blockquote','term','definition','caption','contentinfo','article']);
+              'list','blockquote','term','definition','caption','contentinfo','article',
+              'cell','gridCell','row','columnHeader','rowHeader','table']);
             const lines = [];
             let lastRole = '';
             for (const node of (axTree?.nodes || [])) {
@@ -2374,41 +2375,108 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     // Navigates to a specific cell in Google Sheets or Excel Online by typing
     // the reference into the Name Box — the only fully reliable cell-targeting
     // method (no coordinate maths, survives scrolling and frozen rows).
+    // PRIMARY: CDP Input.dispatchKeyEvent char-by-char (bypasses CSP).
+    // FALLBACK: chrome.scripting.executeScript for simpler cases.
     if (executeAction === 'goToCell') {
       (async () => {
         const cell = String(params.cell || '').trim().toUpperCase();
         if (!cell) { sendResponse({ success: false, error: 'cell parameter is required' }); return; }
+
+        const debuggee = { tabId };
+        let attached = false;
         try {
-          const result = await chrome.scripting.executeScript({
+          // ── Step 1: Find the Name Box coords via content script ──────────────
+          const locResult = await chrome.scripting.executeScript({
             target: { tabId },
-            func: (cellRef) => {
-              // Google Sheets Name Box: #t-name-box
-              // Excel Online Name Box: input[aria-label="Name Box"] or similar
+            func: () => {
               const nb = document.querySelector(
                 '#t-name-box, input[aria-label="Name Box"], input[id*="name-box"], ' +
-                '.cell-reference-input, [data-automation-id="NameBox"] input'
+                '.cell-reference-input, [data-automation-id="NameBox"] input, ' +
+                'input[aria-label="Cell reference"]'
               );
-              if (!nb) return { ok: false, error: 'Name Box not found on this page' };
-              nb.focus();
-              nb.select();
-              // Set value and dispatch events so Sheets/Excel registers the change
-              const nativeSet = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-              nativeSet.call(nb, cellRef);
-              nb.dispatchEvent(new Event('input', { bubbles: true }));
-              nb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
-              nb.dispatchEvent(new KeyboardEvent('keyup',  { key: 'Enter', keyCode: 13, bubbles: true }));
-              return { ok: true };
-            },
-            args: [cell]
+              if (!nb) return null;
+              const r = nb.getBoundingClientRect();
+              return { x: Math.round(r.left + r.width / 2), y: Math.round(r.top + r.height / 2) };
+            }
           });
-          const r = result?.[0]?.result;
-          if (r?.ok) {
-            await new Promise(res => setTimeout(res, 500)); // let Sheets scroll/focus
-            sendResponse({ success: true, data: `Navigated to cell ${cell}` });
-          } else {
-            sendResponse({ success: false, error: r?.error || 'goToCell failed' });
+          const coords = locResult?.[0]?.result;
+          if (!coords) { sendResponse({ success: false, error: 'Name Box not found — is this a Sheets or Excel tab?' }); return; }
+
+          // ── Step 2: CDP click + clear + type char-by-char ────────────────────
+          try { await chrome.debugger.attach(debuggee, '1.3'); attached = true; } catch (_) {}
+          const cdpK = (type, char) => new Promise((res, rej) => {
+            const code = char.toUpperCase().charCodeAt(0);
+            chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent', {
+              type, text: char, unmodifiedText: char,
+              windowsVirtualKeyCode: code, nativeVirtualKeyCode: code
+            }, r => chrome.runtime.lastError ? rej(new Error(chrome.runtime.lastError.message)) : res(r));
+          });
+          const cdpMouse = (type, x, y) => new Promise((res, rej) => {
+            chrome.debugger.sendCommand(debuggee, 'Input.dispatchMouseEvent',
+              { type, x, y, button: 'left', clickCount: 1 },
+              r => chrome.runtime.lastError ? rej(new Error(chrome.runtime.lastError.message)) : res(r));
+          });
+
+          // Click the Name Box to focus it
+          await cdpMouse('mousePressed', coords.x, coords.y);
+          await cdpMouse('mouseReleased', coords.x, coords.y);
+          await new Promise(r => setTimeout(r, 150));
+
+          // Select-all to clear existing content (Ctrl+A)
+          await new Promise((res, rej) => chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent',
+            { type: 'keyDown', key: 'a', windowsVirtualKeyCode: 65, modifiers: 2 },
+            r => chrome.runtime.lastError ? rej() : res()));
+          await new Promise((res, rej) => chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent',
+            { type: 'keyUp', key: 'a', windowsVirtualKeyCode: 65, modifiers: 2 },
+            r => chrome.runtime.lastError ? rej() : res()));
+          await new Promise(r => setTimeout(r, 80));
+
+          // Type each character of the cell reference (e.g. "B3" → 'B', '3')
+          for (const ch of cell) {
+            await cdpK('keyDown', ch);
+            await cdpK('keyUp', ch);
+            await new Promise(r => setTimeout(r, 40));
           }
-        } catch (e) { sendResponse({ success: false, error: e.message }); }
+
+          // Press Enter to confirm navigation
+          await new Promise((res, rej) => chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent',
+            { type: 'keyDown', key: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 },
+            r => chrome.runtime.lastError ? rej() : res()));
+          await new Promise((res, rej) => chrome.debugger.sendCommand(debuggee, 'Input.dispatchKeyEvent',
+            { type: 'keyUp', key: 'Enter', windowsVirtualKeyCode: 13, nativeVirtualKeyCode: 13 },
+            r => chrome.runtime.lastError ? rej() : res()));
+
+          await new Promise(r => setTimeout(r, 500)); // let Sheets scroll & focus
+          sendResponse({ success: true, data: `Navigated to cell ${cell}. Read Formula Bar with readDocContent() to see the value.` });
+
+        } catch (e) {
+          // ── Fallback: scripting.executeScript ────────────────────────────────
+          try {
+            const fb = await chrome.scripting.executeScript({
+              target: { tabId },
+              func: (cellRef) => {
+                const nb = document.querySelector(
+                  '#t-name-box, input[aria-label="Name Box"], input[id*="name-box"], ' +
+                  '.cell-reference-input, [data-automation-id="NameBox"] input');
+                if (!nb) return false;
+                const nativeSet = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+                nativeSet.call(nb, cellRef);
+                nb.dispatchEvent(new Event('input', { bubbles: true }));
+                nb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+                nb.dispatchEvent(new KeyboardEvent('keyup',   { key: 'Enter', keyCode: 13, bubbles: true }));
+                return true;
+              }, args: [cell]
+            });
+            if (fb?.[0]?.result) {
+              await new Promise(r => setTimeout(r, 500));
+              sendResponse({ success: true, data: `Navigated to cell ${cell} (fallback method).` });
+            } else {
+              sendResponse({ success: false, error: e.message });
+            }
+          } catch (e2) { sendResponse({ success: false, error: e2.message }); }
+        } finally {
+          if (attached) chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; });
+        }
       })();
       return true;
     }

@@ -11070,7 +11070,21 @@ Rules:
 - MOBILE MODE: If a site has a hamburger menu, shows content differently on mobile, or hides features behind a mobile-only UI — use setMobileMode({enabled:true}) to switch to iPhone viewport. Switch back with setMobileMode({enabled:false}) when done.
 - DEEP PAGE SNAPSHOT: If the page context seems incomplete or you cannot find elements you can see in the screenshot, call snapshotPage() — it returns a richer structured DOM snapshot that includes hidden input values, shadow DOM text, and element roles the regular page text misses.
 - LONG CONTENT WRITING: When writing long articles, reports, or documents (more than ~600 words), use writeChunk instead of type. First click or focus the target field, then call writeChunk multiple times — each call appends to what is already there without clearing it. Example flow: click the editor → writeChunk({text:"Introduction paragraph..."}) → writeChunk({text:"Section 2 content..."}) → writeChunk({text:"Conclusion..."}). This bypasses the single-turn output limit and lets you build unlimited-length documents.
-- CHECKING AUTH / STATE: To check if a user is logged in, find a session token, or read what a site has saved, use readStorage. Examples: readStorage({target:"cookies", key:"auth"}) to find auth cookies, readStorage({target:"local", key:"user"}) to find saved user data, readStorage({target:"all"}) to see everything. Use the key filter to avoid getting thousands of unrelated entries.`;
+- CHECKING AUTH / STATE: To check if a user is logged in, find a session token, or read what a site has saved, use readStorage. Examples: readStorage({target:"cookies", key:"auth"}) to find auth cookies, readStorage({target:"local", key:"user"}) to find saved user data, readStorage({target:"all"}) to see everything. Use the key filter to avoid getting thousands of unrelated entries.
+
+### CRITICAL OPERATING PROCEDURES — GOD MODE RULES:
+These are hard rules. Violating them causes immediate task failure.
+
+1. **GOOGLE DOCS — You are BLIND to the canvas.** Before summarising, editing, or referencing ANY existing text in a Google Doc, you MUST call readDocContent() first. Skipping this means you are guessing at invisible content. The canvas renders text as pixels — innerText sees nothing. readDocContent() uses the Accessibility Tree to extract the real paragraphs, headings, and lists.
+
+2. **GOOGLE SHEETS / EXCEL ONLINE — NEVER click the grid blindly.**
+   - To READ a cell value: call readDocContent({cell:"B3"}) — it navigates via Name Box then reads the Formula Bar.
+   - To WRITE to a cell: call goToCell("B3") first, then type({text:"your value"}). Never guess coordinates.
+   - To fill a range: goToCell("A1"), then type({text:"Col1\tCol2\nVal1\tVal2"}) using tabs and newlines.
+
+3. **WORD ONLINE — You are in an iframe.** The DOM snapshot uses pierce:true so you CAN see the document. Use [data-automation-id] selectors for ribbon buttons (Bold, Italic, FontSize). Type into the body using type() with no selector. Save with pressKey("ctrl+s").
+
+4. **ANY DOCUMENT EDITOR** — Always pressKey("ctrl+s") after finishing any write operation. Never use File > Save menus.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
