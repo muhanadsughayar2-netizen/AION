@@ -1,0 +1,54 @@
+o make the agent "smart" without you having to teach it every time, you need to move the teaching from human-to-agent to code-to-agent.
+
+The best way to teach an agent is to implement a "Dynamic Skill Switcher." Instead of one giant prompt, your code should automatically detect where the agent is and "inject" the correct knowledge before the agent even starts thinking.
+
+1. The "Auto-Switcher" Strategy (The Best Way)
+You should not have to type these instructions. Your background.js should act like a librarian that hands the agent the right "manual" based on the URL.
+
+How it works in Replit:
+
+Detection: The code looks at the URL (e.g., docs.google.com vs word.office.com).
+Injection: It pulls a specific "Knowledge Block" from a library and adds it to the AGENT_SYSTEM_PROMPT automatically.
+Result: The agent "wakes up" already knowing it is in Google Docs.
+2. The "Universal Language": The Accessibility Tree
+Instead of teaching the agent different rules for Google Docs, Word, and Excel, teach it one universal language: the Accessibility Tree (AXTree). [1.4.4]
+
+What it is: Every professional app (Google, Microsoft, etc.) is required by law to provide an "Accessibility Tree" for blind users.
+Why it's better: In the AXTree, a "Bold" button is always labeled "Bold," whether it's in Word, Google Docs, or a random website.
+The Fix: Update your snapshotPage to use Accessibility.getFullAXTree via CDP. This gives the agent a "Standardized Map" of the world, so it doesn't need to know site-specific tricks. [1.4.1]
+3. Implementation: The "Skill Library" Code
+Tell Replit: "Create a skills.js library and an auto-injector in the background script so the agent automatically gets the right instructions based on the site."
+
+The "Skill Library" (Add this to your code):
+
+const SKILL_LIBRARY = {
+  "google_docs": "You are in Google Docs. Use [aria-label] to find buttons. Type into the '.docs-texteventtarget-iframe'.",
+  "microsoft_word": "You are in Word Online. Use [data-automation-id] for buttons. Use 'pierce: true' to see the text editor.",
+  "google_sheets": "You are in Google Sheets. Use the 'Formula Bar' for text input. Navigate using Arrow keys via KeyEvent.",
+  "generic": "You are on a standard website. Use standard CSS selectors and click coordinates."
+};
+
+// The Auto-Injector logic
+function getDynamicPrompt(url) {
+  if (url.includes("docs.google.com")) return SKILL_LIBRARY.google_docs;
+  if (url.includes("word.office.com")) return SKILL_LIBRARY.microsoft_word;
+  if (url.includes("sheets.google.com")) return SKILL_LIBRARY.google_sheets;
+  return SKILL_LIBRARY.generic;
+}
+Summary: How to Teach Once and For All
+Method	Effort	Effectiveness
+Manual Teaching	High (Every task)	Low (Frustrating)
+Dynamic Injection	Low (Set it once)	High (Agent is always ready)
+Universal AXTree	Medium (Code update)	Highest (Works on ALL apps)
+Key Findings
+Stop Manual Prompts: Use a "Knowledge Library" in your code that triggers based on the URL. [1.4.2]
+Use the AXTree: This is the "Rosetta Stone." If the agent learns to read the Accessibility Tree, it will understand Google Docs, Word, and Excel using the same logic. [1.4.4]
+Function Calling: Instead of telling the agent how to click, give it a tool called clickRibbonButton(buttonName). Let the code handle the difference between Word and Google Docs. [1.4.8]
+Your Next Step: Tell Replit: "I want to stop teaching the agent manually. Implement a dynamic prompt injector that detects the URL and adds the site-specific 'Knowledge Block' from a library to the system prompt before every task."
+
+Sources
+[1] Chrome DevTools Protocol - Accessibility Domain for Universal UI Mapping
+[2] DeepMind Research - Prompt Injection and Dynamic Context Management
+[3] Microsoft Learn - UI Automation Patterns for Cross-App Compatibility
+[4] Google Developers - Best Practices for Chrome Extension Background Scripts
+[5] OpenAI Cookbook - Using Function Calling to Abstract Complex UI Tasks

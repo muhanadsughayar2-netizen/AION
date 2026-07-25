@@ -2243,7 +2243,35 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               if (v) lines.add('[Input: "' + v + '"]');
             }
           }
-          sendResponse({ success: true, data: [...lines].join('\n').slice(0, 6000) });
+
+          // ── AXTree layer ─────────────────────────────────────────────────────
+          // Accessibility.getFullAXTree gives a universal, standardised map of
+          // every interactive element (buttons, inputs, links, menus) using their
+          // REAL accessible names — the same names across Google Docs, Word Online,
+          // Excel, and any other app. This replaces site-specific CSS guessing.
+          const axLines = [];
+          try {
+            await cdpC('Accessibility.enable');
+            const axTree = await cdpC('Accessibility.getFullAXTree', {});
+            const INTERACTIVE = new Set(['button','link','textbox','combobox','checkbox',
+              'radio','menuitem','menuitemcheckbox','menuitemradio','slider','spinbutton',
+              'searchbox','switch','tab','option','treeitem','columnheader','rowheader']);
+            for (const node of (axTree?.nodes || [])) {
+              const role = node.role?.value || '';
+              if (!INTERACTIVE.has(role)) continue;
+              const name = node.name?.value?.trim() || '';
+              if (!name || name.length > 120) continue;
+              const extra = node.description?.value ? ` (${node.description.value})` : '';
+              axLines.push(`[AX:${role}] ${name}${extra}`);
+              if (axLines.length >= 200) break; // cap to avoid token bloat
+            }
+          } catch (_) { /* AXTree optional — DOM snapshot already captured above */ }
+
+          const axSection = axLines.length
+            ? `\n\n--- Accessibility Tree (interactive elements) ---\n${axLines.join('\n')}`
+            : '';
+
+          sendResponse({ success: true, data: ([...lines].join('\n') + axSection).slice(0, 8000) });
         } catch (e) { sendResponse({ success: false, error: e.message }); }
         finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
       })();

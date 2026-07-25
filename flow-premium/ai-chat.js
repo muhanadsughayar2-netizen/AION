@@ -10944,6 +10944,64 @@ const AGENT_TOOLS = [{
   ]
 }];
 
+// ── Dynamic Skill Library ──────────────────────────────────────────────────
+// Maps URL patterns to site-specific knowledge blocks injected automatically
+// into the system prompt before every agent turn. The agent "wakes up" already
+// knowing which app it is in — no manual prompting required.
+const SKILL_LIBRARY = {
+  google_docs: `
+SKILL — GOOGLE DOCS: You are controlling a Google Docs document.
+- The document body is a virtual canvas. Type directly using the "type" tool — no selector needed.
+- Find toolbar buttons by [aria-label] (e.g. aria-label="Bold"). The Accessibility Tree uses standard names.
+- Menus (Insert, Format, Tools) are real HTML buttons — click to open, then click the sub-item.
+- To rename: click the title bar, Ctrl+A, type new name, Enter.
+- Save: pressKey("ctrl+s"). Never use File > Save manually.`,
+
+  microsoft_word: `
+SKILL — WORD ONLINE: You are controlling a Microsoft Word Online document.
+- The editor lives inside a nested iframe. The DOM snapshot has been pierced so you CAN read the document text.
+- Find toolbar buttons using [data-automation-id] (e.g. data-automation-id="Bold", "Italic", "FontSize").
+- Type into the document body using the "type" tool with no selector — the agent uses CDP key injection automatically.
+- Save: pressKey("ctrl+s").
+- If you see a blank editor area, do NOT navigate away — the content is inside the iframe, already visible in your snapshot.`,
+
+  google_sheets: `
+SKILL — GOOGLE SHEETS: You are controlling a Google Sheets spreadsheet.
+- Use the "cell" parameter in the "type" tool to target specific cells (e.g. cell:"A1").
+- Separate columns with "\\t" and rows with "\\n" in a single type call — fill whole ranges at once.
+- Use the Formula Bar for text input. Navigate cells with Arrow keys via pressKey.
+- Save: pressKey("ctrl+s").
+- To create a new sheet: navigate("https://sheets.new") — do NOT click Blank spreadsheet from the home page.`,
+
+  microsoft_excel: `
+SKILL — EXCEL ONLINE: You are controlling a Microsoft Excel Online spreadsheet.
+- Use the "cell" parameter to target cells. Separate columns with "\\t", rows with "\\n".
+- Toolbar buttons use [data-automation-id] same as Word Online.
+- Save: pressKey("ctrl+s").`,
+
+  google_slides: `
+SKILL — GOOGLE SLIDES: You are controlling a Google Slides presentation.
+- Slide content is a canvas — click a text box first, then use "type" to enter text.
+- Use [aria-label] to find toolbar buttons (Bold, Italic, font size, etc.).
+- Save: pressKey("ctrl+s").`,
+
+  generic: `
+SKILL — STANDARD WEBSITE: You are on a standard webpage.
+- Use CSS selectors, visible text labels, or X/Y coordinates to locate elements.
+- The Accessibility Tree (snapshotPage) gives you standardized button names if the DOM is complex.`
+};
+
+function getDynamicSkill(url) {
+  const u = url || '';
+  if (u.includes('docs.google.com'))   return SKILL_LIBRARY.google_docs;
+  if (u.includes('word.office.com') || u.includes('word.live.com') || u.includes('word.microsoft.com')) return SKILL_LIBRARY.microsoft_word;
+  if (u.includes('sheets.google.com') || u.includes('docs.google.com/spreadsheets')) return SKILL_LIBRARY.google_sheets;
+  if (u.includes('excel.office.com') || u.includes('excel.live.com'))  return SKILL_LIBRARY.microsoft_excel;
+  if (u.includes('slides.google.com') || u.includes('docs.google.com/presentation')) return SKILL_LIBRARY.google_slides;
+  return SKILL_LIBRARY.generic;
+}
+// ─────────────────────────────────────────────────────────────────────────────
+
 const AGENT_SYSTEM_PROMPT = `You are an in-browser automation agent controlling the user's ACTIVE browser tab, one small step at a time.
 
 Rules:
@@ -11339,7 +11397,7 @@ async function runAgentTask(prompt, thread) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT }] },
+            systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT + getDynamicSkill(tab.url) }] },
             contents: requestContents,
             tools: AGENT_TOOLS,
             generationConfig: { temperature: 0.2 }
