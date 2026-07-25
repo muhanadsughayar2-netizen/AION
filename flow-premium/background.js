@@ -2278,6 +2278,141 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
 
+    // ── readDocContent ─────────────────────────────────────────────────────────
+    // Reads canvas-rendered document text that innerText cannot see.
+    // Google Docs  → full AXTree filtered for paragraph/heading/listitem roles.
+    // Sheets/Excel → optionally navigates to a cell via Name Box, then reads
+    //                the Formula Bar (standard HTML — always visible).
+    if (executeAction === 'readDocContent') {
+      (async () => {
+        const debuggee = { tabId };
+        try { await chrome.debugger.attach(debuggee, '1.3'); } catch (_) {}
+        const cdpC = (m, p) => new Promise((res, rej) => {
+          chrome.debugger.sendCommand(debuggee, m, p || {}, r => {
+            if (chrome.runtime.lastError) rej(new Error(chrome.runtime.lastError.message));
+            else res(r);
+          });
+        });
+        try {
+          const tabInfo = await chrome.tabs.get(tabId).catch(() => ({}));
+          const url = tabInfo.url || '';
+          const isSheets = url.includes('sheets.google.com') || url.includes('docs.google.com/spreadsheets')
+                        || url.includes('excel.office.com') || url.includes('excel.live.com');
+
+          if (isSheets) {
+            // ── Sheets / Excel: navigate to cell then read Formula Bar ──
+            const cell = String(params.cell || '').trim().toUpperCase();
+            if (cell) {
+              // Use Name Box to jump to the cell
+              await cdpC('Runtime.evaluate', {
+                expression: `(() => {
+                  const nb = document.querySelector('#t-name-box,input[aria-label="Cell reference"],input[id*="name-box"],.cell-reference-input');
+                  if (!nb) return 'NAME_BOX_NOT_FOUND';
+                  nb.focus(); nb.select();
+                  nb.value = ${JSON.stringify(cell)};
+                  nb.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}));
+                  nb.dispatchEvent(new KeyboardEvent('keyup',{key:'Enter',bubbles:true}));
+                  return 'ok';
+                })()`,
+                awaitPromise: false
+              });
+              await new Promise(r => setTimeout(r, 600));
+            }
+            // Read the Formula Bar
+            const fbResult = await cdpC('Runtime.evaluate', {
+              expression: `(() => {
+                const fb = document.querySelector('#formula-bar-text,.cell-input,[aria-label="Formula bar"],[id*="formula-bar"]');
+                if (fb) return (fb.value || fb.innerText || fb.textContent || '').trim();
+                // Fallback: try any focused input
+                const active = document.activeElement;
+                return active ? (active.value || active.innerText || '').trim() : '';
+              })()`,
+              awaitPromise: false
+            });
+            const value = fbResult?.result?.value || '';
+            sendResponse({ success: true, data: cell
+              ? `Cell ${cell} value: ${value || '(empty)'}`
+              : `Selected cell value: ${value || '(empty)'}` });
+
+          } else {
+            // ── Google Docs: AXTree paragraph/heading extraction ──
+            await cdpC('Accessibility.enable');
+            const axTree = await cdpC('Accessibility.getFullAXTree', {});
+            const TEXT_ROLES = new Set(['staticText','paragraph','heading','listitem',
+              'list','blockquote','term','definition','caption','contentinfo','article']);
+            const lines = [];
+            let lastRole = '';
+            for (const node of (axTree?.nodes || [])) {
+              const role = node.role?.value || '';
+              if (!TEXT_ROLES.has(role)) continue;
+              const text = (node.name?.value || '').trim();
+              if (!text || text.length < 2) continue;
+              if (role === 'heading') {
+                if (lines.length) lines.push('');
+                lines.push(`## ${text}`);
+              } else if (role === 'listitem') {
+                lines.push(`• ${text}`);
+              } else {
+                if (lastRole === 'paragraph' && role === 'paragraph') lines.push('');
+                lines.push(text);
+              }
+              lastRole = role;
+              if (lines.length > 300) break;
+            }
+            const docText = lines.join('\n').trim();
+            sendResponse({ success: true, data: docText
+              ? `Document content:\n${docText}`
+              : 'Document appears empty or content is not yet accessible via AXTree.' });
+          }
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+        finally { chrome.debugger.detach(debuggee, () => { void chrome.runtime.lastError; }); }
+      })();
+      return true;
+    }
+
+    // ── goToCell ───────────────────────────────────────────────────────────────
+    // Navigates to a specific cell in Google Sheets or Excel Online by typing
+    // the reference into the Name Box — the only fully reliable cell-targeting
+    // method (no coordinate maths, survives scrolling and frozen rows).
+    if (executeAction === 'goToCell') {
+      (async () => {
+        const cell = String(params.cell || '').trim().toUpperCase();
+        if (!cell) { sendResponse({ success: false, error: 'cell parameter is required' }); return; }
+        try {
+          const result = await chrome.scripting.executeScript({
+            target: { tabId },
+            func: (cellRef) => {
+              // Google Sheets Name Box: #t-name-box
+              // Excel Online Name Box: input[aria-label="Name Box"] or similar
+              const nb = document.querySelector(
+                '#t-name-box, input[aria-label="Name Box"], input[id*="name-box"], ' +
+                '.cell-reference-input, [data-automation-id="NameBox"] input'
+              );
+              if (!nb) return { ok: false, error: 'Name Box not found on this page' };
+              nb.focus();
+              nb.select();
+              // Set value and dispatch events so Sheets/Excel registers the change
+              const nativeSet = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+              nativeSet.call(nb, cellRef);
+              nb.dispatchEvent(new Event('input', { bubbles: true }));
+              nb.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', keyCode: 13, bubbles: true }));
+              nb.dispatchEvent(new KeyboardEvent('keyup',  { key: 'Enter', keyCode: 13, bubbles: true }));
+              return { ok: true };
+            },
+            args: [cell]
+          });
+          const r = result?.[0]?.result;
+          if (r?.ok) {
+            await new Promise(res => setTimeout(res, 500)); // let Sheets scroll/focus
+            sendResponse({ success: true, data: `Navigated to cell ${cell}` });
+          } else {
+            sendResponse({ success: false, error: r?.error || 'goToCell failed' });
+          }
+        } catch (e) { sendResponse({ success: false, error: e.message }); }
+      })();
+      return true;
+    }
+
     // ── exportPDF ──────────────────────────────────────────────────────────────
     // Page.printToPDF exports any open page as a PDF and triggers a download.
     if (executeAction === 'exportPDF') {

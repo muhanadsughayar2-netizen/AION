@@ -10286,8 +10286,29 @@ const AGENT_TOOLS = [{
     },
     {
       name: 'snapshotPage',
-      description: 'Take a deep structured snapshot of the current page using the browser\'s DOM engine — returns all visible text, input values, and element roles in a rich format. Use this when the regular page context seems incomplete, when elements are hidden in shadow DOM, or when you need to understand a complex page layout before acting.',
+      description: 'Take a deep structured snapshot of the current page — returns all visible text, input values, element roles, and a universal Accessibility Tree of every interactive element with their real accessible names. Use this when the page context seems incomplete, elements are in shadow DOM, or you need a full layout map before acting.',
       parameters: { type: 'object', properties: {} }
+    },
+    {
+      name: 'readDocContent',
+      description: 'Read the actual text content of a canvas-rendered document or spreadsheet invisible to normal snapshots. Google Docs: extracts paragraphs, headings, and lists from the Accessibility Tree. Google Sheets / Excel Online: navigates to a cell (if specified) then reads the Formula Bar. Always call before editing existing content.',
+      parameters: {
+        type: 'object',
+        properties: {
+          cell: { type: 'string', description: 'Sheets/Excel only — cell reference to navigate to before reading (e.g. "A1", "B3"). Leave blank to read the currently selected cell.' }
+        }
+      }
+    },
+    {
+      name: 'goToCell',
+      description: 'Navigate to a specific cell in Google Sheets or Excel Online using the Name Box. This is the ONLY reliable way to target a cell — never try to calculate grid coordinates. After calling this, use \'type\' to enter a value or \'readDocContent\' to read it.',
+      parameters: {
+        type: 'object',
+        properties: {
+          cell: { type: 'string', description: 'Cell reference to navigate to, e.g. "A1", "B3", "Z100"' }
+        },
+        required: ['cell']
+      }
     },
     {
       name: 'exportPDF',
@@ -10951,6 +10972,7 @@ const AGENT_TOOLS = [{
 const SKILL_LIBRARY = {
   google_docs: `
 SKILL — GOOGLE DOCS: You are controlling a Google Docs document.
+- READ EXISTING CONTENT: Always call readDocContent() first before editing — it extracts paragraphs, headings and lists from the Accessibility Tree so you know what is already written.
 - The document body is a virtual canvas. Type directly using the "type" tool — no selector needed.
 - Find toolbar buttons by [aria-label] (e.g. aria-label="Bold"). The Accessibility Tree uses standard names.
 - Menus (Insert, Format, Tools) are real HTML buttons — click to open, then click the sub-item.
@@ -10967,11 +10989,12 @@ SKILL — WORD ONLINE: You are controlling a Microsoft Word Online document.
 
   google_sheets: `
 SKILL — GOOGLE SHEETS: You are controlling a Google Sheets spreadsheet.
-- Use the "cell" parameter in the "type" tool to target specific cells (e.g. cell:"A1").
-- Separate columns with "\\t" and rows with "\\n" in a single type call — fill whole ranges at once.
-- Use the Formula Bar for text input. Navigate cells with Arrow keys via pressKey.
+- NAVIGATE TO A CELL: Always use goToCell("A1") — never try to click grid coordinates. This is deterministic.
+- READ A CELL VALUE: call readDocContent({cell:"B3"}) — it navigates to that cell and reads the Formula Bar.
+- TYPE INTO A CELL: call goToCell("A1") first, then call type({text:"your value"}). Use "\\t" to move right, "\\n" to move down.
+- Fill a whole range in one shot: goToCell("A1"), then type({text:"Name\\tAge\\tCity\\nAlice\\t30\\nBob\\t25"}).
 - Save: pressKey("ctrl+s").
-- To create a new sheet: navigate("https://sheets.new") — do NOT click Blank spreadsheet from the home page.`,
+- To create a new sheet: navigate("https://sheets.new").`,
 
   microsoft_excel: `
 SKILL — EXCEL ONLINE: You are controlling a Microsoft Excel Online spreadsheet.
