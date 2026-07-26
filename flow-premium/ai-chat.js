@@ -10894,6 +10894,19 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'askUser',
+      description: 'Pause execution and ask the user to make a choice or provide clarification. Use this when a step is ambiguous, requires permission, or when multiple paths are possible. The agent loop will pause until the user responds.',
+      parameters: {
+        type: 'object',
+        properties: {
+          question:      { type: 'string',  description: 'The question or explanation of the choice being presented to the user.' },
+          options:       { type: 'array',   items: { type: 'string' }, description: 'Explicit choices to present as buttons, e.g. ["Proceed with Slide 1 outline", "Regenerate summary", "Cancel task"]' },
+          allowFreeText: { type: 'boolean', description: 'If true, also shows a text input so the user can type a custom answer in addition to clicking the buttons.' }
+        },
+        required: ['question', 'options']
+      }
+    },
+    {
       name: 'planTask',
       description: 'Lay out a numbered step-by-step plan before executing a complex multi-step task (5+ steps). Call this FIRST — before any clicks or navigation — so you stay oriented across long sessions. The plan is shown to the user and tracked with checkPlan.',
       parameters: {
@@ -11318,6 +11331,82 @@ function smartWaitAfterAction(tabId, actionName) {
   });
 }
 
+// ── askUser helper ─────────────────────────────────────────────────────────────
+// Renders an interactive choice card in the chat thread and returns a Promise
+// that resolves only when the user clicks a button (or submits free text).
+// The agent loop awaits this, so execution is truly paused until the user acts.
+function awaitUserChoice(thread, question, options = [], allowFreeText = false) {
+  return new Promise((resolve) => {
+    const card = document.createElement('div');
+    card.className = 'chat-bubble ai';
+    card.style.cssText = [
+      'background:rgba(99,102,241,0.08)',
+      'border:1px solid rgba(99,102,241,0.35)',
+      'padding:14px 16px',
+      'border-radius:14px',
+      'margin:8px 0',
+      'max-width:90%'
+    ].join(';');
+
+    const btnHtml = options.map(opt =>
+      `<button class="agent-choice-btn" data-val="${opt.replace(/"/g, '&quot;')}" style="` +
+      `margin:4px 4px 4px 0;padding:6px 13px;background:rgba(99,102,241,0.18);` +
+      `color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:8px;` +
+      `font-size:12px;cursor:pointer;transition:background .15s">${opt}</button>`
+    ).join('');
+
+    const freeTextHtml = allowFreeText
+      ? `<div style="margin-top:10px;display:flex;gap:6px">
+           <input class="agent-free-text" type="text" placeholder="Or type a custom answer…"
+             style="flex:1;padding:6px 10px;border-radius:8px;border:1px solid rgba(99,102,241,0.3);
+                    background:rgba(30,30,40,0.6);color:#e2e8f0;font-size:12px"/>
+           <button class="agent-free-submit" style="padding:6px 12px;background:rgba(99,102,241,0.25);
+             color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:8px;
+             font-size:12px;cursor:pointer">Send</button>
+         </div>`
+      : '';
+
+    card.innerHTML = `
+      <div style="font-weight:600;margin-bottom:8px;color:#a5b4fc">🤔 Autopilot needs your input</div>
+      <div style="font-size:13px;margin-bottom:10px;line-height:1.5;color:#e2e8f0">${question}</div>
+      <div class="agent-choice-buttons">${btnHtml}</div>
+      ${freeTextHtml}`;
+
+    thread.appendChild(card);
+    thread.scrollTop = thread.scrollHeight;
+
+    const finish = (value) => {
+      // Lock all buttons / input so the user can't re-submit
+      card.querySelectorAll('.agent-choice-btn').forEach(b => {
+        b.disabled = true;
+        b.style.opacity = b.getAttribute('data-val') === value ? '1' : '0.35';
+        if (b.getAttribute('data-val') === value) {
+          b.style.background = 'rgba(16,185,129,0.25)';
+          b.style.color = '#6ee7b7';
+          b.style.borderColor = 'rgba(16,185,129,0.4)';
+        }
+      });
+      const ft = card.querySelector('.agent-free-text');
+      const fs = card.querySelector('.agent-free-submit');
+      if (ft) { ft.disabled = true; ft.value = value; }
+      if (fs) fs.disabled = true;
+      resolve({ selection: value });
+    };
+
+    card.querySelectorAll('.agent-choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => finish(btn.getAttribute('data-val')));
+    });
+
+    const ftInput  = card.querySelector('.agent-free-text');
+    const ftSubmit = card.querySelector('.agent-free-submit');
+    if (ftInput && ftSubmit) {
+      const submitFree = () => { if (ftInput.value.trim()) finish(ftInput.value.trim()); };
+      ftSubmit.addEventListener('click', submitFree);
+      ftInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitFree(); });
+    }
+  });
+}
+
 async function focusAgentTab(tab) {
   if (!tab || !tab.id) return;
   try {
@@ -11543,6 +11632,24 @@ async function runAgentTask(prompt, thread) {
     // Fix 6: collect responses for ALL client-side calls in this turn so they
     // go back to Gemini in ONE user turn, even if CDP calls are also present.
     const clientSideResponses = [];
+
+    // ── askUser (Human-in-the-Loop) ──────────────────────────────────────────
+    // Intercept before any CDP work. If the model called askUser, render the
+    // interactive card, await the user's click, then push the response and
+    // continue — skipping all CDP execution for this turn entirely.
+    const askUserCall = fnCallParts.find(p => p.functionCall.name === 'askUser');
+    if (askUserCall) {
+      const { question = 'What would you like to do?', options = [], allowFreeText = false } = askUserCall.functionCall.args || {};
+      const userResponse = await awaitUserChoice(thread, question, options.length ? options : ['Continue', 'Cancel'], allowFreeText);
+      contents.push({
+        role: 'user',
+        parts: [{ functionResponse: {
+          name: 'askUser',
+          response: { success: true, selectedChoice: userResponse.selection }
+        }}]
+      });
+      continue;
+    }
 
     const planCall = fnCallParts.find(p => p.functionCall.name === 'planTask');
     if (planCall) {
