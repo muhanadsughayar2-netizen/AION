@@ -8097,36 +8097,44 @@ PROFILE L — INTERACTIVE LEARNING PORTAL (Khan Academy / Duolingo / Notion-styl
 
      async function speakGemini(text, voiceName='Zephyr') {
        if (globalMuted) return;
-       const key = localStorage.getItem('lp_gemini_key');
+       // Resolve key from centralized extension sync storage first (set via the
+       // options page / API key modal), then fall back to legacy localStorage key.
+       const keyResult = await chrome.storage.sync.get(['geminiApiKey']).catch(() => ({}));
+       const key = keyResult.geminiApiKey || localStorage.getItem('lp_gemini_key');
        if (!key) { speakFallback(text); return; }
        try {
          const res = await fetch(
-           'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key='+key,
-           { method:'POST', headers:{'Content-Type':'application/json'},
+           'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=' + key,
+           { method: 'POST', headers: { 'Content-Type': 'application/json' },
              body: JSON.stringify({
-               contents:[{parts:[{text:'In a warm, natural, conversational pace: '+text}]}],
-               generationConfig:{
-                 response_modalities:['AUDIO'],
-                 speech_config:{voice_config:{prebuilt_voice_config:{voice_name:voiceName}}}
+               contents: [{ parts: [{ text: 'In a warm, natural, conversational pace: ' + text }] }],
+               generationConfig: {
+                 responseModalities: ['AUDIO'],
+                 speechConfig: {
+                   voiceConfig: {
+                     prebuiltVoiceConfig: { voiceName }
+                   }
+                 }
                }
              })
            }
          );
+         if (!res.ok) { speakFallback(text); return; }
          const d = await res.json();
-         const part = d?.candidates?.[0]?.content?.parts?.[0]?.inline_data;
+         const part = d?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
          if (!part) { speakFallback(text); return; }
-         const pcm = Uint8Array.from(atob(part.data), c=>c.charCodeAt(0));
-         const mt  = (part.mime_type||'').toLowerCase();
+         const pcm = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
+         const mt  = (part.mimeType || '').toLowerCase();
          let blob;
-         if (mt.startsWith('audio/l16')||mt.includes('pcm')||mt==='') {
+         if (mt.startsWith('audio/l16') || mt.includes('pcm') || mt === '') {
            const hdr = new Uint8Array(buildWavHeader(pcm.byteLength));
-           const wav = new Uint8Array(44+pcm.byteLength);
-           wav.set(hdr,0); wav.set(pcm,44);
-           blob = new Blob([wav],{type:'audio/wav'});
-         } else { blob = new Blob([pcm],{type:mt}); }
+           const wav = new Uint8Array(44 + pcm.byteLength);
+           wav.set(hdr, 0); wav.set(pcm, 44);
+           blob = new Blob([wav], { type: 'audio/wav' });
+         } else { blob = new Blob([pcm], { type: mt }); }
          const url = URL.createObjectURL(blob);
          const audio = new Audio(url);
-         audio.onended = ()=> URL.revokeObjectURL(url);
+         audio.onended = () => URL.revokeObjectURL(url);
          audio.play();
        } catch(e) { speakFallback(text); }
      }
@@ -11348,10 +11356,8 @@ function smartWaitAfterAction(tabId, actionName) {
 // a Promise that resolves only when the user clicks "I've done it". Cancels any
 // currently-playing TTS first so voices don't overlap.
 function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
-  return new Promise((resolve) => {
-    // Cancel any in-flight speech so the intervention request plays cleanly
+  return new Promise((resolve, reject) => {
     try { window.speechSynthesis.cancel(); } catch (_) {}
-    // Try the Gemini-backed speak() helper; fall back to Web Speech API
     const activeVoice = localStorage.getItem('snaptoai_tts_voice') || 'Kore';
     try {
       if (typeof speak === 'function') { speak(verbalRequest, activeVoice); }
@@ -11389,6 +11395,18 @@ function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
     thread.appendChild(card);
     thread.scrollTop = thread.scrollHeight;
 
+    const cleanUp = () => chrome.storage.onChanged.removeListener(stopListener);
+
+    // Instantly abort if the global stop signal fires while we're waiting
+    const stopListener = (changes, area) => {
+      if ((area === 'local' || area === 'session') && changes.agentStopRequested?.newValue) {
+        cleanUp();
+        card.innerHTML = `<div style="color:#ff8080;font-size:12px">🚫 Autopilot cancelled by user.</div>`;
+        reject(new Error('Task stopped by user'));
+      }
+    };
+    chrome.storage.onChanged.addListener(stopListener);
+
     card.querySelector('.intv-speak-btn').addEventListener('click', () => {
       try { window.speechSynthesis.cancel(); } catch (_) {}
       try {
@@ -11403,6 +11421,7 @@ function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
     });
 
     card.querySelector('.intv-done-btn').addEventListener('click', () => {
+      cleanUp();
       const doneBtn = card.querySelector('.intv-done-btn');
       doneBtn.disabled = true;
       doneBtn.textContent = 'Resuming…';
@@ -11414,10 +11433,10 @@ function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
 
 // ── askUser helper ─────────────────────────────────────────────────────────────
 // Renders an interactive choice card in the chat thread and returns a Promise
-// that resolves only when the user clicks a button (or submits free text).
-// The agent loop awaits this, so execution is truly paused until the user acts.
+// that resolves when the user clicks a button, or rejects instantly if the
+// global stop signal fires via chrome.storage.onChanged.
 function awaitUserChoice(thread, question, options = [], allowFreeText = false) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const card = document.createElement('div');
     card.className = 'chat-bubble ai';
     card.style.cssText = [
@@ -11456,8 +11475,20 @@ function awaitUserChoice(thread, question, options = [], allowFreeText = false) 
     thread.appendChild(card);
     thread.scrollTop = thread.scrollHeight;
 
+    const cleanUp = () => chrome.storage.onChanged.removeListener(stopListener);
+
+    // Instantly abort if stop signal fires while waiting for user input
+    const stopListener = (changes, area) => {
+      if ((area === 'local' || area === 'session') && changes.agentStopRequested?.newValue) {
+        cleanUp();
+        card.innerHTML = `<div style="color:#ff8080;font-size:12px">🚫 Autopilot cancelled by user.</div>`;
+        reject(new Error('Task stopped by user'));
+      }
+    };
+    chrome.storage.onChanged.addListener(stopListener);
+
     const finish = (value) => {
-      // Lock all buttons / input so the user can't re-submit
+      cleanUp();
       card.querySelectorAll('.agent-choice-btn').forEach(b => {
         b.disabled = true;
         b.style.opacity = b.getAttribute('data-val') === value ? '1' : '0.35';
@@ -11500,7 +11531,11 @@ async function focusAgentTab(tab) {
 async function captureActiveTabScreenshot(tab) {
   try {
     if (!tab || !tab.windowId) return null;
-    await focusAgentTab(tab);
+    // Only focus if the browser window is currently blurred — avoids stealing
+    // focus from the chat panel on every screenshot, which made the Stop button
+    // nearly impossible to click while the agent was running.
+    const win = await chrome.windows.get(tab.windowId).catch(() => null);
+    if (win && !win.focused) await focusAgentTab(tab);
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 55 });
     return dataUrl || null;
   } catch (_e) {
@@ -11722,40 +11757,42 @@ async function runAgentTask(prompt, thread) {
     if (interventionCall) {
       const { verbalRequest = 'I need your help. Please do the required action and click done.', expectedOutcome = '' } = interventionCall.functionCall.args || {};
       updateAutopilotMiniStatus(`⏸ Waiting for you…`);
-      // Expand the mini-panel so the card and "I've done it" button are visible
       await exitAutopilotMiniMode().catch(() => {});
-      const result = await awaitUserIntervention(thread, verbalRequest, expectedOutcome);
-      // Re-enter mini mode and restore status
-      await enterAutopilotMiniMode().catch(() => {});
-      updateAutopilotMiniStatus('Resuming…');
-      // Re-focus the task tab and grab a fresh page snapshot
-      await focusAgentTab(tab);
-      pageText = await getActiveTabPageText(tab.id).catch(() => pageText);
-      contents.push({
-        role: 'user',
-        parts: [{ functionResponse: {
-          name: 'requestUserIntervention',
-          response: { success: true, outcome: result.status }
-        }}]
-      });
+      try {
+        const result = await awaitUserIntervention(thread, verbalRequest, expectedOutcome);
+        await enterAutopilotMiniMode().catch(() => {});
+        updateAutopilotMiniStatus('Resuming…');
+        await focusAgentTab(tab);
+        pageText = await getActiveTabPageText(tab.id).catch(() => pageText);
+        contents.push({
+          role: 'user',
+          parts: [{ functionResponse: {
+            name: 'requestUserIntervention',
+            response: { success: true, outcome: result.status }
+          }}]
+        });
+      } catch (err) {
+        if (err.message === 'Task stopped by user') break;
+      }
       continue;
     }
 
     // ── askUser (Human-in-the-Loop) ──────────────────────────────────────────
-    // Intercept before any CDP work. If the model called askUser, render the
-    // interactive card, await the user's click, then push the response and
-    // continue — skipping all CDP execution for this turn entirely.
     const askUserCall = fnCallParts.find(p => p.functionCall.name === 'askUser');
     if (askUserCall) {
       const { question = 'What would you like to do?', options = [], allowFreeText = false } = askUserCall.functionCall.args || {};
-      const userResponse = await awaitUserChoice(thread, question, options.length ? options : ['Continue', 'Cancel'], allowFreeText);
-      contents.push({
-        role: 'user',
-        parts: [{ functionResponse: {
-          name: 'askUser',
-          response: { success: true, selectedChoice: userResponse.selection }
-        }}]
-      });
+      try {
+        const userResponse = await awaitUserChoice(thread, question, options.length ? options : ['Continue', 'Cancel'], allowFreeText);
+        contents.push({
+          role: 'user',
+          parts: [{ functionResponse: {
+            name: 'askUser',
+            response: { success: true, selectedChoice: userResponse.selection }
+          }}]
+        });
+      } catch (err) {
+        if (err.message === 'Task stopped by user') break;
+      }
       continue;
     }
 

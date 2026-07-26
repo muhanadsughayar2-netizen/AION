@@ -1,0 +1,345 @@
+Part 2: Step-by-Step Replit Build Instructions
+Open your project in Replit and apply these direct replacements to your files.
+Step 1: Update your central background.js (or your background service worker)
+Open your background script (equivalent to background (7).js) and verify that the global hotkey command stop-autopilot writes directly to the session storage pool:
+code
+JavaScript
+// Locate the chrome.commands.onCommand listener in your background script and replace it:
+chrome.commands.onCommand.addListener(async (command) => {
+  if (command === 'stop-autopilot') {
+    // Write a global cancellation state to session storage
+    await chrome.storage.session.set({ agentStopRequested: true });
+    console.log('[Aion Autopilot] Stop requested via global hotkey.');
+  } else if (command === 'capture') {
+    captureScreenshot();
+  } else if (command === 'ask-ai') {
+    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+    if (tab) {
+      let selectedText = '';
+      try {
+        const [result] = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: () => {
+            const sel = window.getSelection();
+            if (sel && sel.toString().trim().length > 0) return sel.toString();
+            return '';
+          }
+        });
+        selectedText = result?.result || '';
+      } catch (e) {
+        console.log('[SnapToAI] Selection read failed:', e.message);
+      }
+      await handleAskSnapToAI({ selectionText: selectedText, frameId: 0 }, tab);
+    }
+  }
+});
+Step 2: Update focus handling in ai-chat.js (or your chat interface script)
+To prevent the agent from constantly stealing focus from the chat window (which makes clicking the stop button difficult), update captureActiveTabScreenshot to only focus the target browser window if it is currently blurred.
+code
+JavaScript
+// Locate captureActiveTabScreenshot in your ai-chat.js and replace it:
+async function captureActiveTabScreenshot(tab) {
+  try {
+    if (!tab || !tab.windowId) return null;
+    
+    // Focus safety check: only focus if the browser window is currently blurred
+    const win = await chrome.windows.get(tab.windowId).catch(() => null);
+    if (win && !win.focused) {
+      await focusAgentTab(tab);
+    }
+    
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 55 });
+    return dataUrl || null;
+  } catch (_e) {
+    return null;
+  }
+}
+Step 3: Implement Abortable Human-in-the-Loop Dialogs in ai-chat.js
+Replace awaitUserChoice and awaitUserIntervention with these updated versions. They listen to chrome.storage.onChanged to instantly resolve or reject if a cancel command is received while waiting for your input:
+code
+JavaScript
+// Replace awaitUserChoice in your ai-chat.js:
+function awaitUserChoice(thread, question, options = [], allowFreeText = false) {
+  return new Promise((resolve, reject) => {
+    const card = document.createElement('div');
+    card.className = 'chat-bubble ai';
+    card.style.cssText = [
+      'background:rgba(99,102,241,0.08)',
+      'border:1px solid rgba(99,102,241,0.35)',
+      'padding:14px 16px',
+      'border-radius:14px',
+      'margin:8px 0',
+      'max-width:90%'
+    ].join(';');
+
+    const btnHtml = options.map(opt =>
+      `<button class="agent-choice-btn" data-val="${opt.replace(/"/g, '&quot;')}" style="` +
+      `margin:4px 4px 4px 0;padding:6px 13px;background:rgba(99,102,241,0.18);` +
+      `color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:8px;` +
+      `font-size:12px;cursor:pointer;transition:background .15s">${opt}</button>`
+    ).join('');
+
+    const freeTextHtml = allowFreeText
+      ? `<div style="margin-top:10px;display:flex;gap:6px">
+           <input class="agent-free-text" type="text" placeholder="Or type a custom answer…"
+             style="flex:1;padding:6px 10px;border-radius:8px;border:1px solid rgba(99,102,241,0.3);` +
+                    `background:rgba(30,30,40,0.6);color:#e2e8f0;font-size:12px"/>
+           <button class="agent-free-submit" style="padding:6px 12px;background:rgba(99,102,241,0.25);` +
+             `color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:8px;` +
+             `font-size:12px;cursor:pointer">Send</button>
+         </div>`
+      : '';
+
+    card.innerHTML = `
+      <div style="font-weight:600;margin-bottom:8px;color:#a5b4fc">🤔 Autopilot needs your input</div>
+      <div style="font-size:13px;margin-bottom:10px;line-height:1.5;color:#e2e8f0">${question}</div>
+      <div class="agent-choice-buttons">${btnHtml}</div>
+      ${freeTextHtml}`;
+
+    thread.appendChild(card);
+    thread.scrollTop = thread.scrollHeight;
+
+    const cleanUp = () => {
+      chrome.storage.onChanged.removeListener(stopListener);
+    };
+
+    const finish = (value) => {
+      cleanUp();
+      card.querySelectorAll('.agent-choice-btn').forEach(b => {
+        b.disabled = true;
+        b.style.opacity = b.getAttribute('data-val') === value ? '1' : '0.35';
+        if (b.getAttribute('data-val') === value) {
+          b.style.background = 'rgba(16,185,129,0.25)';
+          b.style.color = '#6ee7b7';
+          b.style.borderColor = 'rgba(16,185,129,0.4)';
+        }
+      });
+      const ft = card.querySelector('.agent-free-text');
+      const fs = card.querySelector('.agent-free-submit');
+      if (ft) { ft.disabled = true; ft.value = value; }
+      if (fs) fs.disabled = true;
+      resolve({ selection: value });
+    };
+
+    // Instant stop listener
+    const stopListener = (changes, area) => {
+      if ((area === 'local' || area === 'session') && changes.agentStopRequested && changes.agentStopRequested.newValue) {
+        cleanUp();
+        card.innerHTML = `<div style="color: #ff8080; font-size: 12px;">🚫 Autopilot cancelled by user.</div>`;
+        reject(new Error('Task stopped by user'));
+      }
+    };
+    chrome.storage.onChanged.addListener(stopListener);
+
+    card.querySelectorAll('.agent-choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => finish(btn.getAttribute('data-val')));
+    });
+
+    const ftInput  = card.querySelector('.agent-free-text');
+    const ftSubmit = card.querySelector('.agent-free-submit');
+    if (ftInput && ftSubmit) {
+      const submitFree = () => { if (ftInput.value.trim()) finish(ftInput.value.trim()); };
+      ftSubmit.addEventListener('click', submitFree);
+      ftInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitFree(); });
+    }
+  });
+}
+
+// Replace awaitUserIntervention in your ai-chat.js:
+function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
+  return new Promise((resolve, reject) => {
+    try { window.speechSynthesis.cancel(); } catch (_) {}
+    const activeVoice = localStorage.getItem('snaptoai_tts_voice') || 'Kore';
+    try {
+      if (typeof speak === 'function') { speak(verbalRequest, activeVoice); }
+      else { throw new Error(); }
+    } catch (_) {
+      try {
+        const u = new SpeechSynthesisUtterance(verbalRequest);
+        u.rate = 0.92; u.pitch = 1.05;
+        window.speechSynthesis.speak(u);
+      } catch (_) {}
+    }
+
+    const card = document.createElement('div');
+    card.className = 'chat-bubble ai';
+    card.style.cssText = [
+      'background:rgba(245,158,11,0.07)',
+      'border:1px solid rgba(245,158,11,0.35)',
+      'padding:14px 16px',
+      'border-radius:14px',
+      'margin:8px 0',
+      'max-width:90%'
+    ].join(';');
+
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#f59e0b;margin-bottom:8px">
+        🤝 Co-Pilot Action Needed
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:0 0 12px;color:#e2e8f0">"${verbalRequest}"</p>
+      ${expectedOutcome ? `<p style="font-size:11px;color:rgba(245,158,11,0.65);margin:0 0 12px">Expected: ${expectedOutcome}</p>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="intv-done-btn" style="padding:7px 18px;background:#f59e0b;color:#000;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">✅ I've done it</button>
+        <button class="intv-speak-btn" style="padding:7px 12px;background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:12px;cursor:pointer">🔊 Repeat request</button>
+      </div>`;
+
+    thread.appendChild(card);
+    thread.scrollTop = thread.scrollHeight;
+
+    const cleanUp = () => {
+      chrome.storage.onChanged.removeListener(stopListener);
+    };
+
+    // Instant stop listener
+    const stopListener = (changes, area) => {
+      if ((area === 'local' || area === 'session') && changes.agentStopRequested && changes.agentStopRequested.newValue) {
+        cleanUp();
+        card.innerHTML = `<div style="color: #ff8080; font-size: 12px;">🚫 Autopilot cancelled by user.</div>`;
+        reject(new Error('Task stopped by user'));
+      }
+    };
+    chrome.storage.onChanged.addListener(stopListener);
+
+    card.querySelector('.intv-speak-btn').addEventListener('click', () => {
+      try { window.speechSynthesis.cancel(); } catch (_) {}
+      try {
+        if (typeof speak === 'function') speak(verbalRequest, activeVoice);
+        else throw new Error();
+      } catch (_) {
+        try {
+          const u = new SpeechSynthesisUtterance(verbalRequest);
+          u.rate = 0.92; window.speechSynthesis.speak(u);
+        } catch (_) {}
+      }
+    });
+
+    card.querySelector('.intv-done-btn').addEventListener('click', () => {
+      cleanUp();
+      const doneBtn = card.querySelector('.intv-done-btn');
+      doneBtn.disabled = true;
+      doneBtn.textContent = 'Resuming…';
+      doneBtn.style.opacity = '0.6';
+      resolve({ success: true, status: 'User confirmed completion' });
+    });
+  });
+}
+Step 4: Handle Cancellations within the Agent Loop in ai-chat.js
+To make sure the agent loop exits cleanly when a cancellation is requested during a pause, locate the requestUserIntervention and askUser blocks inside runAgentTask and wrap them in a try/catch block:
+code
+JavaScript
+// Locate and replace the requestUserIntervention handler block inside runAgentTask in your ai-chat.js:
+const interventionCall = fnCallParts.find(p => p.functionCall.name === 'requestUserIntervention');
+if (interventionCall) {
+  const { verbalRequest = 'I need your help. Please do the required action and click done.', expectedOutcome = '' } = interventionCall.functionCall.args || {};
+  updateAutopilotMiniStatus(`⏸ Waiting for you…`);
+  await exitAutopilotMiniMode().catch(() => {});
+  try {
+    const result = await awaitUserIntervention(thread, verbalRequest, expectedOutcome);
+    await enterAutopilotMiniMode().catch(() => {});
+    updateAutopilotMiniStatus('Resuming…');
+    await focusAgentTab(tab);
+    pageText = await getActiveTabPageText(tab.id).catch(() => pageText);
+    contents.push({
+      role: 'user',
+      parts: [{ functionResponse: {
+        name: 'requestUserIntervention',
+        response: { success: true, outcome: result.status }
+      }}]
+    });
+  } catch (err) {
+    if (err.message === 'Task stopped by user') break; // break out of the step loop
+  }
+  continue;
+}
+
+// Locate and replace the askUser handler block inside runAgentTask in your ai-chat.js:
+const askUserCall = fnCallParts.find(p => p.functionCall.name === 'askUser');
+if (askUserCall) {
+  const { question = 'What would you like to do?', options = [], allowFreeText = false } = askUserCall.functionCall.args || {};
+  try {
+    const userResponse = await awaitUserChoice(thread, question, options.length ? options : ['Continue', 'Cancel'], allowFreeText);
+    contents.push({
+      role: 'user',
+      parts: [{ functionResponse: {
+        name: 'askUser',
+        response: { success: true, selectedChoice: userResponse.selection }
+      }}]
+    });
+  } catch (err) {
+    if (err.message === 'Task stopped by user') break; // break out of the step loop
+  }
+  continue;
+}
+Step 5: Update the API Key Routing for the TTS Engine in ai-chat.js
+To resolve the key mismatch so that your premium voices (Zephyr, Kore, Puck, Aoede) utilize your configured paid key, locate the speakGemini function and replace it:
+code
+JavaScript
+// Locate speakGemini in your ai-chat.js and replace it:
+async function speakGemini(text, voiceName='Zephyr') {
+  if (globalMuted) return;
+  
+  // Resolve key from the centralized extension sync storage first,
+  // falling back to local storage if needed.
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const key = keyResult.geminiApiKey || localStorage.getItem('lp_gemini_key');
+  
+  if (!key) { 
+    speakFallback(text); 
+    return; 
+  }
+  
+  try {
+    const res = await fetch(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-tts:generateContent?key=' + key,
+      { 
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: 'In a warm, natural, conversational pace: ' + text }] }],
+          generationConfig: {
+            responseModalities: ['AUDIO'],
+            speechConfig: {
+              voiceConfig: {
+                prebuiltVoiceConfig: {
+                  voiceName: voiceName
+                }
+              }
+            }
+          }
+        })
+      }
+    );
+    
+    if (!res.ok) {
+      speakFallback(text);
+      return;
+    }
+    
+    const d = await res.json();
+    const part = d?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+    if (!part) { 
+      speakFallback(text); 
+      return; 
+    }
+    
+    const pcm = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
+    const mt  = (part.mimeType || '').toLowerCase();
+    let blob;
+    if (mt.startsWith('audio/l16') || mt.includes('pcm') || mt === '') {
+      const hdr = new Uint8Array(buildWavHeader(pcm.byteLength));
+      const wav = new Uint8Array(44 + pcm.byteLength);
+      wav.set(hdr, 0); 
+      wav.set(pcm, 44);
+      blob = new Blob([wav], { type: 'audio/wav' });
+    } else { 
+      blob = new Blob([pcm], { type: mt }); 
+    }
+    
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => URL.revokeObjectURL(url);
+    audio.play();
+  } catch(e) { 
+    speakFallback(text); 
+  }
+}
