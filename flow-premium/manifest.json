@@ -102,6 +102,13 @@
         "mac": "Command+Shift+A"
       },
       "description": "Ask Gemi AI Studio about current page"
+    },
+    "stop-autopilot": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+X",
+        "mac": "Command+Shift+X"
+      },
+      "description": "Instantly stop the Autopilot agent"
     }
   },
   "sandbox": {

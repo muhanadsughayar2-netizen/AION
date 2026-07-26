@@ -629,7 +629,12 @@ let batchMetadata = null;
 
 // Listen for keyboard command (Ctrl+Shift+S)
 chrome.commands.onCommand.addListener(async (command) => {
-  if (command === 'capture') {
+  if (command === 'stop-autopilot') {
+    // Writes to session storage so the agent loop picks it up even if the
+    // popup is closed or in mini-mode and the local JS variable is unreachable.
+    await chrome.storage.session.set({ agentStopRequested: true });
+    console.log('[Aion Autopilot] Stop requested via global hotkey (Ctrl+Shift+X).');
+  } else if (command === 'capture') {
     captureScreenshot();
   } else if (command === 'ask-ai') {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });

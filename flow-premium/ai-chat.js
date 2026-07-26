@@ -11373,12 +11373,22 @@ async function runAgentTask(prompt, thread) {
   if (!apiKey) { showGeminiModal(); return; }
 
   agentStopRequested = false;
+  // Clear any stale stop signal from a previous run (e.g. hotkey pressed during
+  // a run that already ended, or popup reload while agent was mid-task).
+  await chrome.storage.session.remove('agentStopRequested').catch(() => {});
   resetAgentStepLog();
   const stopBtn = document.createElement('button');
   stopBtn.textContent = '■ Stop Autopilot';
   stopBtn.className = 'agent-stop-btn';
   stopBtn.style.cssText = 'display:block;margin:8px auto;padding:6px 14px;font-size:12px;border-radius:20px;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.3);color:#ff8080;cursor:pointer;';
-  stopBtn.addEventListener('click', () => { agentStopRequested = true; stopBtn.disabled = true; stopBtn.textContent = 'Stopping…'; });
+  stopBtn.addEventListener('click', () => {
+    agentStopRequested = true;
+    // Mirror into session storage so background.js hotkey and a re-opened
+    // popup both see the same signal.
+    chrome.storage.session.set({ agentStopRequested: true }).catch(() => {});
+    stopBtn.disabled = true;
+    stopBtn.textContent = 'Stopping…';
+  });
   thread.appendChild(stopBtn);
   // Shrink into a corner strip so the page Autopilot is controlling isn't
   // hidden behind the chat window. Expands back on click, or automatically
@@ -11441,10 +11451,23 @@ async function runAgentTask(prompt, thread) {
   const recentActions = [];    // loop detection: last 12 "action:arg" strings
 
   for (let step = 0; step < AGENT_MAX_STEPS; step++) {
+    // Check both the local flag (set by Stop button click) and session storage
+    // (set by the Ctrl+Shift+X global hotkey in background.js, which works even
+    // when the popup is in mini-mode or has been closed and reopened).
     if (agentStopRequested) {
       addAgentStepBubble(thread, 'Stopped by you.', 'error');
+      await chrome.storage.session.remove('agentStopRequested').catch(() => {});
       break;
     }
+    try {
+      const ss = await chrome.storage.session.get(['agentStopRequested']);
+      if (ss.agentStopRequested) {
+        agentStopRequested = true;
+        addAgentStepBubble(thread, 'Stopped by you.', 'error');
+        await chrome.storage.session.remove('agentStopRequested').catch(() => {});
+        break;
+      }
+    } catch (_) { /* session storage unavailable — continue */ }
 
     let data;
     try {
@@ -11563,8 +11586,14 @@ async function runAgentTask(prompt, thread) {
       );
     }
 
-    // 2.4: focus the task tab before each round of CDP actions (spec: focusAgentTab)
-    await focusAgentTab(tab);
+    // 2.4: focus the task tab before each round of CDP actions, but only when
+    // the tab's window is not already the focused window — prevents the agent
+    // from stealing focus away from the user on every single step, which makes
+    // clicking the Stop button nearly impossible while the agent is running.
+    try {
+      const agentWin = await chrome.windows.get(tab.windowId).catch(() => null);
+      if (!agentWin || !agentWin.focused) await focusAgentTab(tab);
+    } catch (_) { await focusAgentTab(tab); }
 
     // ── PARALLEL execution of all CDP calls ───────────────────────────────────
     const settledResults = await Promise.allSettled(
