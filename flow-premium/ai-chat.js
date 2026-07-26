@@ -10894,6 +10894,18 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'requestUserIntervention',
+      description: 'Call this when you cannot find an element, hit a CAPTCHA, need a secure confirmation, or require the user to manually click or type something before you can continue. The agent will speak the request aloud, show a Co-Pilot card, and pause until the user clicks "I\'ve done it".',
+      parameters: {
+        type: 'object',
+        properties: {
+          verbalRequest:   { type: 'string', description: 'The exact spoken request to say to the user, e.g. "I\'m having trouble finding the Extensions button. Could you please click it for me and then say done?"' },
+          expectedOutcome: { type: 'string', description: 'What you expect to appear or happen on screen after the user completes the action, so you know what to look for next.' }
+        },
+        required: ['verbalRequest']
+      }
+    },
+    {
       name: 'askUser',
       description: 'Pause execution and ask the user to make a choice or provide clarification. Use this when a step is ambiguous, requires permission, or when multiple paths are possible. The agent loop will pause until the user responds.',
       parameters: {
@@ -11331,6 +11343,75 @@ function smartWaitAfterAction(tabId, actionName) {
   });
 }
 
+// ── requestUserIntervention helper ────────────────────────────────────────────
+// Speaks the agent's request aloud, renders an amber Co-Pilot card, and returns
+// a Promise that resolves only when the user clicks "I've done it". Cancels any
+// currently-playing TTS first so voices don't overlap.
+function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
+  return new Promise((resolve) => {
+    // Cancel any in-flight speech so the intervention request plays cleanly
+    try { window.speechSynthesis.cancel(); } catch (_) {}
+    // Try the Gemini-backed speak() helper; fall back to Web Speech API
+    const activeVoice = localStorage.getItem('snaptoai_tts_voice') || 'Kore';
+    try {
+      if (typeof speak === 'function') { speak(verbalRequest, activeVoice); }
+      else { throw new Error('speak not in scope'); }
+    } catch (_) {
+      try {
+        const u = new SpeechSynthesisUtterance(verbalRequest);
+        u.rate = 0.92; u.pitch = 1.05;
+        window.speechSynthesis.speak(u);
+      } catch (_) {}
+    }
+
+    const card = document.createElement('div');
+    card.className = 'chat-bubble ai';
+    card.style.cssText = [
+      'background:rgba(245,158,11,0.07)',
+      'border:1px solid rgba(245,158,11,0.35)',
+      'padding:14px 16px',
+      'border-radius:14px',
+      'margin:8px 0',
+      'max-width:90%'
+    ].join(';');
+
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#f59e0b;margin-bottom:8px">
+        🤝 Co-Pilot Action Needed
+      </div>
+      <p style="font-size:13px;line-height:1.6;margin:0 0 12px;color:#e2e8f0">"${verbalRequest}"</p>
+      ${expectedOutcome ? `<p style="font-size:11px;color:rgba(245,158,11,0.65);margin:0 0 12px">Expected: ${expectedOutcome}</p>` : ''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="intv-done-btn" style="padding:7px 18px;background:#f59e0b;color:#000;border:none;border-radius:8px;font-weight:700;font-size:12px;cursor:pointer">✅ I've done it</button>
+        <button class="intv-speak-btn" style="padding:7px 12px;background:rgba(245,158,11,0.12);color:#f59e0b;border:1px solid rgba(245,158,11,0.3);border-radius:8px;font-size:12px;cursor:pointer">🔊 Repeat request</button>
+      </div>`;
+
+    thread.appendChild(card);
+    thread.scrollTop = thread.scrollHeight;
+
+    card.querySelector('.intv-speak-btn').addEventListener('click', () => {
+      try { window.speechSynthesis.cancel(); } catch (_) {}
+      try {
+        if (typeof speak === 'function') speak(verbalRequest, activeVoice);
+        else throw new Error();
+      } catch (_) {
+        try {
+          const u = new SpeechSynthesisUtterance(verbalRequest);
+          u.rate = 0.92; window.speechSynthesis.speak(u);
+        } catch (_) {}
+      }
+    });
+
+    card.querySelector('.intv-done-btn').addEventListener('click', () => {
+      const doneBtn = card.querySelector('.intv-done-btn');
+      doneBtn.disabled = true;
+      doneBtn.textContent = 'Resuming…';
+      doneBtn.style.opacity = '0.6';
+      resolve({ success: true, status: 'User confirmed completion' });
+    });
+  });
+}
+
 // ── askUser helper ─────────────────────────────────────────────────────────────
 // Renders an interactive choice card in the chat thread and returns a Promise
 // that resolves only when the user clicks a button (or submits free text).
@@ -11632,6 +11713,33 @@ async function runAgentTask(prompt, thread) {
     // Fix 6: collect responses for ALL client-side calls in this turn so they
     // go back to Gemini in ONE user turn, even if CDP calls are also present.
     const clientSideResponses = [];
+
+    // ── requestUserIntervention (Co-Pilot voice pause) ───────────────────────
+    // The agent speaks its request aloud and the loop freezes until the user
+    // clicks "I've done it". After confirmation: re-focus the task tab, refresh
+    // page text so the model sees the updated DOM, then continue to next turn.
+    const interventionCall = fnCallParts.find(p => p.functionCall.name === 'requestUserIntervention');
+    if (interventionCall) {
+      const { verbalRequest = 'I need your help. Please do the required action and click done.', expectedOutcome = '' } = interventionCall.functionCall.args || {};
+      updateAutopilotMiniStatus(`⏸ Waiting for you…`);
+      // Expand the mini-panel so the card and "I've done it" button are visible
+      await exitAutopilotMiniMode().catch(() => {});
+      const result = await awaitUserIntervention(thread, verbalRequest, expectedOutcome);
+      // Re-enter mini mode and restore status
+      await enterAutopilotMiniMode().catch(() => {});
+      updateAutopilotMiniStatus('Resuming…');
+      // Re-focus the task tab and grab a fresh page snapshot
+      await focusAgentTab(tab);
+      pageText = await getActiveTabPageText(tab.id).catch(() => pageText);
+      contents.push({
+        role: 'user',
+        parts: [{ functionResponse: {
+          name: 'requestUserIntervention',
+          response: { success: true, outcome: result.status }
+        }}]
+      });
+      continue;
+    }
 
     // ── askUser (Human-in-the-Loop) ──────────────────────────────────────────
     // Intercept before any CDP work. If the model called askUser, render the
