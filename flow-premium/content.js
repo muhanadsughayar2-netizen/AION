@@ -3950,6 +3950,26 @@
     };
   }
 
+  // === SHADOW DOM PIERCING UTILITY ===
+  // Standard querySelectorAll is blind to shadow roots. This traverses the
+  // entire DOM tree recursively — including all open and closed shadow roots —
+  // so elements inside Web Components (Google NotebookLM modals, AI Studio
+  // prompt editors, Office ribbon panes, etc.) are reachable by CSS selector.
+  function querySelectorAllShadow(selector, root = document) {
+    const arr = [];
+    const walk = (node) => {
+      if (!node) return;
+      if (node.nodeType === Node.ELEMENT_NODE) {
+        try { if (node.matches(selector)) arr.push(node); } catch (_) {}
+        if (node.shadowRoot) walk(node.shadowRoot);
+      }
+      let child = node.firstChild;
+      while (child) { walk(child); child = child.nextSibling; }
+    };
+    walk(root);
+    return arr;
+  }
+
   // === AGENT AUTOMATION HANDLER ===
   // Handles click, type, scroll, checkElement actions from agent-chat.js
   async function handleAgentAction(action, params) {
@@ -3972,10 +3992,11 @@
           element = document.querySelector(params.selector);
         }
         
-        // Plan B: Find by EXACT text match (for buttons like "1y", "Max", "Buy")
+        // Plan B: Find by EXACT text match — shadow-piercing so buttons inside
+        // Web Components (NotebookLM "Insert", AI Studio modals, etc.) are found.
         if (!element && params.text) {
           attemptedMethods.push(`exact text: "${params.text}"`);
-          const allClickable = document.querySelectorAll('button, a, span, div[role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"]');
+          const allClickable = querySelectorAllShadow('button, a, span, div[role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"]');
           for (const el of allClickable) {
             const elText = el.innerText?.trim().toLowerCase() || el.textContent?.trim().toLowerCase();
             if (elText === params.text.toLowerCase()) {
@@ -3986,10 +4007,10 @@
           }
         }
         
-        // Plan C: Find by partial text content (broader search)
+        // Plan C: Find by partial text content — shadow-piercing broad search
         if (!element && params.text) {
           attemptedMethods.push(`partial text: "${params.text}"`);
-          const allClickable = document.querySelectorAll('button, a, span, div[role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"]');
+          const allClickable = querySelectorAllShadow('button, a, span, div[role="button"], [role="tab"], [role="menuitem"], .btn, input[type="button"], input[type="submit"]');
           for (const el of allClickable) {
             if (el.textContent.trim().toLowerCase().includes(params.text.toLowerCase())) {
               element = el;
@@ -3999,24 +4020,35 @@
           }
         }
         
-        // Plan D: XPath fallback for deeply nested text
+        // Plan D: XPath for deeply nested text in the main document tree,
+        // then shadow-piercing fallback for elements XPath can't reach
         if (!element && params.text) {
-          attemptedMethods.push('xpath search');
-          const xpath = `//*[contains(text(), '${params.text}')]`;
-          const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
-          element = result.singleNodeValue;
-          if (element) showAgentBanner(`Found by xpath: "${params.text}"`);
+          attemptedMethods.push('xpath + shadow search');
+          try {
+            const xpath = `//*[contains(text(), '${params.text.replace(/'/g, "\\'")}')]`;
+            const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+            element = result.singleNodeValue;
+          } catch (_) {}
+          if (!element) {
+            // Shadow DOM fallback: aria-label, title, and value attributes
+            const candidates = querySelectorAllShadow('[aria-label], [title], [value], [placeholder]');
+            const needle = params.text.toLowerCase();
+            for (const el of candidates) {
+              const label = (el.getAttribute('aria-label') || el.getAttribute('title') || el.getAttribute('value') || el.getAttribute('placeholder') || '').toLowerCase();
+              if (label.includes(needle)) { element = el; break; }
+            }
+          }
+          if (element) showAgentBanner(`Found by xpath/shadow: "${params.text}"`);
         }
         
-        // Plan E: Try using description text as button label
+        // Plan E: Try using description text as button label — shadow-piercing
         if (!element && params.description) {
           attemptedMethods.push(`description text`);
-          // Extract potential button text from description (e.g., "Click the 1y button" -> "1y")
           const descWords = params.description.match(/["']([^"']+)["']|(\b\d+[ymdw]\b)|(\bMax\b|\bMin\b)/gi);
           if (descWords) {
             for (const word of descWords) {
               const cleanWord = word.replace(/["']/g, '').trim();
-              const allClickable = document.querySelectorAll('button, a, span, div[role="button"]');
+              const allClickable = querySelectorAllShadow('button, a, span, div[role="button"]');
               for (const el of allClickable) {
                 if (el.innerText?.trim().toLowerCase() === cleanWord.toLowerCase()) {
                   element = el;

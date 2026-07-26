@@ -5,7 +5,7 @@
 // Eliminates per-action attach/detach flashing and race conditions.
 // • Reuses the connection for the same tab (ref-counted).
 // • Serialises commands on a per-tab mutex so rapid/parallel actions never race.
-// • Schedules idle detach 10 s after the last release to avoid constant re-attaching.
+// • Schedules idle detach 45 s after the last release to avoid constant re-attaching.
 class CdpSessionPool {
   constructor() {
     this.sessions = new Map(); // tabId -> { count, timeout, attached }
@@ -52,7 +52,7 @@ class CdpSessionPool {
               s.attached = false;
               this.sessions.delete(tabId);
             }
-          }, 10000);
+          }, 45000); // 45 s — survives long waitForElement polls and slow SPA loads
         }
         releaseLock();
       };
