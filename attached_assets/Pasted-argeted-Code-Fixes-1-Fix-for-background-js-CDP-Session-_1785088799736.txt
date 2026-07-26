@@ -1,0 +1,163 @@
+argeted Code Fixes
+1. Fix for background.js (CDP Session Pool Timeout)
+Replace the release function inside the CdpSessionPool class in your background script with the following:
+code
+JavaScript
+// In background.js inside the CdpSessionPool class:
+const release = () => {
+  s.count = Math.max(0, s.count - 1);
+  if (s.count === 0) {
+    s.timeout = setTimeout(async () => {
+      if (s.count === 0 && s.attached) {
+        try { 
+          await chrome.debugger.detach({ tabId }); 
+        } catch (_) {}
+        s.attached = false;
+        this.sessions.delete(tabId);
+      }
+    }, 45000); // Increased to 45 seconds to survive long waitForElement polling
+  }
+  releaseLock();
+};
+2. Fix for ai-chat.js (Focus Protection)
+Replace your existing captureActiveTabScreenshot function with this focus-aware version:
+code
+JavaScript
+// In ai-chat.js:
+async function captureActiveTabScreenshot(tab) {
+  try {
+    if (!tab || !tab.windowId) return null;
+    
+    // Safety check: Only steal focus if the window is currently blurred
+    const win = await chrome.windows.get(tab.windowId).catch(() => null);
+    if (win && !win.focused) {
+      await focusAgentTab(tab);
+    }
+    
+    const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'jpeg', quality: 55 });
+    return dataUrl || null;
+  } catch (_e) {
+    return null;
+  }
+}
+3. Fix for ai-chat.js (Interruptible Dialogs)
+Update the Socratic/HITL interactive prompts (awaitUserChoice and awaitUserIntervention) so that they instantly reject if a stop command is issued:
+code
+JavaScript
+// In ai-chat.js:
+function awaitUserChoice(thread, question, options = [], allowFreeText = false) {
+  return new Promise((resolve, reject) => {
+    const card = document.createElement('div');
+    card.className = 'chat-bubble ai';
+    card.style.cssText = [
+      'background:rgba(99,102,241,0.08)',
+      'border:1px solid rgba(99,102,241,0.35)',
+      'padding:14px 16px',
+      'border-radius:14px',
+      'margin:8px 0',
+      'max-width:90%'
+    ].join(';');
+
+    const btnHtml = options.map(opt =>
+      `<button class="agent-choice-btn" data-val="${opt.replace(/"/g, '&quot;')}" style="` +
+      `margin:4px 4px 4px 0;padding:6px 13px;background:rgba(99,102,241,0.18);` +
+      `color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:8px;` +
+      `font-size:12px;cursor:pointer;transition:background .15s">${opt}</button>`
+    ).join('');
+
+    const freeTextHtml = allowFreeText
+      ? `<div style="margin-top:10px;display:flex;gap:6px">
+           <input class="agent-free-text" type="text" placeholder="Or type a custom answer…"
+             style="flex:1;padding:6px 10px;border-radius:8px;border:1px solid rgba(99,102,241,0.3);` +
+                    `background:rgba(30,30,40,0.6);color:#e2e8f0;font-size:12px"/>
+           <button class="agent-free-submit" style="padding:6px 12px;background:rgba(99,102,241,0.25);` +
+             `color:#a5b4fc;border:1px solid rgba(99,102,241,0.4);border-radius:8px;` +
+             `font-size:12px;cursor:pointer">Send</button>
+         </div>`
+      : '';
+
+    card.innerHTML = `
+      <div style="font-weight:600;margin-bottom:8px;color:#a5b4fc">🤔 Autopilot needs your input</div>
+      <div style="font-size:13px;margin-bottom:10px;line-height:1.5;color:#e2e8f0">${question}</div>
+      <div class="agent-choice-buttons">${btnHtml}</div>
+      ${freeTextHtml}`;
+
+    thread.appendChild(card);
+    thread.scrollTop = thread.scrollHeight;
+
+    const cleanUp = () => {
+      chrome.storage.onChanged.removeListener(stopListener);
+    };
+
+    const finish = (value) => {
+      cleanUp();
+      card.querySelectorAll('.agent-choice-btn').forEach(b => {
+        b.disabled = true;
+        b.style.opacity = b.getAttribute('data-val') === value ? '1' : '0.35';
+        if (b.getAttribute('data-val') === value) {
+          b.style.background = 'rgba(16,185,129,0.25)';
+          b.style.color = '#6ee7b7';
+          b.style.borderColor = 'rgba(16,185,129,0.4)';
+        }
+      });
+      const ft = card.querySelector('.agent-free-text');
+      const fs = card.querySelector('.agent-free-submit');
+      if (ft) { ft.disabled = true; ft.value = value; }
+      if (fs) fs.disabled = true;
+      resolve({ selection: value });
+    };
+
+    // INSTANT STOP DETECTOR
+    const stopListener = (changes, area) => {
+      if ((area === 'local' || area === 'session') && changes.agentStopRequested && changes.agentStopRequested.newValue) {
+        cleanUp();
+        card.innerHTML = `<div style="color: #ff8080; font-size: 12px;">🚫 Autopilot cancelled by user.</div>`;
+        reject(new Error('Task stopped by user'));
+      }
+    };
+    chrome.storage.onChanged.addListener(stopListener);
+
+    card.querySelectorAll('.agent-choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => finish(btn.getAttribute('data-val')));
+    });
+
+    const ftInput  = card.querySelector('.agent-free-text');
+    const ftSubmit = card.querySelector('.agent-free-submit');
+    if (ftInput && ftSubmit) {
+      const submitFree = () => { if (ftInput.value.trim()) finish(ftInput.value.trim()); };
+      ftSubmit.addEventListener('click', submitFree);
+      ftInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitFree(); });
+    }
+  });
+}
+Apply the same try/catch wrappers in the runAgentTask loops to gracefully exit when rejected:
+code
+JavaScript
+// In your runAgentTask loop inside ai-chat.js:
+try {
+  const userResponse = await awaitUserChoice(thread, question, options, allowFreeText);
+  // ... proceed ...
+} catch (err) {
+  if (err.message === 'Task stopped by user') break; // break loop smoothly
+}
+4. Fix for ai-chat.js (Unified API Key Retrieval for TTS)
+Replace the start of your speakGemini function with the following storage lookup block:
+code
+JavaScript
+// In ai-chat.js:
+async function speakGemini(text, voiceName='Zephyr') {
+  if (globalMuted) return;
+  
+  // Resolve key from the centralized extension sync storage first,
+  // falling back to local storage if needed.
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const key = keyResult.geminiApiKey || localStorage.getItem('lp_gemini_key');
+  
+  if (!key) { 
+    speakFallback(text); 
+    return; 
+  }
+  
+  // ... (keep the rest of your fetch and Web Audio play execution logic)
+}
+While browser automation presents dynamic and complex visual environments, these updates establish a much more resilient, user-friendly control loop, preventing focus stealing and ensuring immediate stopping behavior when comma
