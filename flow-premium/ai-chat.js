@@ -6289,9 +6289,9 @@ function showBroadcastCard(thread, options = {}) {
   }
 
   const SPEAKERS = {
-    ZEPHYR: { voice: 'Zephyr', role: 'Host',     color: '#2dd4bf', icon: '🎙️' },
+    ZEPHYR: { voice: 'Zephyr', role: 'Host',     color: '#60a5fa', icon: '🎙️' },
     KORE:   { voice: 'Kore',   role: 'Expert',   color: '#a78bfa', icon: '🎓' },
-    FENRIR: { voice: 'Fenrir', role: 'Creative', color: '#f97316', icon: '⚡' },
+    FENRIR: { voice: 'Puck',   role: 'Creative', color: '#f97316', icon: '⚡' },
   };
 
   const FORMATS = [
@@ -6313,10 +6313,11 @@ function showBroadcastCard(thread, options = {}) {
 
   const TRACKS = [
     { key: 'none',      label: '🚫 None',      prompt: null },
-    { key: 'lofi',      label: '☁️ Lo-fi',     prompt: 'Soft instrumental lo-fi background music for a podcast. Calm, warm, professional atmosphere. No vocals. Mellow backdrop beneath conversation.' },
-    { key: 'cinematic', label: '🎬 Cinematic', prompt: 'Epic cinematic orchestral background music. Dramatic, inspiring, documentary-style. No vocals. Suitable beneath narration.' },
-    { key: 'news',      label: '📰 News',      prompt: 'Professional TV news broadcast background music. Authoritative, modern, clean. Short staccato hits. No vocals.' },
-    { key: 'upbeat',    label: '🎸 Upbeat',    prompt: 'Upbeat positive motivational background music. Energetic, modern, corporate pop style. No vocals.' },
+    { key: 'lofi',      label: '☁️ Lo-fi',     prompt: 'Warm lo-fi podcast background music. Soft jazz-influenced piano with gentle rhodes chords, light brushed drums at 75 BPM, subtle vinyl crackle, mellow bass. Intimate and cosy. No melody that competes with speech. Ducked low, sits underneath conversation naturally. No vocals. Key of C major. Smooth loop with no dramatic changes.' },
+    { key: 'cinematic', label: '🎬 Cinematic', prompt: 'Epic cinematic documentary score. Rich orchestral strings building slowly with French horns, subtle choir pads, light timpani rolls. Majestic and intelligent — the feel of a BBC or Netflix documentary opening. No percussion drops. Evolves gradually over two minutes. No vocals. Dynamic and emotionally resonant beneath spoken narration.' },
+    { key: 'news',      label: '📰 News',      prompt: 'Professional broadcast news theme music. Tight syncopated piano stabs over a crisp snare pattern, driving bass line, occasional brass hits, high-energy strings. Modern CNN / BBC World Service energy. Authoritative and precise. Short clean loop without long sustains. No vocals.' },
+    { key: 'upbeat',    label: '🎸 Upbeat',    prompt: 'Modern upbeat tech-startup podcast background. Light acoustic guitar picking over a driving 120 BPM beat, bright synth pads, punchy kick. Positive, optimistic, forward-moving — like a TED Talk or How I Built This intro. No distracting melody. Sits low beneath speech. No vocals.' },
+    { key: 'deepdive',  label: '🔬 Deep Dive', prompt: 'Ambient intellectual background music for a deep-dive podcast. Slow, atmospheric synth pads in minor key with subtle arpeggiated piano, very gentle pulse at 60 BPM. Thoughtful, curious, meditative — like NotebookLM audio overview. No melodic phrases that compete with dialogue. Quiet and spacious. No vocals.' },
   ];
 
   // ── Helper: raw PCM / L16 → WAV blob ─────────────────────────
@@ -6416,20 +6417,106 @@ function showBroadcastCard(thread, options = {}) {
 
   // ── System prompt varies by format and target length ─────────
   function bcSysPrompt(format, exchanges) {
-    const base = `FORMAT (strict — output ONLY script lines, nothing else):
-ZEPHYR: [one or two spoken sentences]
-KORE: [one or two spoken sentences]
-FENRIR: [one or two spoken sentences]
-...${exchanges} exchanges total
-No stage directions. No asterisks. No markdown. Natural spoken language only.`;
+    const strict = `
+OUTPUT RULES (non-negotiable):
+- Output ONLY script lines. No titles, no stage directions, no asterisks, no markdown, no scene labels.
+- Every line must start with exactly one of: ZEPHYR: / KORE: / FENRIR:
+- Natural spoken language only — contractions, incomplete sentences, interruptions are encouraged.
+- Write exactly ${exchanges} lines total.
+- NEVER open with "Welcome to...", "Hello everyone", "Hi I'm...", or any studio/show greeting. Start in the middle of something interesting.`;
+
     const map = {
-      talkshow:     `You are a professional podcast scriptwriter. Write a lively 3-person talk show script from the source material.\n\n${base}\n\nZEPHYR = warm engaging host, KORE = knowledgeable expert, FENRIR = bold creative voice. Start with ZEPHYR introducing the topic.`,
-      tutorial:     `You are a scriptwriter creating an educational tutorial broadcast.\n\n${base}\n\nZEPHYR = friendly instructor walking through content step by step, KORE = student asking smart clarifying questions, FENRIR = adds real-world tips and examples. Start with ZEPHYR introducing what will be learned.`,
-      solotutorial: `You are writing a solo app tutorial script for ONE speaker only: FENRIR.\n\n${base}\n\nCHARACTER — FENRIR is "The Trusted Expert Friend":\n- He knows this app inside out, as if he built it himself.\n- He speaks like he is showing a close friend, not reading a manual.\n- He is calm and confident — never salesy, never hyped, never hedging. He says "this works" not "this might work".\n- He calls out every action in sequence with clear timing cues: "First... now click... watch what happens here... see that? That is the moment."\n- He explains WHY each feature exists, not just WHAT it does — because trust comes from understanding.\n- He sounds like a smart friend who has used this app a thousand times and is simply sharing what he knows.\n- Think MKBHD energy: clear, authoritative, warm, zero fluff.\n\nCRITICAL RULES:\n- EVERY single line MUST start with "FENRIR:" — no ZEPHYR, no KORE, no other speakers ever.\n- Write exactly ${exchanges} lines.\n- Structure: Powerful hook → What the app does and why it matters → Walk through each feature step by step with timing cues → Real-world benefit that changes the user's life → Memorable sign-off.\n- Each line 10-25 words. Mix short punchy sentences with slightly longer explanatory ones for natural rhythm.\n- Use "..." for natural pauses. No filler words.\n- Anticipate doubts and answer them before the viewer even thinks them.\n- End with a sign-off so good it sticks in memory.\n\nStart with FENRIR delivering a hook that makes someone stop scrolling immediately.`,
-      appdemo:      `You are a scriptwriter creating an app or product demo broadcast.\n\n${base}\n\nZEPHYR = main presenter showcasing features enthusiastically, KORE = excited first-time user reacting, FENRIR = technical expert adding context. Start with ZEPHYR with a strong opening hook.`,
-      presentation: `You are a scriptwriter creating a professional business presentation broadcast.\n\n${base}\n\nZEPHYR = main presenter delivering key points, KORE = co-presenter adding supporting evidence, FENRIR = reinforces and summarizes takeaways. Professional, polished language. Start with ZEPHYR with an executive summary.`,
-      narrator:     `You are a scriptwriter creating a documentary-style narrative broadcast.\n\n${base}\n\nZEPHYR = primary narrator (~50% of lines), KORE = provides perspective and counterpoint (~30%), FENRIR = delivers impactful conclusions (~20%). Measured, compelling language. Start with ZEPHYR.`,
-      trailer:      `You are writing a HOLLYWOOD BLOCKBUSTER MOVIE TRAILER voiceover script. ONE narrator only — FENRIR — no other speakers.\n\n${base}\n\nCRITICAL RULES:\n- EVERY line MUST start with "FENRIR:" — no ZEPHYR, no KORE, no exceptions.\n- Write exactly ${exchanges} lines, each 5-20 words — SHORT and PUNCHY.\n- Tone: EPIC, cinematic, world-changing, urgent, electrifying. Think Christopher Nolan meets Apple Keynote.\n- NO questions from anyone. This is a powerful dramatic MONOLOGUE.\n- Use "..." for dramatic pauses within a line. Build intensity with each line.\n\nNARRATIVE ARC (hit every beat):\n1. Lines 1-2: Explosive world-setting hook — paint the world BEFORE ("In a world where chaos rules the screen...")\n2. Lines 3-4: The problem — what was missing, what was broken, what was impossible\n3. Lines 5-${Math.max(6,Math.floor(exchanges*0.55))}: Rising intensity — introduce the hero. Name it. Reveal its power. Drop feature after feature like punches.\n4. Lines ${Math.max(7,Math.floor(exchanges*0.55)+1)}-${exchanges-2}: CLIMAX — peak excitement, game-changing moment, the world transformed\n5. Lines ${exchanges-1}-${exchanges}: ICONIC TAGLINE and rallying call to action — make it unforgettable.\n\nEnd on something that sends chills. Make every word earn its place.`,
+      talkshow: `You are writing an NPR / Lex Fridman-level podcast script. Two hosts (ZEPHYR and KORE) go deep on the topic — the way NotebookLM Audio Overview works. A third voice (FENRIR) drops in with surprising takes.
+
+CHARACTERS:
+- ZEPHYR: The curious, sharp host. Asks the question everyone is thinking but couldn't articulate. Drives the conversation forward with genuine wonder.
+- KORE: The quietly brilliant expert. Explains complex ideas with perfect analogies. Occasionally surprises ZEPHYR with something unexpected.
+- FENRIR: The contrarian creative. Pushes back, spots the uncomfortable implication, adds the pop-culture angle nobody else noticed.
+
+STRUCTURE — follow this arc:
+1. Open mid-thought with a striking observation or surprising fact (no greeting).
+2. Build genuine back-and-forth — reactions like "Wait, so you're saying...", "Hold on — that means...", "I never thought about it that way".
+3. Go DEEP on 2-3 key ideas from the source — not a surface summary.
+4. Include at least one moment of genuine surprise or disagreement.
+5. End with a takeaway that reframes how the listener thinks about the topic.
+
+${strict}`,
+
+      tutorial: `You are writing an educational podcast script — the way the best Coursera instructors teach. ZEPHYR teaches, KORE is the brilliant student who asks exactly the right questions, FENRIR brings real-world war stories.
+
+CHARACTERS:
+- ZEPHYR: Master teacher. Builds understanding layer by layer. Uses concrete examples and analogies, never jargon-first.
+- KORE: The sharp student. Asks clarifying questions that reveal the deeper complexity. Occasionally catches something ZEPHYR glossed over.
+- FENRIR: The practitioner. "I actually did this last week and here's what happened..." Grounds every concept in reality.
+
+STRUCTURE:
+1. Open with the single most important thing to understand — stated as a surprising truth, not an intro.
+2. Build concept → example → implication for each key idea.
+3. KORE should ask at least 2 questions that genuinely advance the explanation.
+4. FENRIR should give 1-2 real-world moments that make the theory click.
+5. End with the one mental model the listener should carry forever.
+
+${strict}`,
+
+      solotutorial: `You are writing a solo narration for ONE speaker: FENRIR. Think MKBHD meets Linus Tech Tips — authoritative, warm, zero corporate energy.
+
+CHARACTER — FENRIR is the trusted expert friend:
+- Knows this material cold. Speaks like he built it himself.
+- Uses timing cues naturally: "here's the thing...", "watch what happens...", "and this is the part most people miss..."
+- Explains WHY things exist, not just WHAT they are.
+- Never hedges. Says "this works" not "this might work."
+- Every line earns its place — no filler, no padding.
+
+STRUCTURE: Scroll-stopping hook → The core insight → Step-by-step with natural timing → The moment it clicks → Sign-off so good it sticks.
+
+CRITICAL: EVERY line must start with "FENRIR:" — no exceptions. Write exactly ${exchanges} lines.
+${strict}`,
+
+      appdemo: `You are writing an app demo broadcast — the energy of an Apple Keynote meets a live product hunt launch. ZEPHYR presents, KORE reacts as a genuine first-time user, FENRIR adds the technical depth.
+
+CHARACTERS:
+- ZEPHYR: The evangelist presenter. Opens with a hook that makes the listener lean in. Shows features through storytelling, not feature lists.
+- KORE: Authentic first-time user. Genuine "oh wow" reactions, real questions a new user would actually ask.
+- FENRIR: The technical validator. "Under the hood, what's actually happening here is..." Gives credibility to every claim.
+
+STRUCTURE: Provocative opening hook → Problem it solves → Live feature walk-through → The moment it all clicks → Why this changes things.
+
+${strict}`,
+
+      presentation: `You are writing a high-stakes boardroom / keynote presentation script. Think TED Talk with the precision of a McKinsey deck read aloud.
+
+CHARACTERS:
+- ZEPHYR: Lead presenter. Every sentence is a headline. Builds the argument with surgical clarity.
+- KORE: Co-presenter adding supporting data, case studies, and evidence. The voice of credibility.
+- FENRIR: The strategist who names the uncomfortable truth and explains why it matters now.
+
+STRUCTURE: The single most important insight first → Build the case → Evidence → The implication most people miss → Call to action.
+
+${strict}`,
+
+      narrator: `You are writing a BBC / Netflix documentary script. Two primary narrators (ZEPHYR, KORE) build the story, FENRIR delivers the conclusions with gravitas.
+
+TONE: Measured, intelligent, deeply human. Every sentence should feel like it could open a paragraph in The Economist.
+
+STRUCTURE: Open with a scene-setting moment → Build context and history → The turning point → What it reveals about the bigger picture → Resonant closing thought.
+
+VOICE BALANCE: ZEPHYR ~50%, KORE ~30%, FENRIR ~20%.
+
+${strict}`,
+
+      trailer: `You are writing a HOLLYWOOD BLOCKBUSTER MOVIE TRAILER voiceover. ONE narrator only: FENRIR.
+
+TONE: Earth-shaking gravitas. Christopher Nolan meets Apple Keynote. Every word a punch.
+RULES: EVERY line starts with "FENRIR:" — no exceptions. Lines 5-20 words. Short, punchy, escalating.
+
+ARC:
+Lines 1-2: World-setting hook — paint what was BEFORE.
+Lines 3-4: The problem. What was impossible. What was broken.
+Lines 5-${Math.max(6,Math.floor(exchanges*0.55))}: Rising power — the hero arrives. Feature after feature, each bigger than the last.
+Lines ${Math.max(7,Math.floor(exchanges*0.55)+1)}-${exchanges-2}: CLIMAX — the world changes. The stakes become enormous.
+Lines ${exchanges-1}-${exchanges}: ICONIC tagline + rallying call to action. Sends chills.
+
+${strict}`,
     };
     return map[format] || map.talkshow;
   }
@@ -6437,13 +6524,13 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
   // ── TTS speaking style prefix by format ──────────────────────
   function bcTtsStyle(format) {
     const map = {
-      talkshow:     'Speak naturally and conversationally as if live on a talk show: ',
-      tutorial:     'Speak clearly and educationally as a friendly instructor: ',
-      solotutorial: 'You are a confident, charismatic tech YouTuber presenting a professional app tutorial. Speak with energy, clarity, and authority — like you have a million subscribers watching: ',
-      appdemo:      'Speak enthusiastically as if presenting an exciting product demo: ',
-      presentation: 'Speak professionally and authoritatively as in a business presentation: ',
-      narrator:     'Speak like a compelling documentary narrator, measured and thoughtful: ',
-      trailer:      'You are a legendary Hollywood movie trailer voice. Deliver every word with earth-shaking gravitas, dramatic power, and cinematic intensity — as if the fate of the world depends on it: ',
+      talkshow:     'Speak naturally, warmly and conversationally — like two brilliant friends genuinely excited about this topic. Real cadence, real pauses, real curiosity: ',
+      tutorial:     'Speak clearly with the warmth of the best teacher you ever had. Build each idea step by step. Let understanding land before moving on: ',
+      solotutorial: 'Confident, direct, zero wasted words. You know this cold. Speak like MKBHD — authoritative, warm, naturally paced, never rushed: ',
+      appdemo:      'Speak with genuine excitement and energy — not salesy, but like you just discovered something and need to share it right now: ',
+      presentation: 'Speak with measured authority. Every sentence is a headline. Clear, decisive, commanding — the voice of someone who has done the work: ',
+      narrator:     'Speak like a BBC documentary narrator. Measured pace, rich tone, every word chosen. Let the gravity of the ideas breathe: ',
+      trailer:      'Deliver with cinematic thunder — deep, slow, powerful. Every word lands like a drumbeat. Long pauses between sentences. The fate of the world is in your voice: ',
     };
     return map[format] || map.talkshow;
   }
@@ -6454,26 +6541,26 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
   card.style.cssText = 'padding:0;margin:8px 0;background:transparent;border:none;max-width:100%;width:100%;';
 
   card.innerHTML = `
-<div style="background:linear-gradient(135deg,rgba(45,212,191,0.07),rgba(124,58,237,0.04));border:1px solid rgba(45,212,191,0.15);border-radius:16px;padding:18px;backdrop-filter:blur(10px);">
+<div style="background:linear-gradient(135deg,rgba(96,165,250,0.06),rgba(167,139,250,0.06));border:1px solid rgba(99,102,241,0.2);border-radius:16px;padding:18px;backdrop-filter:blur(10px);">
 
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
     <div style="display:flex;align-items:center;gap:9px;">
       <span style="font-size:22px;">🎙️</span>
       <div>
-        <div style="font-size:15px;font-weight:700;color:#e8eef4;">Broadcast Studio</div>
-        <div style="font-size:11px;color:#667788;">Turn any content into a multi-voice AI broadcast</div>
+        <div style="font-size:15px;font-weight:700;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">Broadcast Studio</div>
+        <div style="font-size:11px;color:#667788;">Gemini-powered · NotebookLM-style deep dives</div>
       </div>
     </div>
     <div class="bc-live-badge" style="display:none;align-items:center;gap:5px;padding:3px 9px;border-radius:20px;background:rgba(239,68,68,0.13);border:1px solid rgba(239,68,68,0.38);">
       <span style="width:7px;height:7px;border-radius:50%;background:#ef4444;display:inline-block;animation:bcPulse 1.1s ease-in-out infinite;"></span>
-      <span style="font-size:10px;font-weight:700;color:#ef4444;letter-spacing:0.07em;">LIVE</span>
+      <span style="font-size:10px;font-weight:700;color:#ef4444;letter-spacing:0.07em;">ON AIR</span>
     </div>
   </div>
 
   <div style="display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap;">
-    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(45,212,191,0.08);border:1px solid rgba(45,212,191,0.2);font-size:10px;color:#2dd4bf;">🎙️ <b>Zephyr</b>&nbsp;<span style="opacity:0.5;">Host</span></div>
+    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.2);font-size:10px;color:#60a5fa;">🎙️ <b>Zephyr</b>&nbsp;<span style="opacity:0.5;">Host</span></div>
     <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);font-size:10px;color:#a78bfa;">🎓 <b>Kore</b>&nbsp;<span style="opacity:0.5;">Expert</span></div>
-    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);font-size:10px;color:#f97316;">⚡ <b>Fenrir</b>&nbsp;<span style="opacity:0.5;">Creative</span></div>
+    <div style="display:flex;align-items:center;gap:3px;padding:3px 8px;border-radius:10px;background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.2);font-size:10px;color:#f97316;">⚡ <b>Puck</b>&nbsp;<span style="opacity:0.5;">Creative</span></div>
   </div>
 
   <div class="bc-input-sec" ${options.hidePicker ? 'style="display:none;"' : ''}>
@@ -6520,6 +6607,7 @@ No stage directions. No asterisks. No markdown. Natural spoken language only.`;
       <div style="display:flex;gap:5px;flex-wrap:wrap;">
         <button class="bc-pill bc-trk" data-trk="none">🚫 None</button>
         <button class="bc-pill bc-trk active" data-trk="lofi">☁️ Lo-fi</button>
+        <button class="bc-pill bc-trk" data-trk="deepdive">🔬 Deep Dive</button>
         <button class="bc-pill bc-trk" data-trk="cinematic">🎬 Cinematic</button>
         <button class="bc-pill bc-trk" data-trk="news">📰 News</button>
         <button class="bc-pill bc-trk" data-trk="upbeat">🎸 Upbeat</button>
