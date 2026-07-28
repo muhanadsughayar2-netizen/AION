@@ -860,6 +860,117 @@ function speakText(text, langCode = null) {
   return utterance;
 }
 
+// ── Agent Voice (Gemini TTS – Aoede, melodic & clear female) ─────────────────
+// Used by awaitUserIntervention when the autopilot gets stuck and needs to
+// speak a request aloud. Completely independent of the Read-button TTS session.
+const _agentVoice = { audio: null, controller: null };
+
+async function agentSpeak(text) {
+  // Stop anything already playing
+  if (_agentVoice.audio) { try { _agentVoice.audio.pause(); } catch (_) {} _agentVoice.audio = null; }
+  if (_agentVoice.controller) { try { _agentVoice.controller.abort(); } catch (_) {} }
+  try { window.speechSynthesis.cancel(); } catch (_) {}
+
+  // Sanitise — strip markdown symbols, keep plain speech
+  const clean = text
+    .replace(/```[\s\S]*?```/g, 'code block')
+    .replace(/[#*_~`>|]/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 1200);
+
+  if (!clean) return;
+
+  // Fetch API key
+  let apiKey = '';
+  try { const r = await chrome.storage.sync.get(['geminiApiKey']); apiKey = r.geminiApiKey || ''; } catch (_) {}
+
+  if (!apiKey) {
+    // No key → browser fallback
+    _browserFallbackSpeak(clean);
+    return;
+  }
+
+  const controller = new AbortController();
+  _agentVoice.controller = controller;
+
+  const models = [MODELS.ttsPrimary, MODELS.ttsFallback];
+  let audioUrl = null;
+
+  for (const model of models) {
+    if (controller.signal.aborted) break;
+    try {
+      const resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        {
+          method: 'POST',
+          signal: controller.signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: `In a calm, clear, natural tone: ${clean}` }] }],
+            generationConfig: {
+              responseModalities: ['AUDIO'],
+              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } }
+            }
+          })
+        }
+      );
+      if (!resp.ok) continue;
+      const data = await resp.json();
+      const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+      if (!part?.data) continue;
+
+      const mimeType = (part.mimeType || '').toLowerCase();
+      const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
+      let blob;
+      if (mimeType.includes('pcm') || mimeType.startsWith('audio/l16') || mimeType.startsWith('audio/l-16') || mimeType === '') {
+        // Wrap raw PCM in a WAV header
+        const sr = 24000, ch = 1, bps = 16;
+        const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
+        const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+        ws(0,'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true); ws(8,'WAVE'); ws(12,'fmt ');
+        dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
+        dv.setUint32(24, sr, true); dv.setUint32(28, sr * ch * bps / 8, true);
+        dv.setUint16(32, ch * bps / 8, true); dv.setUint16(34, bps, true);
+        ws(36,'data'); dv.setUint32(40, rawBytes.byteLength, true);
+        blob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
+      } else {
+        blob = new Blob([rawBytes], { type: mimeType });
+      }
+      audioUrl = URL.createObjectURL(blob);
+      break;
+    } catch (e) {
+      if (e.name === 'AbortError') return;
+      // try next model
+    }
+  }
+
+  if (!audioUrl) {
+    // All models failed → browser fallback
+    _browserFallbackSpeak(clean);
+    return;
+  }
+
+  const audio = new Audio(audioUrl);
+  _agentVoice.audio = audio;
+  audio.onended = () => { try { URL.revokeObjectURL(audioUrl); } catch (_) {} _agentVoice.audio = null; };
+  audio.onerror  = () => { try { URL.revokeObjectURL(audioUrl); } catch (_) {} _agentVoice.audio = null; };
+  audio.play().catch(() => { _browserFallbackSpeak(clean); });
+}
+
+function _browserFallbackSpeak(text) {
+  try {
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.92; u.pitch = 1.1;
+    const vList = window.speechSynthesis.getVoices();
+    const fem = vList.find(v => /female|zira|samantha|victoria|karen|moira|fiona/i.test(v.name)) ||
+                vList.find(v => v.lang.startsWith('en'));
+    if (fem) u.voice = fem;
+    window.speechSynthesis.speak(u);
+  } catch (_) {}
+}
+
 let currentImages = []; // Support multiple images
 let currentPageText = '';
 let conversationHistory = [];
@@ -11403,18 +11514,8 @@ function smartWaitAfterAction(tabId, actionName) {
 // currently-playing TTS first so voices don't overlap.
 function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
   return new Promise((resolve, reject) => {
-    try { window.speechSynthesis.cancel(); } catch (_) {}
-    const activeVoice = localStorage.getItem('snaptoai_tts_voice') || 'Kore';
-    try {
-      if (typeof speak === 'function') { speak(verbalRequest, activeVoice); }
-      else { throw new Error('speak not in scope'); }
-    } catch (_) {
-      try {
-        const u = new SpeechSynthesisUtterance(verbalRequest);
-        u.rate = 0.92; u.pitch = 1.05;
-        window.speechSynthesis.speak(u);
-      } catch (_) {}
-    }
+    // Speak with Gemini TTS – Aoede (melodic, clear female voice)
+    agentSpeak(verbalRequest);
 
     const card = document.createElement('div');
     card.className = 'chat-bubble ai';
@@ -11454,16 +11555,8 @@ function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
     chrome.storage.onChanged.addListener(stopListener);
 
     card.querySelector('.intv-speak-btn').addEventListener('click', () => {
-      try { window.speechSynthesis.cancel(); } catch (_) {}
-      try {
-        if (typeof speak === 'function') speak(verbalRequest, activeVoice);
-        else throw new Error();
-      } catch (_) {
-        try {
-          const u = new SpeechSynthesisUtterance(verbalRequest);
-          u.rate = 0.92; window.speechSynthesis.speak(u);
-        } catch (_) {}
-      }
+      // Re-speak with the same Gemini TTS Aoede voice
+      agentSpeak(verbalRequest);
     });
 
     card.querySelector('.intv-done-btn').addEventListener('click', () => {
