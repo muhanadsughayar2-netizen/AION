@@ -34,9 +34,9 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 24px;
-      background: linear-gradient(180deg, var(--st-bg-elevated) 0%, var(--st-bg-rail) 100%);
-      border-bottom: 1px solid rgba(66, 133, 244, 0.3);
+      padding: 9px 16px;
+      background: var(--st-bg-elevated);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
     
     .header-left {
@@ -52,8 +52,8 @@
     }
     
     .logo span {
-      color: #2dd4bf;
-      -webkit-text-fill-color: #2dd4bf;
+      color: #94a3b8;
+      -webkit-text-fill-color: #94a3b8;
     }
     
     .close-btn {
@@ -220,9 +220,9 @@
     }
     
     .image-panel {
-      width: 25%;
-      min-width: 180px;
-      max-width: 280px;
+      width: 20%;
+      min-width: 140px;
+      max-width: 210px;
       background: var(--st-bg-surface);
       border-right: 1px solid rgba(255, 255, 255, 0.1);
       display: flex;
@@ -384,16 +384,16 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      background: linear-gradient(180deg, var(--st-bg-elevated) 0%, var(--st-bg-rail) 100%);
+      background: var(--st-bg-elevated);
     }
     
     .chat-thread {
       flex: 1;
       overflow-y: auto;
-      padding: 24px;
+      padding: 16px 18px;
       display: flex;
       flex-direction: column;
-      gap: 16px;
+      gap: 10px;
     }
     
     .welcome-message { display: none !important; }
@@ -424,10 +424,10 @@
       justify-content: center;
       gap: 10px;
       padding: 6px 14px;
-      background: linear-gradient(90deg, rgba(168, 85, 247, 0.15) 0%, rgba(66, 133, 244, 0.1) 100%);
-      border: 1px solid rgba(168, 85, 247, 0.3);
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
       border-radius: 8px;
-      font-size: 12px;
+      font-size: 11px;
       margin: 0;
     }
     
@@ -457,8 +457,8 @@
     }
     
     .credits-banner-link {
-      color: #a855f7;
-      font-weight: 600;
+      color: #7c9cbf;
+      font-weight: 500;
       text-decoration: none;
       display: inline-flex;
       align-items: center;
@@ -467,7 +467,7 @@
     }
     
     .credits-banner-link:hover {
-      color: #c084fc;
+      color: #a8c4e0;
     }
     
     .credits-banner-link svg {
@@ -505,32 +505,33 @@
 
     .chat-bubble.ai {
       align-self: flex-start;
-      background: #1e2128;
-      color: #e8eaed;
+      background: transparent;
+      color: #c8cdd5;
       border-bottom-left-radius: 5px;
-      border: 1px solid rgba(255,255,255,0.09);
-      line-height: 1.85;
+      border: none;
+      line-height: 1.75;
+      padding-left: 4px;
     }
 
     /* AI response typography */
     .chat-bubble.ai h1,
     .chat-bubble.ai h2,
     .chat-bubble.ai h3 {
-      color: #2dd4bf;
-      font-weight: 700;
-      margin: 16px 0 6px;
+      color: #dde2ea;
+      font-weight: 600;
+      margin: 14px 0 5px;
       line-height: 1.35;
     }
     .chat-bubble.ai h1 { font-size: 16px; }
     .chat-bubble.ai h2 { font-size: 15px; }
     .chat-bubble.ai h3 { font-size: 14px; }
-    .chat-bubble.ai strong { color: #2dd4bf; font-weight: 700; }
+    .chat-bubble.ai strong { color: #dde2ea; font-weight: 600; }
     .chat-bubble.ai em { color: #a8b8cc; font-style: italic; }
-    .chat-bubble.ai a { color: #38bdf8; text-decoration: none; border-bottom: 1px solid rgba(56,189,248,0.3); }
-    .chat-bubble.ai a:hover { border-bottom-color: #38bdf8; }
+    .chat-bubble.ai a { color: #7eb8e8; text-decoration: none; border-bottom: 1px solid rgba(126,184,232,0.25); }
+    .chat-bubble.ai a:hover { border-bottom-color: #7eb8e8; }
     .chat-bubble.ai ul, .chat-bubble.ai ol { margin: 10px 0; padding-left: 22px; }
-    .chat-bubble.ai li { margin: 7px 0; color: #dde2ea; }
-    .chat-bubble.ai li::marker { color: #2dd4bf; font-weight: 700; }
+    .chat-bubble.ai li { margin: 7px 0; color: #c8cdd5; }
+    .chat-bubble.ai li::marker { color: #7c9cbf; font-weight: 600; }
     .chat-bubble.ai code {
       background: rgba(99,102,241,0.14);
       color: #c4b5fd;
@@ -562,8 +563,8 @@
       white-space: pre-wrap;
     }
     .chat-bubble.ai blockquote {
-      border-left: 3px solid #2dd4bf;
-      background: rgba(45,212,191,0.05);
+      border-left: 3px solid rgba(126,184,232,0.45);
+      background: rgba(126,184,232,0.04);
       padding: 8px 14px;
       border-radius: 0 8px 8px 0;
       margin: 10px 0;

@@ -11206,7 +11206,7 @@ function addAgentStepBubble(thread, text, kind) {
     const bubble = document.createElement('div');
     bubble.className = 'chat-bubble ai agent-step';
     const icon = kind === 'done' ? '✅' : '⚠️';
-    bubble.style.cssText = 'background:rgba(56,189,248,0.08);border:1px solid rgba(56,189,248,0.22);font-size:12.5px;color:rgba(255,255,255,0.85);padding:9px 13px;border-radius:10px;margin-bottom:3px;';
+    bubble.style.cssText = 'background:transparent;border:none;font-size:14px;color:#c8cdd5;padding:6px 4px;border-radius:0;margin-bottom:2px;line-height:1.75;';
     bubble.innerHTML = `<span style="margin-right:6px;">${icon}</span>${text}`;
     updateAutopilotMiniStatus(text);
     thread.appendChild(bubble);
@@ -11217,14 +11217,14 @@ function addAgentStepBubble(thread, text, kind) {
   // Normal steps: append as a compact row inside ONE shared log block
   if (!_agentLogContainer || !_agentLogContainer.isConnected) {
     _agentLogContainer = document.createElement('div');
-    _agentLogContainer.style.cssText = 'background:rgba(56,189,248,0.06);border:1px solid rgba(56,189,248,0.18);border-radius:10px;padding:8px 12px;font-size:12px;color:rgba(255,255,255,0.75);margin-bottom:3px;display:flex;flex-direction:column;gap:3px;';
+    _agentLogContainer.style.cssText = 'background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:10px;padding:10px 12px;font-size:13.5px;color:#c8cdd5;margin-bottom:2px;display:flex;flex-direction:column;gap:5px;line-height:1.75;';
     thread.appendChild(_agentLogContainer);
   }
 
   _agentStepCount++;
   const row = document.createElement('div');
   row.style.cssText = 'display:flex;align-items:baseline;gap:6px;line-height:1.4;';
-  row.innerHTML = `<span style="color:rgba(56,189,248,0.5);font-size:10px;flex-shrink:0;">${_agentStepCount}.</span><span>${text}</span>`;
+  row.innerHTML = `<span style="color:rgba(148,163,184,0.55);font-size:12px;flex-shrink:0;font-weight:500;">${_agentStepCount}.</span><span style="color:#c8cdd5;">${text}</span>`;
   _agentLogContainer.appendChild(row);
   updateAutopilotMiniStatus(text);
   thread.scrollTop = thread.scrollHeight;
