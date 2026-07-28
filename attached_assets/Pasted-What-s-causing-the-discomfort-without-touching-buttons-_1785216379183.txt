@@ -1,0 +1,27 @@
+What's causing the discomfort (without touching buttons)
+1. 📦 Box-in-box nesting (biggest culprit)
+The AI response text sits inside a dark grey card (#1e2128 with a border), which sits inside another dark background. Gemini puts text directly on the canvas — no card, no border around the reply. That single difference makes Gemini feel open and Aion feel cramped, like reading inside a box inside a box.
+
+2. 🟢 Neon teal text on black (#2dd4bf) causes eye glare
+Every bold word, every heading, every bullet-point marker is neon teal. On a pure-black background this creates chromatic aberration — your eye muscles have to work harder to focus the text. Gemini uses soft off-white for body text. The neon should only appear as a subtle accent, not the primary text color.
+
+3. 🏗️ Header is too tall and the purple banner competes
+The header has padding: 16px 24px plus the credits banner inside it. That banner has a purple gradient and purple border that your eye is pulled to constantly (called attentional capture) — it fights with the actual chat for attention. The header alone is eating ~20% of vertical reading space.
+
+4. 📐 The screenshot sidebar steals 25% of the width
+When a screenshot is attached, the left panel is min-width: 180px which pushes the whole chat column off-center. On a narrow side-by-side window this forces lines to wrap very short and the conversation feels squeezed into a sliver.
+
+5. 📖 Line height and text color on the AI bubble
+The body text is color: #e8eaed which is close to pure white — on near-black this causes the halation effect (letters appear to bleed/blur). Slightly lowering the brightness to #c8cdd5 would instantly reduce eye strain.
+
+6. 🎨 The chat-panel background is a gradient
+The chat-panel and chat-thread both have layered gradients. This adds subtle depth but also makes the eye subconsciously sense the surface isn't flat, adding low-level cognitive processing.
+
+The rank order (which to fix first for maximum comfort)
+#	Problem	Impact
+1	AI bubble box-in-box (remove background/border)	🔴 Highest
+2	Neon teal #2dd4bf on text/headings/bullets	🔴 Highest
+3	Header height + credits banner prominence	🟠 High
+4	Body text color too close to pure white on black	🟠 High
+5	Screenshot sidebar min-width too wide	🟡 Medium
+6	Gradient background on chat panel	🟡 Low (subtle)
