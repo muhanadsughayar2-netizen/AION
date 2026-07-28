@@ -11230,11 +11230,30 @@ function addAgentStepBubble(thread, text, kind) {
     const bubble = document.createElement('div');
     bubble.className = 'chat-bubble ai agent-step';
     const icon = kind === 'done' ? '✅' : '⚠️';
-    bubble.style.cssText = 'background:transparent;border:none;font-size:14px;color:#c8cdd5;padding:6px 4px;border-radius:0;margin-bottom:2px;line-height:1.75;';
-    bubble.innerHTML = `<span style="margin-right:6px;">${icon}</span>${text}`;
-    updateAutopilotMiniStatus(text);
-    thread.appendChild(bubble);
-    thread.scrollTop = thread.scrollHeight;
+
+    if (kind === 'done') {
+      // Render with full markdown — identical pipeline to the AI chat
+      const iconSpan = document.createElement('span');
+      iconSpan.style.cssText = 'display:block;font-size:13px;color:rgba(148,163,184,0.6);margin-bottom:8px;';
+      iconSpan.textContent = icon + ' Task complete';
+      const mdDiv = document.createElement('div');
+      const parsed = typeof marked !== 'undefined' ? marked.parse(text) : text.replace(/\n/g, '<br>');
+      mdDiv.innerHTML = typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(parsed) : parsed;
+      bubble.appendChild(iconSpan);
+      bubble.appendChild(mdDiv);
+      updateAutopilotMiniStatus(text);
+      thread.appendChild(bubble);
+      thread.scrollTop = thread.scrollHeight;
+      // Full action bar — Read, Copy, Magic Card — exactly like AI chat
+      addBubbleActions(bubble, text);
+    } else {
+      // Error: plain text, no action bar
+      bubble.style.cssText = 'background:transparent;border:none;font-size:13.5px;color:rgba(251,113,133,0.85);padding:4px 2px;border-radius:0;margin-bottom:2px;line-height:1.6;';
+      bubble.innerHTML = `<span style="margin-right:6px;">${icon}</span>${text}`;
+      updateAutopilotMiniStatus(text);
+      thread.appendChild(bubble);
+      thread.scrollTop = thread.scrollHeight;
+    }
     return bubble;
   }
 
