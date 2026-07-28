@@ -1,0 +1,44 @@
+Here is my take:
+
+The exact reason this image specifically makes you feel uncomfortable is that it forces your visual attention to fracture across three competing layers at once, causing immediate sensory and cognitive fatigue.
+
+The 3 Core Reasons This View Is Uncomfortable
+1. Double Bottom-Bar Clutter (Stacking Overload)
+Look at the bottom of the window: you have two completely separate toolbars stacked right on top of each other.
+
+The top toolbar contains colored mode pills (Vision, Image, Music, Video, Broadcast, Autopilot, Custom Prompts).
+
+Below the input box is another dense bar (Build, Research, Search, Read, Code, Continue).
+
+Plus, at the very bottom right, an ad/banner logo (SMART C...) is partially cut off.
+
+This gives your eyes nowhere to land naturally. When you look at the bottom, your brain tries to evaluate 15+ different actions simultaneously just to type a prompt.
+
+2. The Text Is Boxed In & Cut Off (Visual Claustrophobia)
+Your main focal point—the chat conversation—is squeezed into a tiny vertical strip in the upper middle section.
+
+The system is cutting off content at both the top and bottom of the scroll area.
+
+The header banner ("Google Cloud billing...") eats up top real estate, while the massive dual-toolbar eats up the bottom half.
+
+This leaves a very small, cramped "viewport" where you actually read, forcing you to scroll continuously to consume even short paragraphs.
+
+3. High Contrast Color Splashes on Dark Background
+The app relies on a dark grey/black background, which usually relaxes the eyes. However, it is scattered with uncoordinated, high-saturation accents:
+
+Bright green header status (Gemini 3 Flash).
+
+Bright blue send button and text highlights.
+
+Bright purple banner at the top.
+
+Bright teal Continue pill at the bottom.
+
+These bright splashes act as competing visual signals, pulling your focus in five different directions at once.
+
+How to Fix This View Right Now
+Hide the Extra Mode Bars: If Aion lets you toggle off extra modes (like hiding the lower action bar with Build / Research / Search), disable them so only the plain text box remains.
+
+Expand Vertical Space: Drag the bottom of the pop-out window lower down your screen to give the chat reading area more height.
+
+Close Top and Bottom Ads/Banners: Click the X on the top purple billing banner and close any bottom pop-ups so only the active chat remains.
