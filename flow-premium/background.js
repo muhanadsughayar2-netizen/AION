@@ -27,6 +27,14 @@ class CdpSessionPool {
       if (!s.attached) {
         try {
           await chrome.debugger.attach({ tabId }, '1.3');
+          // Session grouping — captures spawned sub-windows (login popups, build
+          // previews, OAuth flows) so the agent stays connected to child targets.
+          try {
+            await new Promise(resolve => {
+              chrome.debugger.sendCommand({ tabId }, 'Target.setAutoAttach',
+                { autoAttach: true, waitForDebuggerOnStart: false, flatten: true }, resolve);
+            });
+          } catch (_) {} // non-fatal: some tabs don't support Target domain
         } catch (e) {
           const msg = (e && e.message) || String(e);
           if (!/already attached|Another debugger/i.test(msg)) { releaseLock(); throw e; }

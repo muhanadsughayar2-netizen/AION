@@ -3970,6 +3970,39 @@
     return arr;
   }
 
+  // === NEURAL PATH VISUALIZER ===
+  // Draws a glowing dashed line from the AION orb position to the target element
+  // before a click fires — gives users real-time "visual agency" feedback.
+  function drawNeuralPath(fromX, fromY, toX, toY) {
+    let svg = document.getElementById('aion-neural-path');
+    if (!svg) {
+      svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+      svg.id = 'aion-neural-path';
+      svg.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483646;';
+      document.body.appendChild(svg);
+    }
+    // Animated dashed beam from orb → target, with a pulsing endpoint dot
+    svg.innerHTML = `
+      <defs>
+        <filter id="aion-glow">
+          <feGaussianBlur stdDeviation="3" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
+      <line x1="${fromX}" y1="${fromY}" x2="${toX}" y2="${toY}"
+        stroke="#818cf8" stroke-width="2" stroke-dasharray="6,5"
+        filter="url(#aion-glow)" opacity="0.85">
+        <animate attributeName="stroke-dashoffset" from="0" to="-22" dur="0.4s" repeatCount="indefinite"/>
+      </line>
+      <circle cx="${toX}" cy="${toY}" r="6" fill="none" stroke="#a78bfa" stroke-width="2"
+        filter="url(#aion-glow)" opacity="0.9">
+        <animate attributeName="r" values="4;9;4" dur="0.6s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.9;0.3;0.9" dur="0.6s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="${toX}" cy="${toY}" r="3" fill="#c4b5fd" filter="url(#aion-glow)"/>`;
+    setTimeout(() => { if (svg) svg.innerHTML = ''; }, 1100);
+  }
+
   // === AGENT AUTOMATION HANDLER ===
   // Handles click, type, scroll, checkElement actions from agent-chat.js
   async function handleAgentAction(action, params) {
@@ -4080,6 +4113,16 @@
           // because sites like Google Drive ignore synthetic (isTrusted:false)
           // double-clicks on security-sensitive actions like opening a file.
           highlightElement(element);
+          // Draw neural path from orb/cursor origin to click target
+          try {
+            const fromX = ghostCursor
+              ? parseFloat(ghostCursor.style.left) || window.innerWidth * 0.5
+              : window.innerWidth * 0.5;
+            const fromY = ghostCursor
+              ? parseFloat(ghostCursor.style.top) || window.innerHeight * 0.88
+              : window.innerHeight * 0.88;
+            drawNeuralPath(fromX, fromY, center.x, center.y);
+          } catch (_) {}
           return { success: true, x: center.x, y: center.y };
         }
         

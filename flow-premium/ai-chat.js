@@ -11208,6 +11208,17 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'invokeCouncil',
+      description: 'Opens ChatGPT, Claude, and Grok in parallel tabs, sends the prompt to all three, then returns a Consensus Report. Use for high-stakes questions that benefit from multi-model verification.',
+      parameters: {
+        type: 'object',
+        properties: {
+          prompt: { type: 'string', description: 'The question or task to send to all three AI models.' }
+        },
+        required: ['prompt']
+      }
+    },
+    {
       name: 'finish',
       description: 'Call this when the task is complete, impossible, or you need to stop and tell the user something.',
       parameters: {
@@ -12045,9 +12056,35 @@ async function runAgentTask(prompt, thread) {
         response: { success: true, data: next ? `Next step: ${next.step}` : 'All steps complete — call finish.' } } });
     }
 
+    // ── Council Mode — parallel multi-model verification ─────────────────────
+    const councilCall = fnCallParts.find(p => p.functionCall.name === 'invokeCouncil');
+    if (councilCall) {
+      const { prompt = '' } = councilCall.functionCall.args || {};
+      addAgentStepBubble(thread, `🏛️ Council Mode — querying ChatGPT, Claude & Grok in parallel…`);
+      const councilSites = [
+        { name: 'ChatGPT',  url: `https://chatgpt.com/?q=${encodeURIComponent(prompt)}` },
+        { name: 'Claude',   url: `https://claude.ai/new?q=${encodeURIComponent(prompt)}` },
+        { name: 'Grok',     url: `https://grok.com/?q=${encodeURIComponent(prompt)}` }
+      ];
+      const openedTabs = [];
+      for (const site of councilSites) {
+        try {
+          const r = await chrome.runtime.sendMessage({ action: 'agentExecute', tabId: tab.id,
+            executeAction: 'openTab', params: { url: site.url, background: true, switchTo: false } });
+          openedTabs.push({ name: site.name, tabId: r?.newTabId || null, url: site.url });
+        } catch (_) { openedTabs.push({ name: site.name, tabId: null, url: site.url }); }
+      }
+      const tabSummary = openedTabs.map(t => `${t.name} (tab ${t.tabId ?? '?'})`).join(', ');
+      addAgentStepBubble(thread, `🏛️ Council tabs opened: ${tabSummary} — switching to each to collect responses`);
+      clientSideResponses.push({ functionResponse: { name: 'invokeCouncil',
+        response: { success: true, data:
+          `Council tabs opened: ${tabSummary}. ` +
+          `Now use switchTab + snapshotPage on each tab to read each model's answer, then call finish() with a Consensus Report that summarises agreements, disagreements, and your recommended conclusion.` } } });
+    }
+
     // ── Filter to executable CDP/tab tools only ───────────────────────────────
     const executableCalls = fnCallParts.filter(p =>
-      !['finish', 'planTask', 'checkPlan'].includes(p.functionCall.name)
+      !['finish', 'planTask', 'checkPlan', 'invokeCouncil'].includes(p.functionCall.name)
     );
 
     // If only client-side calls this turn, push their responses and loop

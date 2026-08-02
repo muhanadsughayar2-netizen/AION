@@ -4121,6 +4121,37 @@ if (geminiClearBtn) geminiClearBtn.addEventListener('click', clearGeminiKey);
 const aiManageLink = document.getElementById('aiManageLink');
 if (aiManageLink) aiManageLink.addEventListener('click', handleAIButtonClick);
 
+// ── Maneuver Gallery buttons ───────────────────────────────────────────────
+const maneuverAiStudioBuild = document.getElementById('maneuverAiStudioBuild');
+if (maneuverAiStudioBuild) {
+  maneuverAiStudioBuild.addEventListener('click', async () => {
+    const key = (await chrome.storage.sync.get(['geminiApiKey'])).geminiApiKey;
+    if (!key) { showGeminiModal(); return; }
+    // Open AI Studio and hand off to Autopilot
+    await chrome.tabs.create({ url: 'https://aistudio.google.com/prompts/new_chat', active: true });
+    window.close();
+  });
+}
+
+const maneuverCrossAiVerify = document.getElementById('maneuverCrossAiVerify');
+if (maneuverCrossAiVerify) {
+  maneuverCrossAiVerify.addEventListener('click', async () => {
+    const key = (await chrome.storage.sync.get(['geminiApiKey'])).geminiApiKey;
+    if (!key) { showGeminiModal(); return; }
+    // Open AI chat with Council Mode pre-primed
+    await openAiChat([]);
+    // Post a hint into the chat after it opens
+    setTimeout(() => {
+      try {
+        const wins = chrome.extension?.getViews?.({ type: 'popup' }) || [];
+        // The message will arrive via storage flag read by ai-chat.js on load
+        chrome.storage.session.set({ aionCouncilMode: true, aionCouncilPrompt: '' });
+      } catch (_) {}
+    }, 600);
+    window.close();
+  });
+}
+
 const setupBannerBtn = document.getElementById('setupBannerBtn');
 if (setupBannerBtn) setupBannerBtn.addEventListener('click', () => showGeminiModal());
 

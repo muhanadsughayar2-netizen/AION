@@ -4048,3 +4048,72 @@ html[dir="rtl"] .logo-highlight {
   padding: 3px 8px;
   border-radius: 6px;
 }
+
+/* ── Maneuver Gallery ─────────────────────────────────────────────────────── */
+.maneuver-gallery {
+  margin: 8px 12px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(99,102,241,0.08), rgba(139,92,246,0.08));
+  border: 1px solid rgba(99,102,241,0.2);
+  overflow: hidden;
+}
+.maneuver-gallery-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px 6px;
+}
+.maneuver-gallery-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--st-text-primary, #e4e4f0);
+}
+.maneuver-gallery-badge {
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #a78bfa;
+  background: rgba(139,92,246,0.15);
+  border: 1px solid rgba(139,92,246,0.3);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.maneuver-gallery-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  padding: 0 8px 10px;
+}
+.maneuver-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(99,102,241,0.18);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
+  text-align: left;
+  width: 100%;
+}
+.maneuver-btn:hover {
+  background: rgba(99,102,241,0.14);
+  border-color: rgba(139,92,246,0.45);
+  transform: translateY(-1px);
+}
+.maneuver-btn:active { transform: translateY(0); }
+.maneuver-icon { font-size: 16px; line-height: 1; }
+.maneuver-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--st-text-primary, #e4e4f0);
+  line-height: 1.2;
+}
+.maneuver-desc {
+  font-size: 9.5px;
+  color: var(--st-text-secondary, #94a3b8);
+  line-height: 1.3;
+}

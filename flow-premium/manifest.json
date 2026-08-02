@@ -16,7 +16,8 @@
     "identity",
     "contextMenus",
     "sidePanel",
-    "debugger"
+    "debugger",
+    "accessibilityFeatures.read"
   ],
   "side_panel": {
     "default_path": "sidebar.html"
