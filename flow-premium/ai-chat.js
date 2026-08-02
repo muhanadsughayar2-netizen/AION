@@ -11510,8 +11510,23 @@ function addAgentStepBubble(thread, text, kind) {
 
   _agentStepCount++;
   const row = document.createElement('div');
-  row.style.cssText = 'display:flex;align-items:baseline;gap:6px;line-height:1.4;';
-  row.innerHTML = `<span style="color:rgba(148,163,184,0.55);font-size:12px;flex-shrink:0;font-weight:500;">${_agentStepCount}.</span><span style="color:#c8cdd5;">${text}</span>`;
+  row.style.cssText = 'display:flex;align-items:baseline;gap:6px;line-height:1.55;';
+
+  // Render step text with inline markdown so bold, code, and links display
+  // correctly — identical look to the AI chat, just without block-level wrappers.
+  let renderedText = text;
+  try {
+    if (typeof marked !== 'undefined') {
+      // parseInline avoids wrapping every row in a <p> tag (which adds unwanted
+      // vertical padding to short action labels like "click: Build button").
+      renderedText = marked.parseInline
+        ? marked.parseInline(text)
+        : marked.parse(text);
+      if (typeof DOMPurify !== 'undefined') renderedText = DOMPurify.sanitize(renderedText);
+    }
+  } catch (_) { renderedText = text; }
+
+  row.innerHTML = `<span style="color:rgba(148,163,184,0.55);font-size:12px;flex-shrink:0;font-weight:500;">${_agentStepCount}.</span><span style="color:#c8cdd5;">${renderedText}</span>`;
   _agentLogContainer.appendChild(row);
   updateAutopilotMiniStatus(text);
   thread.scrollTop = thread.scrollHeight;
@@ -11709,6 +11724,9 @@ function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
 // global stop signal fires via chrome.storage.onChanged.
 function awaitUserChoice(thread, question, options = [], allowFreeText = false) {
   return new Promise((resolve, reject) => {
+    // Speak the question aloud so the user doesn't miss it
+    agentSpeak(question);
+
     const card = document.createElement('div');
     card.className = 'chat-bubble ai';
     card.style.cssText = [
@@ -11993,6 +12011,12 @@ async function runAgentTask(prompt, thread) {
       const text = candidateParts.find(p => p.text)?.text;
       if (text && (!finishReason || finishReason === 'STOP')) {
         addAgentStepBubble(thread, text, 'done');
+        // Speak a short completion announcement so the user knows without
+        // having to look at the screen — strip markdown before speaking.
+        try {
+          const spokenSummary = text.replace(/[#*`>_~\[\]()]/g, '').replace(/\s+/g, ' ').trim().slice(0, 220);
+          if (spokenSummary) agentSpeak(`Task complete. ${spokenSummary}`);
+        } catch (_) {}
       } else {
         addAgentStepBubble(thread,
           text || `No tool call (finishReason=${finishReason || 'unknown'}). Stopping.`,
