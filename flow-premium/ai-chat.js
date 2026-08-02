@@ -11616,35 +11616,19 @@ Rules:
 
 - NOTEBOOKLM ROUTING: Google NotebookLM (notebooklm.google.com) is the best tool for turning source material (links, PDFs, text) into polished outputs. When the user's request matches any trigger below, run this EXACT 3-step protocol before touching the browser:
 
-  TRIGGERS — route to NotebookLM for any of:
-  → "podcast", "audio overview", "deep dive", "brief audio summary", "listen to a summary" → Audio Overview
-  → "presentation", "slide deck", "PPT", "PowerPoint", "make me slides" → Slide Deck
-  → "video explainer", "explainer video", "video overview" → Video Overview
-  → "mind map", "visualize", "concept map", "show relationships" → Mind Map
-  → "report", "technical report", "roadmap document", "write a report from this" → Reports
-  → "infographic", "visual summary", "make an infographic" → Infographic
-  → "teach me", "study guide", "flashcards", "quiz me", "test my knowledge" → Flashcards or Quiz
-  → "data table", "compare these", "extract structured data" → Data Table
+  TRIGGERS — use the NotebookLM protocol whenever the user's task involves: podcast, audio overview, deep dive, presentation, slide deck, PPT, PowerPoint, video explainer, mind map, concept map, report, infographic, flashcard, quiz, data table, notebook, notebooklm, or creating content from source material.
+
+  IMPORTANT: The user was already shown an interactive multi-select picker BEFORE this task started. Their confirmed Studio output selections are injected into the task prompt as a [USER STUDIO SELECTION] block. READ THAT BLOCK first — it tells you exactly which outputs to build. Do NOT decide the output type yourself. Do NOT build anything that is not listed there.
 
   STEP 1 — GET SOURCE MATERIAL (do this FIRST, before navigating):
-  If the user has NOT provided a link, PDF, or text to work from, call requestUserIntervention with this exact message: "I'm ready to build your [output type] in Google Notebook! Please give me the source material to work from — paste a website link, a Google Doc URL, or describe the topic and I'll find sources."
+  If the task does NOT include a link, URL, PDF, or text content to work from, call requestUserIntervention with: "I'm ready to build your [list the selected outputs] in Google NotebookLM! Please give me the source material — paste a website link, a Google Doc URL, or describe the topic and I'll find sources."
   Do NOT navigate yet. Wait for the user's response.
 
-  STEP 2 — CONFIRM OUTPUT FORMAT (if not already clear):
-  If the user hasn't specified which Studio formats they want, present this menu. IMPORTANT: the user can choose MORE THAN ONE — tell them explicitly they can pick multiple:
-  "Got your sources! Pick one or more things to create (you can choose several and I'll build them all):
-  📊 Slide Deck — Detailed (to read/email) or Presenter (for live speaking)
-  🎙️ Audio Overview — Deep Dive podcast / Brief summary / Critique / Debate
-  🎬 Video Overview — Whiteboard or visual-style explainer
-  🧠 Mind Map — visual connections between ideas
-  📝 Report — Technical Roadmap, Primer, or custom
-  💡 Infographic — Kawaii / Clay / Sketch / Anime style
-  ❓ Quiz or Flashcards — adjustable difficulty
-  📋 Data Table — extract comparisons from your sources"
-  Wait for the user's choices.
+  STEP 2 — PLAN AND EXECUTE ALL CHOSEN OUTPUTS:
+  Read the [USER STUDIO SELECTION] block and build ONLY those outputs, in the order listed.
+  If more than one output was selected, call planTask FIRST to list every output as a numbered step (e.g. "1. Add sources, 2. Slide Deck, 3. Audio Overview"). Then navigate("https://notebooklm.google.com/"), add sources ONCE, and run through each Studio tool in sequence — checking off each plan step with checkPlan as it completes. Do NOT stop and ask after each one; complete the full list unless the user says stop.
 
-  STEP 3 — PLAN AND EXECUTE ALL CHOSEN OUTPUTS:
-  If the user chose multiple outputs, call planTask FIRST to list every output as a numbered step (e.g. "1. Add sources, 2. Slide Deck, 3. Audio Overview, 4. Flashcards"). Then navigate("https://notebooklm.google.com/"), add sources ONCE, and run through each Studio tool in sequence — checking off each plan step with checkPlan as it completes. Do NOT stop and ask after each one; complete the full list unless the user says stop.`;
+  REMINDER — never pick a Studio tool the user didn't select. If the [USER STUDIO SELECTION] says "Slide Deck, Flashcards", build those two only. Not Data Table, not Audio Overview.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
@@ -12004,6 +11988,145 @@ function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
 // Renders an interactive choice card in the chat thread and returns a Promise
 // that resolves when the user clicks a button, or rejects instantly if the
 // global stop signal fires via chrome.storage.onChanged.
+// ── NotebookLM Studio multi-select picker ─────────────────────────────────────
+// Shown BEFORE the agent loop starts whenever a task is heading to NotebookLM.
+// Returns { tools: string[], details: string } — tools is the confirmed list of
+// Studio outputs to build; details is any extra instruction the user typed.
+function awaitStudioPicker(thread, taskDescription) {
+  return new Promise((resolve, reject) => {
+    const TOOLS = [
+      { key: 'Slide Deck',       icon: '📊', hint: 'Detailed or Presenter slides' },
+      { key: 'Audio Overview',   icon: '🎙️', hint: 'Deep Dive / Brief / Critique / Debate podcast' },
+      { key: 'Video Overview',   icon: '🎬', hint: 'Whiteboard or visual explainer' },
+      { key: 'Mind Map',         icon: '🧠', hint: 'Visual connections between ideas' },
+      { key: 'Report',           icon: '📝', hint: 'Roadmap, Primer, or custom report' },
+      { key: 'Infographic',      icon: '💡', hint: 'Kawaii / Clay / Sketch / Anime style' },
+      { key: 'Flashcards',       icon: '🃏', hint: 'Study cards with adjustable difficulty' },
+      { key: 'Quiz',             icon: '❓', hint: 'Test questions from your sources' },
+      { key: 'Data Table',       icon: '📋', hint: 'Structured data or comparisons' },
+    ];
+
+    const selected = new Set();
+
+    const card = document.createElement('div');
+    card.className = 'chat-bubble ai';
+    card.style.cssText = [
+      'background:rgba(99,102,241,0.08)',
+      'border:1px solid rgba(99,102,241,0.35)',
+      'padding:16px 18px',
+      'border-radius:14px',
+      'margin:8px 0',
+      'max-width:98%'
+    ].join(';');
+
+    const toolBtnsHtml = TOOLS.map(t =>
+      `<button class="studio-tool-btn" data-key="${t.key}" style="` +
+      `display:flex;align-items:center;gap:7px;` +
+      `padding:8px 12px;margin:4px;` +
+      `background:rgba(255,255,255,0.04);` +
+      `color:rgba(203,213,225,0.8);` +
+      `border:1px solid rgba(255,255,255,0.12);` +
+      `border-radius:10px;font-size:12.5px;cursor:pointer;` +
+      `transition:all .15s;text-align:left;min-width:calc(50% - 12px);flex:1 1 calc(50% - 12px)">` +
+      `<span style="font-size:16px;line-height:1">${t.icon}</span>` +
+      `<span><strong style="display:block;font-size:12.5px">${t.key}</strong>` +
+      `<span style="font-size:10.5px;color:rgba(148,163,184,0.65)">${t.hint}</span></span>` +
+      `</button>`
+    ).join('');
+
+    card.innerHTML = `
+      <div style="font-weight:700;margin-bottom:4px;color:#a5b4fc;font-size:14px">📓 What would you like me to create?</div>
+      <div style="font-size:12px;color:rgba(148,163,184,0.75);margin-bottom:12px">Select one or more outputs — I'll build them all in one go.</div>
+      <div class="studio-tool-grid" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px">${toolBtnsHtml}</div>
+      <div style="margin-bottom:10px">
+        <div style="font-size:11.5px;color:rgba(148,163,184,0.7);margin-bottom:5px">Add instructions or a description <span style="opacity:0.55">(optional)</span></div>
+        <textarea class="studio-details-input" rows="2" placeholder="e.g. Focus on the technical architecture, 10 slides, English, for developers…" style="width:100%;box-sizing:border-box;padding:8px 10px;border-radius:8px;border:1px solid rgba(99,102,241,0.3);background:rgba(20,20,35,0.7);color:#e2e8f0;font-size:12px;resize:vertical;font-family:inherit;"></textarea>
+      </div>
+      <button class="studio-confirm-btn" disabled style="width:100%;padding:9px 0;border-radius:10px;background:rgba(99,102,241,0.2);border:1px solid rgba(99,102,241,0.35);color:rgba(165,180,252,0.5);font-size:13px;font-weight:600;cursor:not-allowed;transition:all .2s">Select at least one output above →</button>`;
+
+    thread.appendChild(card);
+    thread.scrollTop = thread.scrollHeight;
+
+    const confirmBtn = card.querySelector('.studio-confirm-btn');
+
+    const updateConfirmBtn = () => {
+      if (selected.size === 0) {
+        confirmBtn.disabled = true;
+        confirmBtn.style.cssText += ';background:rgba(99,102,241,0.12);color:rgba(165,180,252,0.4);cursor:not-allowed;';
+        confirmBtn.textContent = 'Select at least one output above →';
+      } else {
+        confirmBtn.disabled = false;
+        confirmBtn.style.cssText = confirmBtn.style.cssText
+          .replace(/background:[^;]+/, 'background:rgba(99,102,241,0.35)')
+          .replace(/color:[^;]+/, 'color:#a5b4fc')
+          .replace(/cursor:[^;]+/, 'cursor:pointer');
+        const label = [...selected].join(' + ');
+        confirmBtn.textContent = `Build ${label} →`;
+      }
+    };
+
+    card.querySelectorAll('.studio-tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const key = btn.getAttribute('data-key');
+        if (selected.has(key)) {
+          selected.delete(key);
+          btn.style.background = 'rgba(255,255,255,0.04)';
+          btn.style.borderColor = 'rgba(255,255,255,0.12)';
+          btn.style.color = 'rgba(203,213,225,0.8)';
+        } else {
+          selected.add(key);
+          btn.style.background = 'rgba(99,102,241,0.22)';
+          btn.style.borderColor = 'rgba(99,102,241,0.55)';
+          btn.style.color = '#a5b4fc';
+        }
+        updateConfirmBtn();
+      });
+    });
+
+    // Stop signal aborts the picker the same way it aborts awaitUserChoice
+    const stopListener = (changes, area) => {
+      if ((area === 'local' || area === 'session') && changes.agentStopRequested?.newValue) {
+        chrome.storage.onChanged.removeListener(stopListener);
+        card.innerHTML = `<div style="color:#ff8080;font-size:12px">🚫 Autopilot cancelled.</div>`;
+        reject(new Error('Task stopped by user'));
+      }
+    };
+    chrome.storage.onChanged.addListener(stopListener);
+
+    confirmBtn.addEventListener('click', () => {
+      chrome.storage.onChanged.removeListener(stopListener);
+      const details = card.querySelector('.studio-details-input').value.trim();
+      const tools = [...selected];
+      // Freeze the card
+      card.querySelectorAll('.studio-tool-btn,.studio-confirm-btn,.studio-details-input').forEach(el => {
+        el.disabled = true;
+        el.style.cursor = 'default';
+        el.style.pointerEvents = 'none';
+      });
+      confirmBtn.style.background = 'rgba(16,185,129,0.20)';
+      confirmBtn.style.borderColor = 'rgba(16,185,129,0.4)';
+      confirmBtn.style.color = '#6ee7b7';
+      confirmBtn.textContent = `✓ Building: ${tools.join(' + ')}`;
+      resolve({ tools, details });
+    });
+  });
+}
+
+// Keywords that indicate a task is headed for NotebookLM
+const NOTEBOOKLM_TRIGGER_RE = /\b(notebooklm|google\s+notebook|notebook\s+lm|audio overview|slide deck|video overview|mind map|concept map|podcast|deep.?dive|brief.*summary|flashcard|quiz me|data table|compare.*sources|extract.*structured|infographic|technical\s+report|write.*report|make.*slides?|presentation\s+from|explainer\s+video)\b/i;
+// If the user already named exactly which tool(s) they want, skip the picker
+const NOTEBOOKLM_TOOL_RE = /\b(slide deck|audio overview|video overview|mind map|report|infographic|flashcard|quiz|data table)\b/i;
+
+function isNotebookLMTask(prompt) {
+  return NOTEBOOKLM_TRIGGER_RE.test(prompt);
+}
+function taskAlreadySpecifiesTools(prompt) {
+  // Only skip the picker if they clearly named a specific tool AND gave enough context
+  // (topic/source) — don't skip just because the word "report" appears generically
+  const matches = prompt.match(new RegExp(NOTEBOOKLM_TOOL_RE.source, 'gi')) || [];
+  return matches.length > 0;
+}
+
 function awaitUserChoice(thread, question, options = [], allowFreeText = false) {
   return new Promise((resolve, reject) => {
     // Speak the question aloud so the user doesn't miss it
@@ -12198,6 +12321,30 @@ async function runAgentTask(prompt, thread) {
     stopBtn.textContent = 'Stopping…';
   });
   thread.appendChild(stopBtn);
+
+  // ── NotebookLM pre-flight picker ────────────────────────────────────────────
+  // Before mini-mode starts (so the picker is fully visible), detect whether
+  // this task is heading to NotebookLM. If so, ask the user WHICH Studio
+  // outputs they want with a proper multi-select card. Their confirmed choices
+  // are injected into the prompt so the agent executes exactly what was chosen
+  // instead of guessing from keywords.
+  if (isNotebookLMTask(prompt)) {
+    try {
+      const pickerResult = await awaitStudioPicker(thread, prompt);
+      if (pickerResult.tools.length > 0) {
+        const toolList = pickerResult.tools.join(', ');
+        const extraDetail = pickerResult.details
+          ? ` Additional instructions from the user: "${pickerResult.details}".`
+          : '';
+        prompt = `${prompt}\n\n[USER STUDIO SELECTION — build EXACTLY these NotebookLM outputs in this order: ${toolList}.${extraDetail} Do NOT build any other output type. Follow the NOTEBOOKLM ROUTING protocol: gather sources first, then create each selected output in sequence.]`;
+      }
+    } catch (err) {
+      // Stopped or dismissed — abort the run
+      stopBtn.remove();
+      return;
+    }
+  }
+
   // Shrink into a corner strip so the page Autopilot is controlling isn't
   // hidden behind the chat window. Expands back on click, or automatically
   // once the task finishes/stops below.
