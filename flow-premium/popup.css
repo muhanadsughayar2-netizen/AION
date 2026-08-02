@@ -4117,3 +4117,154 @@ html[dir="rtl"] .logo-highlight {
   color: var(--st-text-secondary, #94a3b8);
   line-height: 1.3;
 }
+
+/* ── Autopilot Site Memory Section ─────────────────────────────────────────── */
+.autopilot-memory-section {
+  margin-top: 14px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  padding-top: 12px;
+}
+
+.autopilot-memory-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.autopilot-memory-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--st-text-primary, #e4e4f0);
+  letter-spacing: 0.02em;
+}
+
+.autopilot-memory-clear-all {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(255, 90, 90, 0.8);
+  background: none;
+  border: 1px solid rgba(255, 90, 90, 0.25);
+  border-radius: 5px;
+  padding: 3px 8px;
+  cursor: pointer;
+  transition: all 0.18s;
+  line-height: 1.4;
+}
+
+.autopilot-memory-clear-all:hover {
+  background: rgba(255, 90, 90, 0.1);
+  border-color: rgba(255, 90, 90, 0.5);
+  color: #ff6b6b;
+}
+
+.autopilot-memory-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.autopilot-memory-empty {
+  font-size: 11.5px;
+  color: var(--st-text-secondary, #94a3b8);
+  text-align: center;
+  padding: 8px 0 4px;
+  font-style: italic;
+}
+
+.autopilot-memory-domain-row {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 7px;
+  overflow: hidden;
+}
+
+.autopilot-memory-domain-header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 9px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.autopilot-memory-domain-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.autopilot-memory-domain-name {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--st-text-primary, #e4e4f0);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.autopilot-memory-count-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--st-accent, #4285f4);
+  background: rgba(66, 133, 244, 0.12);
+  border-radius: 10px;
+  padding: 1px 7px;
+  flex-shrink: 0;
+}
+
+.autopilot-memory-expand-icon {
+  font-size: 10px;
+  color: var(--st-text-secondary, #94a3b8);
+  flex-shrink: 0;
+  transition: transform 0.18s;
+}
+
+.autopilot-memory-domain-row.expanded .autopilot-memory-expand-icon {
+  transform: rotate(180deg);
+}
+
+.autopilot-memory-trash-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  color: rgba(255, 90, 90, 0.6);
+  font-size: 13px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s, background 0.15s;
+}
+
+.autopilot-memory-trash-btn:hover {
+  color: #ff6b6b;
+  background: rgba(255, 90, 90, 0.1);
+}
+
+.autopilot-memory-notes {
+  display: none;
+  padding: 0 9px 8px 9px;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
+
+.autopilot-memory-domain-row.expanded .autopilot-memory-notes {
+  display: block;
+}
+
+.autopilot-memory-note-item {
+  font-size: 11px;
+  color: var(--st-text-secondary, #94a3b8);
+  line-height: 1.45;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+
+.autopilot-memory-note-item:last-child {
+  border-bottom: none;
+}
+
+.autopilot-memory-note-bullet {
+  color: var(--st-accent, #4285f4);
+  margin-right: 5px;
+  flex-shrink: 0;
+}

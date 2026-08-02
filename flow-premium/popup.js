@@ -3746,6 +3746,8 @@ function showGeminiModal() {
   }
   geminiModal.style.display = 'flex';
   setTimeout(() => geminiModal.classList.add('show'), 10);
+  // Refresh the Autopilot memory panel each time the modal opens
+  setTimeout(() => loadAutopilotMemory(), 50);
 }
 
 function hideGeminiModal() {
@@ -4112,6 +4114,105 @@ async function handleAIButtonClick() {
 }
 
 window.onSubscriptionActivated = () => { showGeminiModal(); };
+
+// ===== AUTOPILOT SITE MEMORY =====
+const POPUP_AGENT_MEMORY_KEY = 'agentSiteMemory';
+
+async function loadAutopilotMemory() {
+  const section = document.getElementById('autopilotMemorySection');
+  const list = document.getElementById('autopilotMemoryList');
+  if (!section || !list) return;
+
+  try {
+    const store = await chrome.storage.local.get([POPUP_AGENT_MEMORY_KEY]);
+    const all = store[POPUP_AGENT_MEMORY_KEY] || {};
+    const domains = Object.keys(all).filter(d => all[d] && all[d].length > 0);
+
+    section.style.display = '';
+    list.innerHTML = '';
+
+    if (domains.length === 0) {
+      list.innerHTML = '<div class="autopilot-memory-empty">No lessons learned yet — Autopilot will remember tips as it runs.</div>';
+      return;
+    }
+
+    domains.sort().forEach(domain => {
+      const notes = all[domain];
+      const row = document.createElement('div');
+      row.className = 'autopilot-memory-domain-row';
+      row.dataset.domain = domain;
+
+      const header = document.createElement('div');
+      header.className = 'autopilot-memory-domain-header';
+      header.innerHTML =
+        `<span class="autopilot-memory-domain-name" title="${domain}">${domain}</span>` +
+        `<span class="autopilot-memory-count-badge">${notes.length}</span>` +
+        `<span class="autopilot-memory-expand-icon">▾</span>` +
+        `<button class="autopilot-memory-trash-btn" title="Clear memory for ${domain}" data-domain="${domain}">🗑</button>`;
+
+      const notesEl = document.createElement('div');
+      notesEl.className = 'autopilot-memory-notes';
+      notes.forEach(note => {
+        const item = document.createElement('div');
+        item.className = 'autopilot-memory-note-item';
+        item.innerHTML = `<span class="autopilot-memory-note-bullet">•</span>${escapeHtml(note)}`;
+        notesEl.appendChild(item);
+      });
+
+      row.appendChild(header);
+      row.appendChild(notesEl);
+      list.appendChild(row);
+
+      // Expand/collapse on header click (not trash)
+      header.addEventListener('click', (e) => {
+        if (e.target.closest('.autopilot-memory-trash-btn')) return;
+        row.classList.toggle('expanded');
+      });
+
+      // Trash button clears single domain
+      const trashBtn = header.querySelector('.autopilot-memory-trash-btn');
+      if (trashBtn) {
+        trashBtn.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          await clearAutopilotMemoryDomain(domain);
+        });
+      }
+    });
+  } catch (err) {
+    console.log('[SnapToAI] loadAutopilotMemory error:', err);
+  }
+}
+
+async function clearAutopilotMemoryDomain(domain) {
+  try {
+    const store = await chrome.storage.local.get([POPUP_AGENT_MEMORY_KEY]);
+    const all = store[POPUP_AGENT_MEMORY_KEY] || {};
+    delete all[domain];
+    await chrome.storage.local.set({ [POPUP_AGENT_MEMORY_KEY]: all });
+    await loadAutopilotMemory();
+  } catch (err) {
+    console.log('[SnapToAI] clearAutopilotMemoryDomain error:', err);
+  }
+}
+
+async function clearAllAutopilotMemory() {
+  try {
+    await chrome.storage.local.set({ [POPUP_AGENT_MEMORY_KEY]: {} });
+    await loadAutopilotMemory();
+  } catch (err) {
+    console.log('[SnapToAI] clearAllAutopilotMemory error:', err);
+  }
+}
+
+const autopilotMemoryClearAllBtn = document.getElementById('autopilotMemoryClearAllBtn');
+if (autopilotMemoryClearAllBtn) {
+  autopilotMemoryClearAllBtn.addEventListener('click', async () => {
+    if (confirm('Clear all Autopilot memory for every site?')) {
+      await clearAllAutopilotMemory();
+    }
+  });
+}
+// ===== END AUTOPILOT SITE MEMORY =====
 
 // Event listeners
 if (aiButton) aiButton.addEventListener('click', handleAIButtonClick);
