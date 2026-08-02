@@ -12008,6 +12008,27 @@ function awaitStudioPicker(thread, taskDescription) {
 
     const selected = new Set();
 
+    // Pre-select any tools the user already named in their request
+    if (taskDescription) {
+      const TOOL_KEYWORD_MAP = {
+        'slide deck':     'Slide Deck',
+        'audio overview': 'Audio Overview',
+        'video overview': 'Video Overview',
+        'mind map':       'Mind Map',
+        'report':         'Report',
+        'infographic':    'Infographic',
+        'flashcard':      'Flashcards',
+        'flashcards':     'Flashcards',
+        'quiz':           'Quiz',
+        'data table':     'Data Table',
+      };
+      const preMatches = taskDescription.match(new RegExp(NOTEBOOKLM_TOOL_RE.source, 'gi')) || [];
+      preMatches.forEach(m => {
+        const key = TOOL_KEYWORD_MAP[m.toLowerCase()];
+        if (key) selected.add(key);
+      });
+    }
+
     const card = document.createElement('div');
     card.className = 'chat-bubble ai';
     card.style.cssText = [
@@ -12066,6 +12087,12 @@ function awaitStudioPicker(thread, taskDescription) {
     };
 
     card.querySelectorAll('.studio-tool-btn').forEach(btn => {
+      // Apply pre-selected visual state for tools matched from the task description
+      if (selected.has(btn.getAttribute('data-key'))) {
+        btn.style.background = 'rgba(99,102,241,0.22)';
+        btn.style.borderColor = 'rgba(99,102,241,0.55)';
+        btn.style.color = '#a5b4fc';
+      }
       btn.addEventListener('click', () => {
         const key = btn.getAttribute('data-key');
         if (selected.has(key)) {
@@ -12082,6 +12109,9 @@ function awaitStudioPicker(thread, taskDescription) {
         updateConfirmBtn();
       });
     });
+
+    // Initialise confirm button state (reflects any pre-selections)
+    updateConfirmBtn();
 
     // Stop signal aborts the picker the same way it aborts awaitUserChoice
     const stopListener = (changes, area) => {
