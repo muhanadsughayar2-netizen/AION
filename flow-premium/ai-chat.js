@@ -12081,6 +12081,15 @@ async function runAgentTask(prompt, thread) {
     // Update the mini-mode strip so users can see progress live.
     updateAutopilotMiniStep(step + 1, AGENT_MAX_STEPS);
 
+    // Refresh the tab's current URL before each step so getDynamicSkill always
+    // reflects the live page — not the URL from task start. This keeps the
+    // correct skill active after redirects (login flows, cross-subdomain hops,
+    // Sheets→Docs navigation, etc.) without changing normal-site behaviour.
+    try {
+      const freshTab = await chrome.tabs.get(lockedTabId);
+      if (freshTab?.url) tab = freshTab;
+    } catch (_) {}
+
     let data;
     try {
       const requestContents = await buildRequestContentsWithScreenshot(contents, tab);
