@@ -11358,7 +11358,7 @@ Rules:
 - If a page repeatedly returns no readable text or the same action fails the same way more than once in a row, stop retrying blindly — call "finish" and explain what's blocking you.
 - Keep your reasoning to yourself; only function calls and the final "finish" summary are shown to the user.
 - DOCUMENT EDITORS (Google Docs, Word Online): These apps use a virtual canvas — there is no real DOM text field for the document body. The document TITLE is a real input (avoid clicking it). To write into the document body: use "type" with your text and no selector — the agent automatically uses the correct keyboard injection method. Do NOT try to click on text inside the document or search for a body element by name. Just call "type" directly after the page loads.
-- GOOGLE DOCS TITLE RENAME: To rename a Google Doc, click on the title at the top of the page (it will say "Untitled document" or the current name), then immediately use pressKey("ctrl+a") to select all the existing title text, then type the new name, then pressKey("enter"). Do this sequence ONCE and stop — do NOT retry it more than once if it appears to succeed.
+- GOOGLE DOCS TITLE RENAME: To rename a Google Doc, click on the title at the top of the page (it will say "Untitled document" or the current name), then immediately type the new name (the click auto-selects the existing title text — do NOT call pressKey("ctrl+a") before typing, as that fires a browser-level "select all" that will erase the entire document body), then pressKey("enter"). Do this sequence ONCE and stop — do NOT retry it more than once if it appears to succeed.
 - GOOGLE DOCS MENUS: Google Docs menus (Insert, Format, Tools, etc.) are real HTML buttons — use click to open them. After a menu opens, use click (NOT hover) to choose the sub-item (e.g. click "Image", click "Drawing"). The hover tool does NOT work for Google Docs menu items because they render inside a floating layer. If a popup or dialog appears unexpectedly, pressKey("escape") once to dismiss it, then retry your original action.
 - GOOGLE DOCS TITLE vs BODY: To type in the document BODY, use "type" directly — do NOT click on the document canvas first.
 - SAVING DOCUMENTS: To save in Word Online, Excel Online, Google Docs, or any web editor — use pressKey with key "ctrl+s". Do NOT click File > Save manually; the keyboard shortcut is faster and more reliable. Always pressKey("ctrl+s") after finishing a typing task in an editor.
@@ -12187,39 +12187,65 @@ async function runAgentTask(prompt, thread) {
         })()`,
 
         claude: `(()=>{
-          // Still generating: streaming attribute is explicitly "true"
-          if (document.querySelector('[data-is-streaming="true"]')) return '__streaming__';
+          // ── Streaming detection ───────────────────────────────────────────
+          // IMPORTANT: do NOT use [data-is-streaming="true"] — that attribute
+          // persists on the element permanently even after streaming ends,
+          // causing an infinite loop. Use the stop button instead: it is
+          // visible only while Claude is actively generating.
+          const stopBtn = document.querySelector(
+            'button[aria-label*="Stop" i],button[aria-label*="stop" i],' +
+            '[data-testid*="stop"],[class*="stop-button"],[class*="StopButton"],' +
+            'button svg[class*="square"],button[class*="interrupt"]');
+          if (stopBtn) return '__streaming__';
 
-          // Look for a finished message block — data-is-streaming="false" is the
-          // most reliable signal Claude provides when a response is complete.
-          const finished = [...document.querySelectorAll('[data-is-streaming="false"]')]
-            .filter(e => e.innerText && e.innerText.trim().length > 100);
-          if (finished.length > 0) return finished.pop().innerText.trim().slice(-3000);
+          // ── Response capture ──────────────────────────────────────────────
+          // Try selectors from most-specific to least-specific.
+          // data-is-streaming="false" CAN be used for finding the element
+          // (as opposed to using it as a streaming guard — that is the bug).
+          const candidates = [
+            ...(document.querySelectorAll('[data-is-streaming="false"]')||[]),
+            ...(document.querySelectorAll('[data-testid*="message-content"],[data-testid*="response"]')||[]),
+            ...(document.querySelectorAll('.font-claude-message,[class*="prose"],[class*="message-content"],[class*="MessageContent"]')||[])
+          ].filter(e => e.innerText && e.innerText.trim().length > 80);
+          if (candidates.length > 0) return candidates.pop().innerText.trim().slice(-3000);
 
-          // Broader fallback for different Claude versions / themes
-          const prose = [...document.querySelectorAll('[class*="prose"],[class*="message-content"]')]
-            .filter(e => e.innerText && e.innerText.trim().length > 100);
-          if (prose.length > 0) return prose.pop().innerText.trim().slice(-3000);
+          // ── Auto-submit fallback ──────────────────────────────────────────
+          // If no response exists yet, Claude's ?q= URL may have pre-filled
+          // the input without submitting. Find the Send button and click it.
+          const sendBtn = document.querySelector(
+            'button[aria-label*="Send" i],button[data-value="send"],' +
+            'button[type="submit"]:not([disabled]),[data-testid*="send-button"]');
+          if (sendBtn && !sendBtn.disabled) { sendBtn.click(); return '__streaming__'; }
 
-          return '';
+          // Last-resort text grab from main conversation area
+          const main = document.querySelector('main,[role="main"]');
+          const mainText = main ? main.innerText.trim() : '';
+          return mainText.length > 150 ? mainText.slice(-3000) : '';
         })()`,
 
         grok: `(()=>{
-          // Still generating: a Stop / Cancel button is visible
+          // ── Streaming detection ───────────────────────────────────────────
           const stopBtn = document.querySelector(
-            '[aria-label="Stop"],[aria-label="Cancel"],[data-testid*="stop"],[class*="StopButton"]');
+            'button[aria-label*="Stop" i],button[aria-label*="Cancel" i],' +
+            '[data-testid*="stop"],[class*="StopButton"],[class*="stop-button"]');
           if (stopBtn) return '__streaming__';
 
-          // Grok's response container — try multiple stable selectors
+          // ── Response capture ──────────────────────────────────────────────
           const el = [
             ...document.querySelectorAll('[data-message-author-role="assistant"]'),
-            ...document.querySelectorAll('[class*="AnswerItem"],[class*="response-content"],[class*="message-content"]')
+            ...document.querySelectorAll('[class*="AnswerItem"],[class*="response-content"],[class*="message-content"],[class*="MessageContent"]')
           ].filter(e => e.innerText && e.innerText.trim().length > 50).pop();
           if (el) return el.innerText.trim().slice(-3000);
 
-          // Last-resort: grab the largest text block in the main region
+          // ── Auto-submit fallback ──────────────────────────────────────────
+          const sendBtn = document.querySelector(
+            'button[aria-label*="Send" i],[data-testid*="send-button"],' +
+            'button[type="submit"]:not([disabled])');
+          if (sendBtn && !sendBtn.disabled) { sendBtn.click(); return '__streaming__'; }
+
+          // Last-resort main region
           const main = document.querySelector('main,[role="main"]');
-          return main ? main.innerText.slice(-3000) : '';
+          return main && main.innerText.trim().length > 150 ? main.innerText.trim().slice(-3000) : '';
         })()`
       };
 
