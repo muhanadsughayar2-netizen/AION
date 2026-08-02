@@ -1659,6 +1659,43 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               } catch (_) { /* verification optional — network/DOM issue, proceed as success */ }
             }
 
+            // ── SPA / AIS / Word / generic: verify field received the text ────
+            // Sheets & Excel are already verified above via Formula Bar.
+            // Docs uses a canvas renderer — no DOM field to read — so we skip it.
+            // For everything else: after a short React-settle pause, check the
+            // active element is non-empty. If it's empty, the focus was lost and
+            // Input.insertText fired into the void — return false so the agent
+            // can refocus and retry instead of building on a silent miss.
+            if (!isDocs && !isGrid && !isExcel && text.trim().length > 0 && !params.run) {
+              try {
+                await new Promise(r => setTimeout(r, 180)); // React state settle
+                const vr = await sendR('Runtime.evaluate', {
+                  expression: `(()=>{
+                    const el = document.activeElement;
+                    if (!el || el === document.body) return 'no-focus';
+                    const val = (el.value ?? el.innerText ?? el.textContent ?? '').trim();
+                    return val.length > 0 ? 'ok' : 'empty';
+                  })()`,
+                  returnByValue: true,
+                  timeout: 3000
+                });
+                const state = vr?.result?.value || '';
+                if (state === 'empty') {
+                  sendResponse({ success: false,
+                    error: 'Field is empty after typing — focus may have been lost. ' +
+                           'Click the target element first (or use waitForElement to ' +
+                           'confirm it exists), then call type again.' });
+                  return;
+                }
+                if (state === 'no-focus') {
+                  sendResponse({ success: false,
+                    error: 'No focused element found after typing — document.body has focus. ' +
+                           'The textarea or input was never activated. Click it first.' });
+                  return;
+                }
+              } catch (_) { /* verification optional — don't break on CDP quirks */ }
+            }
+
             sendResponse({ success: true });
           } finally {
             if (session) session.release();
@@ -1699,14 +1736,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
         });
 
-        // ── Step 1: DOM text search via content.js (300 ms budget) ──────────
-        // Race the DOM locate against a 300 ms timeout. If the page is slow,
-        // a heavy SPA, or the element is inside a shadow root that content.js
-        // can't pierce, we skip straight to AXTree instead of blocking.
+        // ── Step 1: DOM text search via content.js (500 ms budget) ──────────
+        // Race the DOM locate against a 500 ms timeout. 300 ms was too tight on
+        // heavy SPAs (Google AI Studio, Grok, React apps) — the content-script
+        // injection + DOM walk can take 400–600 ms on first load, causing a
+        // premature AXTree fallback that adds another 200–300 ms. 500 ms gives
+        // content.js enough room to finish on a single try, making the happy
+        // path faster overall while still bounding the worst case tightly.
         let loc = null;
         const domRace = async () => {
           const domPromise = locateViaContent();
-          const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 300));
+          const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 500));
           const result = await Promise.race([domPromise, timeoutPromise]);
           if (result === 'timeout' || !result) {
             console.log('[Aion Agent] DOM locate timed out or empty — engaging AXTree eyes…');
@@ -1716,7 +1756,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         };
         try { loc = await domRace(); } catch (_) {}
         if (!loc) {
-          // Re-inject content script once and retry with the same 300 ms budget
+          // Re-inject content script once and retry with the same 500 ms budget
           try { await clearAndInject(tabId); loc = await domRace(); } catch (_) {}
         }
 

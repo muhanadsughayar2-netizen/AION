@@ -11967,19 +11967,28 @@ async function runAgentTask(prompt, thread) {
     let data;
     try {
       const requestContents = await buildRequestContentsWithScreenshot(contents, tab);
-      const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT + getDynamicSkill(tab.url) }] },
-            contents: requestContents,
-            tools: AGENT_TOOLS,
-            generationConfig: { temperature: 0.2 }
-          })
-        }
-      );
+      const geminiBody = JSON.stringify({
+        systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT + getDynamicSkill(tab.url) }] },
+        contents: requestContents,
+        tools: AGENT_TOOLS,
+        generationConfig: { temperature: 0.2 }
+      });
+
+      // ── 429 retry with backoff ─────────────────────────────────────────────
+      // Gemini returns 429 (RESOURCE_EXHAUSTED) when the per-minute token quota
+      // is hit mid-task. Instead of crashing the whole run, wait 6 s and retry
+      // up to 3 times — covers almost all transient quota bursts.
+      let res, retries = 0;
+      while (retries <= 3) {
+        res = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: geminiBody }
+        );
+        if (res.status !== 429 || retries === 3) break;
+        retries++;
+        addAgentStepBubble(thread, `⏳ Gemini rate limit hit — retrying in 6 s (attempt ${retries}/3)…`);
+        await new Promise(r => setTimeout(r, 6000));
+      }
       data = await res.json();
     } catch (e) {
       addAgentStepBubble(thread, `Connection error: ${e.message}`, 'error');
@@ -11987,7 +11996,13 @@ async function runAgentTask(prompt, thread) {
     }
 
     if (data.error) {
-      addAgentStepBubble(thread, data.error.message || 'The AI could not respond — check your Gemini key/quota.', 'error');
+      const errMsg = data.error.message || '';
+      const is429 = data.error.code === 429 || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota');
+      addAgentStepBubble(thread,
+        is429
+          ? '⏳ Gemini quota exhausted. Wait ~60 seconds and restart the task, or use a different API key.'
+          : errMsg || 'The AI could not respond — check your Gemini key/quota.',
+        'error');
       break;
     }
 
@@ -12011,11 +12026,12 @@ async function runAgentTask(prompt, thread) {
       const text = candidateParts.find(p => p.text)?.text;
       if (text && (!finishReason || finishReason === 'STOP')) {
         addAgentStepBubble(thread, text, 'done');
-        // Speak a short completion announcement so the user knows without
-        // having to look at the screen — strip markdown before speaking.
+        // Speak a short completion announcement — only when the summary is
+        // substantial (> 40 chars after stripping markdown). Short confirmations
+        // like "Done." or "OK." don't need audio and become annoying fast.
         try {
           const spokenSummary = text.replace(/[#*`>_~\[\]()]/g, '').replace(/\s+/g, ' ').trim().slice(0, 220);
-          if (spokenSummary) agentSpeak(`Task complete. ${spokenSummary}`);
+          if (spokenSummary.length > 40) agentSpeak(`Task complete. ${spokenSummary}`);
         } catch (_) {}
       } else {
         addAgentStepBubble(thread,
