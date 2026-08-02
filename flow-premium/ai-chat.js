@@ -4,6 +4,40 @@
 // ============ MODEL REGISTRY ============
 // Single source of truth for all Gemini model IDs.
 // Update here — never scatter model strings across the file.
+// ── Council Consensus Engine ───────────────────────────────────────────────
+// Sends all 3 AI responses to Gemini Flash acting as a "Judge" model.
+// Returns a structured synthesis: agreements, contradictions, recommendation.
+async function getCouncilConsensus({ chatgpt = '', claude = '', grok = '' } = {}) {
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = keyResult.geminiApiKey;
+  if (!apiKey) return null;
+
+  const judgePrompt =
+    `Act as a Supreme Court Justice synthesising AI opinions. You have received three responses to the same question:\n\n` +
+    `**ChatGPT:** ${chatgpt || '(no response captured)'}\n\n` +
+    `**Claude:** ${claude || '(no response captured)'}\n\n` +
+    `**Grok:** ${grok || '(no response captured)'}\n\n` +
+    `Produce a tight Consensus Report with exactly these three sections:\n` +
+    `## ✅ Consensus — The Truth\nPoints all three models agree on.\n\n` +
+    `## ⚠️ Contradictions — The Risks\nWhere models disagree and why it matters.\n\n` +
+    `## 🏆 Final Recommendation\nYour single authoritative conclusion, max 3 sentences.`;
+
+  try {
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ role: 'user', parts: [{ text: judgePrompt }] }] }),
+        signal: AbortSignal.timeout(30000)
+      }
+    );
+    if (!resp.ok) return null;
+    const data = await resp.json();
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || null;
+  } catch (_) { return null; }
+}
+
 const MODELS = {
   // Chat / vision
   chat:         'gemini-3-flash-preview',
@@ -12060,26 +12094,55 @@ async function runAgentTask(prompt, thread) {
     const councilCall = fnCallParts.find(p => p.functionCall.name === 'invokeCouncil');
     if (councilCall) {
       const { prompt = '' } = councilCall.functionCall.args || {};
-      addAgentStepBubble(thread, `🏛️ Council Mode — querying ChatGPT, Claude & Grok in parallel…`);
+      addAgentStepBubble(thread, `🏛️ Council Mode — opening ChatGPT, Claude & Grok in parallel…`);
+
+      // 1. Open all 3 tabs simultaneously
       const councilSites = [
-        { name: 'ChatGPT',  url: `https://chatgpt.com/?q=${encodeURIComponent(prompt)}` },
-        { name: 'Claude',   url: `https://claude.ai/new?q=${encodeURIComponent(prompt)}` },
-        { name: 'Grok',     url: `https://grok.com/?q=${encodeURIComponent(prompt)}` }
+        { key: 'chatgpt', name: 'ChatGPT', url: `https://chatgpt.com/?q=${encodeURIComponent(prompt)}` },
+        { key: 'claude',  name: 'Claude',  url: `https://claude.ai/new?q=${encodeURIComponent(prompt)}` },
+        { key: 'grok',    name: 'Grok',    url: `https://grok.com/?q=${encodeURIComponent(prompt)}` }
       ];
-      const openedTabs = [];
-      for (const site of councilSites) {
+      const openedTabs = await Promise.all(councilSites.map(async site => {
         try {
           const r = await chrome.runtime.sendMessage({ action: 'agentExecute', tabId: tab.id,
             executeAction: 'openTab', params: { url: site.url, background: true, switchTo: false } });
-          openedTabs.push({ name: site.name, tabId: r?.newTabId || null, url: site.url });
-        } catch (_) { openedTabs.push({ name: site.name, tabId: null, url: site.url }); }
+          return { ...site, tabId: r?.newTabId || null };
+        } catch (_) { return { ...site, tabId: null }; }
+      }));
+
+      // 2. Wait for AI responses to generate (~14s covers all three models)
+      addAgentStepBubble(thread, `🏛️ Waiting 14s for all 3 models to respond…`);
+      await new Promise(r => setTimeout(r, 14000));
+
+      // 3. Extract last assistant response text from each tab via CDP Runtime.evaluate
+      const extractors = {
+        chatgpt: `([...document.querySelectorAll('[data-message-author-role="assistant"]')].pop()?.innerText || '').slice(0,3000)`,
+        claude:  `([...document.querySelectorAll('.font-claude-message, [data-is-streaming]')].pop()?.innerText || '').slice(0,3000)`,
+        grok:    `([...document.querySelectorAll('[class*="message-bubble"],[class*="MessageBubble"],[class*="response"]')].pop()?.innerText || '').slice(0,3000)`
+      };
+      const responses = {};
+      for (const t of openedTabs) {
+        if (!t.tabId) { responses[t.key] = '(tab failed to open)'; continue; }
+        try {
+          const r = await chrome.runtime.sendMessage({
+            action: 'agentExecute', tabId: t.tabId,
+            executeAction: 'extractTabText', params: { expression: extractors[t.key] }
+          });
+          responses[t.key] = r?.text?.trim() || '(no response yet)';
+        } catch (_) { responses[t.key] = '(extraction failed)'; }
       }
+
+      // 4. Run the Consensus Engine (Gemini-as-Judge)
+      addAgentStepBubble(thread, `🏛️ Synthesising with Gemini Judge model…`);
+      const consensus = await getCouncilConsensus(responses);
+
       const tabSummary = openedTabs.map(t => `${t.name} (tab ${t.tabId ?? '?'})`).join(', ');
-      addAgentStepBubble(thread, `🏛️ Council tabs opened: ${tabSummary} — switching to each to collect responses`);
       clientSideResponses.push({ functionResponse: { name: 'invokeCouncil',
-        response: { success: true, data:
-          `Council tabs opened: ${tabSummary}. ` +
-          `Now use switchTab + snapshotPage on each tab to read each model's answer, then call finish() with a Consensus Report that summarises agreements, disagreements, and your recommended conclusion.` } } });
+        response: { success: true, data: consensus
+          ? `## 🏛️ Council Consensus Report\n\n${consensus}\n\n---\n*Sources: ${tabSummary}*`
+          : `Council tabs opened: ${tabSummary}. Consensus synthesis unavailable (no API key or timeout). Use switchTab + snapshotPage on each tab to read responses manually.`
+        }
+      }});
     }
 
     // ── Filter to executable CDP/tab tools only ───────────────────────────────

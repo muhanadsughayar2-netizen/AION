@@ -85,13 +85,25 @@ chrome.debugger.onEvent.addListener((source, eventName, eventParams) => {
   if (eventName === 'Target.attachedToTarget') {
     const { sessionId, targetInfo } = eventParams || {};
     if (sessionId && targetInfo) {
-      subSessions.set(sessionId, {
+      const entry = {
         targetId:   targetInfo.targetId,
         url:        targetInfo.url || '',
         type:       targetInfo.type || 'unknown',
+        tabId:      null,   // resolved below
         attachedAt: Date.now()
+      };
+      subSessions.set(sessionId, entry);
+      // Resolve the Chrome tabId from the CDP targetId so we can route
+      // normal CDP pool commands (click/type) to the popup window later.
+      chrome.debugger.getTargets(targets => {
+        const match = (targets || []).find(t => t.id === targetInfo.targetId);
+        if (match?.tabId) {
+          entry.tabId = match.tabId;
+          console.log(`[Aion CDP] Sub-session attached — sessionId=${sessionId} tabId=${match.tabId} url=${targetInfo.url}`);
+        } else {
+          console.log(`[Aion CDP] Sub-session attached — sessionId=${sessionId} (tabId unresolved) url=${targetInfo.url}`);
+        }
       });
-      console.log(`[Aion CDP] Sub-session attached — sessionId=${sessionId} type=${targetInfo.type} url=${targetInfo.url}`);
     }
   } else if (eventName === 'Target.detachedFromTarget') {
     const { sessionId } = eventParams || {};
@@ -1006,6 +1018,31 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       })(); return true;
     }
 
+    if (executeAction === 'extractTabText') {
+      // Used by Council Mode to scrape the last AI response from a tab.
+      // Runs a caller-supplied JS expression via Runtime.evaluate and returns
+      // the string result — no content-script injection needed.
+      (async () => {
+        const { expression = '' } = params || {};
+        if (!expression) { sendResponse({ success: false, error: 'No expression provided' }); return; }
+        let session;
+        try { session = await cdpPool.acquire(tabId); } catch (e) {
+          sendResponse({ success: false, error: `CDP unavailable: ${e.message}` }); return;
+        }
+        try {
+          const result = await session.send('Runtime.evaluate', {
+            expression,
+            returnByValue: true,
+            awaitPromise:  false
+          });
+          const text = result?.result?.value ?? '';
+          sendResponse({ success: true, text: String(text) });
+        } catch (e) {
+          sendResponse({ success: false, error: e.message });
+        } finally { session.release(); }
+      })(); return true;
+    }
+
     if (executeAction === 'type') {
       // Google Sheets/Docs draw their real content on <canvas>, so they
       // don't have a normal input to set .value on — the plain content-script
@@ -1793,6 +1830,50 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             await cdpMouseClick(params.x, params.y);
             sendResponse({ success: true });
             return;
+          }
+
+          // ── Step 5: Sub-session popup routing ─────────────────────────────
+          // If the target element lives in a spawned popup (login flow, build
+          // preview, OAuth dialog) the main tabId won't find it. Check the
+          // subSessions map for a recently attached child window and retry there.
+          const recentSub = [...subSessions.values()]
+            .filter(s => s.tabId && s.tabId !== tabId && Date.now() - s.attachedAt < 45000)
+            .sort((a, b) => b.attachedAt - a.attachedAt)[0];
+
+          if (recentSub?.tabId) {
+            console.log(`[Aion Agent] Routing click to sub-session popup tabId=${recentSub.tabId} url=${recentSub.url}`);
+            let subSession;
+            try { subSession = await cdpPool.acquire(recentSub.tabId); } catch (_) {}
+            if (subSession) {
+              const subCmd = subSession.send;
+              const subClick = async (x, y) => {
+                const base = { x, y, button: 'left', buttons: 1, clickCount: 1 };
+                await subCmd('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
+                await subCmd('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased' });
+              };
+              try {
+                // Try AXTree on the sub-session tab
+                if (searchLabel) {
+                  await subCmd('Accessibility.enable');
+                  const res = await subCmd('Accessibility.queryAXTree', { accessibleName: searchLabel }).catch(() => ({ nodes: [] }));
+                  for (const node of (res?.nodes || [])) {
+                    if (!node.backendDOMNodeId) continue;
+                    try {
+                      await subCmd('DOM.scrollIntoViewIfNeeded', { backendNodeId: node.backendDOMNodeId }).catch(() => {});
+                      const box = await subCmd('DOM.getBoxModel', { backendNodeId: node.backendDOMNodeId });
+                      if (!box?.model?.content) continue;
+                      const [x1, y1, x2,,,y3] = box.model.content;
+                      const cx = (x1 + x2) / 2, cy = (y1 + y3) / 2;
+                      if (cx > 0 && cy > 0) {
+                        await subClick(cx, cy);
+                        sendResponse({ success: true, note: `Clicked in popup window (tabId=${recentSub.tabId})` });
+                        return;
+                      }
+                    } catch (_) { continue; }
+                  }
+                }
+              } finally { subSession.release(); }
+            }
           }
 
           // Nothing worked — tell the AI so it can try a different approach
