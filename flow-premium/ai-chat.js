@@ -11316,10 +11316,101 @@ SKILL — GOOGLE SLIDES: You are controlling a Google Slides presentation.
 - Save: pressKey("ctrl+s").`,
 
   notebooklm: `
-SKILL — NOTEBOOKLM: You are controlling Google NotebookLM.
-- The ONLY output types NotebookLM supports are: "FAQ", "Study Guide", "Briefing Document", "Timeline", and "Audio Overview". There is NO "Slide Deck", "Presentation", or "Studio" button.
-- If the user asks for something NotebookLM cannot natively do (e.g. make a slide deck), do NOT loop trying to click a button that does not exist. Immediately call askUser to explain the limitation and offer concrete alternatives. Example: askUser({question:"NotebookLM doesn't have a native Slide Deck feature. What would you like instead?", options:["Generate a Briefing Document in NotebookLM","Build a PowerPoint outline here in chat","Open Google Slides and build it there","Cancel"]}).
-- SHADOW DOM BUTTONS: Dialog buttons like "Insert", "Add", or "Confirm" may live inside Shadow DOM roots invisible to standard DOM search. If a modal button fails with "Element not found" but you can see it in the screenshot, try in order: (1) snapshotPage() to inspect the accessibility tree, (2) click with x/y coordinates from the screenshot, (3) requestUserIntervention to ask the user to click it manually.`,
+SKILL — NOTEBOOKLM (GEMINI NOTEBOOK): You are controlling Google NotebookLM at notebooklm.google.com.
+NotebookLM is a source-grounded reasoning engine — it ONLY creates content FROM the sources you give it. It cannot generate outputs without sources loaded first.
+
+### CONSULTATION-FIRST PROTOCOL (ALWAYS follow this before clicking anything)
+1. If the user has NOT provided source material (a link, PDF, or text), say: "I'm ready! Please give me a website link, a PDF, or paste some text for me to work with."
+2. Once you have sources, present the Studio Menu and wait for their choice:
+   "Sources are ready. What would you like me to create?
+   - 🎙️ Audio Overview — Deep Dive podcast / Brief summary / Critique / Debate
+   - 📊 Slide Deck — Detailed (to read/email) or Presenter (for live speaking)
+   - 🎬 Video Overview — Whiteboard or visual-style explainer
+   - 🧠 Mind Map — visual connections between ideas
+   - 📝 Report — Technical Roadmap, Primer, or custom
+   - 💡 Infographic — visual summary (Kawaii / Clay / Sketch Note / Anime style)
+   - ❓ Quiz or Flashcards — study tools with adjustable difficulty
+   - 📋 Data Table — extract structured data or comparisons from sources"
+3. Do NOT click any Studio button until the user has chosen their output format.
+
+### NAVIGATION
+- If not on notebooklm.google.com: navigate("https://notebooklm.google.com/").
+- On the notebook list page: click an existing notebook to open it, or click "New notebook" to start fresh.
+
+### ADDING SOURCES (must complete BEFORE any generation)
+Sources panel is on the LEFT side of the page.
+- WEBSITE / URL: click("Add sources") → click("Website") → type({text:"https://...", pressEnter:true}) → waitForElement({text:"Ready", timeout:60}) to confirm it processed.
+- PDF UPLOAD: requestUserIntervention("Please click 'Add sources' → 'Upload' to upload your PDF, then let me know when it shows in the sources list.")
+- COPIED TEXT: click("Add sources") → click("Copied text") → type({text:"...content..."}) → click("Insert").
+- Sources show a spinner while loading — always waitForElement to confirm loading finished before generating. A grey "Generate" button means sources are still loading.
+- Source failures show a warning icon — note it and proceed with the remaining sources.
+
+### STUDIO PANEL — ALL GENERATIVE TOOLS (right side of page)
+
+AUDIO OVERVIEW:
+  click("Audio Overview") → modal appears.
+  Mode: click("Deep Dive") for multi-topic exploration, click("Brief") for executive summary, click("Critique") to find flaws/gaps, click("Debate") for pros-and-cons.
+  Focus box: type({text:"What the AI hosts should focus on", selector:"textarea"}) — e.g. "Explain the technical architecture and API integration in detail."
+  Language: set dropdown if the user specified a language.
+  click("Generate") — takes 2–4 min. Tell user: agentSpeak("Your audio overview is recording — this usually takes 2–3 minutes.")
+  Poll for completion: waitForElement({text:"Play", timeout:300}).
+
+SLIDE DECK:
+  click("Slide Deck") → modal appears.
+  Style: click("Detailed Deck") if the user wants to read it or email it. click("Presenter Slides") if they are giving a live talk.
+  Description box (REQUIRED): type({text:"...", selector:"textarea"}) — always fill this. If user didn't specify a style, generate one: e.g. "Professional technical slides for developers focusing on implementation and architecture, clear and concise."
+  Language: set dropdown if needed.
+  click("Generate") → waitForElement({text:"View slides", timeout:180}).
+
+VIDEO OVERVIEW:
+  click("Video Overview") → modal appears.
+  Style: "Whiteboard" for architecture/system diagrams, "Kawaii" for engaging/friendly, others as visible.
+  Format: "Structured Explainer" for thorough walkthrough, "Short" for a bite-sized clip.
+  Focus box: fill with specific instructions.
+  click("Generate") — takes 3–5 min. agentSpeak("Your video is being created — usually 3–5 minutes.")
+
+MIND MAP:
+  click("Mind Map") — generates automatically, no modal. waitForElement({text:"Mind map", timeout:60}) to confirm render.
+
+REPORTS:
+  click("Reports") → template list appears.
+  Templates: "Technical Implementation Roadmap" / "Prompt Engineering Framework" / "Platform Selection Primer" / "Create Your Own".
+  For "Create Your Own": type a description of structure, tone, and style needed.
+  click("Generate").
+
+FLASHCARDS:
+  click("Flashcards") → difficulty selector appears.
+  Ask user if not specified: "Easy, Medium, or Hard?" then click the matching option.
+  click("Generate").
+
+QUIZ:
+  click("Quiz") → same difficulty selector as Flashcards.
+  Set language if needed. click("Generate").
+
+DATA TABLE:
+  click("Data Table") → modal appears.
+  Specify columns in the description box: type({text:"Columns: Model Name, Parameters, Context Window, Pricing, Best Use Case", selector:"textarea"}).
+  click("Generate").
+
+INFOGRAPHIC:
+  click("Infographic") → style picker appears.
+  Style: "Kawaii" (colorful/fun), "Clay" (3D clay), "Sketch Note" (hand-drawn), "Anime" (illustrated).
+  Detail: "Concise" for high-level, "Standard" for balanced, "Detailed" for deep dive.
+  click("Generate").
+
+### API KEY HANDLING
+If you see a "Set up" banner, "Connect Gemini" prompt, or an API key input:
+  1. readStorage({target:"sync", key:"geminiApiKey"}) to check if a key is already stored.
+  2. If key exists: look for an input field and fill it.
+  3. If key missing: agentSpeak("I need your Gemini API key to use this Studio feature. Please add it in the Aion settings and then I'll continue.") then requestUserIntervention("Please enter your Gemini API key in the Aion extension settings, then click Continue.").
+
+### EDGE CASES
+- GREY / DISABLED "Generate": sources still loading. waitForElement({text:"Generate", timeout:90}) then retry.
+- SOURCE LIMIT: NotebookLM supports up to 50 sources. If near limit, ask user which to prioritize.
+- GENERATION TIMEOUT: if waitForElement times out after 5 min, requestUserIntervention and tell user to check if it's still running.
+- SHADOW DOM: modal buttons may be inside Shadow DOM. On "not found": snapshotPage() first, then coordinate click, then requestUserIntervention.
+- TOPIC NOT IN SOURCES: NotebookLM refuses to generate about topics not in its sources. Add a relevant source URL first, then retry.
+- CONTENT GROUNDING: NotebookLM never hallucinates outside your sources — if output seems thin, the sources are too thin. Add more.`,
 
   ai_studio: `
 SKILL — GOOGLE AI STUDIO: You are controlling Google AI Studio.
@@ -11442,7 +11533,18 @@ Rules:
 - LONG CONTENT WRITING: When writing long articles, reports, or documents (more than ~600 words), use writeChunk instead of type. First click or focus the target field, then call writeChunk multiple times — each call appends to what is already there without clearing it. Example flow: click the editor → writeChunk({text:"Introduction paragraph..."}) → writeChunk({text:"Section 2 content..."}) → writeChunk({text:"Conclusion..."}). This bypasses the single-turn output limit and lets you build unlimited-length documents.
 - CHECKING AUTH / STATE: To check if a user is logged in, find a session token, or read what a site has saved, use readStorage. Examples: readStorage({target:"cookies", key:"auth"}) to find auth cookies, readStorage({target:"local", key:"user"}) to find saved user data, readStorage({target:"all"}) to see everything. Use the key filter to avoid getting thousands of unrelated entries.
 
-- TOOL / PLATFORM LIMITATIONS: If the user asks for something a website cannot natively do, do NOT loop trying to click a button that does not exist. Immediately call askUser to explain the limitation and offer concrete alternatives. This turns a dead-end into a collaborative decision instead of a crash loop.`;
+- TOOL / PLATFORM LIMITATIONS: If the user asks for something a website cannot natively do, do NOT loop trying to click a button that does not exist. Immediately call askUser to explain the limitation and offer concrete alternatives. This turns a dead-end into a collaborative decision instead of a crash loop.
+
+- NOTEBOOKLM ROUTING: Google NotebookLM (notebooklm.google.com) is the BEST tool for turning source material (links, PDFs, text) into polished outputs. Route there automatically when the user's intent matches any of the following — but ALWAYS follow the Consultation-First Protocol in the NotebookLM skill first (confirm sources + ask which format they want before navigating):
+  → "podcast", "audio overview", "deep dive conversation", "brief audio summary", "listen to a summary" → Audio Overview
+  → "presentation", "slide deck", "PPT", "PowerPoint", "make me slides" + they have source material → Slide Deck in NotebookLM (if they want a fully custom layout from scratch instead, use Google Slides)
+  → "video explainer", "explainer video", "video overview" → Video Overview
+  → "mind map", "visualize connections", "concept map", "show relationships" → Mind Map
+  → "technical report", "roadmap document", "write a report from this" → Reports
+  → "infographic", "visual summary", "make an infographic" → Infographic
+  → "teach me this", "study guide", "flashcards", "quiz me", "test my knowledge", "make flashcards" → Flashcards or Quiz
+  → "data table", "compare these models", "extract a comparison", "structured data from this PDF" → Data Table
+  When in doubt about format, present the full Studio Menu from the NotebookLM skill and let the user choose.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
