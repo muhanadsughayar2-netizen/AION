@@ -11326,6 +11326,57 @@ SKILL — GOOGLE AI STUDIO: You are controlling Google AI Studio.
 - The UI is built with Web Components — dialog buttons may live inside Shadow DOM roots invisible to standard DOM search.
 - If a modal button fails with "Element not found" but you can see it in the screenshot, try in order: (1) snapshotPage() to inspect the accessibility tree, (2) click with x/y coordinates from the screenshot, (3) requestUserIntervention to ask the user to click it manually.`,
 
+  gmail: `
+SKILL — GMAIL: You are controlling Gmail.
+- READING THREADS: Threads are listed in the inbox. Click a row to open the thread and read individual messages. The full message body expands when you click it.
+- COMPOSING A NEW EMAIL: Click the "Compose" button (bottom-left). A compose window opens — fill To, Subject, then the body. Click "Send" to send. Never use keyboard shortcut "c" to compose unless you have already confirmed the inbox view is focused.
+- REPLYING: Open the thread, then click "Reply" or "Reply all" at the bottom of the last message. A reply box appears inline — type your reply then click "Send".
+- SEARCH: Use the search bar at the top. Type your query and press Enter — do NOT navigate away to construct a URL.
+- LABELS / FOLDERS: Labels appear in the left sidebar. Click a label name to filter the inbox to that label. "Starred", "Sent", "Drafts", "Spam", and "Trash" are fixed system labels.
+- ATTACHMENTS: To attach a file in compose, click the paperclip icon in the compose toolbar. To open an attachment in a received email, click the attachment thumbnail; it opens in a viewer.
+- If a dialog or confirmation prompt appears, read it carefully — Gmail confirms destructive actions (delete, report spam). Click the correct button rather than pressing Enter blindly.`,
+
+  google_calendar: `
+SKILL — GOOGLE CALENDAR: You are controlling Google Calendar.
+- CREATING AN EVENT: Click a blank slot on the calendar grid or click the "+ Create" button. Fill in the title, then click "More options" for the full form (time, location, guests, description). Click "Save" to confirm.
+- EDITING AN EVENT: Click the event on the calendar to open its summary popover, then click the pencil/edit icon to open the full edit form.
+- DELETING AN EVENT: Click the event, then click the trash icon in the popover. Confirm the deletion if prompted (recurring events ask whether to delete "this event", "this and following", or "all events").
+- NAVIGATING DATE RANGES: Use the arrow buttons next to the date heading to move forward/back. Use the mini-calendar on the left to jump to a specific month/day.
+- SWITCHING VIEW (Day/Week/Month/Schedule): Use the view selector in the top-right corner.
+- SEARCHING: Use the search icon at the top. Type a query and press Enter.
+- RSVP: Open an event you were invited to; the "Going?" section shows Yes/No/Maybe buttons — click the appropriate one.`,
+
+  notion: `
+SKILL — NOTION: You are controlling Notion.
+- PAGE STRUCTURE: Notion uses blocks. Click anywhere in the page body to place the cursor and start typing. Press Enter for a new block. Use "/" to open the block-type menu (for headings, bullets, toggles, callouts, tables, etc.).
+- EDITING EXISTING CONTENT: Click the block you want to edit — it becomes editable inline. Use standard text editing (Home/End, Shift+click to select, Ctrl+A to select all within a block).
+- TITLES: Click the large title area at the top to edit the page title.
+- SIDEBAR NAVIGATION: Pages and sub-pages are listed in the left sidebar. Click a page to navigate to it. Hover a page to reveal "..." for options (rename, delete, duplicate).
+- CREATING A NEW PAGE: Click "+ New page" at the bottom of the sidebar, or click "..." next to a workspace/section and choose "New page".
+- DATABASES (tables, boards, galleries): Rows are cards. Click a row/card to open its full record. Use "New" or "+ New" at the bottom to add a row. Property values (status, date, select) can be edited by clicking the cell.
+- INLINE COMMANDS: Type "/" anywhere in the page body to insert any block type — use it for inserting databases, callouts, code blocks, images, etc.
+- MOVING BLOCKS: Hover a block to reveal the ⠿ drag handle on the left; drag it to reorder.`,
+
+  github: `
+SKILL — GITHUB: You are controlling GitHub.
+- FILE EDITING: Navigate to the file in the repository. Click the pencil (✏️) icon to edit it inline (opens a code editor). Make changes, then scroll down and click "Commit changes". Fill in a commit message if prompted, then click "Commit changes" again to confirm.
+- CREATING A NEW FILE: Navigate to the target folder, click "Add file" → "Create new file". Type the filename (with path if needed), add content, then commit.
+- PULL REQUESTS: Click "Pull requests" tab at the top. To open a PR, click "New pull request", choose base and compare branches, review the diff, fill in title/body, then click "Create pull request".
+- ISSUES: Click "Issues" tab. To file a new issue: "New issue" → fill title and body → "Submit new issue". To comment on an existing issue: open it, scroll to the comment box, type, then click "Comment".
+- BRANCHES: The branch selector is a dropdown near the top-left of the repository view (shows the current branch name). Click it to switch or create branches.
+- CODE SEARCH: Use the search bar at the top. Prefix with "repo:owner/name" to scope to a repository, or use the "Code" filter after searching.
+- ACTIONS / WORKFLOWS: Click "Actions" tab to see CI/CD runs. Click a run row to expand it and see logs for individual jobs and steps.`,
+
+  linear: `
+SKILL — LINEAR: You are controlling Linear (project management).
+- ISSUES: Issues are listed in the main panel. Click an issue row to open its detail view. In the detail view you can edit title, description, status, priority, assignee, labels, and due date by clicking each field.
+- CREATING AN ISSUE: Click "New issue" (keyboard shortcut "C" also works when no input is focused). Fill in title (required), then optionally add description, status, priority, assignee, and labels. Click "Save issue" to confirm.
+- STATUS CHANGES: Open an issue and click its status badge (e.g. "Todo", "In Progress") to open the status picker. Click the new status to apply it.
+- CYCLES & PROJECTS: Use the left sidebar to navigate between Teams, Projects, and Cycles. Click a Project or Cycle to see its scoped issue list.
+- SEARCH: Press "/" or click the search icon to open global search. Type to filter issues, projects, or teams.
+- FILTERS: On any issue list, click "Filter" to add filters (assignee, label, priority, etc.). Multiple filters combine with AND.
+- COMMENTS: In an issue detail view, scroll to the bottom to add a comment. Click the comment box, type, then click "Comment".`,
+
   generic: `
 SKILL — STANDARD WEBSITE: You are on a standard webpage.
 - Use CSS selectors, visible text labels, or X/Y coordinates to locate elements.
@@ -11341,6 +11392,11 @@ function getDynamicSkill(url) {
   if (u.includes('docs.google.com'))       return SKILL_LIBRARY.google_docs;
   if (u.includes('word.office.com') || u.includes('word.live.com') || u.includes('word.microsoft.com')) return SKILL_LIBRARY.microsoft_word;
   if (u.includes('excel.office.com') || u.includes('excel.live.com'))  return SKILL_LIBRARY.microsoft_excel;
+  if (u.includes('mail.google.com'))       return SKILL_LIBRARY.gmail;
+  if (u.includes('calendar.google.com'))   return SKILL_LIBRARY.google_calendar;
+  if (u.includes('notion.so'))             return SKILL_LIBRARY.notion;
+  if (u.includes('github.com'))            return SKILL_LIBRARY.github;
+  if (u.includes('linear.app'))            return SKILL_LIBRARY.linear;
   return SKILL_LIBRARY.generic;
 }
 // ─────────────────────────────────────────────────────────────────────────────
