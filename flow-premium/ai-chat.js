@@ -12085,8 +12085,37 @@ async function runAgentTask(prompt, thread) {
     // reflects the live page — not the URL from task start. This keeps the
     // correct skill active after redirects (login flows, cross-subdomain hops,
     // Sheets→Docs navigation, etc.) without changing normal-site behaviour.
+    //
+    // If the tab is still loading (e.g. a redirect just fired), wait up to
+    // 10 s for it to reach "complete" before executing the step. Acting on
+    // a loading page causes clicks and reads to target the wrong or absent DOM.
     try {
-      const freshTab = await chrome.tabs.get(lockedTabId);
+      let freshTab = await chrome.tabs.get(lockedTabId);
+      if (freshTab?.status === 'loading') {
+        const LOAD_TIMEOUT_MS = 10000;
+        const POLL_INTERVAL_MS = 250;
+        const deadline = Date.now() + LOAD_TIMEOUT_MS;
+        while (freshTab?.status === 'loading' && Date.now() < deadline) {
+          await new Promise(r => setTimeout(r, POLL_INTERVAL_MS));
+          freshTab = await chrome.tabs.get(lockedTabId).catch(() => freshTab);
+        }
+        // If the URL changed while we were waiting, re-read the page text so
+        // the model gets fresh context from the destination page, not the
+        // stale source page that triggered the redirect.
+        if (freshTab?.url && freshTab.url !== tab.url) {
+          pageText = await getActiveTabPageText(freshTab.id).catch(() => pageText);
+          // Patch the last function-response in contents so the model can see
+          // the updated page without waiting for the next full step cycle.
+          const lastContent = contents[contents.length - 1];
+          if (lastContent?.role === 'tool' && Array.isArray(lastContent.parts)) {
+            for (const part of lastContent.parts) {
+              if (part?.functionResponse?.response) {
+                part.functionResponse.response.pageNow = pageText.slice(0, 4000);
+              }
+            }
+          }
+        }
+      }
       if (freshTab?.url) tab = freshTab;
     } catch (_) {}
 
