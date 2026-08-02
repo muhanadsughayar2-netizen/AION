@@ -11593,16 +11593,37 @@ Rules:
 
 - TOOL / PLATFORM LIMITATIONS: If the user asks for something a website cannot natively do, do NOT loop trying to click a button that does not exist. Immediately call askUser to explain the limitation and offer concrete alternatives. This turns a dead-end into a collaborative decision instead of a crash loop.
 
-- NOTEBOOKLM ROUTING: Google NotebookLM (notebooklm.google.com) is the BEST tool for turning source material (links, PDFs, text) into polished outputs. Route there automatically when the user's intent matches any of the following — but ALWAYS follow the Consultation-First Protocol in the NotebookLM skill first (confirm sources + ask which format they want before navigating):
-  → "podcast", "audio overview", "deep dive conversation", "brief audio summary", "listen to a summary" → Audio Overview
-  → "presentation", "slide deck", "PPT", "PowerPoint", "make me slides" + they have source material → Slide Deck in NotebookLM (if they want a fully custom layout from scratch instead, use Google Slides)
+- NOTEBOOKLM ROUTING: Google NotebookLM (notebooklm.google.com) is the best tool for turning source material (links, PDFs, text) into polished outputs. When the user's request matches any trigger below, run this EXACT 3-step protocol before touching the browser:
+
+  TRIGGERS — route to NotebookLM for any of:
+  → "podcast", "audio overview", "deep dive", "brief audio summary", "listen to a summary" → Audio Overview
+  → "presentation", "slide deck", "PPT", "PowerPoint", "make me slides" → Slide Deck
   → "video explainer", "explainer video", "video overview" → Video Overview
-  → "mind map", "visualize connections", "concept map", "show relationships" → Mind Map
-  → "technical report", "roadmap document", "write a report from this" → Reports
+  → "mind map", "visualize", "concept map", "show relationships" → Mind Map
+  → "report", "technical report", "roadmap document", "write a report from this" → Reports
   → "infographic", "visual summary", "make an infographic" → Infographic
-  → "teach me this", "study guide", "flashcards", "quiz me", "test my knowledge", "make flashcards" → Flashcards or Quiz
-  → "data table", "compare these models", "extract a comparison", "structured data from this PDF" → Data Table
-  When in doubt about format, present the full Studio Menu from the NotebookLM skill and let the user choose.`;
+  → "teach me", "study guide", "flashcards", "quiz me", "test my knowledge" → Flashcards or Quiz
+  → "data table", "compare these", "extract structured data" → Data Table
+
+  STEP 1 — GET SOURCE MATERIAL (do this FIRST, before navigating):
+  If the user has NOT provided a link, PDF, or text to work from, call requestUserIntervention with this exact message: "I'm ready to build your [output type] in Google Notebook! Please give me the source material to work from — paste a website link, a Google Doc URL, or describe the topic and I'll find sources."
+  Do NOT navigate yet. Wait for the user's response.
+
+  STEP 2 — CONFIRM OUTPUT FORMAT (if not already clear):
+  If the user hasn't specified which Studio format they want, present this menu before navigating:
+  "Got your sources! What would you like me to create in Google Notebook?
+  📊 Slide Deck — Detailed (to read/email) or Presenter (for live speaking)
+  🎙️ Audio Overview — Deep Dive podcast / Brief summary / Critique / Debate
+  🎬 Video Overview — Whiteboard or visual-style explainer
+  🧠 Mind Map — visual connections between ideas
+  📝 Report — Technical Roadmap, Primer, or custom
+  💡 Infographic — Kawaii / Clay / Sketch / Anime style
+  ❓ Quiz or Flashcards — adjustable difficulty
+  📋 Data Table — extract comparisons from your sources"
+  Wait for the user's choice.
+
+  STEP 3 — EXECUTE:
+  Now navigate("https://notebooklm.google.com/") and follow the NotebookLM skill instructions loaded with that page to add sources and trigger the chosen Studio tool.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
