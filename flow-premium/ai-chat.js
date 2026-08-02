@@ -11413,9 +11413,67 @@ If you see a "Set up" banner, "Connect Gemini" prompt, or an API key input:
 - CONTENT GROUNDING: NotebookLM never hallucinates outside your sources — if output seems thin, the sources are too thin. Add more.`,
 
   ai_studio: `
-SKILL — GOOGLE AI STUDIO: You are controlling Google AI Studio.
-- The UI is built with Web Components — dialog buttons may live inside Shadow DOM roots invisible to standard DOM search.
-- If a modal button fails with "Element not found" but you can see it in the screenshot, try in order: (1) snapshotPage() to inspect the accessibility tree, (2) click with x/y coordinates from the screenshot, (3) requestUserIntervention to ask the user to click it manually.`,
+SKILL — GOOGLE AI STUDIO: You are controlling Google AI Studio at aistudio.google.com.
+The entire UI is built with Web Components (custom elements / Shadow DOM). Standard CSS selectors often fail — always use snapshotPage() first to find the accessible name of a button before clicking it.
+
+### NAVIGATION & NEW PROMPT
+- Homepage shows a list of saved prompts. To start fresh: click("New prompt") — a sub-menu appears with "Freeform", "Chat", and "System" options. Click the one that matches the task.
+  - Freeform: single input + output, best for one-off generation.
+  - Chat: multi-turn conversation interface, best for back-and-forth.
+  - System: adds a System Instructions box at the top, best for role-playing or persistent behavior.
+- To open an existing prompt: click its title in the list.
+
+### TYPING A PROMPT
+- The main prompt input is a large text area in the centre. Click it first, then type({text:"your prompt"}).
+- For long content: writeChunk() to append without clearing.
+- If a System Instructions box is visible at the top: click it first, type the system instruction, then click the main prompt area and type the user prompt.
+
+### RUNNING A PROMPT
+- Click the "Run" button (▶ icon, usually bottom-right of the prompt area) OR pressKey("ctrl+enter").
+- Output streams token-by-token into the response panel below the prompt.
+- To detect when streaming is DONE: waitForElement({text:"Run", timeout:120}) — the Run button re-enables when generation completes. Do NOT read output until the button re-enables.
+- If streaming is taking too long (>60s): snapshotPage() to check if a "Stop" button is visible; if so the model is still running.
+
+### READING OUTPUT
+- The output panel is below the prompt input. Use readText({selector:"ms-code-block,ms-chunk"}) or snapshotPage() to extract the full generated text.
+- For code blocks: look for a "Copy code" button above the code block and click it, then readStorage({target:"clipboard"}) — or just readText the code block directly.
+
+### SWITCHING MODELS
+- The model selector is a dropdown in the top toolbar (shows the current model name, e.g. "Gemini 1.5 Pro").
+- Click the model name dropdown → a list of available models appears. Click the desired model.
+- If the dropdown is a Web Component and click fails: snapshotPage() to find its accessible name, then click by coordinates.
+
+### ADJUSTING SETTINGS (Temperature, Token Limit, etc.)
+- Settings panel is on the RIGHT side — labelled "Run settings" or a gear icon. Click it to expand.
+- Temperature: a slider — use drag() or click the slider track at the desired position.
+- Output token limit: a numeric input — click it, clearFirst:true, type the number.
+- Stop sequences, Top-K, Top-P: all in the same panel.
+
+### SYSTEM INSTRUCTIONS
+- Visible as a collapsible box at the TOP of the prompt (only in "System" prompt type).
+- Click to expand it, then click the text area inside and type your system instruction.
+- If not visible: click("System instructions") or look for a "+" toggle above the prompt.
+
+### SAVING A PROMPT
+- Click the save icon (💾) or "Save" in the top toolbar. A dialog asks for a name — type it and press Enter.
+- Saved prompts appear in the left sidebar list.
+
+### EXPORTING
+- "Get code" button (</> icon) in the toolbar generates equivalent Python / JS / curl code. Click it, then copy from the dialog.
+- "Open in Colab" button opens the prompt as a Colab notebook in a new tab.
+
+### UPLOADING FILES / IMAGES
+- Click the "+" or paperclip icon in the prompt input area to attach a file or image.
+- For images: the model will see the image as a vision input alongside your text prompt.
+
+### API KEY SETUP
+- AI Studio uses your Google account — no manual API key needed for the web UI.
+- If a "Get API key" prompt appears: it is offering to create one for programmatic use, not required to run prompts in the UI. Dismiss with pressKey("escape") unless the task specifically asks for the API key value.
+
+### SHADOW DOM FALLBACK (applies everywhere in AI Studio)
+- If any click fails with "Element not found": snapshotPage() to get the accessibility tree, find the button's accessible name, retry click with that name.
+- If snapshotPage also fails to find it: click with x/y coordinates from the screenshot.
+- Last resort: requestUserIntervention.`,
 
   gmail: `
 SKILL — GMAIL: You are controlling Gmail.
@@ -12751,11 +12809,31 @@ async function runAgentTask(prompt, thread) {
         }
       }
 
+      // ── Closed-loop self-check hint ────────────────────────────────────────
+      // For high-consequence actions that commonly fail silently, inject a
+      // targeted VERIFY_HINT into the success response. The model reads this
+      // alongside the fresh screenshot and must actively confirm the change
+      // happened before moving to the next step — turning "fire and hope" into
+      // "fire and verify". No extra API call; just a prompt-level instruction.
+      let verifyHint = null;
+      if (execResult?.success) {
+        const label = String(args?.text || args?.selector || args?.description || '').toLowerCase();
+        if (name === 'type') {
+          verifyHint = 'VERIFY (required): Look at the screenshot now — confirm the text you just typed is visible in the target field. If the field is still empty or shows the old value, the field was not focused correctly; click it first and retype.';
+        } else if ((name === 'click' || name === 'doubleClick') &&
+          /\b(send|submit|run|generate|post|save|confirm|publish|apply|create|build|start|launch|next|continue|finish|done|ok|yes)\b/.test(label)) {
+          verifyHint = 'VERIFY (required): Look at the screenshot now — confirm the action completed. Look for: a success message, a response starting to stream, a URL change, a spinner appearing, or any visible state change. If nothing changed at all, the click likely missed — try snapshotPage() to find the button\'s exact accessible name, then retry.';
+        }
+      }
+
       responseParts.push({
         functionResponse: {
           name,
           response: execResult?.success
-            ? { success: true, ...(execResult.data != null ? { data: String(execResult.data) } : {}), pageNow: '' }
+            ? { success: true,
+                ...(execResult.data != null ? { data: String(execResult.data) } : {}),
+                ...(verifyHint ? { VERIFY_HINT: verifyHint } : {}),
+                pageNow: '' }
             : { success: false,
                 error: execResult?.error || 'unknown error',
                 selfHealingHint,
