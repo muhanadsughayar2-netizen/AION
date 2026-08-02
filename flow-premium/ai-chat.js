@@ -11338,12 +11338,33 @@ NotebookLM is a source-grounded reasoning engine — it ONLY creates content FRO
 - On the notebook list page: click an existing notebook to open it, or click "New notebook" to start fresh.
 
 ### ADDING SOURCES (must complete BEFORE any generation)
+⚠️ CRITICAL: The ENTIRE NotebookLM UI uses Shadow DOM Web Components. Standard placeholder selectors WILL fail. After every modal or panel opens, you MUST call snapshotPage() to find the real accessible names of inputs before typing into them.
+
 Sources panel is on the LEFT side of the page.
-- WEBSITE / URL: click("Add sources") → click("Website") → type({text:"https://...", pressEnter:true}) → waitForElement({text:"Ready", timeout:60}) to confirm it processed.
-- PDF UPLOAD: requestUserIntervention("Please click 'Add sources' → 'Upload' to upload your PDF, then let me know when it shows in the sources list.")
-- COPIED TEXT: click("Add sources") → click("Copied text") → type({text:"...content..."}) → click("Insert").
-- Sources show a spinner while loading — always waitForElement to confirm loading finished before generating. A grey "Generate" button means sources are still loading.
-- Source failures show a warning icon — note it and proceed with the remaining sources.
+
+- WEBSITE / URL (add ONE URL at a time — do NOT paste multiple URLs in one call):
+  1. click("Add sources") — the sources panel opens or a modal appears.
+  2. snapshotPage() — find the "Website" option's accessible name in the AX tree.
+  3. click("Website") — a URL input dialog opens.
+  4. snapshotPage() — find the text input (look for role="textbox" or a text input element). Note its accessible name or coordinates.
+  5. click the input by its accessible name or coordinates, then type({text:"https://example.com"}) — one URL only, no newlines.
+  6. Look for a confirm button — snapshotPage() to find it (may be labelled "Insert", "Add", "Done", or "Submit"). Click it.
+  7. waitForElement({text:"Ready", timeout:60}) OR watch for the source to appear in the left panel.
+  8. Repeat from step 1 for each additional URL.
+
+- PDF UPLOAD: requestUserIntervention("Please click 'Add sources' → 'Upload' to upload your PDF, then let me know when it appears in the sources list.")
+
+- COPIED TEXT (paste text content directly):
+  1. click("Add sources").
+  2. snapshotPage() — find "Copied text" option.
+  3. click("Copied text") — a textarea dialog opens.
+  4. snapshotPage() — find the textarea (role="textbox" or large text area). Note its accessible name or coordinates.
+  5. click the textarea by accessible name or coordinates, then type({text:"your content here"}).
+  6. snapshotPage() — find the confirm button (may be "Insert", "Add", or "Done"). Click it.
+
+- Sources show a spinner while loading — waitForElement({text:"Ready", timeout:60}) before generating. Grey "Generate" button = still loading.
+- Source failures show a warning icon — note it and continue with remaining sources.
+- If "Add sources" / "Website" / "Copied text" are not found with click: call snapshotPage() and look at the full AX tree to find the correct button label, then retry click with that exact label.
 
 ### STUDIO PANEL — ALL GENERATIVE TOOLS (right side of page)
 
@@ -11610,8 +11631,8 @@ Rules:
   Do NOT navigate yet. Wait for the user's response.
 
   STEP 2 — CONFIRM OUTPUT FORMAT (if not already clear):
-  If the user hasn't specified which Studio format they want, present this menu before navigating:
-  "Got your sources! What would you like me to create in Google Notebook?
+  If the user hasn't specified which Studio formats they want, present this menu. IMPORTANT: the user can choose MORE THAN ONE — tell them explicitly they can pick multiple:
+  "Got your sources! Pick one or more things to create (you can choose several and I'll build them all):
   📊 Slide Deck — Detailed (to read/email) or Presenter (for live speaking)
   🎙️ Audio Overview — Deep Dive podcast / Brief summary / Critique / Debate
   🎬 Video Overview — Whiteboard or visual-style explainer
@@ -11620,10 +11641,10 @@ Rules:
   💡 Infographic — Kawaii / Clay / Sketch / Anime style
   ❓ Quiz or Flashcards — adjustable difficulty
   📋 Data Table — extract comparisons from your sources"
-  Wait for the user's choice.
+  Wait for the user's choices.
 
-  STEP 3 — EXECUTE:
-  Now navigate("https://notebooklm.google.com/") and follow the NotebookLM skill instructions loaded with that page to add sources and trigger the chosen Studio tool.`;
+  STEP 3 — PLAN AND EXECUTE ALL CHOSEN OUTPUTS:
+  If the user chose multiple outputs, call planTask FIRST to list every output as a numbered step (e.g. "1. Add sources, 2. Slide Deck, 3. Audio Overview, 4. Flashcards"). Then navigate("https://notebooklm.google.com/"), add sources ONCE, and run through each Studio tool in sequence — checking off each plan step with checkPlan as it completes. Do NOT stop and ask after each one; complete the full list unless the user says stop.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
@@ -11640,7 +11661,7 @@ async function enterAutopilotMiniMode() {
   try {
     const win = await chrome.windows.getCurrent();
     _autopilotOriginalBounds = { width: win.width, height: win.height, left: win.left, top: win.top };
-    const miniW = 320, miniH = 66;
+    const miniW = 360, miniH = 112;
     const availW = window.screen.availWidth || 1280;
     const availH = window.screen.availHeight || 800;
     await chrome.windows.update(win.id, {
@@ -11669,6 +11690,11 @@ async function exitAutopilotMiniMode() {
 function updateAutopilotMiniStatus(text) {
   const el = document.getElementById('autopilotMiniText');
   if (el && text) el.textContent = text;
+}
+
+function updateAutopilotMiniLastAction(text) {
+  const el = document.getElementById('autopilotMiniLastAction');
+  if (el && text) el.textContent = text.length > 60 ? text.slice(0, 57) + '…' : text;
 }
 
 function updateAutopilotMiniStep(current, max) {
@@ -11783,7 +11809,8 @@ function addAgentStepBubble(thread, text, kind) {
 
   row.innerHTML = `<span style="color:rgba(148,163,184,0.55);font-size:12px;flex-shrink:0;font-weight:500;">${_agentStepCount}.</span><span style="color:#c8cdd5;">${renderedText}</span>`;
   _agentLogContainer.appendChild(row);
-  updateAutopilotMiniStatus(text);
+  updateAutopilotMiniStatus(`Step ${_agentStepCount} — Autopilot running`);
+  updateAutopilotMiniLastAction(text);
   thread.scrollTop = thread.scrollHeight;
   return row;
 }
