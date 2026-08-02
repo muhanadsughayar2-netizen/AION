@@ -3981,24 +3981,35 @@
       svg.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:2147483646;';
       document.body.appendChild(svg);
     }
-    // Animated dashed beam from orb → target, with a pulsing endpoint dot
+    // Animated dashed beam from orb → target, with a pulsing endpoint dot.
+    // Uses CSS @keyframes (neuralPulse) for the stroke march — smoother than
+    // SMIL <animate> and GPU-accelerated on all modern browsers.
     svg.innerHTML = `
       <defs>
         <filter id="aion-glow">
           <feGaussianBlur stdDeviation="3" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
+        <style>
+          @keyframes neuralPulse {
+            from { stroke-dashoffset: 20; }
+            to   { stroke-dashoffset: 0;  }
+          }
+          @keyframes neuralRing {
+            0%,100% { r: 4; opacity: 0.9; }
+            50%      { r: 9; opacity: 0.3; }
+          }
+          #aion-beam { animation: neuralPulse 0.38s linear infinite; }
+          #aion-ring { animation: neuralRing  0.6s  ease-in-out infinite; }
+        </style>
       </defs>
-      <line x1="${fromX}" y1="${fromY}" x2="${toX}" y2="${toY}"
+      <line id="aion-beam"
+        x1="${fromX}" y1="${fromY}" x2="${toX}" y2="${toY}"
         stroke="#818cf8" stroke-width="2" stroke-dasharray="6,5"
-        filter="url(#aion-glow)" opacity="0.85">
-        <animate attributeName="stroke-dashoffset" from="0" to="-22" dur="0.4s" repeatCount="indefinite"/>
-      </line>
-      <circle cx="${toX}" cy="${toY}" r="6" fill="none" stroke="#a78bfa" stroke-width="2"
-        filter="url(#aion-glow)" opacity="0.9">
-        <animate attributeName="r" values="4;9;4" dur="0.6s" repeatCount="indefinite"/>
-        <animate attributeName="opacity" values="0.9;0.3;0.9" dur="0.6s" repeatCount="indefinite"/>
-      </circle>
+        filter="url(#aion-glow)" opacity="0.85"/>
+      <circle id="aion-ring"
+        cx="${toX}" cy="${toY}" r="6" fill="none" stroke="#a78bfa" stroke-width="2"
+        filter="url(#aion-glow)" opacity="0.9"/>
       <circle cx="${toX}" cy="${toY}" r="3" fill="#c4b5fd" filter="url(#aion-glow)"/>`;
     setTimeout(() => { if (svg) svg.innerHTML = ''; }, 1100);
   }

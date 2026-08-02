@@ -75,6 +75,33 @@ class CdpSessionPool {
 
 const cdpPool = new CdpSessionPool();
 
+// ── Sub-session tracker ────────────────────────────────────────────────────
+// When Target.setAutoAttach fires and a child window/popup attaches, Chrome
+// emits Target.attachedToTarget with a fresh sessionId. We track those here
+// so any future CDP command can route to the correct child target.
+const subSessions = new Map(); // sessionId → { targetId, url, attachedAt }
+
+chrome.debugger.onEvent.addListener((source, eventName, eventParams) => {
+  if (eventName === 'Target.attachedToTarget') {
+    const { sessionId, targetInfo } = eventParams || {};
+    if (sessionId && targetInfo) {
+      subSessions.set(sessionId, {
+        targetId:   targetInfo.targetId,
+        url:        targetInfo.url || '',
+        type:       targetInfo.type || 'unknown',
+        attachedAt: Date.now()
+      });
+      console.log(`[Aion CDP] Sub-session attached — sessionId=${sessionId} type=${targetInfo.type} url=${targetInfo.url}`);
+    }
+  } else if (eventName === 'Target.detachedFromTarget') {
+    const { sessionId } = eventParams || {};
+    if (sessionId && subSessions.has(sessionId)) {
+      console.log(`[Aion CDP] Sub-session detached — sessionId=${sessionId}`);
+      subSessions.delete(sessionId);
+    }
+  }
+});
+
 const MAX_SNAPS = 10;
 const AI_SITES = ['grok.com', 'grok.x.ai', 'x.com', 'chat.openai.com', 'chatgpt.com', 'claude.ai', 'gemini.google.com', 'perplexity.ai', 'specode.ai'];
 const CAPTURE_COOLDOWN = 700; // Minimum 700ms between captures to avoid Chrome rate limit (MAX_CAPTURE_VISIBLE_TAB_CALLS_PER_SECOND)
@@ -1628,11 +1655,25 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
         });
 
-        // ── Step 1: DOM text search via content.js ────────────────────────
+        // ── Step 1: DOM text search via content.js (300 ms budget) ──────────
+        // Race the DOM locate against a 300 ms timeout. If the page is slow,
+        // a heavy SPA, or the element is inside a shadow root that content.js
+        // can't pierce, we skip straight to AXTree instead of blocking.
         let loc = null;
-        try { loc = await locateViaContent(); } catch (_) {}
+        const domRace = async () => {
+          const domPromise = locateViaContent();
+          const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('timeout'), 300));
+          const result = await Promise.race([domPromise, timeoutPromise]);
+          if (result === 'timeout' || !result) {
+            console.log('[Aion Agent] DOM locate timed out or empty — engaging AXTree eyes…');
+            return null;
+          }
+          return result;
+        };
+        try { loc = await domRace(); } catch (_) {}
         if (!loc) {
-          try { await clearAndInject(tabId); loc = await locateViaContent(); } catch (_) {}
+          // Re-inject content script once and retry with the same 300 ms budget
+          try { await clearAndInject(tabId); loc = await domRace(); } catch (_) {}
         }
 
         let session;
