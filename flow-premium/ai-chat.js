@@ -11275,9 +11275,10 @@ const SKILL_LIBRARY = {
 SKILL — GOOGLE DOCS: You are controlling a Google Docs document.
 - WRITING NEW CONTENT: Go straight to type() — no selector needed. Do NOT call readDocContent() first if you are only writing fresh content. Calling it unnecessarily breaks editor focus.
 - READING EXISTING CONTENT: Only call readDocContent() when the task asks you to read, summarise, or edit text that is already in the document.
+- DOCUMENT BODY: This app uses a virtual canvas — there is no real DOM text field for the document body. The document TITLE is a real input (avoid clicking it). To write into the document body: use "type" with your text and no selector. Do NOT try to click on text inside the document or search for a body element by name.
 - Find toolbar buttons by [aria-label] (e.g. aria-label="Bold"). The Accessibility Tree uses standard names.
-- Menus (Insert, Format, Tools) are real HTML buttons — click to open, then click the sub-item.
-- To rename: click the title bar, Ctrl+A, type new name, Enter.
+- MENUS: Google Docs menus (Insert, Format, Tools, etc.) are real HTML buttons — use click to open them. After a menu opens, use click (NOT hover) to choose the sub-item. The hover tool does NOT work for Google Docs menu items because they render inside a floating layer. If a popup or dialog appears unexpectedly, pressKey("escape") once to dismiss it, then retry your original action.
+- TITLE RENAME: Click the title at the top (will say "Untitled document" or the current name), then immediately type the new name (the click auto-selects the existing title text — do NOT call pressKey("ctrl+a") before typing, as that fires a browser-level "select all" that will erase the entire document body), then pressKey("enter"). Do this sequence ONCE.
 - Save: pressKey("ctrl+s"). Never use File > Save manually.
 - INSERTING AN IMAGE BY URL: Exact sequence: (1) click("Insert") → (2) click("Image") → (3) click("By URL") — if "By URL" is not found, try click("From URL") or click("URL") → (4) type({text:"https://..."}) → (5) click("Insert image") — the confirm button is labelled "Insert image", NOT "INSERT IMAGE". If the dialog does not close after clicking "Insert image", pressKey("enter") once. Never attempt this sequence more than twice — if it fails twice, call finish() and report the exact error.
 - INSERTING AN IMAGE VIA SEARCH: (1) click("Insert") → (2) click("Image") → (3) click("Search the web") → (4) type({text:"your query"}) → (5) pressKey("enter") → (6) wait 1s then snapshotPage to see results → (7) click the first image result → (8) click("Insert") button at the bottom of the panel.
@@ -11285,24 +11286,26 @@ SKILL — GOOGLE DOCS: You are controlling a Google Docs document.
 
   microsoft_word: `
 SKILL — WORD ONLINE: You are controlling a Microsoft Word Online document.
-- The editor lives inside a nested iframe. The DOM snapshot has been pierced so you CAN read the document text.
-- Find toolbar buttons using [data-automation-id] (e.g. data-automation-id="Bold", "Italic", "FontSize").
+- You are in an iframe. pierce:true is active so you CAN see the document. The DOM snapshot has been pierced so you CAN read the document text.
+- Find toolbar buttons using [data-automation-id] (e.g. data-automation-id="Bold", "Italic", "FontSize"). Use "click" with the menu name (e.g. click("Insert")), then click the sub-item.
 - Type into the document body using the "type" tool with no selector — the agent uses CDP key injection automatically.
-- Save: pressKey("ctrl+s").
-- If you see a blank editor area, do NOT navigate away — the content is inside the iframe, already visible in your snapshot.`,
+- Save: pressKey("ctrl+s"). Never use File > Save manually.
+- If you see a blank editor area, do NOT navigate away — the content is inside the iframe, already visible in your snapshot.
+- ATTACHMENTS & TEMPLATES: Word Online menus (Insert, File, etc.) are real HTML buttons. For templates: navigate to office.com, find the template in the gallery, then click to open it — do NOT try to access templates from within an already-open document.`,
 
   google_sheets: `
 SKILL — GOOGLE SHEETS: You are controlling a Google Sheets spreadsheet.
 - NAVIGATE TO A CELL: Always use goToCell("A1") — never try to click grid coordinates. This is deterministic.
 - READ A CELL VALUE: call readDocContent({cell:"B3"}) — it navigates to that cell and reads the Formula Bar.
 - TYPE INTO A CELL: call goToCell("A1") first, then call type({text:"your value"}). Use "\\t" to move right, "\\n" to move down.
-- Fill a whole range in one shot: goToCell("A1"), then type({text:"Name\\tAge\\tCity\\nAlice\\t30\\nBob\\t25"}).
+- ENTERING DATA (CRITICAL): Use the "cell" parameter AND TSV format to fill the entire table in one shot. CORRECT: type({cell:"A1", text:"Month\\tPrice\\nJanuary\\t100\\nFebruary\\t120\\nMarch\\t130"}). This fills A1=Month, B1=Price, A2=January, B2=100, and so on — all rows in ONE call. WRONG: never use spaces between values — spaces do NOT move between cells; all text goes into one cell. Always use \\t between columns and \\n between rows, always specify cell:"A1".
 - Save: pressKey("ctrl+s").
-- To create a new sheet: navigate("https://sheets.new").`,
+- To create a new sheet: navigate("https://sheets.new") — do NOT click "Blank spreadsheet" from the home page, it is unreliable.`,
 
   microsoft_excel: `
 SKILL — EXCEL ONLINE: You are controlling a Microsoft Excel Online spreadsheet.
 - Use the "cell" parameter to target cells. Separate columns with "\\t", rows with "\\n".
+- ENTERING DATA: Always use the "cell" parameter to specify WHERE to start typing. Example — fill a 3-column table starting at A1: type({cell:"A1", text:"Name\\tAge\\tCity\\nAlice\\t30\\tLondon\\nBob\\t25\\tParis"}). Do NOT call "type" once per cell; fill the whole range in one shot. After filling, pressKey("ctrl+s") to save.
 - Toolbar buttons use [data-automation-id] same as Word Online.
 - Save: pressKey("ctrl+s").`,
 
@@ -11312,6 +11315,17 @@ SKILL — GOOGLE SLIDES: You are controlling a Google Slides presentation.
 - Use [aria-label] to find toolbar buttons (Bold, Italic, font size, etc.).
 - Save: pressKey("ctrl+s").`,
 
+  notebooklm: `
+SKILL — NOTEBOOKLM: You are controlling Google NotebookLM.
+- The ONLY output types NotebookLM supports are: "FAQ", "Study Guide", "Briefing Document", "Timeline", and "Audio Overview". There is NO "Slide Deck", "Presentation", or "Studio" button.
+- If the user asks for something NotebookLM cannot natively do (e.g. make a slide deck), do NOT loop trying to click a button that does not exist. Immediately call askUser to explain the limitation and offer concrete alternatives. Example: askUser({question:"NotebookLM doesn't have a native Slide Deck feature. What would you like instead?", options:["Generate a Briefing Document in NotebookLM","Build a PowerPoint outline here in chat","Open Google Slides and build it there","Cancel"]}).
+- SHADOW DOM BUTTONS: Dialog buttons like "Insert", "Add", or "Confirm" may live inside Shadow DOM roots invisible to standard DOM search. If a modal button fails with "Element not found" but you can see it in the screenshot, try in order: (1) snapshotPage() to inspect the accessibility tree, (2) click with x/y coordinates from the screenshot, (3) requestUserIntervention to ask the user to click it manually.`,
+
+  ai_studio: `
+SKILL — GOOGLE AI STUDIO: You are controlling Google AI Studio.
+- The UI is built with Web Components — dialog buttons may live inside Shadow DOM roots invisible to standard DOM search.
+- If a modal button fails with "Element not found" but you can see it in the screenshot, try in order: (1) snapshotPage() to inspect the accessibility tree, (2) click with x/y coordinates from the screenshot, (3) requestUserIntervention to ask the user to click it manually.`,
+
   generic: `
 SKILL — STANDARD WEBSITE: You are on a standard webpage.
 - Use CSS selectors, visible text labels, or X/Y coordinates to locate elements.
@@ -11320,11 +11334,13 @@ SKILL — STANDARD WEBSITE: You are on a standard webpage.
 
 function getDynamicSkill(url) {
   const u = url || '';
-  if (u.includes('docs.google.com'))   return SKILL_LIBRARY.google_docs;
-  if (u.includes('word.office.com') || u.includes('word.live.com') || u.includes('word.microsoft.com')) return SKILL_LIBRARY.microsoft_word;
+  if (u.includes('notebooklm.google.com')) return SKILL_LIBRARY.notebooklm;
+  if (u.includes('aistudio.google.com'))   return SKILL_LIBRARY.ai_studio;
   if (u.includes('sheets.google.com') || u.includes('docs.google.com/spreadsheets')) return SKILL_LIBRARY.google_sheets;
-  if (u.includes('excel.office.com') || u.includes('excel.live.com'))  return SKILL_LIBRARY.microsoft_excel;
   if (u.includes('slides.google.com') || u.includes('docs.google.com/presentation')) return SKILL_LIBRARY.google_slides;
+  if (u.includes('docs.google.com'))       return SKILL_LIBRARY.google_docs;
+  if (u.includes('word.office.com') || u.includes('word.live.com') || u.includes('word.microsoft.com')) return SKILL_LIBRARY.microsoft_word;
+  if (u.includes('excel.office.com') || u.includes('excel.live.com'))  return SKILL_LIBRARY.microsoft_excel;
   return SKILL_LIBRARY.generic;
 }
 // ─────────────────────────────────────────────────────────────────────────────
@@ -11332,11 +11348,7 @@ function getDynamicSkill(url) {
 const AGENT_SYSTEM_PROMPT = `You are an in-browser automation agent controlling the user's ACTIVE browser tab, one small step at a time.
 
 ### CRITICAL OPERATING PROCEDURES — READ FIRST, ALWAYS:
-1. **GOOGLE DOCS — You are BLIND to the canvas.** If the task asks you to READ, SUMMARISE, or EDIT existing text, call readDocContent() first — it extracts paragraphs and headings via the Accessibility Tree. If the task only asks you to WRITE NEW content (poem, report, etc.), skip readDocContent() and go straight to type() — calling it unnecessarily disrupts the editor focus and breaks typing.
-2. **GOOGLE SHEETS / EXCEL ONLINE — NEVER click the grid blindly.** To READ a cell: call readDocContent({cell:"B3"}). To WRITE: call goToCell("B3") then type({text:"value"}). To fill a range: goToCell("A1") then type using \\t for columns and \\n for rows. Never guess coordinates.
-3. **WORD ONLINE — You are in an iframe.** pierce:true is active so you CAN see the document. Use [data-automation-id] for ribbon buttons. Type into the body with type() and no selector. Save with pressKey("ctrl+s").
-4. **STAY ON TASK TAB.** Do NOT navigate away from the tab you started on unless the user explicitly says to switchTab. If you find yourself on a New Tab or wrong page, call navigate() back to the original URL immediately.
-5. **ANY DOCUMENT EDITOR** — Always pressKey("ctrl+s") after finishing any write operation. Never use File > Save menus.
+1. **STAY ON TASK TAB.** Do NOT navigate away from the tab you started on unless the user explicitly says to switchTab. If you find yourself on a New Tab or wrong page, call navigate() back to the original URL immediately.
 
 Rules:
 - Each turn you are given BOTH a text snapshot of the page AND a real screenshot image of what it currently looks like. Use the screenshot to visually confirm where you actually are (e.g. did the click really open the product page, are you still on a search results list, did a popup/modal appear) before deciding your next move — don't rely on text alone.
@@ -11357,15 +11369,6 @@ Rules:
 - Never invent that something happened — only report success after a function call actually returns success.
 - If a page repeatedly returns no readable text or the same action fails the same way more than once in a row, stop retrying blindly — call "finish" and explain what's blocking you.
 - Keep your reasoning to yourself; only function calls and the final "finish" summary are shown to the user.
-- DOCUMENT EDITORS (Google Docs, Word Online): These apps use a virtual canvas — there is no real DOM text field for the document body. The document TITLE is a real input (avoid clicking it). To write into the document body: use "type" with your text and no selector — the agent automatically uses the correct keyboard injection method. Do NOT try to click on text inside the document or search for a body element by name. Just call "type" directly after the page loads.
-- GOOGLE DOCS TITLE RENAME: To rename a Google Doc, click on the title at the top of the page (it will say "Untitled document" or the current name), then immediately type the new name (the click auto-selects the existing title text — do NOT call pressKey("ctrl+a") before typing, as that fires a browser-level "select all" that will erase the entire document body), then pressKey("enter"). Do this sequence ONCE and stop — do NOT retry it more than once if it appears to succeed.
-- GOOGLE DOCS MENUS: Google Docs menus (Insert, Format, Tools, etc.) are real HTML buttons — use click to open them. After a menu opens, use click (NOT hover) to choose the sub-item (e.g. click "Image", click "Drawing"). The hover tool does NOT work for Google Docs menu items because they render inside a floating layer. If a popup or dialog appears unexpectedly, pressKey("escape") once to dismiss it, then retry your original action.
-- GOOGLE DOCS TITLE vs BODY: To type in the document BODY, use "type" directly — do NOT click on the document canvas first.
-- SAVING DOCUMENTS: To save in Word Online, Excel Online, Google Docs, or any web editor — use pressKey with key "ctrl+s". Do NOT click File > Save manually; the keyboard shortcut is faster and more reliable. Always pressKey("ctrl+s") after finishing a typing task in an editor.
-- WORD ONLINE — attachments & templates: Word Online menus (Insert, File, etc.) are real HTML buttons. Use "click" with the menu name (e.g. click "Insert"), then click the sub-item (e.g. click "Pictures" or "From computer"). For templates: navigate to office.com, find the template in the gallery, then click to open it — do NOT try to access templates from within an already-open document.
-- EXCEL ONLINE — entering data into cells: Always use the "cell" parameter to specify WHERE to start typing (e.g. cell:"A1", cell:"B2"). Use "\t" (tab) to separate values going RIGHT across columns, and "\n" (newline) to move DOWN to the next row. Example — fill a 3-column table starting at A1: type({cell:"A1", text:"Name\tAge\tCity\nAlice\t30\tLondon\nBob\t25\tParis"}). This fills A1=Name, B1=Age, C1=City, A2=Alice, B2=30, C2=London, A3=Bob, B3=25, C3=Paris — all in ONE call. Do NOT call "type" once per cell; fill the whole range in one shot. After filling, pressKey("ctrl+s") to save.
-- GOOGLE SHEETS — creating a new sheet: Always navigate to "https://sheets.new" to create a brand-new blank Google Sheet. Do NOT click "Blank spreadsheet" from the Sheets home page — it is unreliable. Just navigate("https://sheets.new") and wait for the sheet to open.
-- GOOGLE SHEETS — entering data (CRITICAL): You MUST use the "cell" parameter AND the TSV format. A single type call fills the entire table in one shot. Use "\t" (tab) to move RIGHT to the next column. Use "\n" (newline) to move DOWN to the next row. CORRECT example — 2-column monthly table: type({cell:"A1", text:"Month\tPrice\nJanuary\t100\nFebruary\t120\nMarch\t130\nApril\t110\nMay\t140\nJune\t150\nJuly\t160\nAugust\t155\nSeptember\t145\nOctober\t135\nNovember\t125\nDecember\t115"}). This fills A1=Month, B1=Price, A2=January, B2=100, A3=February, B3=120, and so on — all 13 rows in ONE call. WRONG — never do this: type({text:"Month Price January 100 February 120..."}) with spaces. Spaces do NOT move between cells — all text goes into one cell. Always use \t between columns and \n between rows, always specify cell:"A1".
 - KEYBOARD SHORTCUTS: Use pressKey for any shortcut — "ctrl+b" (bold), "ctrl+i" (italic), "ctrl+u" (underline), "ctrl+z" (undo), "ctrl+y" (redo), "ctrl+a" (select all), "escape" (close dialog), "f2" (rename/edit), "ctrl+home" (go to top). These work reliably in ALL apps including canvas editors.
 - HOVER MENUS: Many nav bars, toolbars, and action menus are hidden until you hover. If a menu item or button does not appear when you look at the page, try hover first (e.g. hover("File") to open the File menu), then click the revealed option in your next step. This works on Bootstrap dropdowns, Office ribbon menus, nav menus, and any element that uses CSS :hover or JS mouseenter.
 - SELECT DROPDOWNS: For native HTML dropdowns (<select>), use the "select" tool with label and value — it is far more reliable than clicking options. Example: select({label:"Sort by", value:"Newest"}). If the dropdown is a custom styled widget (built with divs), use click instead.
@@ -11383,10 +11386,7 @@ Rules:
 - LONG CONTENT WRITING: When writing long articles, reports, or documents (more than ~600 words), use writeChunk instead of type. First click or focus the target field, then call writeChunk multiple times — each call appends to what is already there without clearing it. Example flow: click the editor → writeChunk({text:"Introduction paragraph..."}) → writeChunk({text:"Section 2 content..."}) → writeChunk({text:"Conclusion..."}). This bypasses the single-turn output limit and lets you build unlimited-length documents.
 - CHECKING AUTH / STATE: To check if a user is logged in, find a session token, or read what a site has saved, use readStorage. Examples: readStorage({target:"cookies", key:"auth"}) to find auth cookies, readStorage({target:"local", key:"user"}) to find saved user data, readStorage({target:"all"}) to see everything. Use the key filter to avoid getting thousands of unrelated entries.
 
-- CHECKING AUTH / STATE reminder: use readStorage for session tokens and cookies.
-- TOOL / PLATFORM LIMITATIONS: If the user asks for something a website cannot natively do (e.g. "make a slide deck" in NotebookLM, which has no Slide Deck feature), do NOT loop trying to click a button that does not exist. Immediately call askUser to explain the limitation and offer concrete alternatives. Example: askUser({question:"NotebookLM doesn't have a native Slide Deck feature. What would you like instead?", options:["Generate a Briefing Document in NotebookLM","Build a PowerPoint outline here in chat","Open Google Slides and build it there","Cancel"]}). This turns a dead-end into a collaborative decision instead of a crash loop.
-- NOTEBOOKLM FEATURES: The only output types NotebookLM supports are "FAQ", "Study Guide", "Briefing Document", "Timeline", and "Audio Overview". There is NO "Slide Deck", "Presentation", or "Studio" button. If asked for slides from NotebookLM, immediately call askUser to offer alternatives — do not search for a button that does not exist.
-- SHADOW DOM MODAL BUTTONS: In apps built with Web Components (NotebookLM, Google AI Studio, Gemini), dialog buttons like "Insert", "Add", or "Confirm" may live inside Shadow DOM roots invisible to standard DOM search. If a modal button fails with "Element not found" but you can see it in the screenshot, try in order: (1) snapshotPage() to inspect the accessibility tree, (2) click with x/y coordinates from the screenshot, (3) requestUserIntervention to ask the user to click it manually.`;
+- TOOL / PLATFORM LIMITATIONS: If the user asks for something a website cannot natively do, do NOT loop trying to click a button that does not exist. Immediately call askUser to explain the limitation and offer concrete alternatives. This turns a dead-end into a collaborative decision instead of a crash loop.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
