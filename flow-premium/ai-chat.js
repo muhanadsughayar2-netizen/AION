@@ -12134,30 +12134,86 @@ async function runAgentTask(prompt, thread) {
         } catch (_) { return { ...site, tabId: null }; }
       }));
 
-      // 2. Wait for AI responses to generate (~14s covers all three models)
-      addAgentStepBubble(thread, `🏛️ Waiting 14s for all 3 models to respond…`);
-      await new Promise(r => setTimeout(r, 14000));
+      // 2. Adaptive polling — probe each tab every 2 s until we get ≥100 chars of
+      //    text or the 45 s deadline expires. This replaces the old flat 14 s wait
+      //    which caused hallucination when models hadn't finished streaming yet.
+      const POLL_INTERVAL = 2000;
+      const POLL_DEADLINE = 45000;
+      const MIN_REAL_LENGTH = 100; // anything shorter is a failed / partial extraction
 
-      // 3. Extract last assistant response text from each tab via CDP Runtime.evaluate
+      // Robust extractors that don't rely on obfuscated class names.
+      // Each tries a known-stable selector first, then falls back to the
+      // last large block of text visible in the page's main region.
       const extractors = {
-        chatgpt: `([...document.querySelectorAll('[data-message-author-role="assistant"]')].pop()?.innerText || '').slice(0,3000)`,
-        claude:  `([...document.querySelectorAll('.font-claude-message, [data-is-streaming]')].pop()?.innerText || '').slice(0,3000)`,
-        grok:    `([...document.querySelectorAll('[class*="message-bubble"],[class*="MessageBubble"],[class*="response"]')].pop()?.innerText || '').slice(0,3000)`
+        chatgpt: `(()=>{
+          const el=[...document.querySelectorAll('[data-message-author-role="assistant"]')].pop();
+          return (el?.innerText||document.querySelector('[role="log"]')?.innerText||'').slice(-3000);
+        })()`,
+        claude: `(()=>{
+          const els=[...document.querySelectorAll('[data-is-streaming="false"],[class*="prose"],[class*="message-content"]')]
+            .filter(e=>e.innerText&&e.innerText.length>50);
+          return (els.pop()?.innerText||document.querySelector('main')?.innerText||'').slice(-3000);
+        })()`,
+        grok: `(()=>{
+          const el=[...document.querySelectorAll('[data-message-author-role="assistant"],[class*="AnswerItem"],[class*="response-content"]')].pop();
+          return (el?.innerText||document.querySelector('main,[role="main"]')?.innerText||'').slice(-3000);
+        })()`
       };
+
       const responses = {};
-      for (const t of openedTabs) {
-        if (!t.tabId) { responses[t.key] = '(tab failed to open)'; continue; }
-        try {
-          const r = await chrome.runtime.sendMessage({
-            action: 'agentExecute', tabId: t.tabId,
-            executeAction: 'extractTabText', params: { expression: extractors[t.key] }
-          });
-          responses[t.key] = r?.text?.trim() || '(no response yet)';
-        } catch (_) { responses[t.key] = '(extraction failed)'; }
+      const finished = new Set(openedTabs.filter(t => !t.tabId).map(t => {
+        responses[t.key] = '(tab failed to open)';
+        return t.key;
+      }));
+
+      const deadline = Date.now() + POLL_DEADLINE;
+      let pollRound = 0;
+
+      while (finished.size < openedTabs.length && Date.now() < deadline) {
+        pollRound++;
+        await new Promise(r => setTimeout(r, POLL_INTERVAL));
+
+        for (const t of openedTabs) {
+          if (finished.has(t.key) || !t.tabId) continue;
+          try {
+            const r = await chrome.runtime.sendMessage({
+              action: 'agentExecute', tabId: t.tabId,
+              executeAction: 'extractTabText', params: { expression: extractors[t.key] }
+            });
+            const text = r?.text?.trim() || '';
+            if (text.length >= MIN_REAL_LENGTH) {
+              responses[t.key] = text;
+              finished.add(t.key);
+              addAgentStepBubble(thread, `🏛️ ✅ ${t.name} responded (${text.length} chars, round ${pollRound})`);
+            }
+          } catch (_) { /* keep polling */ }
+        }
       }
 
-      // 4. Run the Consensus Engine (Gemini-as-Judge)
-      addAgentStepBubble(thread, `🏛️ Synthesising with Gemini Judge model…`);
+      // Mark any tabs that never produced real content as timed-out
+      for (const t of openedTabs) {
+        if (!responses[t.key]) {
+          responses[t.key] = `(no response after ${POLL_DEADLINE/1000}s — CAPTCHA or slow load)`;
+          addAgentStepBubble(thread, `🏛️ ⚠️ ${t.name} timed out — may need CAPTCHA solved`);
+        }
+      }
+
+      // ── Anti-hallucination gate ────────────────────────────────────────────
+      // If every single response is below the minimum threshold, the agent has
+      // no real evidence to synthesise. Asking the user to intervene is better
+      // than producing a fabricated consensus report.
+      const realResponses = Object.values(responses).filter(v => v.length >= MIN_REAL_LENGTH);
+      if (realResponses.length === 0) {
+        clientSideResponses.push({ functionResponse: { name: 'invokeCouncil',
+          response: { success: false,
+            error: 'All three council tabs failed to return readable content. CAPTCHAs or slow loads likely. Please open each tab, solve any CAPTCHA, wait for the AI to finish, then retry invokeCouncil.' }
+        }});
+        return; // skip consensus call — nothing to synthesise
+      }
+
+      // 4. Run the Consensus Engine (Gemini-as-Judge) — only if we have real data
+      const gotCount = realResponses.length;
+      addAgentStepBubble(thread, `🏛️ Synthesising with Gemini Judge model (${gotCount}/3 sources verified)…`);
       const consensus = await getCouncilConsensus(responses);
 
       const tabSummary = openedTabs.map(t => `${t.name} (tab ${t.tabId ?? '?'})`).join(', ');

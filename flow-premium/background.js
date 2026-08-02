@@ -1,6 +1,13 @@
 // SnapToAI Background Service Worker
 // Handles screenshot capture, storage management, downloads, and messaging
 
+// ── Human-mimetic click jitter ─────────────────────────────────────────────
+// Adds a tiny random sub-pixel offset (±2 px) to every CDP mouse event so
+// clicks look like a human pointer rather than a perfect centroid hit.
+// Sites that bot-detect on exact-integer coordinates (e.g. Grok, LinkedIn)
+// are much less likely to flag the session.
+const jitter = v => Math.round(v + (Math.random() * 4 - 2));
+
 // ── Persistent CDP Session Pool ────────────────────────────────────────────
 // Eliminates per-action attach/detach flashing and race conditions.
 // • Reuses the connection for the same tab (ref-counted).
@@ -1725,8 +1732,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const cdpCmd = session.send;
 
         const cdpMouseClick = async (x, y) => {
-          const base = { x, y, button: 'left', buttons: 1, clickCount: 1 };
+          // Apply ±2 px jitter — makes pointer events indistinguishable from a
+          // real mouse, avoids bot-detection on exact-integer centroid coordinates.
+          const jx = jitter(x), jy = jitter(y);
+          const base = { x: jx, y: jy, button: 'left', buttons: 1, clickCount: 1 };
           await cdpCmd('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
+          await new Promise(r => setTimeout(r, 40 + Math.random() * 30)); // 40–70 ms human delay
           await cdpCmd('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased' });
         };
 
@@ -1847,8 +1858,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             if (subSession) {
               const subCmd = subSession.send;
               const subClick = async (x, y) => {
-                const base = { x, y, button: 'left', buttons: 1, clickCount: 1 };
+                const jx = jitter(x), jy = jitter(y);
+                const base = { x: jx, y: jy, button: 'left', buttons: 1, clickCount: 1 };
                 await subCmd('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
+                await new Promise(r => setTimeout(r, 40 + Math.random() * 30));
                 await subCmd('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased' });
               };
               try {

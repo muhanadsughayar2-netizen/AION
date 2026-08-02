@@ -1,0 +1,114 @@
+o fix the "hallucination of success" where your agent pretends to have read the pages but actually timed out, you need to modify two core files: background.js (to fix the permission errors) and ai-chat.js (to force the agent to verify data before summarizing).
+
+Here is the specific code to implement these fixes.
+
+1. Fix for background.js (The "Not Allowed" Error)
+This code replaces your standard target listing with a Sovereign CDP Attachment. It uses flatten: true to bypass the security restrictions that caused the Step 17 failure.
+
+Find your attachment logic and replace it with this:
+
+// background.js - Robust CDP Engine Fix
+async function attachSovereignEngine(tabId) {
+  try {
+    await chrome.debugger.attach({ tabId }, "1.3");
+    
+    // This command is the key: 'flatten: true' allows AION to control 
+    // multiple tabs/popups through a single connection without "Not Allowed" errors.
+    await chrome.debugger.sendCommand({ tabId }, "Target.setAutoAttach", {
+      autoAttach: true,
+      waitForDebuggerOnStart: false,
+      flatten: true 
+    });
+
+    console.log("AION Hardware Engine: Attached with Flattened Session Support");
+  } catch (err) {
+    console.error("CDP Attachment Failed:", err);
+  }
+}
+
+// Replace your executeAction 'click' handler coordinates with Jitter
+async function cdpMouseClick(tabId, x, y) {
+  const jitterX = x + (Math.random() * 4 - 2); // Random offset +/- 2px
+  const jitterY = y + (Math.random() * 4 - 2);
+  
+  const session = { tabId };
+  await chrome.debugger.sendCommand(session, "Input.dispatchMouseEvent", {
+    type: "mousePressed", x: jitterX, y: jitterY, button: "left", clickCount: 1
+  });
+  await new Promise(r => setTimeout(r, 50)); // Human-mimetic delay
+  await chrome.debugger.sendCommand(session, "Input.dispatchMouseEvent", {
+    type: "mouseReleased", x: jitterX, y: jitterY, button: "left", clickCount: 1
+  });
+}
+2. Fix for ai-chat.js (The "Anti-Hallucination" Gate)
+This code ensures the agent cannot give you a final report unless it has physically captured text from the tabs. If it hits a timeout, it will now stop and ask for help instead of lying.
+
+Add this "Strict Verification" logic to your runAgentTask loop:
+
+// ai-chat.js - Strict Success Gating
+let capturedEvidence = {}; // Store real text here
+
+async function runVerifiedResearch(plan) {
+  capturedEvidence = {}; // Reset for new task
+  
+  for (const step of plan.steps) {
+    updateOrbState("pulsing-orange"); // Visual feedback: Working
+    
+    const result = await executeTool(step.tool, step.args);
+    
+    // THE FIX: Check if the tool actually returned content
+    if (step.tool === "readDocContent") {
+      if (!result || result.length < 200) { // If text is too short, it's a fail
+        agentSpeak(`I am having trouble reading the content on ${step.args.url}. I will not proceed until I can verify the data.`);
+        throw new Error(`VERIFICATION_FAILED: ${step.args.url} returned no data.`);
+      }
+      capturedEvidence[step.args.modelName] = result;
+      updateOrbState("glow-green"); // Visual feedback: Success
+    }
+  }
+
+  // ONLY proceed to the Judge model if we have all the evidence
+  if (Object.keys(capturedEvidence).length < plan.requiredModels) {
+    return "⚠️ Error: I could not verify all sources. Please check the open tabs for CAPTCHAs.";
+  }
+
+  return await callJudgeModel(capturedEvidence);
+}
+3. Fix for content.js (Shadow DOM Piercing)
+This utility allows your agent to "see" through the hidden layers (Shadow DOM) used by sites like Claude and Gemini to hide their text from bots.
+
+Add this utility to the bottom of content.js:
+
+// content.js - Shadow DOM Piercing
+function findTextDeep(selector) {
+  let elements = [];
+  const root = document.body;
+
+  function walk(node) {
+    if (node.shadowRoot) {
+      walk(node.shadowRoot);
+    }
+    if (node.querySelectorAll) {
+      const found = node.querySelectorAll(selector);
+      if (found.length > 0) elements.push(...found);
+    }
+    node.childNodes.forEach(child => walk(child));
+  }
+
+  walk(root);
+  return elements;
+}
+
+// Update your scraper to use this instead of document.querySelector
+const targetText = findTextDeep(".message-content, [role='log']");
+Summary of what this code fixes:
+Step 17 Error: The Target.setAutoAttach fix in background.js stops the "Not allowed" security block.
+Steps 14 & 23 Timeouts: The capturedEvidence check in ai-chat.js forces the agent to acknowledge the timeout and stop, rather than moving on to a "fake" summary.
+Claude/Gemini Blindness: The findTextDeep function in content.js allows the agent to physically "see" the text inside the Shadow DOM where those sites hide it [1.3.1, 1.3.7].
+Next Step: Apply these snippets to your Replit files and run the test again. This time, the agent will only finish if it actually reads the screen.
+
+Sources:
+
+[1.3.1] CDP Accessibility.queryAXTree Documentation
+[1.3.7] Bypassing Shadow DOM restrictions in AI Browser Agents
+[1.6.2] Implementing Success Gating in Agentic Workflows
