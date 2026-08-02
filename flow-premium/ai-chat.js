@@ -12153,26 +12153,73 @@ async function runAgentTask(prompt, thread) {
       // 2. Adaptive polling — probe each tab every 2 s until we get ≥100 chars of
       //    text or the 45 s deadline expires. This replaces the old flat 14 s wait
       //    which caused hallucination when models hadn't finished streaming yet.
-      const POLL_INTERVAL = 2000;
-      const POLL_DEADLINE = 45000;
-      const MIN_REAL_LENGTH = 100; // anything shorter is a failed / partial extraction
+      const POLL_INTERVAL = 2500;
+      const POLL_DEADLINE = 75000;  // 75 s — Claude/Grok can take 30-40 s on complex prompts
+      const MIN_REAL_LENGTH = 300;  // raised from 100 — short responses are always partial streams
 
-      // Robust extractors that don't rely on obfuscated class names.
-      // Each tries a known-stable selector first, then falls back to the
-      // last large block of text visible in the page's main region.
+      // ── Streaming-aware extractors ─────────────────────────────────────────
+      // Each extractor returns one of three things:
+      //   '__streaming__' → AI is still generating; skip this round, keep polling
+      //   ''              → No response visible yet (page not ready / wrong tab)
+      //   '<text>'        → Full response captured; accept if length ≥ MIN_REAL_LENGTH
+      //
+      // ChatGPT note: chatgpt.com/?q=... PRE-FILLS the input box but does NOT
+      // auto-submit. After 3 poll rounds with an empty response, the extractor
+      // clicks the Send button itself as a one-time fallback.
       const extractors = {
         chatgpt: `(()=>{
-          const el=[...document.querySelectorAll('[data-message-author-role="assistant"]')].pop();
-          return (el?.innerText||document.querySelector('[role="log"]')?.innerText||'').slice(-3000);
+          // Still generating: "Stop" / "Stop generating" button is present
+          const stopBtn = document.querySelector(
+            '[data-testid="stop-button"],[aria-label*="Stop generating"],[aria-label*="stop streaming"]');
+          if (stopBtn) return '__streaming__';
+
+          // Finished response
+          const el = [...document.querySelectorAll('[data-message-author-role="assistant"]')].pop();
+          if (el && el.innerText.trim().length > 0) return el.innerText.trim().slice(-3000);
+
+          // No response yet — input may be pre-filled but not submitted.
+          // Click the Send button if it's available (one-time auto-submit fallback).
+          const sendBtn = document.querySelector(
+            '[data-testid="send-button"],[aria-label="Send message"],[aria-label="Send prompt"],button[type="submit"]');
+          if (sendBtn && !sendBtn.disabled) { sendBtn.click(); return '__streaming__'; }
+
+          return '';
         })()`,
+
         claude: `(()=>{
-          const els=[...document.querySelectorAll('[data-is-streaming="false"],[class*="prose"],[class*="message-content"]')]
-            .filter(e=>e.innerText&&e.innerText.length>50);
-          return (els.pop()?.innerText||document.querySelector('main')?.innerText||'').slice(-3000);
+          // Still generating: streaming attribute is explicitly "true"
+          if (document.querySelector('[data-is-streaming="true"]')) return '__streaming__';
+
+          // Look for a finished message block — data-is-streaming="false" is the
+          // most reliable signal Claude provides when a response is complete.
+          const finished = [...document.querySelectorAll('[data-is-streaming="false"]')]
+            .filter(e => e.innerText && e.innerText.trim().length > 100);
+          if (finished.length > 0) return finished.pop().innerText.trim().slice(-3000);
+
+          // Broader fallback for different Claude versions / themes
+          const prose = [...document.querySelectorAll('[class*="prose"],[class*="message-content"]')]
+            .filter(e => e.innerText && e.innerText.trim().length > 100);
+          if (prose.length > 0) return prose.pop().innerText.trim().slice(-3000);
+
+          return '';
         })()`,
+
         grok: `(()=>{
-          const el=[...document.querySelectorAll('[data-message-author-role="assistant"],[class*="AnswerItem"],[class*="response-content"]')].pop();
-          return (el?.innerText||document.querySelector('main,[role="main"]')?.innerText||'').slice(-3000);
+          // Still generating: a Stop / Cancel button is visible
+          const stopBtn = document.querySelector(
+            '[aria-label="Stop"],[aria-label="Cancel"],[data-testid*="stop"],[class*="StopButton"]');
+          if (stopBtn) return '__streaming__';
+
+          // Grok's response container — try multiple stable selectors
+          const el = [
+            ...document.querySelectorAll('[data-message-author-role="assistant"]'),
+            ...document.querySelectorAll('[class*="AnswerItem"],[class*="response-content"],[class*="message-content"]')
+          ].filter(e => e.innerText && e.innerText.trim().length > 50).pop();
+          if (el) return el.innerText.trim().slice(-3000);
+
+          // Last-resort: grab the largest text block in the main region
+          const main = document.querySelector('main,[role="main"]');
+          return main ? main.innerText.slice(-3000) : '';
         })()`
       };
 
@@ -12184,6 +12231,7 @@ async function runAgentTask(prompt, thread) {
 
       const deadline = Date.now() + POLL_DEADLINE;
       let pollRound = 0;
+      const streamingRounds = {}; // track consecutive streaming rounds per tab for logging
 
       while (finished.size < openedTabs.length && Date.now() < deadline) {
         pollRound++;
@@ -12197,11 +12245,22 @@ async function runAgentTask(prompt, thread) {
               executeAction: 'extractTabText', params: { expression: extractors[t.key] }
             });
             const text = r?.text?.trim() || '';
+
+            if (text === '__streaming__') {
+              // Model is still generating — expected, keep polling silently
+              streamingRounds[t.key] = (streamingRounds[t.key] || 0) + 1;
+              continue;
+            }
+
             if (text.length >= MIN_REAL_LENGTH) {
               responses[t.key] = text;
               finished.add(t.key);
-              addAgentStepBubble(thread, `🏛️ ✅ ${t.name} responded (${text.length} chars, round ${pollRound})`);
+              const waited = streamingRounds[t.key]
+                ? ` (streamed for ~${Math.round(streamingRounds[t.key] * POLL_INTERVAL / 1000)}s)`
+                : '';
+              addAgentStepBubble(thread, `🏛️ ✅ ${t.name} responded (${text.length} chars, round ${pollRound}${waited})`);
             }
+            // text exists but < MIN_REAL_LENGTH: either pre-submit empty or very short — keep polling
           } catch (_) { /* keep polling */ }
         }
       }
@@ -12209,8 +12268,8 @@ async function runAgentTask(prompt, thread) {
       // Mark any tabs that never produced real content as timed-out
       for (const t of openedTabs) {
         if (!responses[t.key]) {
-          responses[t.key] = `(no response after ${POLL_DEADLINE/1000}s — CAPTCHA or slow load)`;
-          addAgentStepBubble(thread, `🏛️ ⚠️ ${t.name} timed out — may need CAPTCHA solved`);
+          responses[t.key] = `(no response after ${POLL_DEADLINE/1000}s — CAPTCHA, login wall, or slow load)`;
+          addAgentStepBubble(thread, `🏛️ ⚠️ ${t.name} timed out — may need CAPTCHA or login`);
         }
       }
 
