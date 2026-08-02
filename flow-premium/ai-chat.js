@@ -11434,6 +11434,19 @@ function updateAutopilotMiniStatus(text) {
   if (el && text) el.textContent = text;
 }
 
+function updateAutopilotMiniStep(current, max) {
+  const badge = document.getElementById('autopilotMiniStep');
+  const fill  = document.getElementById('autopilotMiniProgressFill');
+  if (badge) {
+    badge.textContent = `Step ${current} / ${max}`;
+    badge.style.display = '';
+  }
+  if (fill) {
+    const pct = Math.min(100, Math.round((current / max) * 100));
+    fill.style.width = pct + '%';
+  }
+}
+
 function setupAutopilotMiniBar() {
   const stopBtn = document.getElementById('autopilotMiniStop');
   const expandBtn = document.getElementById('autopilotMiniExpand');
@@ -11466,6 +11479,11 @@ let _agentStepCount = 0;
 function resetAgentStepLog() {
   _agentLogContainer = null;
   _agentStepCount = 0;
+  // Reset the mini-mode step counter so it starts fresh on each new task.
+  const badge = document.getElementById('autopilotMiniStep');
+  const fill  = document.getElementById('autopilotMiniProgressFill');
+  if (badge) { badge.textContent = ''; badge.style.display = 'none'; }
+  if (fill)  { fill.style.width = '0%'; }
 }
 
 function addAgentStepBubble(thread, text, kind) {
@@ -12003,6 +12021,9 @@ async function runAgentTask(prompt, thread) {
         break;
       }
     } catch (_) { /* session storage unavailable — continue */ }
+
+    // Update the mini-mode strip so users can see progress live.
+    updateAutopilotMiniStep(step + 1, AGENT_MAX_STEPS);
 
     let data;
     try {
