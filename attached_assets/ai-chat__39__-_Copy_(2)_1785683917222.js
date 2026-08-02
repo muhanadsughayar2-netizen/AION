@@ -11863,9 +11863,13 @@ async function buildRequestContentsWithScreenshot(baseContents, tab) {
 }
 
 // ── Cross-run site memory ───────────────────────────────────────────────────
-// Stores short "lessons" per domain in chrome.storage.local so the agent
-// doesn't repeat the same mistakes on sites it has visited before. Notes are
-// injected into the very first prompt of each new task on that domain.
+// Every task currently starts from a blank slate, so the same site-specific
+// dead end (a button that doesn't exist, a selector that never resolves, a
+// feature the site simply doesn't have) can trip the agent up again and
+// again on repeat visits. This stores a small, capped set of short "lessons"
+// per domain in chrome.storage.local and surfaces them at the start of the
+// next task on that domain — the static SKILL_LIBRARY covers a handful of
+// well-known apps; this covers everything else the agent actually runs into.
 const AGENT_MEMORY_KEY = 'agentSiteMemory';
 const AGENT_MEMORY_MAX_NOTES_PER_DOMAIN = 8;
 
@@ -11877,7 +11881,8 @@ async function getAgentMemoryNotes(domain) {
   if (!domain) return [];
   try {
     const store = await chrome.storage.local.get([AGENT_MEMORY_KEY]);
-    return (store[AGENT_MEMORY_KEY] || {})[domain] || [];
+    const all = store[AGENT_MEMORY_KEY] || {};
+    return all[domain] || [];
   } catch (_) { return []; }
 }
 
@@ -11887,8 +11892,9 @@ async function addAgentMemoryNote(domain, note) {
     const store = await chrome.storage.local.get([AGENT_MEMORY_KEY]);
     const all = store[AGENT_MEMORY_KEY] || {};
     const existing = all[domain] || [];
-    if (existing.includes(note)) return; // deduplicate
-    all[domain] = [...existing, note].slice(-AGENT_MEMORY_MAX_NOTES_PER_DOMAIN);
+    if (existing.includes(note)) return; // already known
+    const updated = [...existing, note].slice(-AGENT_MEMORY_MAX_NOTES_PER_DOMAIN);
+    all[domain] = updated;
     await chrome.storage.local.set({ [AGENT_MEMORY_KEY]: all });
   } catch (_) { /* non-fatal — memory is a nice-to-have, never blocks the run */ }
 }
@@ -11963,19 +11969,17 @@ async function runAgentTask(prompt, thread) {
   // it needs to navigate first before it can click/type/scroll anything.
   let pageText = onSystemPage ? '' : await getActiveTabPageText(tab.id);
 
-  // Load any lessons recorded from previous runs on this domain and inject
-  // them into the first prompt so the agent starts smarter on repeat visits.
   const taskDomain = hostnameOf(tab.url || '');
   const memoryNotes = await getAgentMemoryNotes(taskDomain);
   const memoryBlock = memoryNotes.length
-    ? `\n\nLESSONS FROM PREVIOUS AUTOPILOT RUNS ON THIS SITE (avoid repeating these mistakes):\n${memoryNotes.map(n => `- ${n}`).join('\n')}`
+    ? `\n\nLESSONS FROM PREVIOUS AUTOPILOT RUNS ON THIS SITE (avoid repeating these):\n${memoryNotes.map(n => `- ${n}`).join('\n')}`
     : '';
 
   contents.push({
     role: 'user',
     parts: [{
       text: onSystemPage
-        ? `TASK: ${prompt}\n\nCURRENT PAGE (${tab.url}):\nThis is a browser system page with no content — you must call the "navigate" action first to go to a real website before doing anything else.${memoryBlock}`
+        ? `TASK: ${prompt}\n\nCURRENT PAGE (${tab.url}):\nThis is a browser system page with no content — you must call the "navigate" action first to go to a real website before doing anything else.`
         : `TASK: ${prompt}\n\nCURRENT PAGE (${tab.url}):\n${pageText || '(no readable text found)'}${memoryBlock}`
     }]
   });
@@ -12423,12 +12427,13 @@ async function runAgentTask(prompt, thread) {
         execResult = { success: false, error: 'No response from background tool handler (worker may have restarted). Retry.' };
       }
 
-      // ── Risk-guard confirmation ─────────────────────────────────────────────
-      // background.js blocked this action because the element label matched a
-      // payment/deletion/irreversible pattern. The block happened on the ACTUAL
-      // element text — the model cannot reason its way past it. Get a real human
-      // decision before proceeding. Only on explicit "Yes, do it" do we re-send
-      // the exact same call with _riskConfirmed:true so it passes through once.
+      // ── Risk-guard confirmation ─────────────────────────────────────────
+      // background.js blocked this action (a payment/deletion/checkout-style
+      // click) before it touched the page. Get a REAL human decision here —
+      // this is not something the model can reason its way past, since the
+      // block happened on the actual element text, not on the model's stated
+      // intent. Only on explicit "Yes, do it" do we re-send the exact same
+      // call with _riskConfirmed so background.js lets it through once.
       if (execResult?.requiresConfirmation) {
         addAgentStepBubble(thread, `⚠️ Paused: ${execResult.riskReason || 'This looks like an irreversible action.'}`, 'error');
         try {
@@ -12445,7 +12450,7 @@ async function runAgentTask(prompt, thread) {
           } else {
             execResult = {
               success: false,
-              error: 'The user declined this action — it was NOT performed. Do not retry it. Find a different approach or call finish() explaining that this step needs the user to do it themselves.'
+              error: 'The user declined to confirm this action — it was NOT performed. Do not retry it. Either find a different, non-irreversible way to complete the task, or call finish() explaining that this step needs the user to do it themselves.'
             };
           }
         } catch (err) {
@@ -12567,12 +12572,11 @@ async function runAgentTask(prompt, thread) {
       addAgentStepBubble(thread,
         `Stuck after ${consecutiveFailures} failed steps in a row. Try using highlightElement to confirm the target, coordinate-based click, or a different selector strategy.`,
         'error');
-      // Persist a lesson so the next run on this domain starts aware of the dead end
-      const stuckCall = executableCalls[0]?.functionCall;
-      if (stuckCall) {
-        const stuckDesc = stuckCall.args?.text || stuckCall.args?.selector || stuckCall.args?.description || '';
+      const stuckOn = executableCalls[0]?.functionCall;
+      if (stuckOn) {
+        const stuckDesc = stuckOn.args?.text || stuckOn.args?.selector || stuckOn.args?.description || '';
         await addAgentMemoryNote(hostnameOf(tab.url || ''),
-          `"${stuckCall.name}"${stuckDesc ? ` targeting "${stuckDesc}"` : ''} repeatedly failed here — try snapshotPage or a different approach before retrying it directly.`);
+          `"${stuckOn.name}"${stuckDesc ? ` targeting "${stuckDesc}"` : ''} repeatedly failed on this site — try snapshotPage or a different approach first instead of retrying it directly.`);
       }
       break;
     }
@@ -12672,10 +12676,8 @@ async function runAgentTask(prompt, thread) {
       if (last?.functionResponse?.response) {
         last.functionResponse.response.LOOP_WARNING = loopWarning;
       }
-      // Record the loop for future runs so the agent doesn't walk into the same trap
-      const loopSig = recentActions[recentActions.length - 1] || '';
       await addAgentMemoryNote(hostnameOf(tab.url || ''),
-        `Got stuck looping on "${loopSig}" here before — don't repeat this action blindly if it doesn't work on the first couple of tries.`);
+        `Got stuck looping on "${lastSig}" here before — don't repeat this action blindly if it doesn't work the first couple of tries.`);
     }
 
     // Fix 6 (cont): if planTask/checkPlan ran alongside CDP calls this turn,

@@ -1,0 +1,203 @@
+Autopilot in this codebase is the combination of two layers:
+
+Maneuver Gallery (high-level, user-facing “recipes”)
+Agent / CDP automation engine (low-level browser control that the maneuvers call)
+
+Below is a complete map of what exists, what is incomplete or fragile, and what is missing if the goal is to make Autopilot remarkable.
+
+1. What Currently Exists
+A. Maneuver Gallery (UI layer)
+In popup (5).html:
+HTML<div class="maneuver-gallery" id="maneuverGallery" style="display:none">
+  ...
+  <button ... data-maneuver="aistudio-build">AI Studio Build</button>
+  <button ... data-maneuver="cross-ai-verify">Cross-AI Verify</button>
+</div>
+
+It is hidden by default (display:none).
+Only two maneuvers are defined.
+CSS for the gallery is present and polished (gradient card, badge “AUTOPILOT”, two-column grid).
+There is no wiring in the visible popup.js snippet that shows the gallery, binds the buttons, or launches the maneuvers. The gallery is essentially a UI shell waiting for logic.
+
+B. Cross-AI Verify (Council Consensus)
+In ai-chat (39).js:
+JavaScriptasync function getCouncilConsensus({ chatgpt = '', claude = '', grok = '' } = {}) {
+  // Sends the three responses to gemini-3-flash-preview as “Supreme Court Justice”
+  // Returns a structured report: Consensus / Contradictions / Final Recommendation
+}
+This is the only fully implemented high-level maneuver logic visible. It is elegant and already produces a useful “Consensus Report”.
+C. Low-level Agent / CDP Engine (the real power)
+This is the most sophisticated part of the codebase.
+Background (background (11).js):
+
+CdpSessionPool — ref-counted, mutex-serialized, auto-detach after 45 s idle.
+Human-mimetic jitter (±2 px) on every mouse event.
+Target.setAutoAttach so child windows / OAuth popups / AI Studio build previews stay under control.
+Sub-session tracker for spawned targets.
+clearAndInject helper to force a clean content-script injection.
+
+Content script (content (5).js):
+
+Full handleAgentAction switch with:
+click, type, scroll, checkElement, hideGhostCursor
+Special-cased paste/type paths for Google Docs, Word Online, PowerPoint Online, Excel Online (clipboard + virtual-canvas handling).
+Smart scroll-target detection (largest scrollable container under viewport center).
+Ghost cursor + element highlighting for visual feedback.
+Grok input-bar restoration (defensive).
+Special-site full-render styles (Docs, YouTube, Gmail).
+
+
+This engine is already production-grade for a first-generation browser agent.
+
+2. Critical Gaps (What Is Missing or Broken)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+AreaCurrent StateProblemManeuver Gallery visibilityAlways display:noneUsers never see AutopilotButton wiringNo click handlers visibleGallery is dead UIAI Studio BuildOnly a button + descriptionZero implementation foundCross-AI Verify orchestrationOnly the Judge function existsNo code that actually opens ChatGPT / Claude / Grok tabs, injects the prompt, waits for replies, extracts text, then calls getCouncilConsensusState machine / progress UINoneUser has no idea what the agent is doing, whether it is stuck, or when it finishedError recoveryMinimalCDP detach, tab close, rate-limit, captcha, or “element not found” usually just fail silentlyPermission / consent modelNoneAutopilot can type and click anywhere once granted; no per-maneuver confirmation or scopeHistory / replayNoneSuccessful runs are not recorded; user cannot re-run or share a maneuverMulti-step planningHard-coded onlyNo LLM planner that turns a natural-language goal into a sequence of agent actionsObservation loopWeakAgent does not take screenshots between steps and feed them back to a vision model for “did the page change correctly?”Tab / window managementBasicOpening three AI sites for Cross-AI Verify will be messy without a dedicated tab group or side-panel strategyRate-limit & billing awarenessPartialExists for Gemini, almost nothing for the external AIs being driven
+
+3. Architecture That Would Make Autopilot Remarkable
+Layer 1 — Maneuver Registry (single source of truth)
+JavaScriptconst MANEUVERS = {
+  'aistudio-build': {
+    name: 'AI Studio Build',
+    icon: '🏗️',
+    description: '...',
+    requires: ['gemini-key'],
+    steps: [ /* declarative or function */ ],
+    estimatedTime: '45–90 s'
+  },
+  'cross-ai-verify': { ... },
+  // future: 'docs-to-slides', 'email-to-task', 'research-digest', etc.
+};
+Gallery becomes a pure renderer of this registry. Adding a new maneuver = one object.
+Layer 2 — Orchestrator (state machine)
+textIdle → Planning → Executing (step N) → Observing → Deciding → Done / Failed / NeedsHuman
+Every step emits events that the popup / side-panel / chat window can subscribe to:
+
+maneuver:started
+maneuver:step (with human-readable description + optional screenshot)
+maneuver:waiting-for-user (e.g. captcha, login)
+maneuver:completed / maneuver:failed
+
+Layer 3 — Observation + Vision Feedback
+After every critical action:
+
+Capture a small viewport or element screenshot.
+Send to Gemini Flash (or the same model already in use) with a short question:
+“Did the expected UI appear? Is the reply ready? Is there a captcha?”
+Branch on the answer.
+
+This single loop turns the agent from “fire-and-hope” into “see-and-correct”.
+Layer 4 — Planner (optional but transformative)
+User types a goal → Gemini produces a short JSON plan of agent actions → orchestrator executes it.
+This is how you go from two hard-coded maneuvers to dozens of useful ones without writing new code for each.
+Layer 5 — Safety & UX polish
+
+Explicit “Run Autopilot” confirmation with estimated time and sites that will be opened.
+One-click Abort that kills the CDP session and cleans up.
+Live progress card (even in the popup or a floating toast).
+Automatic tab grouping or a dedicated “Autopilot workspace” window.
+Record the successful run so the user can re-play or share the exact sequence.
+
+
+4. Concrete Next Steps (Priority Order)
+
+Un-hide and wire the gallery
+Show it when the user has a key (or is on an institution plan). Bind the two buttons.
+Finish Cross-AI Verify end-to-end
+Open (or reuse) three tabs / windows for ChatGPT, Claude, Grok.
+Inject the same prompt + any selected snaps.
+Poll or observe until each reply is complete.
+Extract clean text.
+Call getCouncilConsensus.
+Present the report inside the AI Chat window.
+
+Implement AI Studio Build
+Navigate to aistudio.google.com.
+Paste prompt + images.
+Click “Run”.
+Optionally wait for and scrape the result.
+
+Add a shared progress UI component that both the popup and the AI Chat window can host.
+Add an Abort button that calls chrome.debugger.detach and resets all flags.
+Introduce a lightweight observation step after the most failure-prone actions (type into Docs, click “Send” on an AI site, etc.).
+Later: LLM planner + history of successful runs.
+
+
+5. What Already Makes the Foundation Strong
+
+CDP pool + jitter + sub-session handling is excellent.
+Special-cased document editors (Docs, Word, Excel, PowerPoint) show real engineering depth.
+The Council Judge pattern is clean and immediately useful.
+Content-script injection is robust (clearAndInject + version stamp).
+Theme, branding, and institution key policy are already thought through.
+
+You are not starting from zero. The low-level agent is already better than most open-source browser agents. The missing piece is the orchestration + observation + UX layer that turns those primitives into reliable, user-visible “maneuvers”.
+Once the gallery is live, Cross-AI Verify is fully automated, and a progress + abort surface exists, Autopilot stops being a hidden experiment and becomes the product’s most remarkable differentiator.

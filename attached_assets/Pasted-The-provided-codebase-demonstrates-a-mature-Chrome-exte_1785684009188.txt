@@ -1,0 +1,61 @@
+The provided codebase demonstrates a mature Chrome extension architecture—featuring Google OAuth token management, fallback IndexedDB storage for heavy visual payloads, custom pixel-row duplicate detection (findBestOverlapMatch), and steganographic watermarking.
+
+To take Autopilot from a reliable capture utility to a truly remarkable autonomous agent engine, several key architectural gaps need to be addressed. Below is an overview of what is missing, categorized by functionality and technical execution.
+
+1. Agentic Control & Headless Protocol
+Currently, capture sequences are tightly coupled to explicit user UI triggers (orbButton, snapButton, fullPageButton). For Autopilot to operate seamlessly alongside AI models, it requires a decoupled background agent protocol.
+
+Missing API Surface (chrome.runtime.onMessageExternal): An external messaging bus allowing external agent scripts or background workers to command captures headlessly without opening the popup UI.
+
+Command Queue & Task Execution: A background queue manager (enqueueCaptureTask) capable of handling multi-step agent actions (e.g., "Capture element #chat-thread, scroll down 3 times, send summary to model").
+
+2. Dynamic DOM & Sticky Element Auto-Purging
+During full-page scroll captures, position: fixed and position: sticky elements (navigation bars, chat floating widgets, top headers) repeat across every stitched segment.
+
+Header/Footer Suppression Injection: Before initiating the scroll-and-capture loop, a script should temporarily inject CSS to normalize fixed elements:
+
+JavaScript
+// Suggested pre-capture cleanup script
+const hideFixedElements = () => {
+  document.querySelectorAll('*').forEach(el => {
+    const style = window.getComputedStyle(el);
+    if (style.position === 'fixed' || style.position === 'sticky') {
+      el.dataset.origPos = style.position;
+      el.style.setProperty('position', 'absolute', 'important');
+    }
+  });
+};
+Targeted Container Scrolling: Standard captures typically target window.scrollTo. However, modern web apps (ChatGPT, Claude, Replit, trading web apps) render scrollbars inside specific div containers. Autopilot needs automatic detection of the primary scrollable element:
+
+JavaScript
+const getPrimaryScrollContainer = () => {
+  return Array.from(document.querySelectorAll('div, section, main'))
+    .filter(el => el.scrollHeight > el.clientHeight && el.clientHeight > 300)
+    .sort((a, b) => b.scrollHeight - a.scrollHeight)[0] || window;
+};
+3. Multimodal Context Pairing (Vision + Structured Text)
+Passing raw visual screenshots forces LLMs to spend compute on visual layout parsing and OCR.
+
+Dual-Modal Payloads: A remarkable Autopilot system pairs every captured canvas segment with a structured JSON payload containing:
+
+Pruned DOM accessibility tree (aria-label, visible text nodes, button roles).
+
+Exact pixel coordinates of interactive elements (inputs, click targets).
+
+This allows the LLM to process precise DOM selectors alongside the visual proof, dramatically increasing autonomous navigation accuracy.
+
+4. Offscreen Canvas & Perceptual Overlap Matching
+The current findBestOverlapMatch() function runs pixel-array comparison loops directly on the UI main thread using standard <canvas> contexts.
+
+Main-Thread Offloading via OffscreenCanvas: Moving heavy canvas operations (stitching, resizing, pixel math, watermark rendering) into an OffscreenCanvas inside Web Workers prevents micro-stutters during batch operations.
+
+Perceptual & SSIM Matching: Simple 1D RGB row comparison can fail when subtle animations, background color gradients, or video overlays change across frames. Integrating a lightweight Structural Similarity Index (SSIM) or perceptual hash comparison ensures sub-pixel stitching precision even on dynamic web pages.
+
+Feature Comparison: Current vs. Autopilot Standard
+Feature	Current Implementation	Autopilot Standard
+Trigger Mechanism	Manual user click in popup	Event-driven background/agent IPC bus
+Scroll Strategy	Full window scrolling (window.scrollTo)	Intelligent container auto-detection (scrollHeight)
+Sticky UI Handling	Included in stitched canvas (duplicate headers)	Auto-suppressed/flattened prior to capture
+Canvas Processing	Sync on Main Thread	Non-blocking via OffscreenCanvas / Worker
+Model Context	Image pixels only	Hybrid: Crisp Image + Pruned DOM Accessibility Tree
+Which area would you like to prioritize first—building the background agent messaging protocol, implementing the sticky element auto-purger, or setting up container-level smart scrolling?

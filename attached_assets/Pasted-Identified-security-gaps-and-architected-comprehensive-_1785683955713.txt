@@ -1,0 +1,89 @@
+Identified security gaps and architected comprehensive improvement roadmap
+Identified security gaps and architected comprehensive improvement roadmap
+
+I read through all six files — this is a genuinely sophisticated browser-automation "Autopilot" built inside a Chrome extension (looks like the "Aion" AI Studio screenshot tool has grown a full agentic layer on top). Here's what I found and where I think the real leverage is.
+
+What you've actually built
+
+The core loop (runAgentTask in ai-chat.js, ~line 11865) is a proper agentic loop against Gemini:
+
+Locks onto one tab ("Session Anchor") so the agent doesn't follow the user's mouse to other tabs
+Sends page text + a fresh screenshot every turn (not accumulated — smart, keeps payload from exploding)
+60-step budget, 429 backoff/retry, consecutive-failure circuit breaker (5 strikes)
+Loop detection for both single-action repeats and A-B-A-B cycling, which injects a warning back into the model
+finish, askUser, requestUserIntervention, planTask/checkPlan as first-class control-flow tools — this is the human-in-the-loop layer most hobby "computer use" agents skip entirely
+A "Council Mode" that fans a prompt out to ChatGPT/Claude/Grok in parallel and synthesizes consensus via Gemini-as-judge, with real streaming-detection extractors and an anti-hallucination gate if nothing comes back
+
+The tool surface is huge — 72 declared functions, and I verified they're actually wired up in background.js (not vaporware). It's not just click/type/scroll; you've got real Chrome DevTools Protocol tooling exposed to the model: auditPage, getEventListeners, snapshotHeap, readNetworkResponse, interceptRequest, getSecurityInfo, readIndexedDB, getComputedStyle. That's closer to "AI-operated DevTools" than a form-filler.
+
+The system prompt is unusually well field-tested — site-specific playbooks for Google Docs/Sheets, Excel/Word Online, NotebookLM's missing features, Shadow DOM modal buttons in web-component apps. These read like real bug fixes turned into rules, which is good, but it's also a smell (more below).
+
+What's missing / holding it back from "remarkable"
+
+1. Safety is prompt-only, not enforced. I checked — there's no hard-coded check anywhere for payment/delete/send-email actions. The only thing stopping the agent from clicking "Confirm Purchase" is a sentence in the system prompt asking it nicely. A model that misreads a page (which you already handle for everything else) can just... do it. You should add a real guard: pattern-match click targets/button text against a risk list (pay, purchase, delete, send, submit application, confirm) and force requestUserIntervention at the tool-execution layer, not the prompt layer. Same for domain-based hard stops (banking, checkout pages) if you want to be conservative.
+
+2. Zero memory across runs. Every task starts from a blank slate except the static SKILL_LIBRARY. All those hard-won site quirks in the system prompt (NotebookLM has no Slide Deck button, Sheets needs sheets.new, etc.) are things you discovered — but the agent itself never learns anything new. A lightweight "if this selector/action failed here before, remember it" store (keyed by domain) would compound in value over time and shrink that ever-growing prompt.
+
+3. The system prompt is becoming a monolith. It's already ~60 lines of accumulated fixes and will keep growing every time a new site breaks. This costs tokens on every single step of every task, even irrelevant ones. You already have getDynamicSkill(url) — lean into it harder: split the generic rules from site-specific ones more aggressively, and load site skills only when the URL matches, instead of paying for Sheets/Excel/Word instructions on every Amazon or news-site task.
+
+4. No cost/step visibility for the user. 60 steps × screenshot-per-step is real Gemini spend, and users have no way to see "this task has burned 40 steps" until it just stops. A simple running counter/progress bar (you already track step in the loop) would build trust and let users bail early.
+
+5. Failure handling gives the model hints, but never a fallback executor. When click fails, you return selfHealingHint suggesting snapshotPage/coordinates — good — but it's all "ask the LLM to try again," burning steps and tokens on things a deterministic retry could sometimes solve (e.g., auto-retry with findElement before even asking the model).
+
+6. No offline/dry-run or task preview. For a tool that can click "Delete," "Buy," or send emails, there's no "show me what you're about to do before you do it" mode — no diff/plan approval step before execution starts, only planTask which the model may call and the user never approves, just observes.
+
+7. Single-model dependency. Everything is hard-wired to Gemini (MODELS.chat, the whole request shape). Council Mode proves you already know how to talk to other providers' web UIs — but the core agent itself has no fallback if Gemini has an outage or the user's key is Claude/OpenAI instead.
+
+Want me to dig into any one of these and actually implement it — e.g. a real risk-guard layer before execution, or a persistent per-domain memory of failed selectors? Those two would give you the most "remarkable" jump for the least code.
+
+continue
+
+Architected safety guards and memory systems for implementation
+Architected safety guards and memory systems for implementation
+
+Now let's add a code-level risk guard. First, I'll copy the file to a writable location since uploads are read-only:
+
+Edited 2 files, ran a command, viewed a file
+Edited 2 files, ran a command, viewed a file
+
+Good place. Let me insert the risk-guard definitions right after the header comment, before the CDP pool class:
+
+Architected persistent domain memory system for selector tracking
+Architected persistent domain memory system for selector tracking
+
+Now let's add the second improvement — persistent cross-run memory so the agent stops repeating the same site-specific mistakes:
+
+Strategized memory logging at critical failure checkpoints
+Strategized memory logging at critical failure checkpoints
+
+Now for loop detection — record it right after a loop warning is generated:
+
+Ran 2 commands, edited a file
+Ran 2 commands, edited a file
+
+Good — lastSig is in scope. Now let's copy the finished files to outputs and present them:
+
+Ran 2 commands
+Ran 2 commands
+
+The diff is clean and minimal. Both changes are ready.
+
+Presented 2 files
+Presented 2 files
+
+I implemented both fixes:
+
+1. Code-level risk guard (background.js) — before any click/doubleClick touches the page, it's checked against a curated pattern list ("Pay now", "Confirm purchase", "Delete account", "Checkout", "Cancel subscription", etc.) matched against the actual element label, not the model's stated intent. If it matches, execution is blocked at the source and returns requiresConfirmation: true — the model literally cannot click through it by reasoning differently, since the check never even reaches the DOM.
+
+2. Human confirmation loop (ai-chat.js) — when that block fires, the agent pauses and shows a real Yes/No card via the existing awaitUserChoice UI, explaining exactly what it was about to click and why. Only on explicit "Yes, do it" does it re-send the same action with a one-time _riskConfirmed flag.
+
+3. Cross-run site memory (ai-chat.js) — added a chrome.storage.local-backed store keyed by domain. When the agent gets stuck in a loop or hits the 5-failure hard stop, it now writes a short lesson ("X repeatedly failed on this site — try snapshotPage first") to that domain's memory. Every new task checks memory for the current domain and injects it into the very first prompt, so a site the agent struggled with last week starts smarter this time instead of relearning the same dead end.
+
+All three changes passed a syntax check (node -c) and the diffs are surgical — nothing else in either file was touched.
+
+Two things worth flagging honestly:
+
+The risk pattern list is a starting point, not exhaustive — you'll want to tune it against real usage (it's intentionally conservative to avoid false-positive friction).
+Memory notes are heuristic-written strings, not structured data — good enough to steer the model, but if you want analytics on "which sites break most" later, worth switching to structured {action, selector, reason} objects instead of free text.
+
+Want me to tackle the token-cost prompt bloat next (splitting the monolithic system prompt so Sheets/Excel/Word instructions aren't paid for on every non-spreadsheet task), or the step/cost counter for the user?

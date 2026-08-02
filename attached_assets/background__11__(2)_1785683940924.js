@@ -13,10 +13,13 @@
 // left alone to avoid false-positive friction on ordinary tasks.
 const RISKY_ACTIONS = new Set(['click', 'doubleClick']);
 
-// Intentionally conservative — matches whole visible label text after
-// trimming, so "Send" in a chat app or "Delete" in a text editor won't
-// constantly interrupt normal tasks. This is a backstop for the clear,
-// high-confidence cases: real payment/checkout/deletion buttons.
+// Curated, conservative on purpose: matches on WHOLE visible label text
+// (after trimming) so common false positives like "Send" in a chat app or
+// "Delete" in a text-editing context ("delete key") don't constantly
+// interrupt normal tasks — those still get caught, just via the model's own
+// judgement per the system prompt. This guard exists as a backstop for the
+// clear, high-confidence cases: real payment/checkout/deletion/irreversible
+// confirmation buttons.
 const RISKY_PATTERNS = [
   /\bpay(\s+now)?\b/i,
   /\bplace\s+order\b/i,
@@ -40,7 +43,7 @@ const RISKY_PATTERNS = [
 
 function assessActionRisk(executeAction, params) {
   const label = String(params?.text || params?.description || params?.selector || '').trim();
-  if (!label) return null; // coordinate-only clicks — no readable label to judge
+  if (!label) return null; // coordinate-only clicks have no readable label to judge — let them through
   for (const re of RISKY_PATTERNS) {
     if (re.test(label)) {
       return `The target of this ${executeAction} ("${label}") looks like a payment, deletion, or other irreversible action.`;
@@ -948,17 +951,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       sendResponse({ success: false, error: 'No tab ID provided' });
       return;
     }
-    // ── Risk guard ─────────────────────────────────────────────────────────
-    // Runs BEFORE any DOM/CDP work on click/doubleClick actions. Checks the
-    // actual element label text against the RISKY_PATTERNS list. If it
-    // matches, block immediately and return requiresConfirmation:true so
-    // ai-chat.js can show the user a real Yes/No card. The _riskConfirmed
-    // flag lets a user-approved re-send pass through exactly once.
+
+    // ── Code-level risk guard ──────────────────────────────────────────────
+    // The system prompt already ASKS the model to stop before payments/
+    // deletions/sends, but that's advisory only — a misread page can still
+    // slip a real "Confirm Purchase" click through. This check runs here,
+    // in the background script, on the actual target text the action is
+    // about to fire on — not on what the model claims its intent is — so it
+    // can't be talked around by prompt framing. It never touches the page;
+    // if it matches, we short-circuit BEFORE any DOM/CDP work happens and
+    // hand control back to ai-chat.js to get a real human decision.
     if (!params?._riskConfirmed && RISKY_ACTIONS.has(executeAction)) {
       const risk = assessActionRisk(executeAction, params);
       if (risk) {
         sendResponse({ success: false, requiresConfirmation: true, riskReason: risk });
-        return true;
+        return;
       }
     }
 
