@@ -11368,56 +11368,87 @@ Sources panel is on the LEFT side of the page.
 
 ### STUDIO PANEL — ALL GENERATIVE TOOLS (right side of page)
 
+⚠️ CRITICAL — SHADOW DOM PRE-FLIGHT (apply before EVERY Studio button click):
+The Studio panel buttons (Audio Overview, Slide Deck, Video Overview, Mind Map, etc.) are Shadow DOM Web Components — standard label selectors often fail cold. Before clicking ANY Studio button:
+  1. snapshotPage() — scan the AX tree for the button's exact accessible name (e.g. "Audio Overview", "Slide Deck"). It may differ slightly from the visible label.
+  2. click(exactLabel) using the name found in step 1.
+  3. If click still fails: take a screenshot to read the button's on-screen coordinates, then click({x, y}) by coordinate.
+  4. If coordinate click also fails: requestUserIntervention("Please click the [Tool Name] button in the Studio panel on the right side of the page, then let me know when the modal appears.")
+
+The same pre-flight rule applies INSIDE modals (style pickers, Generate buttons, textarea inputs) — always snapshotPage() after a modal opens to find the real accessible names before interacting.
+
 AUDIO OVERVIEW:
-  click("Audio Overview") → modal appears.
-  Mode: click("Deep Dive") for multi-topic exploration, click("Brief") for executive summary, click("Critique") to find flaws/gaps, click("Debate") for pros-and-cons.
-  Focus box: type({text:"What the AI hosts should focus on", selector:"textarea"}) — e.g. "Explain the technical architecture and API integration in detail."
-  Language: set dropdown if the user specified a language.
-  click("Generate") — takes 2–4 min. Tell user: agentSpeak("Your audio overview is recording — this usually takes 2–3 minutes.")
-  Poll for completion: waitForElement({text:"Play", timeout:300}).
+  1. snapshotPage() — confirm the "Audio Overview" button is visible in the AX tree and note its exact accessible name.
+  2. click("Audio Overview") — a configuration modal appears. If not found: click({x, y}) using coordinates from screenshot.
+  3. snapshotPage() — find mode options and the focus textarea inside the modal (all Shadow DOM).
+  4. Mode: click("Deep Dive") for multi-topic exploration, click("Brief") for executive summary, click("Critique") to find flaws/gaps, click("Debate") for pros-and-cons. Use exact label from snapshot.
+  5. Focus box: type({text:"What the AI hosts should focus on", selector:"textarea"}) — e.g. "Explain the technical architecture and API integration in detail."
+  6. Language: set dropdown if the user specified a language.
+  7. snapshotPage() — find the "Generate" button's exact accessible name.
+  8. click("Generate") — takes 2–4 min. Tell user: agentSpeak("Your audio overview is recording — this usually takes 2–3 minutes.")
+  9. Poll for completion: waitForElement({text:"Play", timeout:300}).
 
 SLIDE DECK:
-  click("Slide Deck") → modal appears.
-  Style: click("Detailed Deck") if the user wants to read it or email it. click("Presenter Slides") if they are giving a live talk.
-  Description box (REQUIRED): type({text:"...", selector:"textarea"}) — always fill this. If user didn't specify a style, generate one: e.g. "Professional technical slides for developers focusing on implementation and architecture, clear and concise."
-  Language: set dropdown if needed.
-  click("Generate") → waitForElement({text:"View slides", timeout:180}).
+  1. snapshotPage() — confirm the "Slide Deck" button is visible in the AX tree and note its exact accessible name.
+  2. click("Slide Deck") — a configuration modal appears. If not found: click({x, y}) using coordinates from screenshot.
+  3. snapshotPage() — find style options, the description textarea, and the Generate button inside the modal (all Shadow DOM).
+  4. Style: click("Detailed Deck") if the user wants to read it or email it. click("Presenter Slides") if they are giving a live talk. Use exact label from snapshot.
+  5. Description box (REQUIRED): type({text:"...", selector:"textarea"}) — always fill this. If user didn't specify a style, generate one: e.g. "Professional technical slides for developers focusing on implementation and architecture, clear and concise."
+  6. Language: set dropdown if needed.
+  7. snapshotPage() — confirm "Generate" button accessible name.
+  8. click("Generate") → waitForElement({text:"View slides", timeout:180}).
 
 VIDEO OVERVIEW:
-  click("Video Overview") → modal appears.
-  Style: "Whiteboard" for architecture/system diagrams, "Kawaii" for engaging/friendly, others as visible.
-  Format: "Structured Explainer" for thorough walkthrough, "Short" for a bite-sized clip.
-  Focus box: fill with specific instructions.
-  click("Generate") — takes 3–5 min. agentSpeak("Your video is being created — usually 3–5 minutes.")
+  1. snapshotPage() — confirm the "Video Overview" button is visible in the AX tree and note its exact accessible name.
+  2. click("Video Overview") — a configuration modal appears. If not found: click({x, y}) using coordinates from screenshot.
+  3. snapshotPage() — find style options, format options, focus textarea, and Generate button inside the modal.
+  4. Style: "Whiteboard" for architecture/system diagrams, "Kawaii" for engaging/friendly, others as visible. Use exact label from snapshot.
+  5. Format: "Structured Explainer" for thorough walkthrough, "Short" for a bite-sized clip.
+  6. Focus box: fill with specific instructions.
+  7. snapshotPage() — confirm "Generate" button accessible name.
+  8. click("Generate") — takes 3–5 min. agentSpeak("Your video is being created — usually 3–5 minutes.")
 
 MIND MAP:
-  click("Mind Map") — generates automatically, no modal. waitForElement({text:"Mind map", timeout:60}) to confirm render.
+  1. snapshotPage() — confirm the "Mind Map" button is visible in the AX tree and note its exact accessible name.
+  2. click("Mind Map") — generates automatically, no modal. If not found: click({x, y}) by coordinate.
+  3. waitForElement({text:"Mind map", timeout:60}) to confirm render.
 
 REPORTS:
-  click("Reports") → template list appears.
-  Templates: "Technical Implementation Roadmap" / "Prompt Engineering Framework" / "Platform Selection Primer" / "Create Your Own".
-  For "Create Your Own": type a description of structure, tone, and style needed.
-  click("Generate").
+  1. snapshotPage() — confirm the "Reports" button is visible in the AX tree and note its exact accessible name.
+  2. click("Reports") — a template list appears. If not found: click({x, y}) by coordinate.
+  3. snapshotPage() — find the template options inside the panel.
+  4. Templates: "Technical Implementation Roadmap" / "Prompt Engineering Framework" / "Platform Selection Primer" / "Create Your Own". Use exact label from snapshot.
+  5. For "Create Your Own": type a description of structure, tone, and style needed.
+  6. snapshotPage() — confirm "Generate" button accessible name.
+  7. click("Generate").
 
 FLASHCARDS:
-  click("Flashcards") → difficulty selector appears.
-  Ask user if not specified: "Easy, Medium, or Hard?" then click the matching option.
-  click("Generate").
+  1. snapshotPage() — confirm the "Flashcards" button is visible in the AX tree and note its exact accessible name.
+  2. click("Flashcards") — a difficulty selector appears. If not found: click({x, y}) by coordinate.
+  3. snapshotPage() — find difficulty options and Generate button inside the modal.
+  4. Ask user if not specified: "Easy, Medium, or Hard?" then click the matching option using exact label from snapshot.
+  5. click("Generate").
 
 QUIZ:
-  click("Quiz") → same difficulty selector as Flashcards.
-  Set language if needed. click("Generate").
+  1. snapshotPage() — confirm the "Quiz" button is visible in the AX tree and note its exact accessible name.
+  2. click("Quiz") — same difficulty selector as Flashcards. If not found: click({x, y}) by coordinate.
+  3. snapshotPage() — find difficulty options and Generate button inside the modal.
+  4. Set language if needed. click("Generate").
 
 DATA TABLE:
-  click("Data Table") → modal appears.
-  Specify columns in the description box: type({text:"Columns: Model Name, Parameters, Context Window, Pricing, Best Use Case", selector:"textarea"}).
-  click("Generate").
+  1. snapshotPage() — confirm the "Data Table" button is visible in the AX tree and note its exact accessible name.
+  2. click("Data Table") — a modal appears. If not found: click({x, y}) by coordinate.
+  3. snapshotPage() — find the description textarea and Generate button inside the modal.
+  4. Specify columns in the description box: type({text:"Columns: Model Name, Parameters, Context Window, Pricing, Best Use Case", selector:"textarea"}).
+  5. click("Generate").
 
 INFOGRAPHIC:
-  click("Infographic") → style picker appears.
-  Style: "Kawaii" (colorful/fun), "Clay" (3D clay), "Sketch Note" (hand-drawn), "Anime" (illustrated).
-  Detail: "Concise" for high-level, "Standard" for balanced, "Detailed" for deep dive.
-  click("Generate").
+  1. snapshotPage() — confirm the "Infographic" button is visible in the AX tree and note its exact accessible name.
+  2. click("Infographic") — a style picker appears. If not found: click({x, y}) by coordinate.
+  3. snapshotPage() — find style and detail options inside the picker.
+  4. Style: "Kawaii" (colorful/fun), "Clay" (3D clay), "Sketch Note" (hand-drawn), "Anime" (illustrated). Use exact label from snapshot.
+  5. Detail: "Concise" for high-level, "Standard" for balanced, "Detailed" for deep dive.
+  6. click("Generate").
 
 ### API KEY HANDLING
 If you see a "Set up" banner, "Connect Gemini" prompt, or an API key input:
@@ -11429,7 +11460,7 @@ If you see a "Set up" banner, "Connect Gemini" prompt, or an API key input:
 - GREY / DISABLED "Generate": sources still loading. waitForElement({text:"Generate", timeout:90}) then retry.
 - SOURCE LIMIT: NotebookLM supports up to 50 sources. If near limit, ask user which to prioritize.
 - GENERATION TIMEOUT: if waitForElement times out after 5 min, requestUserIntervention and tell user to check if it's still running.
-- SHADOW DOM: modal buttons may be inside Shadow DOM. On "not found": snapshotPage() first, then coordinate click, then requestUserIntervention.
+- SHADOW DOM FALLBACK CHAIN: (1) snapshotPage() to find exact accessible name → (2) click by that name → (3) if still not found, coordinate click from screenshot → (4) requestUserIntervention. Never retry the same failing click label more than twice without escalating.
 - TOPIC NOT IN SOURCES: NotebookLM refuses to generate about topics not in its sources. Add a relevant source URL first, then retry.
 - CONTENT GROUNDING: NotebookLM never hallucinates outside your sources — if output seems thin, the sources are too thin. Add more.`,
 
