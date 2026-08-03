@@ -12194,6 +12194,143 @@ function awaitStudioPicker(thread, taskDescription) {
   });
 }
 
+// ── NotebookLM warm greeting bubble ──────────────────────────────────────────
+// Renders a conversational intro card in the thread before the picker appears.
+function addStudioGreetingBubble(thread) {
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble ai';
+  bubble.style.cssText = [
+    'background:linear-gradient(135deg,rgba(99,102,241,0.10),rgba(139,92,246,0.08))',
+    'border:1px solid rgba(99,102,241,0.30)',
+    'padding:16px 18px',
+    'border-radius:14px',
+    'margin:8px 0',
+    'max-width:98%'
+  ].join(';');
+
+  bubble.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <span style="font-size:22px;line-height:1">📓</span>
+      <span style="font-weight:700;font-size:14.5px;color:#a5b4fc">Hey! I'm excited to help you create something great 🎉</span>
+    </div>
+    <div style="font-size:13px;color:rgba(226,232,240,0.88);line-height:1.65;margin-bottom:10px">
+      I'll use <strong style="color:#c4b5fd">Google NotebookLM</strong> to turn your source material into polished, ready-to-use content — and it's completely free.
+    </div>
+    <div style="font-size:12.5px;color:rgba(148,163,184,0.8);line-height:1.6">
+      Here's everything I can build for you:
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-top:7px;font-size:12px;color:rgba(203,213,225,0.75)">
+        <span>📊 <strong>Slide Deck</strong> — Detailed or Presenter slides</span>
+        <span>🎙️ <strong>Audio Overview</strong> — AI podcast, Deep Dive or Brief</span>
+        <span>🎬 <strong>Video Overview</strong> — Whiteboard explainer</span>
+        <span>🧠 <strong>Mind Map</strong> — visual idea connections</span>
+        <span>📝 <strong>Report</strong> — Roadmap, Primer, or custom</span>
+        <span>💡 <strong>Infographic</strong> — Kawaii / Clay / Sketch style</span>
+        <span>🃏 <strong>Flashcards</strong> — adjustable difficulty</span>
+        <span>❓ <strong>Quiz</strong> — test your knowledge</span>
+        <span>📋 <strong>Data Table</strong> — structured comparisons</span>
+      </div>
+    </div>
+    <div style="margin-top:12px;font-size:13px;font-weight:600;color:#a5b4fc">
+      What would you like me to create? Pick one or more below 👇
+    </div>`;
+
+  thread.appendChild(bubble);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+// ── Sources conversation step ─────────────────────────────────────────────────
+// After the user picks their Studio outputs, this asks them for source material
+// in a warm, conversational way. Returns { sources, mode }.
+function awaitSourcesStep(thread, tools, originalPrompt) {
+  return new Promise((resolve, reject) => {
+    const toolLabel = tools.join(' + ');
+    agentSpeak(`Awesome! I'll create ${toolLabel} for you. Do you have source material to add, or should I find sources on the web?`);
+
+    const card = document.createElement('div');
+    card.className = 'chat-bubble ai';
+    card.style.cssText = [
+      'background:rgba(16,185,129,0.06)',
+      'border:1px solid rgba(16,185,129,0.25)',
+      'padding:16px 18px',
+      'border-radius:14px',
+      'margin:8px 0',
+      'max-width:98%'
+    ].join(';');
+
+    card.innerHTML = `
+      <div style="font-size:14px;font-weight:700;color:#6ee7b7;margin-bottom:8px">
+        ✅ Great choices! I'll create: <span style="color:#a5b4fc">${toolLabel}</span>
+      </div>
+      <div style="font-size:13px;color:rgba(226,232,240,0.85);margin-bottom:12px;line-height:1.6">
+        Now — do you have source material for me to work from? You can paste website links, a Google Doc URL, or describe a topic and I'll search for sources.
+      </div>
+      <textarea class="sources-input" rows="3"
+        placeholder="Paste URLs (one per line), describe a topic, or leave blank and I'll find sources…"
+        style="width:100%;box-sizing:border-box;padding:9px 11px;border-radius:9px;
+               border:1px solid rgba(99,102,241,0.3);background:rgba(20,20,35,0.8);
+               color:#e2e8f0;font-size:12.5px;resize:vertical;font-family:inherit;
+               margin-bottom:10px;"></textarea>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="sources-confirm-btn" style="flex:1;padding:9px 12px;border-radius:10px;
+          background:rgba(99,102,241,0.28);border:1px solid rgba(99,102,241,0.45);
+          color:#a5b4fc;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;min-width:160px">
+          ✓ Use these sources &amp; build
+        </button>
+        <button class="sources-find-btn" style="flex:1;padding:9px 12px;border-radius:10px;
+          background:rgba(30,30,50,0.5);border:1px solid rgba(255,255,255,0.12);
+          color:rgba(148,163,184,0.9);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;min-width:160px">
+          🔍 Find sources yourself
+        </button>
+        <button class="sources-manual-btn" style="flex:1;padding:9px 12px;border-radius:10px;
+          background:rgba(30,30,50,0.5);border:1px solid rgba(255,255,255,0.12);
+          color:rgba(148,163,184,0.9);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;min-width:160px">
+          📁 I'll add them in NotebookLM
+        </button>
+      </div>`;
+
+    thread.appendChild(card);
+    thread.scrollTop = thread.scrollHeight;
+
+    const freeze = (label, green) => {
+      card.querySelectorAll('.sources-confirm-btn,.sources-find-btn,.sources-manual-btn,.sources-input')
+        .forEach(el => { el.disabled = true; el.style.pointerEvents = 'none'; el.style.opacity = '0.6'; });
+      const active = card.querySelector(`.${green}`);
+      if (active) {
+        active.style.opacity = '1';
+        active.style.background = 'rgba(16,185,129,0.20)';
+        active.style.borderColor = 'rgba(16,185,129,0.4)';
+        active.style.color = '#6ee7b7';
+      }
+    };
+
+    const stopListener = (changes, area) => {
+      if ((area === 'local' || area === 'session') && changes.agentStopRequested?.newValue) {
+        chrome.storage.onChanged.removeListener(stopListener);
+        card.innerHTML = `<div style="color:#ff8080;font-size:12px">🚫 Autopilot cancelled.</div>`;
+        reject(new Error('Task stopped by user'));
+      }
+    };
+    chrome.storage.onChanged.addListener(stopListener);
+
+    const done = (sources, mode, btnClass) => {
+      chrome.storage.onChanged.removeListener(stopListener);
+      freeze('', btnClass);
+      resolve({ sources, mode });
+    };
+
+    card.querySelector('.sources-confirm-btn').addEventListener('click', () => {
+      const sources = card.querySelector('.sources-input').value.trim();
+      done(sources, 'provided', 'sources-confirm-btn');
+    });
+    card.querySelector('.sources-find-btn').addEventListener('click', () => {
+      done('', 'find', 'sources-find-btn');
+    });
+    card.querySelector('.sources-manual-btn').addEventListener('click', () => {
+      done('', 'manual', 'sources-manual-btn');
+    });
+  });
+}
+
 // Keywords that indicate a task is headed for NotebookLM
 const NOTEBOOKLM_TRIGGER_RE = /\b(notebooklm|google\s+notebook|notebook\s+lm|audio overview|slide deck|video overview|mind map|concept map|podcast|deep.?dive|brief.*summary|flashcard|quiz me|data table|compare.*sources|extract.*structured|infographic|technical\s+report|write.*report|make.*slides?|presentation\s+from|explainer\s+video)\b/i;
 // If the user already named exactly which tool(s) they want, skip the picker
@@ -12404,24 +12541,48 @@ async function runAgentTask(prompt, thread) {
   });
   thread.appendChild(stopBtn);
 
-  // ── NotebookLM pre-flight picker ────────────────────────────────────────────
-  // Before mini-mode starts (so the picker is fully visible), detect whether
-  // this task is heading to NotebookLM. If so, ask the user WHICH Studio
-  // outputs they want with a proper multi-select card. Their confirmed choices
-  // are injected into the prompt so the agent executes exactly what was chosen
-  // instead of guessing from keywords.
+  // ── NotebookLM pre-flight conversation ──────────────────────────────────────
+  // Three-step warm conversation BEFORE mini-mode starts:
+  //   1. Greeting bubble + voice — introduces all 9 Studio tools
+  //   2. Multi-select picker    — user picks which output(s) to build
+  //   3. Sources step           — confirms choices, asks for source material
+  // All selections are injected into the prompt so the agent executes exactly
+  // what was agreed without guessing from keywords.
   if (isNotebookLMTask(prompt)) {
     try {
+      // Step 1 — warm greeting (voice fires async; bubble appears immediately)
+      agentSpeak("Hey! I'm so excited to help you create something with Google NotebookLM! Here's everything I can build for free — just pick what you'd like.");
+      addStudioGreetingBubble(thread);
+
+      // Step 2 — multi-select Studio picker
       const pickerResult = await awaitStudioPicker(thread, prompt);
-      if (pickerResult.tools.length > 0) {
-        const toolList = pickerResult.tools.join(', ');
-        const extraDetail = pickerResult.details
-          ? ` Additional instructions from the user: "${pickerResult.details}".`
-          : '';
-        prompt = `${prompt}\n\n[USER STUDIO SELECTION — build EXACTLY these NotebookLM outputs in this order: ${toolList}.${extraDetail} Do NOT build any other output type. Follow the NOTEBOOKLM ROUTING protocol: gather sources first, then create each selected output in sequence.]`;
+      if (pickerResult.tools.length === 0) {
+        stopBtn.remove();
+        return;
       }
+
+      // Step 3 — conversational sources step
+      const sourcesResult = await awaitSourcesStep(thread, pickerResult.tools, prompt);
+
+      // Build the enriched prompt from all confirmed choices
+      const toolList = pickerResult.tools.join(', ');
+      const extraDetail = pickerResult.details
+        ? ` Style / focus instructions: "${pickerResult.details}".`
+        : '';
+
+      let sourcesBlock = '';
+      if (sourcesResult.mode === 'provided' && sourcesResult.sources) {
+        sourcesBlock = ` User-provided source material (add these as sources in NotebookLM before generating): "${sourcesResult.sources}".`;
+      } else if (sourcesResult.mode === 'find') {
+        sourcesBlock = ` The user has no sources — you must search the web for relevant URLs, then add them as sources in NotebookLM before generating.`;
+      } else if (sourcesResult.mode === 'manual') {
+        sourcesBlock = ` The user will add sources manually inside NotebookLM. Navigate there, open or create a notebook, and wait for them to add sources — check the sources panel before generating.`;
+      }
+
+      prompt = `${prompt}\n\n[USER STUDIO SELECTION — build EXACTLY these NotebookLM outputs in this order: ${toolList}.${extraDetail}${sourcesBlock} Do NOT build any other output type. Follow the NOTEBOOKLM ROUTING protocol.]`;
+
     } catch (err) {
-      // Stopped or dismissed — abort the run
+      // Stopped or dismissed — abort cleanly
       stopBtn.remove();
       return;
     }
