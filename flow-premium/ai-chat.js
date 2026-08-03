@@ -12099,6 +12099,27 @@ function awaitStudioPicker(thread, taskDescription) {
     thread.appendChild(card);
     thread.scrollTop = thread.scrollHeight;
 
+    // Pre-fill the details textarea with the user's original request, trimmed
+    // to a useful length so the field doesn't overflow.
+    if (taskDescription) {
+      const textarea = card.querySelector('.studio-details-input');
+      if (textarea) {
+        let prefill = taskDescription.trim();
+        if (prefill.length > 200) {
+          // Try to cut at the first sentence boundary within the first 200 chars
+          const sentenceEnd = prefill.search(/(?<=.{40})[.!?]\s/);
+          if (sentenceEnd !== -1 && sentenceEnd < 200) {
+            prefill = prefill.slice(0, sentenceEnd + 1).trim();
+          } else {
+            // Fall back to a word boundary near 200 chars
+            const cut = prefill.slice(0, 200).replace(/\s+\S*$/, '').trim();
+            prefill = cut || prefill.slice(0, 200).trim();
+          }
+        }
+        textarea.value = prefill;
+      }
+    }
+
     const confirmBtn = card.querySelector('.studio-confirm-btn');
 
     const updateConfirmBtn = () => {
