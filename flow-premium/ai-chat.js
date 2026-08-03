@@ -11651,9 +11651,12 @@ Rules:
 
   IMPORTANT: The user was already shown an interactive multi-select picker BEFORE this task started. Their confirmed Studio output selections are injected into the task prompt as a [USER STUDIO SELECTION] block. READ THAT BLOCK first — it tells you exactly which outputs to build. Do NOT decide the output type yourself. Do NOT build anything that is not listed there.
 
-  STEP 1 — GET SOURCE MATERIAL (do this FIRST, before navigating):
-  If the task does NOT include a link, URL, PDF, or text content to work from, call requestUserIntervention with: "I'm ready to build your [list the selected outputs] in Google NotebookLM! Please give me the source material — paste a website link, a Google Doc URL, or describe the topic and I'll find sources."
-  Do NOT navigate yet. Wait for the user's response.
+  STEP 1 — SOURCE MATERIAL (already resolved before you started):
+  The pre-flight conversation ALSO asked the user about sources. The [USER STUDIO SELECTION] block tells you which of these applies — follow it exactly:
+  → "User-provided source material" — add EXACTLY those URLs/text as sources in NotebookLM, then generate. Do not search for anything else.
+  → "you must search the web" — find 2–4 relevant, high-quality URLs on the topic first, then add them as sources.
+  → "The user will add sources manually" — navigate to NotebookLM, open/create the notebook, then call requestUserIntervention("Please add your sources in the left panel, then click Continue.") and verify the sources panel is populated before generating.
+  Do NOT re-ask the user for sources — that conversation already happened.
 
   STEP 2 — PLAN AND EXECUTE ALL CHOSEN OUTPUTS:
   Read the [USER STUDIO SELECTION] block and build ONLY those outputs, in the order listed.
@@ -12025,6 +12028,10 @@ function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
 // Studio outputs to build; details is any extra instruction the user typed.
 function awaitStudioPicker(thread, taskDescription) {
   return new Promise((resolve, reject) => {
+    // Reject immediately if stop was requested before this card rendered
+    chrome.storage.session.get('agentStopRequested').then(r => {
+      if (r?.agentStopRequested) reject(new Error('Task stopped by user'));
+    }).catch(() => {});
     const TOOLS = [
       { key: 'Slide Deck',       icon: '📊', hint: 'Detailed or Presenter slides' },
       { key: 'Audio Overview',   icon: '🎙️', hint: 'Deep Dive / Brief / Critique / Debate podcast' },
@@ -12243,6 +12250,11 @@ function addStudioGreetingBubble(thread) {
 // in a warm, conversational way. Returns { sources, mode }.
 function awaitSourcesStep(thread, tools, originalPrompt) {
   return new Promise((resolve, reject) => {
+    // If a stop was already requested before this step rendered, abort at once —
+    // the onChanged listener below would never fire for an already-set flag.
+    chrome.storage.session.get('agentStopRequested').then(r => {
+      if (r?.agentStopRequested) reject(new Error('Task stopped by user'));
+    }).catch(() => {});
     const toolLabel = tools.join(' + ');
     agentSpeak(`Awesome! I'll create ${toolLabel} for you. Do you have source material to add, or should I find sources on the web?`);
 
@@ -12320,7 +12332,10 @@ function awaitSourcesStep(thread, tools, originalPrompt) {
 
     card.querySelector('.sources-confirm-btn').addEventListener('click', () => {
       const sources = card.querySelector('.sources-input').value.trim();
-      done(sources, 'provided', 'sources-confirm-btn');
+      // Blank textarea + "use these sources" = there are no sources to use —
+      // fall through to "find" so the agent always gets one explicit mode.
+      if (sources) done(sources, 'provided', 'sources-confirm-btn');
+      else done('', 'find', 'sources-confirm-btn');
     });
     card.querySelector('.sources-find-btn').addEventListener('click', () => {
       done('', 'find', 'sources-find-btn');
