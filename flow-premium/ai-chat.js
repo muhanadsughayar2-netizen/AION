@@ -907,7 +907,7 @@ const _agentVoice = { audio: null, controller: null };
 let activeUtterance = null;
 
 function agentSpeak(text) {
-  // 1. Stop anything already playing
+  // 1. Stop anything already playing (including any stale browser TTS)
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   if (_agentVoice.audio) {
     try { _agentVoice.audio.pause(); } catch (_) {}
@@ -929,90 +929,99 @@ function agentSpeak(text) {
 
   if (!cleanSpeechText) return;
 
-  // 3. Fire browser TTS IMMEDIATELY for the first sentence — zero perceived delay
-  //    This plays while Gemini TTS fetches in the background.
-  try {
-    const preview = cleanSpeechText.split(/[.!?]/)[0].trim().slice(0, 120);
-    if (preview) {
-      const u = new SpeechSynthesisUtterance(preview);
-      u.rate = 0.95; u.pitch = 1.05;
-      const voices = window.speechSynthesis.getVoices();
-      const fem = voices.find(v => /samantha|victoria|karen|moira|google.*us.*female/i.test(v.name) && v.lang.startsWith('en'))
-               || voices.find(v => v.lang.startsWith('en'));
-      if (fem) u.voice = fem;
-      activeUtterance = u;
-      window.speechSynthesis.speak(u);
-    }
-  } catch (_) {}
-
-  // 4. Fetch Gemini TTS (Aoede — the good voice) in the background.
-  //    When the audio arrives, cancel the browser preview and play the nice voice.
+  // 3. Chunked Gemini-only TTS (Aoede voice — no browser TTS bridge)
+  // Split text into sentence-boundary chunks (~280 chars each). Chunk 0 is
+  // sent to Gemini immediately; chunk 1 is prefetched while chunk 0 plays.
+  // This achieves the same ~1-2s start time as the old browser TTS but with
+  // only the high-quality Aoede voice — no double-speaking.
   (async () => {
     let apiKey = '';
     try { const r = await chrome.storage.sync.get(['geminiApiKey']); apiKey = r.geminiApiKey || ''; } catch (_) {}
-    if (!apiKey) return; // browser TTS already playing — that's fine
+    if (!apiKey) return;
 
     const controller = new AbortController();
     _agentVoice.controller = controller;
 
-    const models = [MODELS.ttsPrimary, MODELS.ttsFallback];
-    let audioUrl = null;
+    // Split into chunks at sentence boundaries
+    const chunks = [];
+    const sentences = cleanSpeechText.split(/(?<=[.!?])\s+/);
+    let current = '';
+    for (const s of sentences) {
+      if (current.length + s.length > 280 && current) { chunks.push(current.trim()); current = s; }
+      else current += (current ? ' ' : '') + s;
+    }
+    if (current.trim()) chunks.push(current.trim());
 
-    for (const model of models) {
-      if (controller.signal.aborted) return;
-      try {
-        const resp = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-          {
-            method: 'POST',
-            signal: controller.signal,
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: [{ text: `In a calm, clear, natural tone: ${cleanSpeechText}` }] }],
-              generationConfig: {
-                responseModalities: ['AUDIO'],
-                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } }
-              }
-            })
+    // Fetch a single chunk → returns an object URL or null
+    const fetchChunk = async (chunk) => {
+      const models = [MODELS.ttsPrimary, MODELS.ttsFallback];
+      for (const model of models) {
+        if (controller.signal.aborted) return null;
+        try {
+          const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST', signal: controller.signal,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: `In a natural, warm, conversational pace: ${chunk}` }] }],
+                generationConfig: {
+                  responseModalities: ['AUDIO'],
+                  speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } }
+                }
+              })
+            }
+          );
+          if (!resp.ok) continue;
+          const data = await resp.json();
+          const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+          if (!part?.data) continue;
+          const mimeType = (part.mimeType || '').toLowerCase();
+          const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
+          let blob;
+          if (mimeType.includes('pcm') || mimeType.startsWith('audio/l16') || mimeType.startsWith('audio/l-16') || mimeType === '') {
+            const sr = 24000, ch = 1, bps = 16;
+            const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
+            const ws = (o, v) => { for (let i = 0; i < v.length; i++) dv.setUint8(o + i, v.charCodeAt(i)); };
+            ws(0,'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true); ws(8,'WAVE'); ws(12,'fmt ');
+            dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
+            dv.setUint32(24, sr, true); dv.setUint32(28, sr * ch * bps / 8, true);
+            dv.setUint16(32, ch * bps / 8, true); dv.setUint16(34, bps, true);
+            ws(36,'data'); dv.setUint32(40, rawBytes.byteLength, true);
+            blob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
+          } else {
+            blob = new Blob([rawBytes], { type: mimeType });
           }
-        );
-        if (!resp.ok) continue;
-        const data = await resp.json();
-        const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-        if (!part?.data) continue;
-
-        const mimeType = (part.mimeType || '').toLowerCase();
-        const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
-        let blob;
-        if (mimeType.includes('pcm') || mimeType.startsWith('audio/l16') || mimeType.startsWith('audio/l-16') || mimeType === '') {
-          const sr = 24000, ch = 1, bps = 16;
-          const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
-          const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
-          ws(0,'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true); ws(8,'WAVE'); ws(12,'fmt ');
-          dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
-          dv.setUint32(24, sr, true); dv.setUint32(28, sr * ch * bps / 8, true);
-          dv.setUint16(32, ch * bps / 8, true); dv.setUint16(34, bps, true);
-          ws(36,'data'); dv.setUint32(40, rawBytes.byteLength, true);
-          blob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
-        } else {
-          blob = new Blob([rawBytes], { type: mimeType });
+          return URL.createObjectURL(blob);
+        } catch (e) {
+          if (e.name === 'AbortError') return null;
         }
-        audioUrl = URL.createObjectURL(blob);
-        break;
-      } catch (e) {
-        if (e.name === 'AbortError') return;
       }
+      return null;
+    };
+
+    // Prefetch chunks 0 and 1 in parallel from the start
+    const prefetched = chunks.map((c, i) => i <= 1 ? fetchChunk(c) : null);
+
+    // Play queue: start chunk 0 as soon as it arrives, prefetch next while playing
+    for (let i = 0; i < chunks.length; i++) {
+      if (controller.signal.aborted) break;
+      // Kick off next chunk's fetch while we wait for current
+      if (i + 1 < chunks.length && !prefetched[i + 1]) {
+        prefetched[i + 1] = fetchChunk(chunks[i + 1]);
+      }
+      const url = await (prefetched[i] || fetchChunk(chunks[i]));
+      if (!url || controller.signal.aborted) continue;
+      await new Promise(resolve => {
+        const audio = new Audio(url);
+        _agentVoice.audio = audio;
+        audio.onended = () => { try { URL.revokeObjectURL(url); } catch (_) {} _agentVoice.audio = null; resolve(); };
+        audio.onerror  = () => { try { URL.revokeObjectURL(url); } catch (_) {} _agentVoice.audio = null; resolve(); };
+        audio.play().catch(resolve);
+      });
     }
 
-    if (!audioUrl) return; // browser TTS already covered it
-
-    // Cancel the browser preview and switch to Aoede
-    try { window.speechSynthesis.cancel(); } catch (_) {}
-    const audio = new Audio(audioUrl);
-    _agentVoice.audio = audio;
-    audio.onended = () => { try { URL.revokeObjectURL(audioUrl); } catch (_) {} _agentVoice.audio = null; };
-    audio.onerror  = () => { try { URL.revokeObjectURL(audioUrl); } catch (_) {} _agentVoice.audio = null; };
-    audio.play().catch(() => {});
+    _agentVoice.controller = null;
   })();
 }
 
