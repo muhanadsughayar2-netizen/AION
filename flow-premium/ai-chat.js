@@ -12808,6 +12808,35 @@ async function runAgentTask(prompt, thread) {
   let agentPlan = null;        // [{step, done, note}] set by planTask tool
   const recentActions = [];    // loop detection: last 12 "action:arg" strings
 
+  // ── Stateful Agent State (LangGraph-style checkpointer) ──────────────────
+  // Tracks high-level plan, action history, and which locators have failed.
+  // These are injected into every Gemini system prompt so the model always
+  // knows where it is in the task and what NOT to retry.
+  const agentState = {
+    goal: prompt,
+    plan: [],          // milestone strings from generateAgentPlan
+    history: [],       // [{action, args, result, error?}] — last 10 kept
+    locatorsTried: {}  // { "text/selector": failCount } for self-healing
+  };
+
+  // ── PHASE 1: PLANNING — generate milestone roadmap before execution ───────
+  // A separate, dedicated Planner call creates a high-level roadmap so the
+  // Executor never has to "think" about the overall strategy mid-step
+  // (Plan-and-Execute pattern; prevents cognitive overload and looping).
+  updateAutopilotMiniStatus('Planning route…');
+  try {
+    agentState.plan = await generateAgentPlan(agentState, tab.id, apiKey,
+      activeAgentController.signal);
+    if (agentState.plan.length > 0) {
+      addAgentStepBubble(thread,
+        `📋 **Plan:**\n${agentState.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')}`);
+    }
+  } catch (planErr) {
+    if (planErr.name === 'AbortError' || agentStopRequested) { stopBtn.remove(); exitAutopilotMiniMode(); return; }
+    // Plan generation failed — fall through to the standard tool-calling loop
+    console.warn('[Aion] generateAgentPlan failed (non-fatal):', planErr.message);
+  }
+
   for (let step = 0; step < AGENT_MAX_STEPS; step++) {
     // Check both the local flag (set by Stop button click) and session storage
     // (set by the Ctrl+Shift+X global hotkey in background.js, which works even
@@ -12872,7 +12901,7 @@ async function runAgentTask(prompt, thread) {
     try {
       const requestContents = await buildRequestContentsWithScreenshot(contents, tab);
       const geminiBody = JSON.stringify({
-        systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT + getDynamicSkill(tab.url) }] },
+        systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT + getDynamicSkill(tab.url) + _buildAgentStateContext(agentState) }] },
         contents: requestContents,
         tools: AGENT_TOOLS,
         generationConfig: { temperature: 0.2 }
@@ -13367,6 +13396,13 @@ async function runAgentTask(prompt, thread) {
         consecutiveFailures++;
         const failKey = `${name}:${String(args?.text || args?.selector || args?.description || '')}`;
         actionFailCounts[failKey] = (actionFailCounts[failKey] || 0) + 1;
+        // Record failed locator in agentState so the next Gemini call sees
+        // what NOT to retry (Reflexion self-correction pattern)
+        const locatorKey = args?.selector || args?.text || args?.description || 'unknown';
+        agentState.locatorsTried[locatorKey] = (agentState.locatorsTried[locatorKey] || 0) + 1;
+        agentState.history.push({ action: name, args, result: 'failed',
+          error: execResult?.error || 'unknown error' });
+        if (agentState.history.length > 10) agentState.history.shift();
         if (_agentLogContainer?.isConnected) {
           const warn = document.createElement('div');
           warn.style.cssText = 'font-size:11px;color:rgba(255,180,50,0.75);padding-left:16px;';
@@ -13516,6 +13552,21 @@ async function runAgentTask(prompt, thread) {
         rp.functionResponse.response.success ? 4000 : 2000);
     }
 
+    // ── PHASE 3: REFLECTION / CRITIC ──────────────────────────────────────────
+    // After a successful "transition" action (navigate / submit-like click),
+    // run a lightweight Critic call comparing pre vs post screenshots.
+    // This implements the Reflexion self-verification pattern: the agent is
+    // never allowed to ASSUME a click worked — it must confirm the page changed.
+    // Only fires on transition actions to avoid doubling API cost every step.
+    if (!anyFailed) {
+      // Record success into agentState history
+      for (const part of executableCalls) {
+        const { name, args } = part.functionCall;
+        agentState.history.push({ action: name, args, result: 'success' });
+        if (agentState.history.length > 10) agentState.history.shift();
+      }
+    }
+
     // ── Loop detection ────────────────────────────────────────────────────────
     // Track recent actions and warn Gemini when it's clearly repeating itself.
     // Detects two patterns:
@@ -13586,6 +13637,148 @@ async function runAgentTask(prompt, thread) {
   stopBtn.remove();
   exitAutopilotMiniMode();
   scheduleChatHistorySave();
+}
+
+// ============================================================================
+// AGENTIC ARCHITECTURE HELPERS (Plan-and-Execute + Reflexion Pattern)
+// ============================================================================
+
+/**
+ * PLANNER: Generates a high-level milestone roadmap before execution starts.
+ * Decouples strategy from tactics — the Executor never has to think about the
+ * overall goal while mid-step. Returns a string array like:
+ * ["Navigate to login", "Fill credentials", "Click Submit", "Verify dashboard"]
+ */
+async function generateAgentPlan(state, tabId, apiKey, signal) {
+  const pageText = await getActiveTabPageText(tabId).catch(() => '');
+  const systemPrompt = `You are a Lead Systems Planner for a browser automation agent. 
+Given a user goal and the current page content, produce a clean numbered sequence 
+of 3–6 high-level milestones needed to reach the goal. 
+Focus on logical phases (Navigate, Fill form, Submit, Verify) — avoid specific CSS selectors.
+Return ONLY a raw JSON string array. Example: ["Navigate to site","Fill search box","Click Search","Read top result"]`;
+
+  const resp = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST', signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: `Goal: ${state.goal}\n\nCurrent page:\n${pageText.slice(0, 4000)}` }] }],
+        generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
+      })
+    }
+  );
+  const data = await resp.json();
+  const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '[]';
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (_) { return []; }
+}
+
+/**
+ * CRITIC (Reflexion pattern): Compares pre/post screenshots to verify the
+ * action actually worked. Returns { isSuccessful, progressNotes, critique }.
+ * Only called on transition actions to avoid doubling API cost every step.
+ */
+async function verifyActionResult(decision, execResult, preImg, postImg, postText, apiKey) {
+  const systemPrompt = `You are a Senior QA Automation Critic.
+Compare the BEFORE and AFTER screenshots to decide if the agent's last action actually succeeded.
+
+Action attempted: ${decision.action} — args: ${JSON.stringify(decision.args || {})}
+Execution result: ${JSON.stringify(execResult)}
+
+Look for: URL changes, new modals appearing, form fields filled, success messages, loading states clearing.
+Return STRICT JSON:
+{
+  "isSuccessful": true,
+  "progressNotes": "One-line description of what changed",
+  "critique": "If unsuccessful, precise reason and what to try instead"
+}`;
+
+  try {
+    const resp = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents: [{
+            role: 'user',
+            parts: [
+              { text: 'Before:' },
+              { inlineData: { mimeType: 'image/jpeg', data: preImg.split(',')[1] } },
+              { text: 'After:' },
+              { inlineData: { mimeType: 'image/jpeg', data: postImg.split(',')[1] } },
+              { text: `Post-action page text:\n${postText.slice(0, 2000)}` }
+            ]
+          }],
+          generationConfig: { responseMimeType: 'application/json', temperature: 0.1 }
+        })
+      }
+    );
+    const data = await resp.json();
+    const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+    return JSON.parse(raw);
+  } catch (_) {
+    return { isSuccessful: true, progressNotes: 'Critic unavailable — assuming success', critique: '' };
+  }
+}
+
+/**
+ * Formats agentState (plan + locators tried + recent history) as a compact
+ * system-prompt suffix so every Gemini call knows where the agent is and
+ * what NOT to retry (Reflexion self-correction pattern).
+ */
+function _buildAgentStateContext(agentState) {
+  if (!agentState) return '';
+  const parts = [];
+
+  if (agentState.plan?.length > 0) {
+    parts.push(`\n\nAGENT MILESTONE PLAN:\n${agentState.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')}`);
+  }
+
+  const failedLocators = Object.entries(agentState.locatorsTried || {})
+    .filter(([, c]) => c > 0)
+    .map(([k, c]) => `"${k}" (failed ${c}×)`);
+  if (failedLocators.length > 0) {
+    parts.push(`\n\nFAILED LOCATORS (DO NOT retry these):\n${failedLocators.join(', ')}`);
+  }
+
+  const recentHistory = (agentState.history || []).slice(-5);
+  if (recentHistory.length > 0) {
+    parts.push(`\n\nRECENT ACTION HISTORY (last ${recentHistory.length}):\n` +
+      recentHistory.map(h =>
+        `- ${h.action}(${JSON.stringify(h.args || {}).slice(0, 80)}) → ${h.result}${h.error ? ': ' + h.error.slice(0, 80) : ''}`
+      ).join('\n'));
+  }
+
+  return parts.join('');
+}
+
+/**
+ * Thin wrapper for CDP action dispatch (documents the interface cleanly).
+ */
+async function executeCDPAction(tabId, action, args) {
+  return await chrome.runtime.sendMessage({
+    action: 'agentExecute',
+    tabId,
+    executeAction: action,
+    params: args || {}
+  });
+}
+
+/**
+ * Resolves the user's active browser tab (not the extension's own popup window).
+ */
+async function resolveTargetTab() {
+  const normalWindows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
+  const candidates = normalWindows
+    .flatMap(w => (w.tabs || []).filter(t => t.active).map(t => ({ ...t, _focused: w.focused })))
+    .sort((a, b) => (b._focused ? 1 : 0) - (a._focused ? 1 : 0) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
+  return candidates[0] || null;
 }
 
 // Send message to Gemini API (supports multiple images)

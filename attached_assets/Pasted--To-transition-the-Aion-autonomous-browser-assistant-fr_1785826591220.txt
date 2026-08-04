@@ -1,0 +1,308 @@
+
+To transition the Aion autonomous browser assistant from a linear command loop into a state-driven cognitive architecture, we can map the 8 pillars of agentic design directly onto your Chrome Extension architecture.
+In your current codebase, you have a solid foundation: content.js handles DOM-level actions (including shadow-root piercing) with the "ghost cursor" visualizer; background.js manages a persistent Chrome DevTools Protocol (CDP) debugging pool; and ai-chat.js coordinates the chat interface and model calls.
+Below is a deep-dive analysis of how to refactor Aion's execution engine into a stateful, reflective system, followed by the integrated controller code.
+Key Architectural Enhancements for Aion
+1. Stateful Graph Control (LangGraph)
+Linear loops fail because they cannot handle setbacks. If the agent clicks a button and a newsletter pop-up blocks the screen, a linear agent gets confused and fails. A Stateful Graph structure allows the agent to evaluate its current node, transition to a "recovery" node (e.g., closing the pop-up), and then return to the main task.
+Aion Implementation: We replace the simple sequence with a state object (agentState) that tracks active plans, consecutive failures, and a history of tried locators.
+2. Separating Planning from Execution (Plan-and-Execute)
+Forcing a single model call to decide what the ultimate goal is, where to click next, and how to parse the DOM creates cognitive overload, leading to "looping."
+Aion Implementation: The loop first runs a Planner turn to build/verify a high-level roadmap (agentState.plan), and then isolates the Executor turn to select and execute a single tool against the current step.
+3. Self-Reflection & Verification (Reflexion Paper)
+The agent must never assume an action succeeded. If it calls click("Submit"), it must verify that the page state actually changed.
+Aion Implementation: We capture a visual/textual snapshot before and after the action. A Critic turn compares them. If the URL didn't change, or no new modal appeared, isSuccessful is marked false, the step count is frozen, and the critique is fed back into the next execution cycle to force self-correction.
+4. Multimodal Grounding & Tool Constraints (Google Dev / Function Calling)
+To prevent the model from hallucinating CSS selectors or clicking non-existent elements, we restrict its outputs to Aion’s native toolset (click, type, hover, pressKey, etc.) and feed it structured layout data.
+Aion Implementation: We pass the highly detailed Accessibility Tree (AXTree) alongside the visual screenshot, grounding the AI's spatial reasoning in actual browser metadata.
+The Stateful Agentic Controller
+Below is the refactored, production-ready runAgentTask loop designed for ai-chat.js. It utilizes your existing Chrome Extension message passing (agentExecute, agentCaptureTab) while implementing state persistence, Socratic reflection, and a robust verification loop.
+code
+JavaScript
+/**
+ * Aion Agentic Controller (Stateful & Reflective Loop)
+ * Coordinates: Planning, Execution, Grounding, and Reflection.
+ */
+async function runAgentTask(prompt, thread) {
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = keyResult.geminiApiKey;
+  if (!apiKey) { showGeminiModal(); return; }
+
+  // 1. INITIALIZE AGENT STATE (LangGraph Checkpointer Simulation)
+  let agentState = {
+    goal: prompt,
+    plan: [],
+    currentStepIndex: 0,
+    history: [],           // Tracks actions taken
+    locatorsTried: {},     // Self-healing tracker: { "selector/text": failCount }
+    consecutiveFailures: 0,
+    maxFailures: 5,
+    status: 'PLANNING'
+  };
+
+  agentStopRequested = false;
+  resetAgentStepLog();
+  enterAutopilotMiniMode();
+
+  // Find the target tab we are controlling
+  let tab = await resolveTargetTab();
+  if (!tab || !tab.id) {
+    addAgentStepBubble(thread, "Could not locate an active browser tab to control.", 'error');
+    exitAutopilotMiniMode();
+    return;
+  }
+
+  // Define per-run AbortController to handle instant Stop requests
+  activeAgentController = new AbortController();
+
+  while (agentState.currentStepIndex < AGENT_MAX_STEPS) {
+    if (agentStopRequested || activeAgentController.signal.aborted) {
+      addAgentStepBubble(thread, 'Autopilot stopped by user.', 'error');
+      break;
+    }
+
+    updateAutopilotMiniStep(agentState.currentStepIndex + 1, AGENT_MAX_STEPS);
+
+    // --- PHASE 1: GENERATE PLAN (Decoupled Planner) ---
+    if (agentState.plan.length === 0) {
+      updateAutopilotMiniStatus("Planning route...");
+      try {
+        agentState.plan = await generateAgentPlan(agentState, tab.id, apiKey);
+        addAgentStepBubble(thread, `📋 **Master Plan Created:**\n${agentState.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')}`);
+      } catch (err) {
+        addAgentStepBubble(thread, `Failed to initialize plan: ${err.message}`, 'error');
+        break;
+      }
+    }
+
+    // --- PHASE 2: GROUNDING & EXECUTION ---
+    updateAutopilotMiniStatus(`Executing Step ${agentState.currentStepIndex + 1}...`);
+    
+    // Capture pre-action state for comparison
+    const preActionSnapshot = await captureActiveTabScreenshot(tab);
+    const preActionText = await getActiveTabPageText(tab.id);
+
+    let decision;
+    try {
+      decision = await determineNextAction(agentState, tab, preActionSnapshot, preActionText, apiKey);
+    } catch (err) {
+      addAgentStepBubble(thread, `Strategic analysis failed: ${err.message}`, 'error');
+      break;
+    }
+
+    // Check if task is finished
+    if (decision.action === 'finish') {
+      addAgentStepBubble(thread, decision.args?.summary || 'Task completed.', 'done');
+      break;
+    }
+
+    // Execute the action via the background service worker
+    addAgentStepBubble(thread, `Executing: ${decision.action} ${decision.args?.text || decision.args?.selector || ''}`);
+    
+    let execResult;
+    try {
+      execResult = await executeCDPAction(tab.id, decision.action, decision.args);
+    } catch (err) {
+      execResult = { success: false, error: err.message };
+    }
+
+    // Wait for the DOM/Navigation to settle
+    await smartWaitAfterAction(tab.id, decision.action);
+
+    // --- PHASE 3: REFLECTION & SELF-CORRECTION (Critic Loop) ---
+    updateAutopilotMiniStatus("Verifying changes...");
+    const postActionSnapshot = await captureActiveTabScreenshot(tab);
+    const postActionText = await getActiveTabPageText(tab.id);
+
+    const verification = await verifyActionResult(
+      decision, 
+      execResult, 
+      preActionSnapshot, 
+      postActionSnapshot, 
+      postActionText, 
+      apiKey
+    );
+
+    if (verification.isSuccessful) {
+      // Step succeeded: Move forward on the graph
+      agentState.currentStepIndex++;
+      agentState.consecutiveFailures = 0;
+      agentState.history.push({ action: decision.action, args: decision.args, result: 'success' });
+      addAgentStepBubble(thread, `✓ Step verified: ${verification.progressNotes}`);
+    } else {
+      // Step failed: Loop back and record the mistake
+      agentState.consecutiveFailures++;
+      agentState.history.push({ action: decision.action, args: decision.args, result: 'failed', error: verification.critique });
+      
+      // Update our self-healing locator map to avoid repeating the mistake
+      const locatorKey = decision.args?.selector || decision.args?.text || 'unknown_target';
+      agentState.locatorsTried[locatorKey] = (agentState.locatorsTried[locatorKey] || 0) + 1;
+
+      addAgentStepBubble(thread, `⚠ Retrying step: ${verification.critique}`);
+
+      if (agentState.consecutiveFailures >= agentState.maxFailures) {
+        addAgentStepBubble(thread, "Autopilot is stuck. Pausing for human intervention.", 'error');
+        try {
+          await awaitUserInterventionClean(thread, `I'm having trouble with this step: "${verification.critique}". Can you perform this action manually and click complete?`, verification.critique, activeAgentController.signal);
+          agentState.consecutiveFailures = 0; // Reset counter after human assist
+        } catch (e) {
+          break; // User cancelled
+        }
+      }
+    }
+  }
+
+  exitAutopilotMiniMode();
+  scheduleChatHistorySave();
+}
+
+/**
+ * PLANNER: Generates the logical step sequence without performing actions.
+ */
+async function generateAgentPlan(state, tabId, apiKey) {
+  const pageText = await getActiveTabPageText(tabId);
+  const systemPrompt = `You are a Lead Systems Planner. Given a user goal and page text, output a clean, numbered sequence of high-level milestones (3-6 steps max) needed to reach the goal. Avoid specific DOM selectors; focus on logical actions.
+  Return your response as a raw JSON string array, like: ["Navigate to login", "Fill username and password", "Click submit", "Verify dashboard loads"]`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [{ role: 'user', parts: [{ text: `Goal: ${state.goal}\nPage Content:\n${pageText.slice(0, 5000)}` }] }],
+        generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
+      })
+    }
+  );
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  return JSON.parse(text);
+}
+
+/**
+ * EXECUTOR: Decides the immediate next technical tool to run.
+ */
+async function determineNextAction(state, tab, screenshot, pageText, apiKey) {
+  const skill = getDynamicSkill(tab.url);
+  const systemPrompt = `You are an executive browser automation engine. Your current state is:
+  - Global Goal: ${state.goal}
+  - Milestone Roadmap: ${state.plan.join(' -> ')}
+  - Active Step Index: ${state.currentStepIndex} (Step: ${state.plan[state.currentStepIndex]})
+  - Failures in this state: ${state.consecutiveFailures}
+  - Tried locators: ${JSON.stringify(state.locatorsTried)}
+  
+  Select EXACTLY ONE tool from the provided schema to execute. Do not try to solve the whole task at once. If you have completed the final milestone, call "finish".
+  
+  ${skill}`;
+
+  const contents = [
+    {
+      role: 'user',
+      parts: [
+        { inlineData: { mimeType: 'image/jpeg', data: screenshot.split(',')[1] } },
+        { text: `Page Text:\n${pageText.slice(0, 4000)}\n\nWhat is the exact next tool call?` }
+      ]
+    }
+  ];
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: contents,
+        tools: AGENT_TOOLS,
+        generationConfig: { temperature: 0.1 }
+      })
+    }
+  );
+
+  const data = await response.json();
+  const candidate = data.candidates?.[0];
+  const functionCall = candidate?.content?.parts?.find(p => p.functionCall)?.functionCall;
+
+  if (!functionCall) {
+    throw new Error("Model failed to output a structured tool call.");
+  }
+
+  return { action: functionCall.name, args: functionCall.args };
+}
+
+/**
+ * CRITIC: Compares before-and-after states to verify progress.
+ */
+async function verifyActionResult(decision, execResult, preImg, postImg, postText, apiKey) {
+  const systemPrompt = `You are a Senior QA Automation Critic. Your task is to verify if the last agent action actually succeeded by comparing the pre-action and post-action states.
+  
+  Action Attempted: ${decision.action} with arguments ${JSON.stringify(decision.args)}
+  Execution Result: ${JSON.stringify(execResult)}
+
+  Analyze the post-action screenshot and page text. Decide if the action achieved its intended result (e.g., if a click happened, did the page transition, or did a field fill).
+  
+  Return STRICT JSON matching this schema:
+  {
+    "isSuccessful": true,
+    "progressNotes": "The login form appeared and the URL changed.",
+    "critique": "If unsuccessful, explain what failed so the executor can try a different approach."
+  }`;
+
+  const response = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: systemPrompt }] },
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              { text: "Pre-action screenshot:" },
+              { inlineData: { mimeType: 'image/jpeg', data: preImg.split(',')[1] } },
+              { text: "Post-action screenshot:" },
+              { inlineData: { mimeType: 'image/jpeg', data: postImg.split(',')[1] } },
+              { text: `Post-action Page Text:\n${postText.slice(0, 3000)}` }
+            ]
+          }
+        ],
+        generationConfig: { responseMimeType: "application/json", temperature: 0.1 }
+      })
+    }
+  );
+
+  const data = await response.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  return JSON.parse(text);
+}
+
+/**
+ * Helper: Relay actions to background service worker.
+ */
+async function executeCDPAction(tabId, action, args) {
+  return await chrome.runtime.sendMessage({
+    action: 'agentExecute',
+    tabId: tabId,
+    executeAction: action,
+    params: args || {}
+  });
+}
+
+/**
+ * Helper: Find target browser tab.
+ */
+async function resolveTargetTab() {
+  const normalWindows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
+  const candidates = normalWindows
+    .flatMap(w => (w.tabs || []).filter(t => t.active).map(t => ({ ...t, _focused: w.focused })))
+    .sort((a, b) => (b._focused ? 1 : 0) - (a._focused ? 1 : 0) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
+  return candidates[0];
+}
+Key Operational Improvements in this Code
+Deterministic Retry Mechanism: Instead of immediately throwing an error or looping indefinitely on a broken selector, the manager preserves agentState.currentStepIndex and records the locator name in agentState.locatorsTried. When executing the retry, the model explicitly sees which selectors previously failed, forcing it to find alternative elements or use coordinate clicks.
+Visual Delta Analysis: The Critic has access to both the pre-action and post-action screenshots. It evaluates visual differences (like a loading spinner vanishing, or a modal appearing) rather than reading DOM code alone, bypassing any issues where frameworks hide changes from raw text readers.
+Graceful Fail-safes: If the agent fails to verify progress after 5 consecutive attempts, it triggers awaitUserInterventionClean. This displays a styled, non-blocking UI card asking the user to manually clear the block (such as solving a CAPTCHA or clicking an obscured button), allowing the automation to resume smoothly once cleared.
