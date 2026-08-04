@@ -3838,8 +3838,14 @@ async function _popupProbeOneVeo(apiKey, modelId, timeoutMs, endpoint, treatInva
 }
 
 async function _popupIsOwnerKey(apiKey) {
+  // AbortSignal.timeout() is Chrome 103+ but is absent in some MV3 extension
+  // sandbox builds, causing a synchronous ReferenceError before the fetch starts.
+  // Use a manual AbortController + setTimeout as a universal fallback.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 8000);
   try {
-    const resp = await fetch('https://www.snaptoai.com/api/owner-key-fingerprint', { signal: AbortSignal.timeout(5000) });
+    const resp = await fetch('https://www.snaptoai.com/api/owner-key-fingerprint', { signal: controller.signal });
+    clearTimeout(timer);
     if (!resp.ok) return false;
     const { fingerprints } = await resp.json();
     if (!Array.isArray(fingerprints) || fingerprints.length === 0) return false;
@@ -3847,7 +3853,13 @@ async function _popupIsOwnerKey(apiKey) {
     const buf = await crypto.subtle.digest('SHA-256', enc);
     const hex = Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
     return fingerprints.includes(hex);
-  } catch (e) { console.warn('[SnapToAI] Owner-key fingerprint check failed:', e?.message || e); return false; }
+  } catch (e) {
+    clearTimeout(timer);
+    // Timeout / network failure is expected on slow connections — not an error,
+    // just a graceful miss. Detection falls through to the normal probe chain.
+    console.log('[SnapToAI] Owner-key fingerprint check skipped:', e?.message || e);
+    return false;
+  }
 }
 
 async function _popupDetectTier(apiKey, cachedTier) {
