@@ -1,0 +1,63 @@
+An assessment of the issue has been completed. The failure during the report generation phase of the Autopilot's run on Google NotebookLM (Gemini Notebook) is caused by two specific technical factors:
+Technical Assessment
+Shadow DOM Encapsulation
+The Google NotebookLM interface is built entirely using Web Components with nested Shadow Roots (Shadow DOM). Standard DOM selectors such as document.querySelector or default jQuery/CSS paths cannot pierce these shadow boundaries. While your agent's click action successfully uses Chrome DevTools Protocol (CDP) Accessibility tree queries to click elements, the locateForType action was using a standard, non-piercing selector search, rendering it blind to input fields inside the modal.
+Aria-Label Attribute Mismatch
+The prompt input box inside NotebookLM's custom reports panel uses a highly specific aria-label attribute on its textarea:
+code
+CSS
+textarea[aria-label="Input to describe the kind of report to create"]
+The agent was attempting to guess the selector using aria-label="Describe the report you want to create", which resulted in a selector mismatch.
+The Solution
+We can resolve this by updating the locateForType routine inside ai-chat (46).js to use a recursive, shadow-piercing query (similar to the logic already successfully used for Google AI Studio) and adding the precise aria-label values used by NotebookLM's Studio panels.
+Code Modification for ai-chat (46).js
+Replace the existing notebooklm.google.com block inside the locateForType switch statement with the following implementation:
+code
+JavaScript
+// ── NOTEBOOKLM (GEMINI NOTEBOOK) ─────────────────────────────────────
+        if (host.includes('notebooklm.google.com') || host.includes('notebook.google.com')) {
+          const aisFocusRes = await chrome.scripting.executeScript({
+            target: { tabId },
+            func: () => {
+              // Helper to recursively pierce all open Shadow DOM roots on the page
+              function deepShadowQuery(root, selector) {
+                if (!root) return null;
+                const direct = root.querySelector(selector);
+                if (direct) return direct;
+                for (const el of root.querySelectorAll('*')) {
+                  if (el.shadowRoot) {
+                    const found = deepShadowQuery(el.shadowRoot, selector);
+                    if (found) return found;
+                  }
+                }
+                return null;
+              }
+              
+              // Target the precise input areas inside NotebookLM's Studio modals
+              const input = deepShadowQuery(document, 
+                "textarea[aria-label='Input to describe the kind of report to create'], " +
+                "textarea[aria-label='What should the AI hosts focus on in this episode?'], " +
+                "textarea[aria-label='Text area for custom topic'], " +
+                "textarea[placeholder*='links' i], " +
+                "div[contenteditable='true'], textarea"
+              );
+              
+              if (input) {
+                input.focus();
+                const r = input.getBoundingClientRect();
+                return { found: true, x: r.left + r.width * 0.5, y: r.top + r.height * 0.5 };
+              }
+              return { found: false };
+            }
+          }).catch(() => [{ result: { found: false } }]);
+          
+          const shadowFocused = aisFocusRes?.[0]?.result;
+          if (shadowFocused && shadowFocused.found) {
+            return { success: true, x: shadowFocused.x, y: shadowFocused.y, mode: 'aistudio' };
+          }
+          
+          // Fallback coordinate positioning if search returns empty
+          return { success: true, x: window.innerWidth * 0.5, y: window.innerHeight * 0.80, mode: 'aistudio' };
+        }
+Impact of this Fix
+With this update, when the agent invokes type inside NotebookLM, it will programmatically traverse the shadow roots, acquire the exact boundary coordinates of the custom prompt input, focus it, and inject the requested instructions before executing the Generate command.

@@ -11508,6 +11508,7 @@ REPORTS:
      - ⛔ NEVER call type() on this textarea without clicking it first — it ALWAYS fails without focus.
   7. snapshotPage() — verify the textarea is focused.
   8. type({text:"your detailed report instructions"}) — with the textarea focused, type works.
+     The EXACT aria-label on the Reports "Create Your Own" textarea is: "Input to describe the kind of report to create"
      If type() still fails: use writeChunk({text:"..."}) which is more robust for Shadow DOM textareas.
   9. snapshotPage() — confirm "Generate" button accessible name.
  10. click("Generate") — waitForElement({text:"report", timeout:180}).

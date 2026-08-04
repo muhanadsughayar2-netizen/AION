@@ -4443,25 +4443,53 @@
           return { success: true, x, y, mode: 'aistudio' };
         }
 
-        // ── NOTEBOOKLM ───────────────────────────────────────────────────────
-        if (host.includes('notebooklm.google.com')) {
-          const input = findVisible([
-            'textarea[placeholder]',
-            'div[contenteditable="true"]',
-            'textarea',
-          ]);
+        // ── NOTEBOOKLM (GEMINI NOTEBOOK) ────────────────────────────────────
+        // NotebookLM is built entirely with nested Shadow DOM Web Components.
+        // Standard document.querySelector() cannot pierce shadow roots, so
+        // findVisible() above is blind to Studio modal inputs. We use a
+        // recursive deepShadowQuery that walks all shadow roots on the page
+        // and targets the exact aria-label values used by each Studio panel.
+        if (host.includes('notebooklm.google.com') || host.includes('notebook.google.com')) {
+          function deepShadowQuery(root, selector) {
+            if (!root) return null;
+            const direct = root.querySelector(selector);
+            if (direct) return direct;
+            for (const el of root.querySelectorAll('*')) {
+              if (el.shadowRoot) {
+                const found = deepShadowQuery(el.shadowRoot, selector);
+                if (found) return found;
+              }
+            }
+            return null;
+          }
+
+          // Exact aria-label values for each Studio panel textarea (verified live):
+          //   Reports "Create Your Own"  → "Input to describe the kind of report to create"
+          //   Audio Overview focus box   → "What should the AI hosts focus on in this episode?"
+          //   Slide Deck / Video / etc.  → "Text area for custom topic"  OR generic textarea
+          //   Add sources Website URL    → textarea[placeholder*='links' i]  OR generic textarea
+          const input = deepShadowQuery(document,
+            "textarea[aria-label='Input to describe the kind of report to create'], " +
+            "textarea[aria-label='What should the AI hosts focus on in this episode?'], " +
+            "textarea[aria-label='Text area for custom topic'], " +
+            "textarea[placeholder*='links' i], " +
+            "div[contenteditable='true'], textarea"
+          );
+
           let x, y;
           if (input) {
+            input.focus();
             const r = input.getBoundingClientRect();
             x = r.left + r.width * 0.5;
             y = r.top  + r.height * 0.5;
-            highlightElement(input);
-          } else {
-            x = window.innerWidth * 0.5;
-            y = window.innerHeight * 0.80;
+            moveGhostCursor(x, y);
+            return { success: true, x, y, mode: 'notebooklm' };
           }
+          // Fallback: centre-bottom of the visible viewport where modals render
+          x = window.innerWidth * 0.5;
+          y = window.innerHeight * 0.80;
           moveGhostCursor(x, y);
-          return { success: true, x, y, mode: 'aistudio' };
+          return { success: true, x, y, mode: 'notebooklm-fallback' };
         }
 
         // ── GOOGLE COLAB ─────────────────────────────────────────────────────
