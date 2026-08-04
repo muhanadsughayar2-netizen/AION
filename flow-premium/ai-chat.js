@@ -11377,15 +11377,30 @@ Before clicking ANY Studio button, verify that at least one source is loaded:
 ⚠️ ANTI-LOOP RULE — ALWAYS follow this:
 If the same click or type action fails or produces no change 2 times in a row, STOP immediately. Call snapshotPage() to re-read the current page state, then decide what to do next. NEVER repeat the same action more than 3 times without a snapshotPage() in between. A repeated action that keeps failing is a signal the page state has changed — not a reason to retry harder.
 
-⚠️ CRITICAL — SHADOW DOM PRE-FLIGHT (apply before EVERY Studio button click):
-The Studio panel buttons (Audio Overview, Slide Deck, Video Overview, Mind Map, etc.) are Shadow DOM Web Components — standard label selectors often fail cold. Before clicking ANY Studio button:
-  1. snapshotPage() — scan the AX tree for the button's exact accessible name (e.g. "Audio Overview", "Slide Deck"). It may differ slightly from the visible label.
-  2. click(exactLabel) using the name found in step 1.
-  3. If click still fails: take a screenshot to read the button's on-screen coordinates, then click({x, y}) by coordinate.
-  4. After a successful Studio button click — always call snapshotPage() IMMEDIATELY to confirm the modal/panel opened and find the real accessible names of controls inside it before interacting.
-  4. If coordinate click also fails: requestUserIntervention("Please click the [Tool Name] button in the Studio panel on the right side of the page, then let me know when the modal appears.")
+⚠️ CRITICAL — VERIFIED STUDIO CLICK (use this exact procedure for EVERY Studio button):
+The Studio panel is on the RIGHT side. All buttons are Shadow DOM Web Components. Use this 4-step verified-click every time:
 
-The same pre-flight rule applies INSIDE modals (style pickers, Generate buttons, textarea inputs) — always snapshotPage() after a modal opens to find the real accessible names before interacting.
+  STEP A — LOCATE: snapshotPage() and find the button in the AX tree.
+    Known button names (exact, as they appear in NotebookLM):
+      "Audio Overview"  |  "Slide Deck"  |  "Video Overview"
+      "Mind Map"        |  "Reports"
+      "Flashcards"      |  "Quiz"
+      "Infographic"     |  "Data Table"
+    If the AX tree shows a slightly different label, use THAT exact label — not the name above.
+
+  STEP B — CLICK: click(exactLabel). Use the label found in STEP A.
+    If click("label") is not found: take a screenshot, identify the button's on-screen x,y position from the right-side Studio panel, then click({x, y}) by coordinate.
+
+  STEP C — VERIFY: immediately snapshotPage() after the click.
+    Success = the AX tree now shows a "Generate" button, a difficulty picker, OR a modal overlay.
+    Failure = page looks the same as before (no modal, no new controls visible).
+    If FAILED: take a screenshot first, then click({x, y}) by coordinate from the Studio panel.
+    If coordinate click also fails: requestUserIntervention("Please click [Tool Name] in the Studio panel on the right, then let me know when it opens.")
+    ⛔ NEVER click the same button a 3rd time without a new snapshotPage() in between.
+
+  STEP D — READ MODAL: use the accessible names from STEP C's snapshot for ALL interactions inside the modal (style options, textarea, language, Generate). Do NOT guess — always use names from the snapshot.
+
+The same verify-and-read rule applies for every button press INSIDE modals too.
 
 AUDIO OVERVIEW:
   1. snapshotPage() — confirm the "Audio Overview" button is visible in the AX tree and note its exact accessible name.
