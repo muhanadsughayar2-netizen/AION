@@ -1418,6 +1418,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             || tabHostname.includes('gemini.google.com')     // Gemini chat
             || tabHostname.includes('makersuite.google.com') // AI Studio (old name)
             || tabHostname.includes('notebooklm.google.com') // NotebookLM
+            || tabHostname.includes('notebook.google.com')  // NotebookLM (redirect target)
             || tabHostname.includes('labs.google.com')       // Google Labs
             || tabHostname.includes('colab.research.google.com') // Colab
             || tabHostname.includes('idx.google.com')        // Project IDX
@@ -1683,24 +1684,41 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               const nlFocus = await chrome.scripting.executeScript({
                 target: { tabId },
                 func: () => {
-                  function dSQ(root, sel) {
+                  // Visibility-aware shadow-piercing query — returns first element
+                  // with nonzero rendered size so hidden DOM duplicates are skipped.
+                  function dSQV(root, sel) {
                     if (!root) return null;
-                    const d = root.querySelector(sel);
-                    if (d) return d;
+                    try {
+                      const hits = root.querySelectorAll(sel);
+                      for (const h of hits) {
+                        const r = h.getBoundingClientRect();
+                        if (r.width > 5 && r.height > 5) return h;
+                      }
+                    } catch (_) {}
                     for (const el of root.querySelectorAll('*')) {
-                      if (el.shadowRoot) { const f = dSQ(el.shadowRoot, sel); if (f) return f; }
+                      if (el.shadowRoot) { const f = dSQV(el.shadowRoot, sel); if (f) return f; }
                     }
                     return null;
                   }
-                  const el = dSQ(document,
-                    "input[type='url'], input[placeholder*='links' i], input[placeholder*='url' i], " +
+                  const NL =
+                    "[aria-label='Query box'], [aria-label='query box'], " +
+                    "div[contenteditable='true'][aria-label*='query' i], " +
+                    "input[type='url'], " +
+                    "input[placeholder*='links' i], input[placeholder*='url' i], " +
                     "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
                     "input[aria-label*='URL' i], input[aria-label*='website' i], " +
                     "textarea[aria-label='Input to describe the kind of report to create'], " +
+                    "[aria-label='Describe the data table you want to create'], " +
+                    "[aria-label='Describe the infographic you want to create'], " +
+                    "[aria-label='Describe the quiz you want to create'], " +
+                    "[aria-label='Describe the mind map you want to create'], " +
+                    "[aria-label='Describe the flashcards you want to create'], " +
+                    "[aria-label='Describe the study guide you want to create'], " +
                     "textarea[aria-label='What should the AI hosts focus on in this episode?'], " +
                     "textarea[aria-label='Text area for custom topic'], " +
-                    "textarea[placeholder*='links' i], div[contenteditable='true'], textarea, input[type='text']"
-                  );
+                    "[aria-label*='Describe' i][aria-label*='create' i], " +
+                    "textarea[placeholder*='links' i], div[contenteditable='true'], textarea, input[type='text']";
+                  const el = dSQV(document, NL);
                   if (!el) return { found: false };
                   el.focus();
                   return { found: true, tag: el.tagName, ph: el.placeholder || '', al: el.getAttribute('aria-label') || '' };

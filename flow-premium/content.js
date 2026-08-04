@@ -4452,41 +4452,60 @@
         // recursive deepShadowQuery that walks all shadow roots on the page
         // and targets the exact aria-label values used by each Studio panel.
         if (host.includes('notebooklm.google.com') || host.includes('notebook.google.com')) {
-          function deepShadowQuery(root, selector) {
+          // Visibility-aware shadow-piercing query: returns the first element
+          // matching ANY of the comma-separated selectors that has nonzero
+          // rendered dimensions (i.e. is actually visible on screen).
+          // This prevents accidentally targeting hidden inputs that appear earlier
+          // in DOM order than the visible chat box or Studio dialog input.
+          function deepShadowQueryVisible(root, selector) {
             if (!root) return null;
-            const direct = root.querySelector(selector);
-            if (direct) return direct;
+            // Check all direct matches at this level for visibility first
+            try {
+              const matches = root.querySelectorAll(selector);
+              for (const el of matches) {
+                const r = el.getBoundingClientRect();
+                if (r.width > 5 && r.height > 5) return el;
+              }
+            } catch (_) {}
+            // Recurse into shadow roots
             for (const el of root.querySelectorAll('*')) {
               if (el.shadowRoot) {
-                const found = deepShadowQuery(el.shadowRoot, selector);
+                const found = deepShadowQueryVisible(el.shadowRoot, selector);
                 if (found) return found;
               }
             }
             return null;
           }
 
-          // Selector priority — most specific first so a visible Studio textarea wins
-          // over a hidden generic fallback:
-          //   "Add sources → Websites" URL input  → input[type='url'] or input[placeholder*='links']
-          //   Reports "Create Your Own"            → textarea[aria-label='Input to describe...']
-          //   Audio Overview focus box             → textarea[aria-label='What should the AI hosts...']
-          //   Slide Deck / Video / etc.            → textarea[aria-label='Text area for custom topic']
-          //   Generic input fallback               → input[type='text'], textarea
-          const input = deepShadowQuery(document,
+          // All known NotebookLM input surfaces, ordered most-specific → most-generic.
+          // The visibility check ensures whichever dialog/panel is currently OPEN
+          // wins, regardless of DOM order.
+          const NL_SELECTORS =
+            // ── Main chat / query box ───────────────────────────────────────────
+            "[aria-label='Query box'], [aria-label='query box'], " +
+            "div[contenteditable='true'][aria-label*='query' i], " +
             // ── "Add sources → Websites" URL input ─────────────────────────────
             "input[type='url'], " +
             "input[placeholder*='links' i], input[placeholder*='url' i], " +
             "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
             "input[aria-label*='URL' i], input[aria-label*='website' i], " +
             "input[aria-label*='link' i], " +
-            // ── Studio panel textareas ──────────────────────────────────────────
+            // ── Studio panel textareas (exact aria-labels from live NotebookLM) ─
             "textarea[aria-label='Input to describe the kind of report to create'], " +
+            "[aria-label='Describe the data table you want to create'], " +
+            "[aria-label='Describe the infographic you want to create'], " +
+            "[aria-label='Describe the quiz you want to create'], " +
+            "[aria-label='Describe the mind map you want to create'], " +
+            "[aria-label='Describe the flashcards you want to create'], " +
+            "[aria-label='Describe the study guide you want to create'], " +
             "textarea[aria-label='What should the AI hosts focus on in this episode?'], " +
             "textarea[aria-label='Text area for custom topic'], " +
+            "[aria-label*='Describe' i][aria-label*='create' i], " +
             "textarea[placeholder*='links' i], " +
-            // ── Generic fallbacks ───────────────────────────────────────────────
-            "div[contenteditable='true'], textarea, input[type='text']"
-          );
+            // ── Generic visible fallbacks ───────────────────────────────────────
+            "div[contenteditable='true'], textarea, input[type='text']";
+
+          const input = deepShadowQueryVisible(document, NL_SELECTORS);
 
           let x, y;
           if (input) {
@@ -4867,27 +4886,42 @@
         // React/Lit controlled components update their state), then dispatch input
         // events so the UI reflects the new value.
         if (host.includes('notebooklm.google.com') || host.includes('notebook.google.com')) {
-          function deepShadowQueryForType(root, selector) {
+          function deepShadowQueryVisibleType(root, selector) {
             if (!root) return null;
-            const direct = root.querySelector(selector);
-            if (direct) return direct;
+            try {
+              const matches = root.querySelectorAll(selector);
+              for (const el of matches) {
+                const r = el.getBoundingClientRect();
+                if (r.width > 5 && r.height > 5) return el;
+              }
+            } catch (_) {}
             for (const el of root.querySelectorAll('*')) {
               if (el.shadowRoot) {
-                const found = deepShadowQueryForType(el.shadowRoot, selector);
+                const found = deepShadowQueryVisibleType(el.shadowRoot, selector);
                 if (found) return found;
               }
             }
             return null;
           }
-          const nlInput = deepShadowQueryForType(document,
-            "input[type='url'], input[placeholder*='links' i], input[placeholder*='url' i], " +
+          const NL_TYPE_SELECTORS =
+            "[aria-label='Query box'], [aria-label='query box'], " +
+            "div[contenteditable='true'][aria-label*='query' i], " +
+            "input[type='url'], " +
+            "input[placeholder*='links' i], input[placeholder*='url' i], " +
             "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
             "input[aria-label*='URL' i], input[aria-label*='website' i], " +
             "textarea[aria-label='Input to describe the kind of report to create'], " +
+            "[aria-label='Describe the data table you want to create'], " +
+            "[aria-label='Describe the infographic you want to create'], " +
+            "[aria-label='Describe the quiz you want to create'], " +
+            "[aria-label='Describe the mind map you want to create'], " +
+            "[aria-label='Describe the flashcards you want to create'], " +
+            "[aria-label='Describe the study guide you want to create'], " +
             "textarea[aria-label='What should the AI hosts focus on in this episode?'], " +
             "textarea[aria-label='Text area for custom topic'], " +
-            "textarea[placeholder*='links' i], div[contenteditable='true'], textarea, input[type='text']"
-          );
+            "[aria-label*='Describe' i][aria-label*='create' i], " +
+            "textarea[placeholder*='links' i], div[contenteditable='true'], textarea, input[type='text']";
+          const nlInput = deepShadowQueryVisibleType(document, NL_TYPE_SELECTORS);
           if (nlInput) {
             nlInput.focus();
             const isTA = nlInput.tagName === 'TEXTAREA';
