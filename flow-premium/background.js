@@ -1988,15 +1988,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             } else if (mode === 'notebooklm' || mode === 'notebooklm-fallback') {
               // ── NOTEBOOKLM (Shadow DOM inputs) ────────────────────────────────
               // NotebookLM builds every input/textarea inside nested Shadow DOM
-              // Web Components. Input.insertText only works after the correct
-              // shadow-host element has browser focus. We pierce shadow roots via
-              // executeScript to focus the exact target, then insertText which
-              // operates on whatever element holds OS-level keyboard focus.
+              // Web Components. Input.insertText only works after the element has
+              // OS-level keyboard focus (not just DOM focus).
+              //
+              // Key fixes vs old approach:
+              // 1. executeScript is now ASYNC — waits up to 600ms for a URL input
+              //    dialog to appear (needed after "Websites" click which animates in).
+              // 2. Returns cx/cy so we can fire mousedown at the exact element centre.
+              // 3. mousedown CDP event at element coordinates transfers OS focus to
+              //    shadow DOM inputs — el.focus() alone is insufficient.
               const nlFocus = await chrome.scripting.executeScript({
                 target: { tabId },
-                func: () => {
-                  // Visibility-aware shadow-piercing query — returns first element
-                  // with nonzero rendered size so hidden DOM duplicates are skipped.
+                func: async () => {
+                  // Visibility-aware deep shadow query
                   function dSQV(root, sel) {
                     if (!root) return null;
                     try {
@@ -2017,6 +2021,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     "input[type='url'], " +
                     "input[placeholder*='links' i], input[placeholder*='url' i], " +
                     "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
+                    "input[placeholder*='link' i], input[placeholder*='website' i], " +
                     "input[aria-label*='URL' i], input[aria-label*='website' i], " +
                     "input[aria-label*='link' i], " +
                     "textarea[aria-label='Input to describe the kind of report to create'], " +
@@ -2030,32 +2035,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     "textarea[aria-label='Text area for custom topic'], " +
                     "[aria-label*='Describe' i][aria-label*='create' i], " +
                     "textarea[placeholder*='links' i], div[contenteditable='true'], textarea, input[type='text']";
-                  const el = dSQV(document, NL);
-                  if (!el) return { found: false };
-                  el.focus();
-                  return { found: true, tag: el.tagName, ph: el.placeholder || '', al: el.getAttribute('aria-label') || '' };
+                  // Retry loop: wait up to 600ms for URL dialog to animate in
+                  for (let attempt = 0; attempt < 4; attempt++) {
+                    const el = dSQV(document, NL);
+                    if (el) {
+                      el.focus();
+                      const r = el.getBoundingClientRect();
+                      return {
+                        found: true,
+                        tag: el.tagName,
+                        ph: el.placeholder || '',
+                        al: el.getAttribute('aria-label') || '',
+                        isContentEditable: el.contentEditable === 'true' || el.getAttribute('contenteditable') === 'true',
+                        cx: r.left + r.width * 0.5,
+                        cy: r.top  + r.height * 0.5
+                      };
+                    }
+                    await new Promise(r => setTimeout(r, 150));
+                  }
+                  return { found: false };
                 }
               }).catch(() => [{ result: { found: false } }]);
 
               const nlRes = nlFocus?.[0]?.result;
-              await new Promise(r => setTimeout(r, 150)); // let Shadow DOM focus settle
-              if (nlRes?.found) {
-                await send('Input.insertText', { text });
-              } else {
-                // No input found yet — coordinate click then insertText as fallback
-                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
-                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
-                await new Promise(r => setTimeout(r, 200));
-                await send('Input.insertText', { text });
-              }
+
+              // Always fire a mousedown at the element's exact center to transfer
+              // OS keyboard focus. el.focus() alone does NOT move OS focus for
+              // elements inside Shadow DOM — the tab needs a real mouse event.
+              const nlX = nlRes?.cx ?? x;
+              const nlY = nlRes?.cy ?? y;
+              await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
+              await new Promise(r => setTimeout(r, 60));
+              await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
+              await new Promise(r => setTimeout(r, 200)); // let shadow DOM focus settle
+
+              await send('Input.insertText', { text });
 
               // Verify text actually landed — NotebookLM's Shadow DOM focus can
               // silently fail if a modal just opened and focus hasn't settled yet.
               const nlSample = text.slice(0, 20);
               if (nlSample && !(await verifyTextInPage(tabId, nlSample))) {
                 // Retry: coordinate click to force focus then re-insert
-                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
-                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
                 await new Promise(r => setTimeout(r, 300));
                 await send('Input.insertText', { text });
                 if (!(await verifyTextInPage(tabId, nlSample))) {
@@ -2461,39 +2483,75 @@ If the element is not visible in the screenshot, return:
           // NOT fire pointerdown/pointerup. Google's Angular/Lit Web Components
           // (NotebookLM buttons, AI Studio toolbar, Google Workspace ribbon) only
           // listen to pointer events, so the button highlights but NEVER fires.
-          // We dispatch pointerdown BEFORE mousePressed so frameworks that require
-          // the full pointer→mouse→click sequence get it in the right order.
-          // These are isTrusted:false but Angular/Lit/Material don't check trust.
+          //
+          // CRITICAL FIX — two issues with the old approach:
+          // 1. document.elementFromPoint() cannot pierce Shadow DOM — it returns
+          //    the outer shadow HOST, so events fire on the wrapper, not the button.
+          // 2. Events without composed:true are stopped at shadow boundaries and
+          //    never reach framework listeners on the host element.
+          //
+          // Fix: deepElAt() recursively walks shadowRoot.elementFromPoint() to find
+          // the actual inner element. Events are fired with composed:true so they
+          // bubble through shadow boundaries. We also fire on the closest clickable
+          // ancestor to catch Angular/Lit host-level listeners.
           const ptrExpr = (evtType) => `(() => {
-            const el = document.elementFromPoint(${jx}, ${jy});
+            function deepElAt(root, x, y) {
+              let el = root.elementFromPoint ? root.elementFromPoint(x, y) : null;
+              if (!el) return null;
+              for (let i = 0; i < 12; i++) {
+                if (!el.shadowRoot) break;
+                const inner = el.shadowRoot.elementFromPoint(x, y);
+                if (!inner || inner === el) break;
+                el = inner;
+              }
+              return el;
+            }
+            const el = deepElAt(document, ${jx}, ${jy});
             if (!el) return false;
-            el.dispatchEvent(new PointerEvent(${JSON.stringify(evtType)}, {
-              bubbles: true, cancelable: true,
+            const opts = {
+              bubbles: true, cancelable: true, composed: true,
               clientX: ${jx}, clientY: ${jy},
               screenX: ${jx}, screenY: ${jy},
               pointerId: 1, pointerType: 'mouse', isPrimary: true,
               buttons: 1, button: 0
-            }));
+            };
+            // Fire on deepest element AND closest clickable ancestor so both
+            // the inner button and Angular/Lit host-level listeners receive it.
+            el.dispatchEvent(new PointerEvent(${JSON.stringify(evtType)}, opts));
+            const btn = el.closest('button,[role="button"],a,[role="link"],[role="menuitem"],[role="option"],[role="tab"]');
+            if (btn && btn !== el) btn.dispatchEvent(new PointerEvent(${JSON.stringify(evtType)}, opts));
             return true;
           })()`;
 
           await cdpCmd('Runtime.evaluate', { expression: ptrExpr('pointerdown'), returnByValue: true }).catch(() => {});
           await cdpCmd('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
-          // Fix 5b — Human pacing: 80–150 ms between press and release.
+          // Human pacing: 80–150 ms between press and release.
           await new Promise(r => setTimeout(r, 80 + Math.random() * 70));
           await cdpCmd('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased' });
           await cdpCmd('Runtime.evaluate', { expression: ptrExpr('pointerup'),   returnByValue: true }).catch(() => {});
 
           // Synthetic click event — ensures React onClick and Angular (click)
           // bindings fire even if they missed the pointer/mouse sequence above.
+          // Also uses deep shadow pierce + composed:true.
           await cdpCmd('Runtime.evaluate', {
             expression: `(() => {
-              const el = document.elementFromPoint(${jx}, ${jy});
+              function deepElAt(root, x, y) {
+                let el = root.elementFromPoint ? root.elementFromPoint(x, y) : null;
+                if (!el) return null;
+                for (let i = 0; i < 12; i++) {
+                  if (!el.shadowRoot) break;
+                  const inner = el.shadowRoot.elementFromPoint(x, y);
+                  if (!inner || inner === el) break;
+                  el = inner;
+                }
+                return el;
+              }
+              const el = deepElAt(document, ${jx}, ${jy});
               if (!el) return false;
-              el.dispatchEvent(new MouseEvent('click', {
-                bubbles: true, cancelable: true,
-                clientX: ${jx}, clientY: ${jy}, button: 0, buttons: 0
-              }));
+              const opts = { bubbles: true, cancelable: true, composed: true, clientX: ${jx}, clientY: ${jy}, button: 0, buttons: 0 };
+              el.dispatchEvent(new MouseEvent('click', opts));
+              const btn = el.closest('button,[role="button"],a,[role="link"],[role="menuitem"],[role="option"],[role="tab"]');
+              if (btn && btn !== el) btn.dispatchEvent(new MouseEvent('click', opts));
               return true;
             })()`,
             returnByValue: true
@@ -2628,10 +2686,56 @@ If the element is not visible in the screenshot, return:
             }
           }
 
-          // ── Step 2: CDP Accessibility fallback ─────────────────────────
-          // queryAXTree finds elements by accessible name (visible label) — works
-          // in iframes, shadow DOM, and canvas apps where DOM text search fails.
+          // ── Step 1c: NotebookLM shadow DOM button finder ───────────────────
+          // NotebookLM buttons (Add source, Websites, Insert, Studio panel
+          // buttons) live inside nested Shadow DOM Web Components. The AX tree
+          // (step 2) reaches them but DOM.getBoxModel sometimes fails because
+          // shadow-DOM backendDOMNodeIds are not always resolvable cross-context.
+          // This step walks all shadow roots directly in JS, finds the button
+          // by textContent / aria-label match, and clicks it — before any AX/CDP
+          // coordinate cascade. Runs ONLY for NotebookLM to stay surgical.
           const searchLabel = (params.text || params.description || '').trim();
+          if (searchLabel && (tabHostname.includes('notebooklm.google.com') || tabHostname.includes('notebook.google.com'))) {
+            try {
+              const nlShadowRes = await cdpCmd('Runtime.evaluate', {
+                expression: `(function() {
+                  const query = ${JSON.stringify(searchLabel.toLowerCase())};
+                  function findInShadow(root) {
+                    const CLICKABLE = 'button,[role="button"],[role="option"],[role="menuitem"],[role="tab"],[role="listitem"],a';
+                    try {
+                      const els = root.querySelectorAll(CLICKABLE);
+                      for (const el of els) {
+                        const txt = ((el.textContent || '') + ' ' + (el.getAttribute('aria-label') || '')).trim().toLowerCase();
+                        if (txt.includes(query) || query.includes(txt.replace(/\\s+/g,' ').trim().slice(0, 20))) {
+                          const r = el.getBoundingClientRect();
+                          if (r.width > 0 && r.height > 0 && r.top > 0 && r.top < window.innerHeight) {
+                            return { x: r.left + r.width / 2, y: r.top + r.height / 2, txt: txt.slice(0, 40) };
+                          }
+                        }
+                      }
+                    } catch (_) {}
+                    for (const el of root.querySelectorAll('*')) {
+                      if (el.shadowRoot) {
+                        const f = findInShadow(el.shadowRoot);
+                        if (f) return f;
+                      }
+                    }
+                    return null;
+                  }
+                  return findInShadow(document);
+                })()`,
+                returnByValue: true
+              }).catch(() => null);
+              const nlCoords = nlShadowRes?.result?.value;
+              if (nlCoords?.x) {
+                console.log(`[Aion] NotebookLM shadow finder: "${nlCoords.txt}" at (${nlCoords.x},${nlCoords.y})`);
+                await smartClick(nlCoords.x, nlCoords.y);
+                await saveClickMem(searchLabel, nlCoords.x, nlCoords.y, 'nl-shadow');
+                sendResponse({ success: true, data: `Clicked via NotebookLM shadow DOM button finder` });
+                return;
+              }
+            } catch (_nlShadow) {}
+          }
 
            // Memory-first: try remembered coords before full AX cascade
            if (searchLabel) {

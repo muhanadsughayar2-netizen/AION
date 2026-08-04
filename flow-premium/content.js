@@ -5105,14 +5105,46 @@
           const nlInput = deepShadowQueryVisibleType(document, NL_TYPE_SELECTORS);
           if (nlInput) {
             nlInput.focus();
-            const isTA = nlInput.tagName === 'TEXTAREA';
-            const proto = isTA ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
-            const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
-            if (setter) setter.call(nlInput, params.text);
-            else nlInput.value = params.text;
-            nlInput.dispatchEvent(new Event('input',  { bubbles: true }));
-            nlInput.dispatchEvent(new Event('change', { bubbles: true }));
-            showAgentBanner(`⌨️ Typed into NotebookLM ${isTA ? 'textarea' : 'input'}`);
+            const isContentEditable = nlInput.contentEditable === 'true'
+              || nlInput.getAttribute('contenteditable') === 'true';
+
+            if (isContentEditable) {
+              // contenteditable div (e.g. the Query box) — plain .value setter is
+              // a no-op on divs. Use document.execCommand('insertText') which fires
+              // the DOM mutation that Angular/Lit change detection requires.
+              // Clear existing content first if requested.
+              if (params.clearFirst) {
+                const range = document.createRange();
+                range.selectNodeContents(nlInput);
+                const sel = window.getSelection();
+                sel.removeAllRanges();
+                sel.addRange(range);
+              }
+              const typed = document.execCommand('insertText', false, params.text);
+              if (!typed) {
+                // execCommand deprecated in some environments — fallback: set
+                // innerText and fire a synthetic InputEvent so Angular sees it.
+                nlInput.innerText = params.text;
+                nlInput.dispatchEvent(new InputEvent('input', {
+                  bubbles: true, cancelable: true,
+                  data: params.text, inputType: 'insertText'
+                }));
+              }
+              showAgentBanner(`⌨️ Typed into NotebookLM query box`);
+            } else {
+              // <input> or <textarea> — use native prototype setter so React/Lit
+              // controlled-component state updates correctly, then fire events.
+              const isTA = nlInput.tagName === 'TEXTAREA';
+              const proto = isTA
+                ? window.HTMLTextAreaElement.prototype
+                : window.HTMLInputElement.prototype;
+              const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+              if (setter) setter.call(nlInput, params.text);
+              else nlInput.value = params.text;
+              nlInput.dispatchEvent(new Event('input',  { bubbles: true }));
+              nlInput.dispatchEvent(new Event('change', { bubbles: true }));
+              showAgentBanner(`⌨️ Typed into NotebookLM ${isTA ? 'textarea' : 'input'}`);
+            }
             return { success: true, message: 'Typed into NotebookLM Shadow DOM input' };
           }
           // No input found — tell the agent explicitly so it can retry after the
