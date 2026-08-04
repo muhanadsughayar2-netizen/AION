@@ -900,15 +900,15 @@ function speakText(text, langCode = null) {
 const _agentVoice = { audio: null, controller: null };
 
 // ============================================================================
-// ZERO-LATENCY INSTANT AGENT SPEECH ENGINE (0ms Network Lag)
+// HYBRID AGENT SPEECH ENGINE
+// Instant browser TTS bridges the gap while Gemini Aoede loads in background.
+// Net result: audio starts in ~0ms, transitions to the nice paid voice when ready.
 // ============================================================================
 let activeUtterance = null;
 
 function agentSpeak(text) {
-  // 1. Cancel any active speech or audio immediately
-  if (window.speechSynthesis) {
-    window.speechSynthesis.cancel();
-  }
+  // 1. Stop anything already playing
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
   if (_agentVoice.audio) {
     try { _agentVoice.audio.pause(); } catch (_) {}
     _agentVoice.audio = null;
@@ -918,7 +918,7 @@ function agentSpeak(text) {
     _agentVoice.controller = null;
   }
 
-  // 2. Strip markdown — keep plain speakable text
+  // 2. Clean markdown out of the text
   const cleanSpeechText = text
     .replace(/```[\s\S]*?```/g, 'code block')
     .replace(/[#*_~`>|]/g, '')
@@ -929,26 +929,91 @@ function agentSpeak(text) {
 
   if (!cleanSpeechText) return;
 
+  // 3. Fire browser TTS IMMEDIATELY for the first sentence — zero perceived delay
+  //    This plays while Gemini TTS fetches in the background.
   try {
-    // 3. Fire instant local speech — zero network delay
-    const utterance = new SpeechSynthesisUtterance(cleanSpeechText);
-    utterance.rate  = 1.05; // slightly faster, natural pace
-    utterance.pitch = 1.02;
+    const preview = cleanSpeechText.split(/[.!?]/)[0].trim().slice(0, 120);
+    if (preview) {
+      const u = new SpeechSynthesisUtterance(preview);
+      u.rate = 0.95; u.pitch = 1.05;
+      const voices = window.speechSynthesis.getVoices();
+      const fem = voices.find(v => /samantha|victoria|karen|moira|google.*us.*female/i.test(v.name) && v.lang.startsWith('en'))
+               || voices.find(v => v.lang.startsWith('en'));
+      if (fem) u.voice = fem;
+      activeUtterance = u;
+      window.speechSynthesis.speak(u);
+    }
+  } catch (_) {}
 
-    const voicesList = window.speechSynthesis.getVoices();
-    // Prioritise premium natural-sounding local OS voices
-    const naturalVoice = voicesList.find(v =>
-      /natural|premium|google|samantha|victoria|karen|moira/i.test(v.name) &&
-      v.lang.startsWith('en')
-    ) || voicesList.find(v => v.lang.startsWith('en'));
+  // 4. Fetch Gemini TTS (Aoede — the good voice) in the background.
+  //    When the audio arrives, cancel the browser preview and play the nice voice.
+  (async () => {
+    let apiKey = '';
+    try { const r = await chrome.storage.sync.get(['geminiApiKey']); apiKey = r.geminiApiKey || ''; } catch (_) {}
+    if (!apiKey) return; // browser TTS already playing — that's fine
 
-    if (naturalVoice) utterance.voice = naturalVoice;
+    const controller = new AbortController();
+    _agentVoice.controller = controller;
 
-    activeUtterance = utterance;
-    window.speechSynthesis.speak(utterance);
-  } catch (e) {
-    console.warn('[Aion Voice] Instant speech failed:', e.message);
-  }
+    const models = [MODELS.ttsPrimary, MODELS.ttsFallback];
+    let audioUrl = null;
+
+    for (const model of models) {
+      if (controller.signal.aborted) return;
+      try {
+        const resp = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            signal: controller.signal,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `In a calm, clear, natural tone: ${cleanSpeechText}` }] }],
+              generationConfig: {
+                responseModalities: ['AUDIO'],
+                speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } }
+              }
+            })
+          }
+        );
+        if (!resp.ok) continue;
+        const data = await resp.json();
+        const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+        if (!part?.data) continue;
+
+        const mimeType = (part.mimeType || '').toLowerCase();
+        const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
+        let blob;
+        if (mimeType.includes('pcm') || mimeType.startsWith('audio/l16') || mimeType.startsWith('audio/l-16') || mimeType === '') {
+          const sr = 24000, ch = 1, bps = 16;
+          const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
+          const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+          ws(0,'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true); ws(8,'WAVE'); ws(12,'fmt ');
+          dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
+          dv.setUint32(24, sr, true); dv.setUint32(28, sr * ch * bps / 8, true);
+          dv.setUint16(32, ch * bps / 8, true); dv.setUint16(34, bps, true);
+          ws(36,'data'); dv.setUint32(40, rawBytes.byteLength, true);
+          blob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
+        } else {
+          blob = new Blob([rawBytes], { type: mimeType });
+        }
+        audioUrl = URL.createObjectURL(blob);
+        break;
+      } catch (e) {
+        if (e.name === 'AbortError') return;
+      }
+    }
+
+    if (!audioUrl) return; // browser TTS already covered it
+
+    // Cancel the browser preview and switch to Aoede
+    try { window.speechSynthesis.cancel(); } catch (_) {}
+    const audio = new Audio(audioUrl);
+    _agentVoice.audio = audio;
+    audio.onended = () => { try { URL.revokeObjectURL(audioUrl); } catch (_) {} _agentVoice.audio = null; };
+    audio.onerror  = () => { try { URL.revokeObjectURL(audioUrl); } catch (_) {} _agentVoice.audio = null; };
+    audio.play().catch(() => {});
+  })();
 }
 
 // Helper: cancellable sleep — keeps the main thread responsive during pauses
@@ -15155,7 +15220,13 @@ async function handleSend() {
     // Attach all queued files (multi-file Gemini-style)
     if (filesQueue && filesQueue.length > 0) {
       filesQueue.forEach(f => {
-        userParts.push({ inlineData: { mimeType: f.mimeType, data: f.data } });
+        if (f._isText) {
+          // Code / text files: send as a text part so Gemini can actually read them.
+          // inlineData only works for images, audio, video, and PDF.
+          userParts.push({ text: `[Attached file: ${f.name}]\n\`\`\`\n${f.textContent.slice(0, 60000)}\n\`\`\`` });
+        } else {
+          userParts.push({ inlineData: { mimeType: f.mimeType, data: f.data } });
+        }
       });
       clearFilesQueue();
     }
@@ -18879,6 +18950,38 @@ document.getElementById('fileInput').addEventListener('change', (e) => {
       return;
     }
 
+    // Text / code files — read as plain text so Gemini can actually see the content.
+    // Gemini's inlineData only supports images, audio, video, and PDF; sending .js/.html/.css
+    // as binary base64 inlineData makes them invisible to the model.
+    const isCodeOrTextFile = /\.(js|ts|jsx|tsx|mjs|cjs|html|htm|css|scss|less|sass|json|jsonc|md|markdown|txt|py|rb|php|java|c|cpp|cc|h|hpp|go|rs|swift|kt|sh|bash|zsh|yaml|yml|xml|sql|env|toml|ini|cfg|conf|csv|graphql|gql|vue|svelte|astro|tf|hcl|r|lua|perl|pl|ex|exs|clj|fs|fsx|cs|vb|dart|zig|nim|jl|wasm\.wat)$/i.test(file.name) ||
+      file.type.startsWith('text/') ||
+      file.type === 'application/json' ||
+      file.type === 'application/javascript' ||
+      file.type === 'application/typescript';
+
+    if (isCodeOrTextFile) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const fileData = {
+          name: file.name,
+          _isText: true,
+          textContent: event.target.result
+        };
+        filesQueue.push(fileData);
+        const card = document.createElement('div');
+        card.className = 'file-card';
+        card.innerHTML = `📄 <span>${file.name}</span> <div class="remove-btn">×</div>`;
+        card.querySelector('.remove-btn').onclick = () => {
+          filesQueue = filesQueue.filter(f => f !== fileData);
+          card.remove();
+        };
+        document.getElementById('filePreviewZone').appendChild(card);
+      };
+      reader.readAsText(file);
+      return;
+    }
+
+    // Binary files (images, video, PDF) — send as inlineData
     const reader = new FileReader();
     reader.onload = (event) => {
       const fileData = {

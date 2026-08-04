@@ -1,0 +1,127 @@
+hello how are you I want you to go to to I want you to look into the code I'm going to upload with you and I want to study it and then I want you to search the web and see if my code is correct or not and what I should do to make the code better regarding the agent
+■ Stop Autopilot
+🤔 Autopilot needs your input
+I'm doing well, thank you! I'd be happy to help you study and improve your agent code. Please upload the code or paste it here so I can analyze it, and then I'll search the web for best practices to help you optimize it.
+I'm ready to upload the code nowCancel task
+🤔 Autopilot needs your input
+Great! Please paste the code you'd like me to analyze here in the chat. Once you provide it, I'll study it and search for ways to improve your agent.
+I've pasted the code belowI'll upload a file instead
+hello how are you I want you to go to to I want you to look into the code I'm going to upload with you and I want to study it and then I want you to search the web and see if my code is correct or not and what I should do to make the code better regarding the agent great please face the code you'd like
+■ Stop Autopilot
+🤔 Autopilot needs your input
+I'm doing well, thank you! I'm ready to help you analyze and improve your code. Please paste the code you'd like me to study right here in the chat.
+I'm ready, please paste the code here.
+hello how are you I want you to go to to I want you to look into the code I'm going to upload with you and I want to study it and then I want you to search the web and see if my icode is correct or not and what I should do to make the code better regarding the agent I'm doing well thank you I'm ready to help you analyze and i dod [aste teh code twice
+■ Stop Autopilot
+🤔 Autopilot needs your input
+I'm ready to help! Please upload or paste the code you'd like me to analyze, then click the button below to let me know you're ready.
+I've uploaded the code, please analyze it.Cancel task
+🤔 Autopilot needs your input
+I'm ready to analyze your code! Please paste it here or upload the file so I can study it and search for ways to improve it.
+I've pasted the code below.I'll upload a file instead.
+🤔 Autopilot needs your input
+I don't see the code yet. Could you please paste the code directly into the chat, or upload the file again? Once I have the code, I'll study it and search the web for improvements.
+I've pasted the code below.I'll upload a file.
+hello how are you I want you to go to to I want you to look into the code I'm going to upload with you and I want to study it and then I want you to search the web and see if my code is correct or not and what I should do to make the code better regarding the agent I'm ready to analyze your code please paste it here or upload the file
+■ Stop Autopilot
+🤔 Autopilot needs your input
+I'm ready to analyze your code! Please paste it here or let me know if you'd like to upload a file. Once I have the code, I'll study it and search the web to see how it can be improved.
+I've pasted the code belowI'll upload a file now
+I'll upload a file now
+Send
+🤝 Co-Pilot Assist
+"Please upload the file containing your code now. Once you've done that, I'll be able to analyze it and search for ways to improve it."
+
+Expected: The user will upload the file or provide the code, and I will be able to see it in the next turn.
+
+Resuming…
+🔊 Repeat
+🤔 Autopilot needs your input
+I don't see the code yet. Could you please paste the code directly here in the chat? That way I can study it and help you improve it!
+I've pasted the code belowI'll provide a link to the code
+I've pasted the code below
+Send
+🤔 Autopilot needs your input
+I'm ready! Please paste the code you'd like me to analyze directly into the chat. Once you do, I'll study it and search for ways to improve it.
+I'll paste it now
+I'll paste it now
+Send
+🤔 Autopilot needs your input
+I'm still waiting for the code! Please paste it here in the chat so I can study it and help you improve it.
+I'll paste the code now
+Or type a custom answer…
+Send
+📎
+popup (6).js
+×
+📎
+popup (8).html
+×
+📎
+popup (7).css
+×
+📎
+content (8).js
+×
+📎
+background (14).js
+×
+📎
+ai-chat (42).js
+×
+📎
+popup (6).js
+×
+📎
+popup (8).html
+×
+📎
+popup (7).css
+×
+📎
+content (8).js
+×
+📎
+background (14).js
+×
+📎
+ai-chat (42).js
+×
+📎
+popup (6).js
+×
+📎
+popup (8).html
+×
+📎
+popup (7).css
+×
+📎
+background (14).js
+×
+📎
+ai-chat (42).js
+×
+
+🔍
+Vision
+
+✨
+Image
+
+🎵
+Music
+
+🎬
+Video
+
+🎙️
+Broadcast
+
+
+Autopilot
+✦ Custom Prompts
+Clear
+hello how are you  I want you to go to to   I want you to look into the code I'm going to upload with you  and I want to study it and then I want you to search the web and see  if my code is correct or not and what I should do to make the code better  regarding the agent please upload the file containing your code now once you've done that
+
+Send
