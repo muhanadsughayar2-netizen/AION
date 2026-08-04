@@ -1,0 +1,109 @@
+Manual — NotebookLM Open ↗ 1 Click "Add source" The dialog should open. If it opens → button click working in Shadow DOM click: "Add source" 2 Click "Website" inside the dialog Should open a URL input field without looping click: "Website" 3 Type a URL and submit Paste any URL → text appears in the input field type: "https://example.com" 4 Ask a question in chat Type in the chat box and submit with Enter — answer should generate type: "Summarise this source", params.run: true
+📓
+Hey! I'm excited to help you create something great 🎉
+I'll use Google NotebookLM to turn your source material into polished, ready-to-use content — and it's completely free.
+Here's everything I can build for you:
+📊 Slide Deck — Detailed or Presenter slides
+🎙️ Audio Overview — AI podcast, Deep Dive or Brief
+🎬 Video Overview — Whiteboard explainer
+🧠 Mind Map — visual idea connections
+📝 Report — Roadmap, Primer, or custom
+💡 Infographic — Kawaii / Clay / Sketch style
+🃏 Flashcards — adjustable difficulty
+❓ Quiz — test your knowledge
+📋 Data Table — structured comparisons
+What would you like me to create? Pick one or more below 👇
+📓 What would you like me to create?
+Select one or more outputs — I'll build them all in one go.
+
+📊
+Slide Deck
+Detailed or Presenter slides
+
+🎙️
+Audio Overview
+Deep Dive / Brief / Critique / Debate podcast
+
+🎬
+Video Overview
+Whiteboard or visual explainer
+
+🧠
+Mind Map
+Visual connections between ideas
+
+📝
+Report
+Roadmap, Primer, or custom report
+
+💡
+Infographic
+Kawaii / Clay / Sketch / Anime style
+
+🃏
+Flashcards
+Study cards with adjustable difficulty
+
+❓
+Quiz
+Test questions from your sources
+
+📋
+Data Table
+Structured data or comparisons
+Add instructions or a description (optional)
+document about dr willaim lee go to his famous videos and make a summery of his theorys of food 
+✓ Building: Slide Deck
+✅ Great choices! I'll create: Slide Deck
+Now — do you have source material for me to work from? You can paste website links, a Google Doc URL, or describe a topic and I'll search for sources.
+Paste URLs (one per line), describe a topic, or leave blank and I'll find sources…
+✓ Use these sources & build
+🔍 Find sources yourself
+📁 I'll add them in NotebookLM
+1.
+📋 Plan: 1. Search for Dr. William Li's food theory URLs and videos 2. Navigate to NotebookLM and add the discovered URLs as sources 3. Open the Notebook Guide and select the Slide Deck output type 4. Input the summary instructions and generate the Slide Deck 5. Verify the Slide Deck content matches the requested focus
+2.
+📋 Plan: Search for Dr. William Li's food theory content and generate a Slide Deck in NotebookLM summarizing his theories.: 1. Search for Dr. William Li's food theory URLs and famous videos 2. Navigate to NotebookLM (https://notebooklm.google.com/) 3. Create a new notebook or open an existing one 4. Add the discovered URLs as sources in NotebookLM 5. Open the Notebook Guide and select the 'Slide Deck' output type 6. Input the summary instructions: 'document about dr willaim lee go to his famous videos and make a summery of his theorys of food' and generate the Slide Deck 7. Verify the Slide Deck content matches the requested focus and finish
+3.
+navigate: https://www.google.com/search?q=Dr.+William+Li+food+theory+famous+videos+and+articles
+4.
+navigate: https://notebooklm.google.com/
+5.
+click
+⚠ Element "?" not found via DOM, Accessibility tree, DOM search, or vision fallback — trying differently…
+6.
+snapshotPage
+7.
+click: "Create new notebook"
+⚠ Element not found. Tried: exact text: "Create new notebook", partial text: "Create new notebook", xpath + shadow search. Try describing the button text exactly. — trying differently…
+8.
+waitForElement: "Add source"
+9.
+click: "Websites"
+⚠ Element not found. Tried: exact text: "Websites", partial text: "Websites", xpath + shadow search. Try describing the button text exactly. — trying differently…
+10.
+snapshotPage
+11.
+type: "https://drwilliamli.com https://www.youtube.com/watch?v=OjkzfeJz66o https://www.youtube.com/watch?v=XvD6K_L9p_M"
+⚠ No focused element found after typing — document.body has focus. The textarea or input was never activated. Click it first. — trying differently…
+12.
+click: "Add sources"
+⚠ Element not found. Tried: exact text: "Add sources", partial text: "Add sources", xpath + shadow search. Try describing the button text exactly. — trying differently…
+13.
+snapshotPage
+14.
+click: "Websites"
+⚠ Element not found. Tried: exact text: "Websites", partial text: "Websites", xpath + shadow search. Try describing the button text exactly. — trying differently…
+15.
+click: "Enter URLs"
+⚠ Element not found. Tried: exact text: "Enter URLs", partial text: "Enter URLs", xpath + shadow search. Try describing the button text exactly. — trying differently…
+16.
+type: "https://www.youtube.com/watch?v=OjkzfeJz66o https://www.youtube.com/watch?v=XvD6K_L9p_M"
+⚠ No focused element found after typing — document.body has focus. The textarea or input was never activated. Click it first. — trying differently…
+17.
+click: "Slide Deck"
+⚠ Element not found. Tried: exact text: "Slide Deck", partial text: "Slide Deck", xpath + shadow search. Try describing the button text exactly. — trying differently…
+18.
+type: "document about dr willaim lee go to his famous videos and make a summery of his theorys of food"
+⚠ No focused element found after typing — document.body has focus. The textarea or input was never activated. Click it first. — trying differently…
+⚠️Stuck after 5 failed steps in a row. Try using highlightElement to confirm the target, coordinate-based click, or a different selector strategy.

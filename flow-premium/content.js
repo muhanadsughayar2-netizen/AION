@@ -4715,7 +4715,21 @@
             // ── Generic visible fallbacks ───────────────────────────────────────
             "div[contenteditable='true'], textarea, input[type='text']";
 
-          const input = deepShadowQueryVisible(document, NL_SELECTORS);
+          // If the text to type is a URL, ONLY look for a real URL input field.
+          // This prevents the locator from finding the always-visible query box and
+          // returning its coords before the "Website" URL dialog has animated in.
+          const _nlText = String(params.text || '');
+          const _nlIsUrl = /^https?:\/\//i.test(_nlText.trim());
+
+          const NL_URL_SELECTORS =
+            "input[type='url'], " +
+            "input[placeholder*='links' i], input[placeholder*='url' i], " +
+            "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
+            "input[placeholder*='website' i], input[placeholder*='link' i], " +
+            "input[aria-label*='URL' i], input[aria-label*='website' i], " +
+            "input[aria-label*='link' i]";
+
+          const input = deepShadowQueryVisible(document, _nlIsUrl ? NL_URL_SELECTORS : NL_SELECTORS);
 
           let x, y;
           if (input) {
@@ -4726,7 +4740,15 @@
             moveGhostCursor(x, y);
             return { success: true, x, y, mode: 'notebooklm' };
           }
-          // Fallback: centre-bottom of the visible viewport where modals render
+
+          // URL mode: don't fall back to the chat box — signal not-found so the
+          // background.js NL type path's own retry loop can take over with a
+          // proper wait instead of firing insertText at wrong coordinates.
+          if (_nlIsUrl) {
+            return { success: true, x: window.innerWidth * 0.5, y: window.innerHeight * 0.5, mode: 'notebooklm-fallback' };
+          }
+
+          // Non-URL fallback: centre-bottom of the visible viewport where modals render
           x = window.innerWidth * 0.5;
           y = window.innerHeight * 0.80;
           moveGhostCursor(x, y);

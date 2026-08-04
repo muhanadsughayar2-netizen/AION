@@ -1999,7 +1999,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               //    shadow DOM inputs — el.focus() alone is insufficient.
               const nlFocus = await chrome.scripting.executeScript({
                 target: { tabId },
-                func: async () => {
+                func: async (textToType) => {
                   // Visibility-aware deep shadow query
                   function dSQV(root, sel) {
                     if (!root) return null;
@@ -2015,7 +2015,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     }
                     return null;
                   }
-                  const NL =
+                  // Detect if text being typed is a URL — if so, wait exclusively for
+                  // a URL input element. This prevents the retry loop from finding the
+                  // always-visible query box and typing the URL into the chat instead.
+                  const _textToType = textToType;
+                  const _looksLikeUrl = /^https?:\/\//i.test(_textToType.trim());
+
+                  const NL_URL_ONLY =
+                    "input[type='url'], " +
+                    "input[placeholder*='links' i], input[placeholder*='url' i], " +
+                    "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
+                    "input[placeholder*='website' i], input[placeholder*='link' i], " +
+                    "input[aria-label*='URL' i], input[aria-label*='website' i], " +
+                    "input[aria-label*='link' i]";
+
+                  const NL_FULL =
                     "[aria-label='Query box'], [aria-label='query box'], " +
                     "div[contenteditable='true'][aria-label*='query' i], " +
                     "input[type='url'], " +
@@ -2035,8 +2049,36 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     "textarea[aria-label='Text area for custom topic'], " +
                     "[aria-label*='Describe' i][aria-label*='create' i], " +
                     "textarea[placeholder*='links' i], div[contenteditable='true'], textarea, input[type='text']";
-                  // Retry loop: wait up to 600ms for URL dialog to animate in
-                  for (let attempt = 0; attempt < 4; attempt++) {
+
+                  // Phase 1 — URL mode: wait up to 1800ms for the URL input dialog.
+                  // NotebookLM dialogs animate in over ~800-1200ms after "Website" click.
+                  if (_looksLikeUrl) {
+                    for (let attempt = 0; attempt < 12; attempt++) {
+                      const el = dSQV(document, NL_URL_ONLY);
+                      if (el) {
+                        el.focus();
+                        const r = el.getBoundingClientRect();
+                        return {
+                          found: true, urlInput: true,
+                          tag: el.tagName,
+                          ph: el.placeholder || '',
+                          al: el.getAttribute('aria-label') || '',
+                          isContentEditable: false,
+                          cx: r.left + r.width * 0.5,
+                          cy: r.top  + r.height * 0.5
+                        };
+                      }
+                      await new Promise(r => setTimeout(r, 150));
+                    }
+                    // URL input dialog never appeared — signal clearly so background.js
+                    // can return a helpful error instead of typing into the query box.
+                    return { found: false, urlDialogMissing: true };
+                  }
+
+                  // Phase 2 — non-URL text (query, Studio instructions, etc.):
+                  // use the full selector list and wait up to 1800ms.
+                  const NL = NL_FULL;
+                  for (let attempt = 0; attempt < 12; attempt++) {
                     const el = dSQV(document, NL);
                     if (el) {
                       el.focus();
@@ -2054,10 +2096,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     await new Promise(r => setTimeout(r, 150));
                   }
                   return { found: false };
-                }
+                },
+                args: [text]
               }).catch(() => [{ result: { found: false } }]);
 
               const nlRes = nlFocus?.[0]?.result;
+
+              // If we were typing a URL but the URL input dialog never appeared,
+              // stop now with a clear error — don't fire into the chat query box.
+              if (nlRes?.urlDialogMissing) {
+                sendResponse({ success: false, error: 'URL input dialog not found after 1800ms. Click "Website" (singular) inside the "Add sources" dialog first to open the URL input, then call type again.' });
+                return;
+              }
 
               // Always fire a mousedown at the element's exact center to transfer
               // OS keyboard focus. el.focus() alone does NOT move OS focus for
