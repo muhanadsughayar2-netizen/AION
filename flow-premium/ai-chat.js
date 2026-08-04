@@ -11772,6 +11772,27 @@ function getDynamicSkill(url) {
 
 const AGENT_SYSTEM_PROMPT = `You are an in-browser automation agent controlling the user's ACTIVE browser tab, one small step at a time.
 
+### 🤝 GOLDEN RULE — ALWAYS TALK TO THE USER WHEN STUCK
+You are never alone. The user is watching and can help you instantly. Follow this rule without exception:
+
+  1. Try an action once. If it fails, try ONE alternative (different coordinates, different label, coordinate click).
+  2. If BOTH attempts fail → STOP immediately. Do NOT try a 3rd time on your own.
+  3. Call agentSpeak() FIRST with a warm, natural explanation:
+     e.g. "Hey, I'm having trouble clicking that button — can you give me a hand?"
+     e.g. "I can see the button but I can't quite reach it — could you click it for me?"
+     e.g. "This page isn't responding to me — would you mind doing this step yourself?"
+  4. Then call requestUserIntervention() with SIMPLE, PLAIN instructions:
+     - Tell them EXACTLY what to click, type, or do — as if speaking to a friend
+     - Never use technical jargon ("shadow DOM", "AX tree", "element not found")
+     - Example: "Please click the blue 'Slide Deck' button on the right panel, then click Continue."
+     - Example: "Could you add your source by clicking 'Add sources' → 'Upload'? Let me know when it's ready!"
+  5. After the user confirms, resume the task immediately.
+
+  ❌ NEVER: show the user raw error messages, "element not found", "DOM search failed", or any technical failure text
+  ❌ NEVER: retry the same failing action more than twice without asking the user
+  ✅ ALWAYS: treat the user as your partner — they can do things you can't, and that's perfectly fine
+  ✅ ALWAYS: speak warm and friendly, like asking a colleague for help — never clinical or apologetic
+
 ### CRITICAL OPERATING PROCEDURES — READ FIRST, ALWAYS:
 1. **STAY ON TASK TAB.** Do NOT navigate away from the tab you started on unless the user explicitly says to switchTab. If you find yourself on a New Tab or wrong page, call navigate() back to the original URL immediately.
 
@@ -11846,6 +11867,9 @@ let _autopilotOriginalBounds = null;
 // Holds a mid-run redirect message typed by the user in the mini-mode strip.
 // Cleared after it is injected into the agent loop's conversation history.
 let agentPendingRedirect = null;
+// The user's first name, loaded once per task run and used by the agent to
+// personalise every spoken message and intervention card.
+let _agentUserName = '';
 
 async function enterAutopilotMiniMode() {
   if (_autopilotMiniActive) return;
@@ -12213,26 +12237,39 @@ async function smartWaitAfterAction(tabId, actionName) {
 // ============================================================================
 function awaitUserInterventionClean(thread, verbalRequest, expectedOutcome, abortSignal) {
   return new Promise((resolve, reject) => {
+    // Always speak the request aloud so the user hears it even in mini-mode
+    agentSpeak(verbalRequest);
+    // Expand from mini-mode so the user can see the card and interact with it
+    exitAutopilotMiniMode().catch(() => {});
+
     const card = document.createElement('div');
     card.className = 'chat-bubble ai';
     card.style.cssText = [
-      'background:rgba(45,212,191,0.05)',
-      'border:1px solid rgba(45,212,191,0.2)',
-      'padding:12px 14px',
-      'border-radius:12px',
-      'margin:6px 0',
-      'max-width:95%'
+      'background:linear-gradient(135deg,rgba(251,191,36,0.08),rgba(245,158,11,0.05))',
+      'border:1px solid rgba(251,191,36,0.35)',
+      'padding:14px 16px',
+      'border-radius:14px',
+      'margin:8px 0',
+      'max-width:98%'
     ].join(';');
 
+    // Strip any technical jargon from the message before showing it
+    const cleanMsg = verbalRequest
+      .replace(/\b(shadow DOM|AX tree|DOM search|accessibility tree|xpath|CSS selector|aria-label|element not found)\b/gi, '')
+      .replace(/\s{2,}/g, ' ').trim();
+
+    const _namePrefix = _agentUserName ? `${_agentUserName}, ` : '';
+    const _nameSuffix = _agentUserName ? ` — thanks ${_agentUserName}! 🙏` : ' 🙏';
     card.innerHTML = `
-      <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#2dd4bf;margin-bottom:6px;font-size:13px;">
-        🤝 Co-Pilot Assist
+      <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#fbbf24;margin-bottom:8px;font-size:13.5px;">
+        🙋 Hey${_agentUserName ? ' ' + _agentUserName : ''}! I need your help for a second
       </div>
-      <p style="font-size:12.5px;line-height:1.5;margin:0 0 10px;color:#e2e8f0">"${verbalRequest}"</p>
-      ${expectedOutcome ? `<p style="font-size:11px;color:rgba(45,212,191,0.65);margin:0 0 10px">Expected: ${expectedOutcome}</p>` : ''}
-      <div style="display:flex;gap:6px;">
-        <button class="intv-done-btn" style="padding:6px 14px;background:#2dd4bf;color:#0f172a;border:none;border-radius:8px;font-weight:700;font-size:11.5px;cursor:pointer;">I've done it</button>
-        <button class="intv-speak-btn" style="padding:6px 10px;background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:11.5px;cursor:pointer;">🔊 Repeat</button>
+      <p style="font-size:13px;line-height:1.6;margin:0 0 12px;color:#f1f5f9">${cleanMsg}</p>
+      ${expectedOutcome ? `<p style="font-size:11.5px;color:rgba(251,191,36,0.7);margin:0 0 12px;line-height:1.5">✅ Once you've done it: ${expectedOutcome}</p>` : ''}
+      <p style="font-size:12px;color:rgba(251,191,36,0.55);margin:0 0 12px">Just click the button below when you're ready and I'll jump straight back in${_nameSuffix}</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="intv-done-btn" style="flex:1;padding:10px 16px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;min-width:140px;">✓ Done! Keep going →</button>
+        <button class="intv-speak-btn" style="padding:10px 12px;background:rgba(251,191,36,0.10);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);border-radius:10px;font-size:12px;cursor:pointer;">🔊 Hear again</button>
       </div>`;
 
     thread.appendChild(card);
@@ -12866,6 +12903,8 @@ async function runAgentTask(prompt, thread) {
   // Clear any stale stop signal from a previous run (e.g. hotkey pressed during
   // a run that already ended, or popup reload while agent was mid-task).
   await chrome.storage.session.remove('agentStopRequested').catch(() => {});
+  // Load the user's name once per run so every agentSpeak / card can personalise
+  _agentUserName = (await chrome.storage.local.get(['aionUserName']).catch(() => ({}))).aionUserName || '';
   resetAgentStepLog();
   const stopBtn = document.createElement('button');
   stopBtn.textContent = '■ Stop Autopilot';
@@ -13112,7 +13151,7 @@ async function runAgentTask(prompt, thread) {
     try {
       const requestContents = await buildRequestContentsWithScreenshot(contents, tab);
       const geminiBody = JSON.stringify({
-        systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT + getDynamicSkill(tab.url) + _buildAgentStateContext(agentState) }] },
+        systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT + (_agentUserName ? `\n\n### USER'S NAME\nThe user's name is "${_agentUserName}". Use it naturally in every agentSpeak() call — greet them by name, thank them by name, celebrate with them by name. Make every message feel personal and warm, like talking to a close friend.` : '') + getDynamicSkill(tab.url) + _buildAgentStateContext(agentState) }] },
         contents: requestContents,
         tools: AGENT_TOOLS,
         generationConfig: { temperature: 0.2 }
