@@ -4757,27 +4757,20 @@
         }
 
         // ── CHATGPT ──────────────────────────────────────────────────────────
+        // ── CHATGPT ───────────────────────────────────────────────────────────
         if (host.includes('chatgpt.com') || host.includes('chat.openai.com')) {
           const input = findVisible([
             '#prompt-textarea',
-            'textarea[data-id="root"]',
             'div[contenteditable="true"][aria-label]',
+            'textarea[data-id="root"]',
             'div[contenteditable="true"]',
             'textarea[placeholder]',
             'textarea',
           ]);
-          let x, y;
-          if (input) {
-            const r = input.getBoundingClientRect();
-            x = r.left + r.width * 0.5;
-            y = r.top  + r.height * 0.5;
-            highlightElement(input);
-          } else {
-            x = window.innerWidth * 0.5;
-            y = window.innerHeight * 0.88;
-          }
+          let x = window.innerWidth * 0.5, y = window.innerHeight * 0.88;
+          if (input) { const r = input.getBoundingClientRect(); x = r.left + r.width * 0.5; y = r.top + r.height * 0.5; highlightElement(input); }
           moveGhostCursor(x, y);
-          return { success: true, x, y, mode: 'aistudio' };
+          return { success: true, x, y, mode: 'chatgpt' };
         }
 
         // ── CLAUDE ───────────────────────────────────────────────────────────
@@ -4788,40 +4781,24 @@
             'div[contenteditable="true"]',
             'textarea',
           ]);
-          let x, y;
-          if (input) {
-            const r = input.getBoundingClientRect();
-            x = r.left + r.width * 0.5;
-            y = r.top  + r.height * 0.5;
-            highlightElement(input);
-          } else {
-            x = window.innerWidth * 0.5;
-            y = window.innerHeight * 0.88;
-          }
+          let x = window.innerWidth * 0.5, y = window.innerHeight * 0.88;
+          if (input) { const r = input.getBoundingClientRect(); x = r.left + r.width * 0.5; y = r.top + r.height * 0.5; highlightElement(input); }
           moveGhostCursor(x, y);
-          return { success: true, x, y, mode: 'aistudio' };
+          return { success: true, x, y, mode: 'claude' };
         }
 
         // ── GROK ─────────────────────────────────────────────────────────────
-        if (host.includes('grok.com')) {
+        if (host.includes('grok.com') || host.includes('grok.x.ai')) {
           const input = findVisible([
             'textarea[aria-label]',
             'div[contenteditable="true"]',
             'textarea[placeholder]',
             'textarea',
           ]);
-          let x, y;
-          if (input) {
-            const r = input.getBoundingClientRect();
-            x = r.left + r.width * 0.5;
-            y = r.top  + r.height * 0.5;
-            highlightElement(input);
-          } else {
-            x = window.innerWidth * 0.5;
-            y = window.innerHeight * 0.88;
-          }
+          let x = window.innerWidth * 0.5, y = window.innerHeight * 0.88;
+          if (input) { const r = input.getBoundingClientRect(); x = r.left + r.width * 0.5; y = r.top + r.height * 0.5; highlightElement(input); }
           moveGhostCursor(x, y);
-          return { success: true, x, y, mode: 'aistudio' };
+          return { success: true, x, y, mode: 'grok' };
         }
 
         // ── PERPLEXITY ───────────────────────────────────────────────────────
@@ -4831,18 +4808,10 @@
             'div[contenteditable="true"]',
             'textarea',
           ]);
-          let x, y;
-          if (input) {
-            const r = input.getBoundingClientRect();
-            x = r.left + r.width * 0.5;
-            y = r.top  + r.height * 0.5;
-            highlightElement(input);
-          } else {
-            x = window.innerWidth * 0.5;
-            y = window.innerHeight * 0.88;
-          }
+          let x = window.innerWidth * 0.5, y = window.innerHeight * 0.88;
+          if (input) { const r = input.getBoundingClientRect(); x = r.left + r.width * 0.5; y = r.top + r.height * 0.5; highlightElement(input); }
           moveGhostCursor(x, y);
-          return { success: true, x, y, mode: 'aistudio' };
+          return { success: true, x, y, mode: 'perplexity' };
         }
 
         // ── MICROSOFT COPILOT / BING ──────────────────────────────────────────
@@ -4854,18 +4823,10 @@
             'textarea[placeholder]',
             'textarea',
           ]);
-          let x, y;
-          if (input) {
-            const r = input.getBoundingClientRect();
-            x = r.left + r.width * 0.5;
-            y = r.top  + r.height * 0.5;
-            highlightElement(input);
-          } else {
-            x = window.innerWidth * 0.5;
-            y = window.innerHeight * 0.88;
-          }
+          let x = window.innerWidth * 0.5, y = window.innerHeight * 0.88;
+          if (input) { const r = input.getBoundingClientRect(); x = r.left + r.width * 0.5; y = r.top + r.height * 0.5; highlightElement(input); }
           moveGhostCursor(x, y);
-          return { success: true, x, y, mode: 'aistudio' };
+          return { success: true, x, y, mode: 'copilot' };
         }
 
         // ── GOOGLE DOCS (canvas tiles) ───────────────────────────────────────
@@ -4887,6 +4848,16 @@
           }
           moveGhostCursor(x, y);
           return { success: true, x, y, mode: 'docs' };
+        }
+
+        // ── GOOGLE SLIDES ─────────────────────────────────────────────────────
+        // Slides renders text boxes on a WebGL/canvas layer — there are no DOM
+        // input nodes to read or focus. Return mode:'slides' so background.js
+        // knows to attempt CDP insertText once, verify it landed, and return a
+        // clear CANVAS_TYPING_LIMITATION error (instead of silently failing)
+        // if the text didn't appear. This stops the agent from looping.
+        if (location.hostname.includes('docs.google.com') && location.pathname.includes('/presentation/')) {
+          return { success: true, x: window.innerWidth * 0.5, y: window.innerHeight * 0.45, mode: 'slides' };
         }
 
         // ── UNKNOWN CANVAS APP — safe centre-of-screen fallback ──────────────

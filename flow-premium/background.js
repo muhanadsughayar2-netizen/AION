@@ -1551,6 +1551,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const isExcel   = (mode === 'excel');
             const isAiStudio = (mode === 'aistudio');
             const isGemini   = (mode === 'gemini');
+            // Per-chatbot modes — each gets dedicated focus selectors + React event
+            // firing so framework-managed inputs (ChatGPT React, Claude ProseMirror,
+            // Grok, Perplexity) all receive trusted text and enable their send buttons.
+            const isChatbot  = ['chatgpt','claude','grok','perplexity','copilot'].includes(mode);
+
+            // Selector lists per chatbot — tried in priority order, first visible wins
+            const CHATBOT_SELECTORS = {
+              chatgpt:    ['#prompt-textarea', 'div[contenteditable="true"][aria-label]', 'div[contenteditable="true"]', 'textarea'],
+              claude:     ['div.ProseMirror[contenteditable="true"]', 'div[contenteditable="true"][role="textbox"]', 'div[contenteditable="true"]', 'textarea'],
+              grok:       ['textarea[aria-label]', 'div[contenteditable="true"]', 'textarea[placeholder]', 'textarea'],
+              perplexity: ['textarea[placeholder]', 'div[contenteditable="true"]', 'textarea'],
+              copilot:    ['textarea[id*="search"]', 'div[contenteditable="true"]', '#searchbox', 'textarea[placeholder]', 'textarea'],
+            };
+            // Google Slides uses a WebGL canvas renderer for text boxes.
+            // CDP Input.insertText sometimes works when a text box is focused,
+            // but there is no DOM field to verify against — we attempt once and
+            // check via AX tree whether any text appeared. If not, we return a
+            // CANVAS_TYPING_LIMITATION error so the agent stops and asks for
+            // human help instead of retrying in a loop.
+            const isSlides  = (mode === 'slides') ||
+              (tabHostname.includes('docs.google.com') && tabPath.includes('/presentation/'));
 
             // clearFirst: select all + delete before typing, so existing field
             // content is replaced instead of appended.
@@ -1578,7 +1599,106 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               }
             };
 
-            if (isGemini) {
+            if (isChatbot) {
+              // ── ALL CHATBOTS (ChatGPT, Claude, Grok, Perplexity, Copilot) ─────
+              // Each bot has a direct DOM input (no Shadow DOM) so we use plain
+              // querySelector focus rather than shadow-piercing executeScript.
+              // Critical fix for ChatGPT: Input.insertText alone doesn't notify
+              // React's synthetic event system — the send button stays disabled.
+              // After insertion we fire a native InputEvent so React sees the change.
+              const cbSels = CHATBOT_SELECTORS[mode] || ['div[contenteditable="true"]', 'textarea'];
+
+              // Step 1: focus the input element via executeScript
+              const cbFocusRes = await chrome.scripting.executeScript({
+                target: { tabId },
+                func: (sels) => {
+                  for (const sel of sels) {
+                    const el = document.querySelector(sel);
+                    if (el) {
+                      el.focus();
+                      const r = el.getBoundingClientRect();
+                      return { found: true, tag: el.tagName, x: r.left + r.width / 2, y: r.top + r.height / 2 };
+                    }
+                  }
+                  return { found: false };
+                },
+                args: [cbSels]
+              }).catch(() => [{ result: { found: false } }]);
+
+              const cbFocus = cbFocusRes?.[0]?.result;
+              if (!cbFocus?.found) {
+                // Fallback: coordinate click to give the input OS focus
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+              }
+              await new Promise(r => setTimeout(r, 150));
+
+              // Step 2: clear existing content if requested
+              if (params.clearFirst) {
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+                await new Promise(r => setTimeout(r, 80));
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
+                await new Promise(r => setTimeout(r, 80));
+              }
+
+              // Step 3: insert text via trusted CDP event
+              await send('Input.insertText', { text });
+
+              // Step 4: fire framework synthetic events so React/Vue/Angular see the change.
+              // Without this ChatGPT's send button stays disabled after insertText.
+              await chrome.scripting.executeScript({
+                target: { tabId },
+                func: (sels) => {
+                  for (const sel of sels) {
+                    const el = document.querySelector(sel);
+                    if (el) {
+                      el.dispatchEvent(new InputEvent('input',  { bubbles: true, cancelable: true }));
+                      el.dispatchEvent(new Event('change', { bubbles: true }));
+                      return true;
+                    }
+                  }
+                  return false;
+                },
+                args: [cbSels]
+              }).catch(() => {});
+
+              // Step 5: verify text appeared; auto-retry once via coordinate click
+              const cbSample = text.slice(0, 20);
+              if (cbSample && !(await verifyTextInPage(tabId, cbSample))) {
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await new Promise(r => setTimeout(r, 250));
+                await send('Input.insertText', { text });
+                await chrome.scripting.executeScript({
+                  target: { tabId },
+                  func: (sels) => {
+                    for (const sel of sels) {
+                      const el = document.querySelector(sel);
+                      if (el) { el.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true })); return true; }
+                    }
+                    return false;
+                  },
+                  args: [cbSels]
+                }).catch(() => {});
+                if (!(await verifyTextInPage(tabId, cbSample))) {
+                  sendResponse({ success: false, error: `Text did not appear in ${mode} input after two attempts. Try clicking the input box first, then type.` });
+                  return;
+                }
+              }
+
+              // Step 6: submit if requested — Enter key works on all these bots.
+              // ChatGPT, Claude, Grok, Perplexity all send on Enter (not Ctrl+Enter).
+              if (params.run) {
+                await new Promise(r => setTimeout(r, 150));
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+              }
+
+              sendResponse({ success: true, data: `Typed into ${mode} (${cbFocus?.found ? 'DOM focus' : 'coordinate fallback'})${params.run ? ' + submitted' : ''}` });
+
+            } else if (isGemini) {
               // ── GEMINI CHAT (gemini.google.com) ───────────────────────────────
               // Gemini's prompt box is a <rich-textarea> custom element whose
               // inner .ql-editor / contenteditable lives inside a Shadow Root.
@@ -1870,6 +1990,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     "input[placeholder*='links' i], input[placeholder*='url' i], " +
                     "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
                     "input[aria-label*='URL' i], input[aria-label*='website' i], " +
+                    "input[aria-label*='link' i], " +
                     "textarea[aria-label='Input to describe the kind of report to create'], " +
                     "[aria-label='Describe the data table you want to create'], " +
                     "[aria-label='Describe the infographic you want to create'], " +
@@ -1892,15 +2013,82 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               await new Promise(r => setTimeout(r, 150)); // let Shadow DOM focus settle
               if (nlRes?.found) {
                 await send('Input.insertText', { text });
-                sendResponse({ success: true, data: `NotebookLM ${nlRes.tag} "${nlRes.al || nlRes.ph}"` });
               } else {
                 // No input found yet — coordinate click then insertText as fallback
                 await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
                 await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
                 await new Promise(r => setTimeout(r, 200));
                 await send('Input.insertText', { text });
-                sendResponse({ success: true, data: 'NotebookLM coordinate fallback' });
               }
+
+              // Verify text actually landed — NotebookLM's Shadow DOM focus can
+              // silently fail if a modal just opened and focus hasn't settled yet.
+              const nlSample = text.slice(0, 20);
+              if (nlSample && !(await verifyTextInPage(tabId, nlSample))) {
+                // Retry: coordinate click to force focus then re-insert
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await new Promise(r => setTimeout(r, 300));
+                await send('Input.insertText', { text });
+                if (!(await verifyTextInPage(tabId, nlSample))) {
+                  sendResponse({ success: false, error: 'Text did not appear in NotebookLM input after two attempts. The target input may not be open yet — try clicking the button that opens it first.' });
+                  return;
+                }
+              }
+
+              // Submit if requested: Enter sends the query in the chat box;
+              // for Studio modal textareas use params.run to also click Generate.
+              if (params.run) {
+                await new Promise(r => setTimeout(r, 150));
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+              }
+
+              sendResponse({ success: true, data: `NotebookLM ${nlRes?.found ? `${nlRes.tag} "${nlRes.al || nlRes.ph}"` : 'coordinate fallback'}${params.run ? ' + submitted' : ''}` });
+
+            } else if (isSlides) {
+              // ── GOOGLE SLIDES (canvas typing stop condition) ──────────────────
+              // Slides renders text boxes via a WebGL/SVG layer. CDP Input.insertText
+              // sometimes lands when a text box is properly focused after a click,
+              // but often silently misses because the canvas renderer never routes
+              // keyboard events through the DOM. Strategy:
+              //   1. Click the coord to give the canvas text layer OS focus
+              //   2. Attempt Input.insertText once
+              //   3. Wait 500ms and query the AX tree for the typed text
+              //   4. If found → success; if not → return CANVAS_TYPING_LIMITATION
+              //      so the agent immediately calls requestUserIntervention instead
+              //      of looping through more failed type attempts.
+              await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+              await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+              await new Promise(r => setTimeout(r, 300)); // let canvas focus settle
+              await send('Input.insertText', { text });
+              await new Promise(r => setTimeout(r, 500)); // let renderer process
+
+              // Verify: ask AX tree if any node now contains our text
+              let slidesTextVerified = false;
+              try {
+                const axRes = await send('Accessibility.queryAXTree', {
+                  accessibleName: text.slice(0, 30) // check first 30 chars
+                }).catch(() => null);
+                slidesTextVerified = (axRes?.nodes?.length > 0);
+              } catch (_) {}
+
+              if (slidesTextVerified) {
+                sendResponse({ success: true, data: 'Typed into Google Slides text box (AX verified)' });
+              } else {
+                // Text did not land — the canvas renderer silently ignored it.
+                // Return a specific error so the agent stops and asks for help.
+                sendResponse({
+                  success: false,
+                  error: 'CANVAS_TYPING_LIMITATION: Google Slides uses a WebGL/canvas renderer. ' +
+                    'CDP text injection was attempted but the text did not appear in the presentation. ' +
+                    'You MUST stop retrying type() and instead: ' +
+                    '(1) call requestUserIntervention() asking the user to click the text box and type manually, OR ' +
+                    '(2) use pressKey() to send individual characters one at a time as a last resort. ' +
+                    'Do NOT call type() again — it will produce the same result.'
+                });
+              }
+              return;
 
             } else {
               // ── WORD ONLINE / other canvas apps ──────────────────────────────
@@ -2239,12 +2427,49 @@ If the element is not visible in the screenshot, return:
           // real mouse, avoids bot-detection on exact-integer centroid coordinates.
           const jx = jitter(x), jy = jitter(y);
           const base = { x: jx, y: jy, button: 'left', buttons: 1, clickCount: 1 };
+
+          // ── Pointer events (Angular/Lit/Material fix) ───────────────────────
+          // CDP Input.dispatchMouseEvent only fires mousedown/mouseup — it does
+          // NOT fire pointerdown/pointerup. Google's Angular/Lit Web Components
+          // (NotebookLM buttons, AI Studio toolbar, Google Workspace ribbon) only
+          // listen to pointer events, so the button highlights but NEVER fires.
+          // We dispatch pointerdown BEFORE mousePressed so frameworks that require
+          // the full pointer→mouse→click sequence get it in the right order.
+          // These are isTrusted:false but Angular/Lit/Material don't check trust.
+          const ptrExpr = (evtType) => `(() => {
+            const el = document.elementFromPoint(${jx}, ${jy});
+            if (!el) return false;
+            el.dispatchEvent(new PointerEvent(${JSON.stringify(evtType)}, {
+              bubbles: true, cancelable: true,
+              clientX: ${jx}, clientY: ${jy},
+              screenX: ${jx}, screenY: ${jy},
+              pointerId: 1, pointerType: 'mouse', isPrimary: true,
+              buttons: 1, button: 0
+            }));
+            return true;
+          })()`;
+
+          await cdpCmd('Runtime.evaluate', { expression: ptrExpr('pointerdown'), returnByValue: true }).catch(() => {});
           await cdpCmd('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
           // Fix 5b — Human pacing: 80–150 ms between press and release.
-          // 40–70 ms was flagged by some anti-bot systems as too fast;
-          // 80–150 ms matches the lower tail of measured human click durations.
           await new Promise(r => setTimeout(r, 80 + Math.random() * 70));
           await cdpCmd('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased' });
+          await cdpCmd('Runtime.evaluate', { expression: ptrExpr('pointerup'),   returnByValue: true }).catch(() => {});
+
+          // Synthetic click event — ensures React onClick and Angular (click)
+          // bindings fire even if they missed the pointer/mouse sequence above.
+          await cdpCmd('Runtime.evaluate', {
+            expression: `(() => {
+              const el = document.elementFromPoint(${jx}, ${jy});
+              if (!el) return false;
+              el.dispatchEvent(new MouseEvent('click', {
+                bubbles: true, cancelable: true,
+                clientX: ${jx}, clientY: ${jy}, button: 0, buttons: 0
+              }));
+              return true;
+            })()`,
+            returnByValue: true
+          }).catch(() => {});
         };
 
         try {

@@ -11749,6 +11749,7 @@ Rules:
 - CHECKING AUTH / STATE: To check if a user is logged in, find a session token, or read what a site has saved, use readStorage. Examples: readStorage({target:"cookies", key:"auth"}) to find auth cookies, readStorage({target:"local", key:"user"}) to find saved user data, readStorage({target:"all"}) to see everything. Use the key filter to avoid getting thousands of unrelated entries.
 
 - TOOL / PLATFORM LIMITATIONS: If the user asks for something a website cannot natively do, do NOT loop trying to click a button that does not exist. Immediately call askUser to explain the limitation and offer concrete alternatives. This turns a dead-end into a collaborative decision instead of a crash loop.
+- GOOGLE SLIDES TYPING: Google Slides uses a WebGL/canvas renderer for text boxes — there are no standard DOM input elements. If you receive a CANVAS_TYPING_LIMITATION error after trying to type, STOP immediately. Do NOT call type() again. Call requestUserIntervention() asking the user to click the text box and type the text manually. Clicking buttons and navigating menus in Slides works fine via normal click() — only typing into text boxes is limited.
 
 - NOTEBOOKLM ROUTING: Google NotebookLM (notebooklm.google.com) is the best tool for turning source material (links, PDFs, text) into polished outputs. When the user's request matches any trigger below, run this EXACT 3-step protocol before touching the browser:
 
@@ -13605,6 +13606,16 @@ async function runAgentTask(prompt, thread) {
         } else if (/not found|no element|couldn.t find|not visible/i.test(errMsg)) {
           selfHealingHint = 'Element not found in DOM or Accessibility tree. It may be inside a Shadow Root or hidden. Try snapshotPage() to check what is actually visible, or waitForElement() if it is still loading.';
           suggestedAction = 'snapshotPage or waitForElement then retry';
+        } else if (/canvas_typing_limitation|canvas.*typing|slides.*text.*not appear|webgl.*renderer/i.test(errMsg)) {
+          // Hard stop for canvas typing — do NOT suggest retrying type().
+          // The agent must immediately call requestUserIntervention or pressKey.
+          selfHealingHint = 'CANVAS TYPING LIMIT: Google Slides (and similar canvas/WebGL apps) cannot reliably receive CDP text injection. ' +
+            'Retrying type() will produce the same silent failure. You MUST call requestUserIntervention() right now — ' +
+            'ask the user to click the text box and type the text manually, then confirm when done. ' +
+            'As a last resort only: use pressKey() with individual character keys. Do NOT call type() again.';
+          suggestedAction = 'requestUserIntervention for manual typing';
+          // Force consecutive failure count high enough to prevent further type retries
+          consecutiveFailures = Math.max(consecutiveFailures, 4);
         } else if (/formula bar|cell did not receive|empty after/i.test(errMsg)) {
           selfHealingHint = 'Sheets/Excel cell input failed silently. The cell was likely not focused. Call goToCell() first, then type() with the cell parameter.';
           suggestedAction = 'goToCell then type';
