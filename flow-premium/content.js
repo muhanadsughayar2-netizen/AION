@@ -4079,6 +4079,74 @@
     return tag;
   }
 
+  // Fix 4 — Cross-origin iframe coordinate offset:
+  // getBoundingClientRect() returns coords relative to the *current* frame.
+  // When content.js runs inside a same-origin iframe, we walk up the frame
+  // chain adding each frameElement's offset so coordinates are always in the
+  // top-level viewport space that CDP Input.dispatchMouseEvent expects.
+  function getElementViewportOffset(el) {
+    try {
+      const r = el.getBoundingClientRect();
+      let x = r.left + r.width / 2;
+      let y = r.top + r.height / 2;
+      let win = el.ownerDocument.defaultView;
+      while (win && win !== window.top) {
+        try {
+          if (!win.frameElement) break;
+          const fr = win.frameElement.getBoundingClientRect();
+          x += fr.left;
+          y += fr.top;
+          win = win.parent;
+        } catch (_) { break; } // cross-origin security boundary — stop
+      }
+      return { x, y };
+    } catch (_) {
+      const r = el.getBoundingClientRect();
+      return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    }
+  }
+
+  // Fix 1 — Semantic DOM tree:
+  // Instead of a flat "[0] button 'Buy Now'" list (which loses context when
+  // multiple identical labels exist), produce a minimal nested HTML-like tree
+  // that preserves structural grouping. Interactive elements become self-closing
+  // leaves tagged with their idx; non-interactive containers are kept only when
+  // they wrap at least one interactive descendant.
+  const _AION_SKIP_TAGS = new Set(['script','style','svg','path','noscript','meta','head','link','br','hr','img']);
+  const _AION_WRAP_TAGS = new Set(['div','section','form','main','article','ul','ol','li','nav','header','footer','aside','table','tr','td','th','tbody','fieldset']);
+
+  function _getSemanticTree(node, depth) {
+    if (depth > 20 || !node || node.nodeType !== Node.ELEMENT_NODE) return '';
+    const tag = node.tagName.toLowerCase();
+    if (_AION_SKIP_TAGS.has(tag)) return '';
+    // Skip clearly invisible containers (not just interactive elements)
+    if (node !== document.body && node !== document.documentElement) {
+      const s = window.getComputedStyle(node);
+      if (s.display === 'none' || s.visibility === 'hidden') return '';
+    }
+    const idx = node.getAttribute('data-aion-idx');
+    if (idx !== null) {
+      // Leaf: interactive element with its assigned index
+      const label = _aionLabel(node).replace(/"/g, "'");
+      const type  = _aionType(node);
+      const dis   = node.disabled ? ' disabled' : '';
+      return `<${type} idx="${idx}"${label ? ` label="${label}"` : ''}${dis} />\n`;
+    }
+    // Recurse
+    let children = '';
+    for (const child of node.children) {
+      children += _getSemanticTree(child, depth + 1);
+    }
+    if (!children) return '';
+    const role     = node.getAttribute('role');
+    const ariaLbl  = (node.getAttribute('aria-label') || '').replace(/"/g, "'").slice(0, 30);
+    if (_AION_WRAP_TAGS.has(tag) || role) {
+      const attrs = (role ? ` role="${role}"` : '') + (ariaLbl ? ` aria-label="${ariaLbl}"` : '');
+      return `<${tag}${attrs}>\n${children}</${tag}>\n`;
+    }
+    return children;
+  }
+
   function buildElementIndex() {
     // Clear stale data-aion-idx attributes from a previous step so the CDP
     // Runtime.evaluate lookup in background.js always hits the live element.
@@ -4101,9 +4169,8 @@
     for (const el of pool) {
       if (seen.has(el) || !_aionVisible(el)) continue;
       seen.add(el);
-      const r = el.getBoundingClientRect();
-      const cx = r.left + r.width / 2;
-      const cy = r.top + r.height / 2;
+      // Fix 4: use iframe-aware offset so coords are always in top-level viewport space
+      const { x: cx, y: cy } = getElementViewportOffset(el);
       // Tag the physical element so background.js can find it via
       // Runtime.evaluate('[data-aion-idx="N"]') without a JS message round-trip.
       el.setAttribute('data-aion-idx', String(idx));
@@ -4115,7 +4182,12 @@
       idx++;
     }
 
-    return { indexText: lines.join('\n'), count: idx };
+    // Fix 1: also build a semantic nested tree so the LLM has structural context
+    // (e.g. three "Buy Now" buttons each nested under a different product card).
+    // Cap at 4000 chars to avoid flooding the context window.
+    const semanticTree = _getSemanticTree(document.body, 0).slice(0, 4000);
+
+    return { indexText: lines.join('\n'), semanticTree, count: idx };
   }
 
   function resolveByIndex(index) {
@@ -4123,8 +4195,8 @@
     if (!map) return null;
     const entry = map.get(Number(index));
     if (!entry || !_aionVisible(entry.el)) return null;
-    const r = entry.el.getBoundingClientRect();
-    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+    // Fix 4: re-compute with iframe-aware offset at resolution time
+    return getElementViewportOffset(entry.el);
   }
   // ── End Element Index ───────────────────────────────────────────────────────
 

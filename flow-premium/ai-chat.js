@@ -12020,8 +12020,10 @@ async function getActiveTabPageText(tabId) {
   // Augment with element index (run in parallel opportunity is gone since rich
   // snapshot is async, but index is fast and small so we fetch it here)
   const idxResult = await fetchElementIndex();
+  // Fix 1: prefer the semantic nested tree (preserves "Buy Now" × product card
+  // grouping) when available; fall back to the flat list for older snapshots.
   const elementIndexSection = (idxResult?.count > 0)
-    ? `INTERACTIVE ELEMENTS (reference by index for precise clicks/types):\n${idxResult.indexText}\n\n`
+    ? `INTERACTIVE ELEMENTS (reference by index for precise clicks/types):\n${idxResult.semanticTree || idxResult.indexText}\n\n`
     : '';
 
   if (rich) return (elementIndexSection + rich).slice(0, 8000);
@@ -12047,13 +12049,14 @@ async function getActiveTabPageText(tabId) {
 // Detects whether the action triggered a page navigation and waits for
 // the tab to finish loading (up to 15s) instead of guessing with a fixed delay.
 // For pure DOM changes (hover, scroll, select) just waits a short settle time.
-function smartWaitAfterAction(tabId, actionName) {
+async function smartWaitAfterAction(tabId, actionName) {
   // waitForElement and navigate manage their own timing — skip extra wait
   if (actionName === 'waitForElement' || actionName === 'navigate') {
-    return Promise.resolve();
+    return;
   }
 
-  return new Promise(resolve => {
+  // Phase 1: navigation / DOM-settle (unchanged logic)
+  await new Promise(resolve => {
     const SETTLE_MS  = 450;  // for non-navigation actions
     const NAV_MAX_MS = 15000; // max wait when a navigation fires
 
@@ -12069,7 +12072,6 @@ function smartWaitAfterAction(tabId, actionName) {
       resolve();
     };
 
-    // Watch for navigation that starts within the first 400ms of this action
     const navDeadline = Date.now() + 400;
     let navDetected = false;
 
@@ -12077,27 +12079,39 @@ function smartWaitAfterAction(tabId, actionName) {
       if (updatedTabId !== tabId) return;
       if (changeInfo.status === 'loading' && Date.now() < navDeadline) {
         navDetected = true;
-        clearTimeout(settleTimer); // cancel the short settle timer
+        clearTimeout(settleTimer);
       }
       if (changeInfo.status === 'complete' && navDetected) {
-        // Page finished loading — small extra settle for JS frameworks to render
         setTimeout(done, 300);
       }
     };
 
     chrome.tabs.onUpdated.addListener(navListener);
 
-    // Safety net: if no nav detected, resolve after SETTLE_MS;
-    // if nav detected but never completes, resolve after NAV_MAX_MS.
     settleTimer = setTimeout(() => {
       if (!navDetected) {
         done();
       } else {
-        // Navigation was detected but never completed — give up after NAV_MAX_MS
         setTimeout(done, NAV_MAX_MS - SETTLE_MS);
       }
     }, SETTLE_MS);
   });
+
+  // Fix 3 — Phase 2: network idle wait.
+  // After DOM settle, SPAs often still have in-flight XHR/fetch requests that
+  // will update content. Ask background.js (which tracks CDP Network events)
+  // to wait until no requests are active for 500 ms, capped at 3 s total.
+  try {
+    await Promise.race([
+      new Promise(resolve =>
+        chrome.runtime.sendMessage(
+          { action: 'agentWaitNetworkIdle', tabId },
+          () => { if (chrome.runtime.lastError) {} resolve(); }
+        )
+      ),
+      new Promise(r => setTimeout(r, 3000)) // hard cap so we never stall
+    ]);
+  } catch (_) {}
 }
 
 // ── requestUserIntervention helper ────────────────────────────────────────────

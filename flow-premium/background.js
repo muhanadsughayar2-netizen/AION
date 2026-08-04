@@ -124,6 +124,14 @@ class CdpSessionPool {
           // already attached by another path — reuse
         }
         s.attached = true;
+        // Fix 5a — Stealth: hide navigator.webdriver before any page JS runs.
+        // Advanced bot-detection (Cloudflare, Akamai) checks this flag when the
+        // CDP debugger is attached; overriding it keeps the session undetected.
+        chrome.debugger.sendCommand({ tabId }, 'Page.addScriptToEvaluateOnNewDocument', {
+          source: `Object.defineProperty(navigator, 'webdriver', { get: () => undefined });`
+        }).catch(() => {}); // non-fatal — some restricted pages disallow this
+        // Fix 3: enable Network domain so _netReqs tracking receives events
+        chrome.debugger.sendCommand({ tabId }, 'Network.enable', {}).catch(() => {});
       }
       s.refCount++;
 
@@ -164,7 +172,40 @@ const cdpPool = new CdpSessionPool();
 // so any future CDP command can route to the correct child target.
 const subSessions = new Map(); // sessionId → { targetId, url, attachedAt }
 
+// ── Fix 3: Network idle tracking ──────────────────────────────────────────
+// CDP Network events tell us exactly how many requests are in-flight for a tab.
+// waitForNetworkIdle() polls this counter so the agent only screenshots/reads
+// the page after SPAs have finished their async data fetches.
+const _netReqs = new Map(); // tabId → in-flight request count
+
+async function waitForNetworkIdle(tabId, timeout = 4000) {
+  const deadline = Date.now() + timeout;
+  const IDLE_WINDOW = 500; // ms with zero requests to declare idle
+  let idleSince = null;
+  while (Date.now() < deadline) {
+    const count = _netReqs.get(tabId) || 0;
+    if (count === 0) {
+      if (!idleSince) idleSince = Date.now();
+      if (Date.now() - idleSince >= IDLE_WINDOW) return; // sustained idle
+    } else {
+      idleSince = null; // requests still flying
+    }
+    await new Promise(r => setTimeout(r, 100));
+  }
+  // Timeout — return anyway so we don't block forever
+}
+
 chrome.debugger.onEvent.addListener((source, eventName, eventParams) => {
+  // Fix 3: track in-flight network requests per tab for waitForNetworkIdle
+  const tabId = source.tabId;
+  if (tabId) {
+    if (eventName === 'Network.requestWillBeSent') {
+      _netReqs.set(tabId, (_netReqs.get(tabId) || 0) + 1);
+    } else if (eventName === 'Network.loadingFinished' || eventName === 'Network.loadingFailed') {
+      _netReqs.set(tabId, Math.max(0, (_netReqs.get(tabId) || 0) - 1));
+    }
+  }
+
   if (eventName === 'Target.attachedToTarget') {
     const { sessionId, targetInfo } = eventParams || {};
     if (sessionId && targetInfo) {
@@ -974,6 +1015,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
     })();
     return true;
+  } else if (request.action === 'agentWaitNetworkIdle') {
+    // Fix 3: block until no in-flight network requests for this tab (or timeout)
+    const { tabId } = request;
+    if (!tabId) { sendResponse({ ok: true }); return; }
+    waitForNetworkIdle(tabId, 3000).then(() => sendResponse({ ok: true })).catch(() => sendResponse({ ok: true }));
+    return true; // async
+
   } else if (request.action === 'agentExecute') {
     // Relay agent automation command to the target tab
     const { tabId, executeAction, params } = request;
@@ -2120,7 +2168,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           const jx = jitter(x), jy = jitter(y);
           const base = { x: jx, y: jy, button: 'left', buttons: 1, clickCount: 1 };
           await cdpCmd('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
-          await new Promise(r => setTimeout(r, 40 + Math.random() * 30)); // 40–70 ms human delay
+          // Fix 5b — Human pacing: 80–150 ms between press and release.
+          // 40–70 ms was flagged by some anti-bot systems as too fast;
+          // 80–150 ms matches the lower tail of measured human click durations.
+          await new Promise(r => setTimeout(r, 80 + Math.random() * 70));
           await cdpCmd('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased' });
         };
 
@@ -2241,9 +2292,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           }
 
           // ── Step 4: Direct coordinate click — agent supplied x,y ───────────
+          // Fix 2 — DPR scaling: the LLM receives a screenshot captured at the
+          // physical pixel resolution (DPR > 1 on Retina/4K displays). CDP
+          // Input.dispatchMouseEvent expects logical CSS pixels, so we divide.
           if (typeof params.x === 'number' && typeof params.y === 'number') {
-            await cdpMouseClick(params.x, params.y);
-            sendResponse({ success: true });
+            let dpr = 1;
+            try {
+              const dprRes = await cdpCmd('Runtime.evaluate', {
+                expression: 'window.devicePixelRatio || 1', returnByValue: true
+              });
+              dpr = dprRes?.result?.value || 1;
+            } catch (_) {}
+            const scaledX = Math.round(params.x / dpr);
+            const scaledY = Math.round(params.y / dpr);
+            await cdpMouseClick(scaledX, scaledY);
+            sendResponse({ success: true, data: `Coordinate click scaled by DPR ${dpr}` });
             return;
           }
 
