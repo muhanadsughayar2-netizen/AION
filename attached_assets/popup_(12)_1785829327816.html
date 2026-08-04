@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Aion</title>
+  <script src="theme.js"></script>
+  <script src="branding.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="theme.css">
+  <link rel="stylesheet" href="popup.css">
+  <link rel="stylesheet" href="tour.css">
+  <style>
+    /* RTL support for Arabic */
+    html[dir="rtl"] .container {
+      direction: rtl;
+    }
+    html[dir="rtl"] .selection-bar {
+      direction: rtl;
+    }
+  </style>
+</head>
+<body>
+  <div id="authOverlay" class="auth-overlay" style="display: none;">
+    <div class="auth-overlay-content">
+      <button id="authCloseBtn" class="auth-close-btn" title="Skip for now">&times;</button>
+      <div class="auth-logo" id="authLogo">
+        <img id="authBrandLogo" alt="" style="display:none; max-height:56px; max-width:220px; object-fit:contain;">
+        <span class="ami-icon-wrap" style="width:72px;height:72px;">
+          <span class="ami-icon-ring"></span>
+          <img src="icons/icon128.png" alt="Aion: Gemini AI Studio Workflow Optimizer" class="amiflo-icon" style="width:60px;height:60px;">
+        </span>
+        <span class="ami-brand" style="align-items:center;">
+          <span class="ami-brand-top">
+            <span class="ami-text-ami" style="font-size:28px;">AION</span>
+          </span>
+          <span class="ami-tagline">Powered by <span class="ami-tagline-google">Google AI Studio</span></span>
+        </span>
+      </div>
+      <div class="auth-tagline" data-i18n="signInToUnlock">Sign in to unlock AI features</div>
+      <button id="googleSignInBtn" class="google-signin-btn">
+        <svg class="google-g-icon" width="18" height="18" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+        </svg>
+        <span class="google-btn-spinner" aria-hidden="true"></span>
+        <span class="google-btn-text" data-i18n="continueWithGoogle">Continue with Google</span>
+      </button>
+      <div id="signInStatus" class="sign-in-status" style="display: none;">
+        <span class="sign-in-dots"><span></span><span></span><span></span></span>
+        <span class="sign-in-status-text">Opening Google sign-in...</span>
+      </div>
+      <div id="authError" class="auth-error" style="display: none;"></div>
+      <div class="auth-privacy-note" data-i18n="privacyNote">Your privacy matters - we only see your name & email</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header ami-header">
+      <div class="ami-header-glow"></div>
+      <div class="logo" id="headerLogo">
+        <img id="headerBrandLogo" alt="" style="display:none; max-height:28px; max-width:140px; object-fit:contain; vertical-align:middle;">
+        <span class="ami-icon-wrap">
+          <span class="ami-icon-ring"></span>
+          <img src="icons/icon128.png" alt="Aion: Gemini AI Studio Workflow Optimizer" class="amiflo-icon">
+        </span>
+        <span class="ami-brand">
+          <span class="ami-brand-top">
+            <span class="ami-text-ami">AION</span>
+          </span>
+          <span class="ami-tagline">Powered by <span class="ami-tagline-google">Google AI Studio</span></span>
+        </span>
+        <button id="youtubeBtn" class="youtube-btn" title="Watch Aion tutorials on YouTube">
+          <svg viewBox="0 0 24 17" fill="#FF0000"><path d="M23.5 2.7a3 3 0 0 0-2.1-2.1C19.5 0 12 0 12 0S4.5 0 2.6.6A3 3 0 0 0 .5 2.7C0 4.6 0 8.5 0 8.5s0 3.9.5 5.8a3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1c.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8zM9.5 12.1V4.9l6.3 3.6-6.3 3.6z"/></svg>
+          <span class="youtube-btn-label">Tutorials</span>
+        </button>
+      </div>
+      <div class="header-right">
+        <button id="themeCycleBtn" class="theme-cycle-btn compact" title="Theme" style="display:none !important;" aria-hidden="true" tabindex="-1">
+          <svg class="theme-icon theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+          <svg class="theme-icon theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          <svg class="theme-icon theme-icon-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 3v18a9 9 0 0 0 0-18z" fill="currentColor"/></svg>
+        </button>
+        <button id="openSidebarBtn" class="open-sidebar-btn" title="Open Aion as a side panel — stays docked while you browse" style="display:none !important;" aria-hidden="true" tabindex="-1">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+            <line x1="15" y1="3" x2="15" y2="21"/>
+          </svg>
+          <span>Sidebar</span>
+        </button>
+        <button id="signInHeaderBtn" class="sign-in-header-btn" title="Sign in with Google">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          <span data-i18n="signIn">Sign in</span>
+        </button>
+        <div id="userAvatarContainer" class="user-avatar-container" style="display: none;">
+          <img id="userAvatar" class="user-avatar" src="" alt="User">
+        </div>
+        <div id="accountPopover" class="account-popover" style="display: none;">
+          <div class="account-popover-email" id="accountEmail"></div>
+          <button class="account-popover-tour" id="takeTourBtn">🎯 Take the tour</button>
+          <button class="account-popover-signout" id="signOutBtn" data-i18n="signOut">Sign Out</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="header-sub">
+      <span id="snapCount" style="display:none;">0</span>
+    </div>
+
+    <div class="hero-panel">
+      <div class="hero-actions">
+        <div class="hero-action-col">
+          <span class="hero-action-label">Snap</span>
+          <button id="snapButton" class="hero-action-btn snap-btn" title="Capture viewport">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          </button>
+        </div>
+        <div class="hero-action-col">
+          <span class="hero-action-label">Snip</span>
+          <button id="snipButton" class="hero-action-btn snip-btn" title="Snip a region">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+          </button>
+        </div>
+        <div class="hero-action-col">
+          <span class="hero-action-label" data-i18n="fullPage">Full page</span>
+          <button id="fullPageButton" class="hero-action-btn fullpage-btn" title="Full page capture">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><line x1="8" y1="6" x2="16" y2="6"/><line x1="8" y1="10" x2="16" y2="10"/><line x1="8" y1="14" x2="13" y2="14"/></svg>
+          </button>
+        </div>
+        <div class="hero-action-col ai-hero-col">
+          <span class="hero-action-label ai-label" data-i18n="askAi">Ask AI</span>
+          <button id="directAiButton" class="hero-action-btn ai-btn" title="Ask AI about this page">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          </button>
+        </div>
+      </div>
+      <div id="aiStatusRow" class="ai-status-row">
+        <span class="ai-status-dot"></span>
+        <span id="aiStatusText" data-i18n="aiReady">AI Ready</span>
+        <span id="aiManageLink" class="ai-manage-link">⚙ API & Account</span>
+      </div>
+    </div>
+
+    <!-- ── Maneuver Gallery ────────────────────────────────────────────────── -->
+    <div class="maneuver-gallery" id="maneuverGallery" style="display:none">
+      <div class="maneuver-gallery-header">
+        <span class="maneuver-gallery-title">⚡ Maneuver Gallery</span>
+        <span class="maneuver-gallery-badge">AUTOPILOT</span>
+      </div>
+      <div class="maneuver-gallery-grid">
+        <button class="maneuver-btn" id="maneuverAiStudioBuild" data-maneuver="aistudio-build">
+          <span class="maneuver-icon">🏗️</span>
+          <span class="maneuver-label">AI Studio Build</span>
+          <span class="maneuver-desc">Generate & run a prompt in Google AI Studio</span>
+        </button>
+        <button class="maneuver-btn" id="maneuverCrossAiVerify" data-maneuver="cross-ai-verify">
+          <span class="maneuver-icon">🏛️</span>
+          <span class="maneuver-label">Cross-AI Verify</span>
+          <span class="maneuver-desc">Ask ChatGPT, Claude & Grok — get a Consensus Report</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Setup banner — shown when no API key is connected -->
+    <div id="setupBanner" class="setup-banner" style="display:none;">
+      <div class="setup-banner-left">
+        <span class="setup-banner-icon">🔑</span>
+        <div>
+          <div class="setup-banner-title">Connect your Gemini key</div>
+          <div class="setup-banner-sub">Unlock all Google AI Studio features</div>
+        </div>
+      </div>
+      <button class="setup-banner-btn" id="setupBannerBtn">Set up ↗</button>
+    </div>
+
+    <!-- Status Line with Activity Indicator (STICKY) -->
+    <div class="status-row">
+      <span class="status-dot" id="statusDot"></span>
+      <span class="status" id="status" data-i18n="flowReady">Aion: Ready</span>
+    </div>
+
+    <!-- Full Page Capture Overlay -->
+    <div id="fullPageOverlay" class="fullpage-overlay" style="display: none;">
+      <div class="fullpage-progress">
+        <div class="fullpage-spinner"></div>
+        <div id="fullPageStatus">Capturing full page... 0%</div>
+        <button id="stopFullPageBtn" class="stop-fullpage-btn">STOP</button>
+      </div>
+    </div>
+
+    <!-- Last Capture Preview - COMPLETELY REMOVED BY USER REQUEST -->
+
+    <!-- Selection Controls -->
+    <div class="selection-bar" id="selectionBar" style="display: none;">
+      <button id="selectAllBtn" class="select-all-btn" data-i18n="selectAll">Select All</button>
+      <button id="sendSelectedAiBtn" class="action-btn ai-action">
+        <svg width="13" height="13" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0"><path d="M14 28C14 26.0633 13.6267 24.2433 12.88 22.54C12.1567 20.8367 11.165 19.355 9.905 18.095C8.645 16.835 7.16333 15.8433 5.46 15.12C3.75667 14.3733 1.93667 14 0 14C1.93667 14 3.75667 13.6383 5.46 12.915C7.16333 12.1683 8.645 11.165 9.905 9.905C11.165 8.645 12.1567 7.16333 12.88 5.46C13.6267 3.75667 14 1.93667 14 0C14 1.93667 14.3617 3.75667 15.085 5.46C15.8317 7.16333 16.835 8.645 18.095 9.905C19.355 11.165 20.8367 12.1683 22.54 12.915C24.2433 13.6383 26.0633 14 28 14C26.0633 14 24.2433 14.3733 22.54 15.12C20.8367 15.8433 19.355 16.835 18.095 18.095C16.835 19.355 15.8317 20.8367 15.085 22.54C14.3617 24.2433 14 26.0633 14 28Z" fill="url(#gemini-grad)"/><defs><linearGradient id="gemini-grad" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse"><stop offset="0%" stop-color="#c8e6ff"/><stop offset="50%" stop-color="#ffffff"/><stop offset="100%" stop-color="#a8c7fa"/></linearGradient></defs></svg>
+        Ask Gemini
+      </button>
+      <button id="copySelectedBtn" class="action-btn">Copy</button>
+    </div>
+
+    <!-- Thumbnails Grid -->
+    <div class="thumbnails-container">
+      <div id="thumbnails" class="thumbnails"></div>
+    </div>
+
+    <!-- Bottom action row — all in one line -->
+    <div class="bottom-action-row">
+      <button id="clearButton" class="bab delete-bab" data-i18n="deleteSelected">Delete Selected</button>
+      <div class="bottom-save-bar" id="bottomSaveBar" style="display: none;">
+        <button id="downloadSelectedBtn" class="bab">PNG</button>
+        <button id="exportPdfBtn" class="bab">PDF</button>
+      </div>
+      <span class="bottom-spacer"></span>
+      <button class="bab footer-icon-btn" id="footerReviewBtn" title="Leave a review">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+      </button>
+      <button class="bab footer-icon-btn" id="footerHelpBtn" title="Watch tutorials on YouTube">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- Full-Size Preview Modal -->
+  <div id="previewModal" class="preview-modal" style="display: none;">
+    <div class="preview-close" id="previewClose">✕</div>
+    <img id="previewImage" class="preview-image" alt="Preview">
+    <div class="preview-number" id="previewNumber"></div>
+  </div>
+
+  <!-- PDF Export Options Modal -->
+  <div id="pdfExportModal" class="pdf-export-modal" style="display: none;">
+    <div class="pdf-modal-content">
+      <div class="pdf-modal-header">
+        <h3>📄 Export PDF Options</h3>
+        <div class="pdf-modal-close" id="pdfModalClose">✕</div>
+      </div>
+      
+      <div class="pdf-options">
+        <button class="pdf-option-btn" data-mode="all-combined">
+          <div class="pdf-option-icon">📚</div>
+          <div class="pdf-option-text">
+            <strong data-i18n="allAsOnePDF">All as One PDF</strong>
+            <span data-i18n="allAsOnePDFDesc">Combine all screenshots into one PDF file</span>
+          </div>
+        </button>
+        
+        <button class="pdf-option-btn" data-mode="all-separate">
+          <div class="pdf-option-icon">📑</div>
+          <div class="pdf-option-text">
+            <strong data-i18n="allAsSeparatePDFs">All as Separate PDFs</strong>
+            <span data-i18n="allAsSeparatePDFsDesc">Download each screenshot as individual PDF</span>
+          </div>
+        </button>
+        
+        <button class="pdf-option-btn" data-mode="selected-combined" id="selectedCombinedBtn">
+          <div class="pdf-option-icon">✅</div>
+          <div class="pdf-option-text">
+            <strong data-i18n="selectedAsOnePDF">Selected as One PDF</strong>
+            <span data-i18n="selectedAsOnePDFDesc">Combine selected screenshots into one PDF</span>
+          </div>
+        </button>
+        
+        <button class="pdf-option-btn" data-mode="selected-separate" id="selectedSeparateBtn">
+          <div class="pdf-option-icon">📋</div>
+          <div class="pdf-option-text">
+            <strong data-i18n="selectedAsSeparatePDFs">Selected as Separate PDFs</strong>
+            <span data-i18n="selectedAsSeparatePDFsDesc">Download each selected screenshot as PDF</span>
+          </div>
+        </button>
+      </div>
+      
+      <button class="pdf-cancel-btn" id="pdfCancelBtn" data-i18n="cancel">Cancel</button>
+    </div>
+  </div>
+
+  <!-- Processing Overlay with Timer -->
+  <div id="processingOverlay" class="processing-overlay">
+    <div class="processing-spinner"></div>
+    <div class="processing-text" id="processingText" data-i18n="processing">Processing...</div>
+    <div class="processing-timer" id="processingTimer">00:00</div>
+    <div class="processing-subtext" id="processingSubtext" data-i18n="pleaseWait">Please wait</div>
+  </div>
+
+  <!-- Queue Full Warning Modal (for Full Page Capture) -->
+  <div id="queueFullModal" class="queue-full-modal" style="display: none;">
+    <div class="queue-modal-content">
+      <div class="queue-modal-icon">⚠️</div>
+      <h3 data-i18n="queueSpaceNeeded">Queue Space Needed</h3>
+      <p id="queueModalMessage" data-i18n="fullPageNeedsSpace">Full page capture needs more space than available.</p>
+      <div class="queue-modal-info">
+        <span id="queueSlotsNeeded">Need: 4 slots</span>
+        <span id="queueSlotsAvailable">Available: 2 slots</span>
+      </div>
+      <div class="queue-modal-actions">
+        <button id="queueClearAndContinue" class="queue-btn-primary" data-i18n="clearQueueCapture">Clear Queue & Capture</button>
+        <button id="queueCancelCapture" class="queue-btn-secondary" data-i18n="cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI Chat Portal Modal -->
+  <div id="aiChatPortal" class="ai-portal" style="display: none;">
+    <div class="ai-portal-content">
+      <div class="ai-portal-header">
+        <span class="ai-portal-title">✦ <span data-i18n="aiChat">AI Chat</span></span>
+        <span id="aiChatClose" class="ai-portal-close">✕</span>
+      </div>
+      <div id="aiChatThread" class="ai-chat-thread">
+        <div class="ai-welcome" data-i18n="aiPartnerGreeting">I'm your AI partner. Ask me anything about this image!</div>
+      </div>
+      <div id="aiQuickActions" class="ai-quick-actions">
+        <button class="ai-quick-btn" data-prompt="Summarize this page">📝 Summarize this page</button>
+        <button class="ai-quick-btn" data-prompt="What's the main point?">🎯 What's the main point?</button>
+        <button class="ai-quick-btn" data-prompt="Explain like I'm 15">💡 Explain like I'm 15</button>
+        <button class="ai-quick-btn" data-prompt="Turn into a Twitter thread">🐦 Turn into Twitter thread</button>
+      </div>
+      <div class="ai-presets">
+        <button class="ai-preset-btn" id="aiTestBtn" data-test="true">🔌 Test API</button>
+      </div>
+      <div class="ai-input-row">
+        <input type="text" id="aiChatInput" class="ai-chat-input" placeholder="I'm your AI partner. Ask me anything about this image..." data-i18n-placeholder="aiPartnerGreeting">
+        <button id="aiSendBtn" class="ai-send-btn" data-i18n="send">Send</button>
+      </div>
+      <div class="ai-footer-row">
+        <button id="aiClearBtn" class="ai-clear-btn" data-i18n="clearChat">Clear Chat</button>
+        <button id="aiCopyBtn" class="ai-copy-btn" data-i18n="copyChat">Copy Chat</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Gemini API Key Modal -->
+  <div id="geminiModal" class="gemini-modal" style="display: none;">
+    <div class="gemini-modal-content">
+      <div class="gemini-modal-header">
+        <div class="gemini-header-left">
+          <span class="gemini-icon">🔑</span>
+          <span class="gemini-title">Google AI Studio Setup</span>
+        </div>
+        <span id="geminiModalClose" class="gemini-modal-close" title="Close">✕</span>
+      </div>
+      <div id="geminiStatus" class="gemini-status-bar" style="display: none;">
+        <span class="gemini-status-dot"></span>
+        <span>Connected — All Google AI Studio features unlocked</span>
+      </div>
+
+      <div class="gemini-steps gemini-steps-simple">
+        <div class="gemini-step">
+          <span class="step-num">1</span>
+          <span class="step-text">Press the button, create your free key, and copy it</span>
+        </div>
+        <a href="https://aistudio.google.com/apikey" target="_blank" class="gemini-get-key-btn" data-i18n="goToAiStudio">Get Your Free API Key ↗</a>
+        <div class="gemini-return-hint">📌 Then click the <strong>Aion icon</strong> in your Chrome toolbar to come back</div>
+        <div class="gemini-step">
+          <span class="step-num">2</span>
+          <span class="step-text" data-i18n="pasteItBelow">Paste it below</span>
+        </div>
+      </div>
+      <div class="api-key-wrapper" style="position: relative; width: 100%;">
+        <input type="password" id="geminiKeyInput" class="gemini-input" placeholder="Paste your key here..." style="padding-right: 45px;">
+        <button type="button" id="toggleKeyVisibility" aria-label="Show API key" style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--st-accent); font-size: 12px; cursor: pointer; padding: 4px 8px; font-weight: 500;">Show</button>
+      </div>
+      <!-- AI Power Tier Info (condensed) -->
+      <div class="ai-tier-panel ai-tier-panel-simple">
+        <span class="ai-tier-badge ai-tier-badge-free">FREE</span> Text, Chat &amp; Vision
+        &nbsp;·&nbsp;
+        <span class="ai-tier-badge ai-tier-badge-pro">BILLING</span> Images, Music &amp; Video
+        <a href="https://console.cloud.google.com/billing" target="_blank" class="ai-tier-link">— enable billing, get $300 free ↗</a>
+      </div>
+
+      <div class="gemini-compliance">
+        <label class="compliance-label">
+          <input type="checkbox" id="geminiComplianceCheckbox">
+          <span>I'm 18+ and agree to <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener">Gemini API Terms</a>.</span>
+        </label>
+      </div>
+      <div class="gemini-actions">
+        <button id="geminiSaveBtn" class="gemini-btn-primary" disabled data-i18n="activate">Activate</button>
+        <button id="geminiClearBtn" class="gemini-btn-secondary" data-i18n="clear">Clear</button>
+      </div>
+
+      <!-- Autopilot Site Memory Section -->
+      <div class="autopilot-memory-section" id="autopilotMemorySection" style="display:none;">
+        <div class="autopilot-memory-header">
+          <span class="autopilot-memory-title">🧠 Autopilot Memory</span>
+          <button id="autopilotMemoryClearAllBtn" class="autopilot-memory-clear-all" title="Clear all learned notes">Clear all</button>
+        </div>
+        <div id="autopilotMemoryList" class="autopilot-memory-list">
+          <!-- Populated by popup.js -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div id="reviewModal" class="review-modal" style="display: none;">
+    <div class="review-modal-content">
+      <div class="review-modal-header" data-i18n="reviewHeader">We ❤️ Aion</div>
+      <div class="review-stars">⭐⭐⭐⭐⭐</div>
+      <div class="review-message" data-i18n="reviewMessage">We've worked hard to make AI-powered screenshots simple and powerful. If Aion has saved you time, please take a moment to leave a review. It means the world to us.</div>
+      <button id="leaveReviewBtn" class="review-btn-primary" data-i18n="leaveAReview">Leave a Review</button>
+      <button id="maybeLaterBtn" class="review-btn-secondary" data-i18n="maybeLater">Maybe Later</button>
+    </div>
+  </div>
+
+  <script src="subscription.js"></script>
+  <script src="popup.js"></script>
+  <script src="tour.js"></script>
+  <script src="theme-cycle-btn.js"></script>
+</body>
+</html>
