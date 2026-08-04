@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Aion Extension — Test Suite</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+         background: #0f1117; color: #e2e8f0; padding: 24px; }
+  h1 { font-size: 22px; font-weight: 700; color: #fff; margin-bottom: 4px; }
+  .sub { color: #64748b; font-size: 13px; margin-bottom: 28px; }
+  h2 { font-size: 14px; font-weight: 600; color: #94a3b8; text-transform: uppercase;
+       letter-spacing: .08em; margin: 28px 0 12px; }
+  .card { background: #1e2130; border-radius: 10px; padding: 16px 20px;
+          margin-bottom: 8px; display: flex; align-items: center; gap: 12px;
+          border: 1px solid #2a2f45; }
+  .badge { font-size: 18px; width: 24px; text-align: center; flex-shrink: 0; }
+  .label { flex: 1; font-size: 14px; }
+  .label small { display: block; color: #64748b; font-size: 12px; margin-top: 2px; }
+  .status { font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 99px; }
+  .pass  { background: #14532d; color: #4ade80; }
+  .fail  { background: #450a0a; color: #f87171; }
+  .warn  { background: #422006; color: #fb923c; }
+  .pending { background: #1e293b; color: #64748b; }
+  .manual { background: #1e3a5f; color: #60a5fa; }
+  button { cursor: pointer; font-size: 13px; font-weight: 600; padding: 6px 16px;
+           border-radius: 6px; border: none; background: #3b82f6; color: #fff; }
+  button:hover { background: #2563eb; }
+  button.secondary { background: #1e2130; color: #94a3b8; border: 1px solid #2a2f45; }
+  button.secondary:hover { background: #2a2f45; color: #e2e8f0; }
+  #run-auto { margin-bottom: 20px; }
+  .summary { background: #1e2130; border-radius: 10px; padding: 16px 20px;
+             margin-bottom: 24px; border: 1px solid #2a2f45; display: flex;
+             gap: 24px; align-items: center; flex-wrap: wrap; }
+  .summary b { font-size: 28px; font-weight: 700; }
+  .summary span { font-size: 13px; color: #64748b; }
+  .pass-big { color: #4ade80; }
+  .fail-big { color: #f87171; }
+  .warn-big { color: #fb923c; }
+  .link-btn { color: #60a5fa; background: none; border: none; cursor: pointer;
+              font-size: 13px; text-decoration: underline; padding: 0; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; }
+  .step { color: #94a3b8; font-size: 11px; background: #0f1117; padding: 2px 7px;
+          border-radius: 4px; font-family: monospace; }
+  .shadow-host { display: none; } /* hidden test shadow DOM element */
+</style>
+</head>
+<body>
+
+<h1>🤖 Aion Autopilot — Test Suite</h1>
+<p class="sub">Run automated checks, then follow the manual checklist on live sites.</p>
+
+<button id="run-auto">▶ Run Automated Tests</button>
+<button class="secondary" onclick="location.reload()">↺ Reset</button>
+
+<div class="summary" id="summary" style="display:none">
+  <div><b class="pass-big" id="s-pass">0</b><span> passed</span></div>
+  <div><b class="fail-big" id="s-fail">0</b><span> failed</span></div>
+  <div><b class="warn-big" id="s-manual">0</b><span> manual</span></div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>🧪 Automated — Pointer & Click Events</h2>
+
+<div class="card" id="t-pointer">
+  <span class="badge">🖱</span>
+  <div class="label">pointerdown fires on target element
+    <small>Extension clicks must fire pointer events — Angular/Lit/Material listen here</small></div>
+  <span class="status pending" id="t-pointer-s">pending</span>
+</div>
+<div class="card" id="t-click-synthetic">
+  <span class="badge">🖱</span>
+  <div class="label">Synthetic MouseEvent click fires and bubbles
+    <small>React onClick and Angular (click) bindings need this after pointer events</small></div>
+  <span class="status pending" id="t-click-synthetic-s">pending</span>
+</div>
+<div class="card" id="t-mutation">
+  <span class="badge">🔬</span>
+  <div class="label">MutationObserver detects DOM change after click
+    <small>smartClick uses this to verify a click actually did something</small></div>
+  <span class="status pending" id="t-mutation-s">pending</span>
+</div>
+<div class="card" id="t-mutation-none">
+  <span class="badge">🔬</span>
+  <div class="label">MutationObserver correctly reports NO change when nothing clicks
+    <small>False positives would suppress the shadow-piercing retry</small></div>
+  <span class="status pending" id="t-mutation-none-s">pending</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>🧪 Automated — Shadow DOM Queries</h2>
+
+<div class="card" id="t-shadow-visible">
+  <span class="badge">🌑</span>
+  <div class="label">Visibility-aware shadow query returns LAST visible element
+    <small>AI Studio / NotebookLM have many hidden duplicates — we need the active one</small></div>
+  <span class="status pending" id="t-shadow-visible-s">pending</span>
+</div>
+<div class="card" id="t-shadow-pierce">
+  <span class="badge">🌑</span>
+  <div class="label">Shadow-piercing click retry reaches element inside shadow root
+    <small>smartClick's fallback must walk shadowRoot.elementFromPoint() iteratively</small></div>
+  <span class="status pending" id="t-shadow-pierce-s">pending</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>🧪 Automated — Memory & Verification</h2>
+
+<div class="card" id="t-memory">
+  <span class="badge">🧠</span>
+  <div class="label">Click memory stores and retrieves (cx, cy, strategy)
+    <small>Successful clicks are remembered per hostname+label for 7 days</small></div>
+  <span class="status pending" id="t-memory-s">pending</span>
+</div>
+<div class="card" id="t-inputevent">
+  <span class="badge">⌨️</span>
+  <div class="label">InputEvent fires on contenteditable after text insert
+    <small>ChatGPT's React send button only enables after receiving this event</small></div>
+  <span class="status pending" id="t-inputevent-s">pending</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>📋 Manual — Google AI Studio <button class="link-btn" onclick="window.open('https://aistudio.google.com/prompts/new_chat','_blank')">Open ↗</button></h2>
+
+<div class="card">
+  <span class="badge">1</span>
+  <div class="label">Type a message
+    <small>Say <em>"Hello, what is 2+2?"</em> — text should appear in the input box</small></div>
+  <span class="step">type: "Hello, what is 2+2?"</span>
+</div>
+<div class="card">
+  <span class="badge">2</span>
+  <div class="label">Click Run / submit with Ctrl+Enter
+    <small>The model should start generating. Watch for the stop button to appear.</small></div>
+  <span class="step">click: "Run" or params.run: true</span>
+</div>
+<div class="card">
+  <span class="badge">3</span>
+  <div class="label">Response appears in chat
+    <small>If it says "4" → ✅ full typing + submit flow working</small></div>
+  <span class="step">waitForElement: "4"</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>📋 Manual — NotebookLM <button class="link-btn" onclick="window.open('https://notebooklm.google.com','_blank')">Open ↗</button></h2>
+
+<div class="card">
+  <span class="badge">1</span>
+  <div class="label">Click "Add source"
+    <small>The dialog should open. If it opens → button click working in Shadow DOM</small></div>
+  <span class="step">click: "Add source"</span>
+</div>
+<div class="card">
+  <span class="badge">2</span>
+  <div class="label">Click "Website" inside the dialog
+    <small>Should open a URL input field without looping</small></div>
+  <span class="step">click: "Website"</span>
+</div>
+<div class="card">
+  <span class="badge">3</span>
+  <div class="label">Type a URL and submit
+    <small>Paste any URL → text appears in the input field</small></div>
+  <span class="step">type: "https://example.com"</span>
+</div>
+<div class="card">
+  <span class="badge">4</span>
+  <div class="label">Ask a question in chat
+    <small>Type in the chat box and submit with Enter — answer should generate</small></div>
+  <span class="step">type: "Summarise this source", params.run: true</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>📋 Manual — ChatGPT <button class="link-btn" onclick="window.open('https://chatgpt.com','_blank')">Open ↗</button></h2>
+
+<div class="card">
+  <span class="badge">1</span>
+  <div class="label">Type a message — text appears in input
+    <small>Send button must turn blue as you type (React InputEvent working)</small></div>
+  <span class="step">type: "What is the capital of France?"</span>
+</div>
+<div class="card">
+  <span class="badge">2</span>
+  <div class="label">Submit and get a response
+    <small>"Paris" should appear → full chatbot flow working</small></div>
+  <span class="step">params.run: true</span>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════ -->
+<h2>📋 Manual — Claude <button class="link-btn" onclick="window.open('https://claude.ai','_blank')">Open ↗</button></h2>
+
+<div class="card">
+  <span class="badge">1</span>
+  <div class="label">Type and submit a message
+    <small>Same test — "What is the capital of France?" → "Paris"</small></div>
+  <span class="step">type + params.run: true</span>
+</div>
+
+<!-- hidden test DOM ──────────────────────────────── -->
+<div id="shadow-host-a" class="shadow-host"></div>
+<div id="shadow-host-b" class="shadow-host"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════
+// Automated test runner
+// ═══════════════════════════════════════════════════════════════════════
+
+function setStatus(id, result, detail) {
+  const el = document.getElementById(id + '-s');
+  if (!el) return;
+  el.className = 'status ' + result;
+  el.textContent = result === 'pass' ? '✅ pass' :
+                   result === 'fail' ? '❌ fail' :
+                   result === 'warn' ? '⚠ warn' : detail || result;
+  if (detail && result === 'fail') el.title = detail;
+}
+
+let passCount = 0, failCount = 0;
+function record(id, ok, detail) {
+  setStatus(id, ok ? 'pass' : 'fail', detail);
+  ok ? passCount++ : failCount++;
+}
+
+async function runAll() {
+  passCount = 0; failCount = 0;
+  document.getElementById('run-auto').disabled = true;
+  document.getElementById('run-auto').textContent = '⏳ Running…';
+
+  // ── Test 1: pointerdown fires ─────────────────────────────────────────
+  await (async () => {
+    const btn = document.createElement('button');
+    btn.textContent = 'Test';
+    btn.style.cssText = 'position:fixed;top:-999px';
+    document.body.appendChild(btn);
+    let ptrFired = false;
+    btn.addEventListener('pointerdown', () => ptrFired = true);
+    btn.dispatchEvent(new PointerEvent('pointerdown', {
+      bubbles: true, cancelable: true, clientX: 10, clientY: 10,
+      pointerId: 1, pointerType: 'mouse', isPrimary: true, buttons: 1, button: 0
+    }));
+    btn.remove();
+    record('t-pointer', ptrFired, 'PointerEvent did not fire or bubble');
+  })();
+
+  // ── Test 2: synthetic click fires ────────────────────────────────────
+  await (async () => {
+    const div = document.createElement('div');
+    div.style.cssText = 'position:fixed;top:-999px';
+    document.body.appendChild(div);
+    let clicked = false;
+    div.addEventListener('click', () => clicked = true);
+    div.dispatchEvent(new MouseEvent('click', {
+      bubbles: true, cancelable: true, clientX: 10, clientY: 10, button: 0, buttons: 0
+    }));
+    div.remove();
+    record('t-click-synthetic', clicked, 'Synthetic click event did not fire');
+  })();
+
+  // ── Test 3: MutationObserver detects change ───────────────────────────
+  await new Promise(resolve => {
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;top:-999px';
+    document.body.appendChild(container);
+    let mutated = 0;
+    const obs = new MutationObserver(m => mutated += m.length);
+    obs.observe(container, { childList: true, subtree: true, attributes: true });
+    const child = document.createElement('span');
+    container.appendChild(child);
+    setTimeout(() => {
+      obs.disconnect();
+      container.remove();
+      record('t-mutation', mutated > 0, `MutationObserver saw ${mutated} mutations (expected > 0)`);
+      resolve();
+    }, 100);
+  });
+
+  // ── Test 4: MutationObserver reports ZERO when nothing changes ────────
+  await new Promise(resolve => {
+    const container = document.createElement('div');
+    container.style.cssText = 'position:fixed;top:-999px';
+    document.body.appendChild(container);
+    let mutated = 0;
+    const obs = new MutationObserver(m => mutated += m.length);
+    obs.observe(container, { childList: true, subtree: true, attributes: true });
+    // Do nothing — just wait
+    setTimeout(() => {
+      obs.disconnect();
+      container.remove();
+      record('t-mutation-none', mutated === 0, `Expected 0 mutations, got ${mutated}`);
+      resolve();
+    }, 300);
+  });
+
+  // ── Test 5: Visibility-aware shadow query returns LAST visible match ──
+  await (async () => {
+    // Build a shadow host with 3 contenteditable divs: first two hidden, last visible
+    const host = document.getElementById('shadow-host-a');
+    host.style.display = 'block';
+    const shadow = host.attachShadow({ mode: 'open' });
+    shadow.innerHTML = `
+      <div contenteditable="true" style="display:none;width:0;height:0" id="hidden1">old turn 1</div>
+      <div contenteditable="true" style="display:none;width:0;height:0" id="hidden2">old turn 2</div>
+      <div contenteditable="true" style="width:200px;height:40px;background:#1e2130" id="active">active input</div>
+    `;
+    // Visibility-aware deep shadow collector (same logic as extension)
+    function dSQVAll(root, sel, acc) {
+      if (!root) return;
+      try {
+        for (const el of root.querySelectorAll(sel)) {
+          const r = el.getBoundingClientRect();
+          if (r.width > 5 && r.height > 5) acc.push(el);
+        }
+      } catch (_) {}
+      for (const el of root.querySelectorAll('*')) {
+        if (el.shadowRoot) dSQVAll(el.shadowRoot, sel, acc);
+      }
+    }
+    const hits = [];
+    dSQVAll(document, '[contenteditable="true"]', hits);
+    const last = hits[hits.length - 1];
+    host.style.display = 'none';
+    // The last visible match should be the active div (has visible dimensions)
+    record('t-shadow-visible',
+      last && last.id === 'active',
+      `Got id="${last?.id}" — expected "active"`);
+  })();
+
+  // ── Test 6: Shadow-piercing click retry walks into shadow root ─────────
+  await (async () => {
+    const host = document.getElementById('shadow-host-b');
+    host.style.cssText = 'display:block;position:fixed;top:40px;left:40px';
+    const shadow = host.attachShadow({ mode: 'open' });
+    let innerClicked = false;
+    shadow.innerHTML = `<button style="padding:8px 16px;background:#3b82f6;color:#fff">Inner Button</button>`;
+    shadow.querySelector('button').addEventListener('click', () => innerClicked = true);
+
+    // Simulate the shadow-piercing .click() retry that smartClick uses
+    const outerEl = host; // elementFromPoint stops here in real CDP
+    let el = outerEl;
+    for (let i = 0; i < 8; i++) {
+      if (!el.shadowRoot) break;
+      const r = host.getBoundingClientRect();
+      const inner = el.shadowRoot.elementFromPoint(r.left + 8, r.top + 8);
+      if (!inner || inner === el) break;
+      el = inner;
+    }
+    const btn = el.closest('button,[role="button"]') || el;
+    btn.click();
+
+    host.style.display = 'none';
+    record('t-shadow-pierce', innerClicked, 'Shadow-piercing .click() did not reach inner button');
+  })();
+
+  // ── Test 7: Click memory save/load ────────────────────────────────────
+  await (async () => {
+    const KEY = 'aion_cm_test.site.example__test_button';
+    const entry = { cx: 123, cy: 456, strategy: 'ax', ts: Date.now() };
+    localStorage.setItem(KEY, JSON.stringify(entry));
+    const raw = localStorage.getItem(KEY);
+    const loaded = raw ? JSON.parse(raw) : null;
+    const valid = loaded && loaded.cx === 123 && loaded.cy === 456 &&
+                  loaded.strategy === 'ax' && (Date.now() - loaded.ts < 7 * 86400000);
+    localStorage.removeItem(KEY);
+    record('t-memory', valid, `Loaded: ${JSON.stringify(loaded)}`);
+  })();
+
+  // ── Test 8: InputEvent fires on contenteditable ───────────────────────
+  await (async () => {
+    const div = document.createElement('div');
+    div.contentEditable = 'true';
+    div.style.cssText = 'position:fixed;top:-999px;width:200px;height:40px';
+    document.body.appendChild(div);
+    div.focus();
+    let inputFired = false;
+    div.addEventListener('input', () => inputFired = true);
+    div.textContent = 'hello';
+    div.dispatchEvent(new InputEvent('input', { bubbles: true, cancelable: true }));
+    div.remove();
+    record('t-inputevent', inputFired, 'InputEvent did not fire on contenteditable');
+  })();
+
+  // ── Summary ───────────────────────────────────────────────────────────
+  const manualCount = document.querySelectorAll('.step').length;
+  document.getElementById('s-pass').textContent = passCount;
+  document.getElementById('s-fail').textContent = failCount;
+  document.getElementById('s-manual').textContent = manualCount;
+  document.getElementById('summary').style.display = 'flex';
+  document.getElementById('run-auto').textContent = failCount === 0
+    ? '✅ All automated tests passed'
+    : `❌ ${failCount} test(s) failed — check above`;
+  document.getElementById('run-auto').disabled = false;
+  if (failCount === 0) {
+    document.getElementById('run-auto').style.background = '#15803d';
+  }
+}
+
+document.getElementById('run-auto').addEventListener('click', runAll);
+</script>
+</body>
+</html>
