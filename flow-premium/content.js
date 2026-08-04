@@ -4561,30 +4561,52 @@
         }
 
         // ── GOOGLE AI STUDIO / MAKERSUITE ────────────────────────────────────
-        if (host.includes('aistudio.google.com') || host.includes('makersuite.google.com')) {
-          const aiInput = findVisible([
-            'ms-prompt-input textarea',
-            'textarea[aria-label]',
-            'textarea[placeholder]',
-            '[data-testid="prompt-input"] textarea',
-            '[class*="prompt"] textarea',
-            'div[contenteditable="true"][aria-multiline]',
-            'div[contenteditable="true"]',
-            'textarea',
-          ]);
-          let x, y;
-          if (aiInput) {
-            const r = aiInput.getBoundingClientRect();
-            x = r.left + r.width * 0.5;
-            y = r.top  + r.height * 0.5;
-            highlightElement(aiInput);
-          } else {
-            x = window.innerWidth * 0.5;
-            y = window.innerHeight * 0.65;
-          }
-          moveGhostCursor(x, y);
-          return { success: true, x, y, mode: 'aistudio' };
-        }
+         if (host.includes('aistudio.google.com') || host.includes('makersuite.google.com')) {
+           // AI Studio input lives inside nested Shadow DOM (<ms-prompt-editor>).
+           // findVisible() is blind to shadow boundaries — use a deep shadow walk
+           // that collects ALL visible matches and returns the LAST one (active turn).
+           function aisDeepAll(root, sel, acc) {
+             if (!root) return;
+             try {
+               for (const el of root.querySelectorAll(sel)) {
+                 const r = el.getBoundingClientRect();
+                 if (r.width > 5 && r.height > 5) acc.push(el);
+               }
+             } catch (_) {}
+             for (const el of root.querySelectorAll('*')) {
+               if (el.shadowRoot) aisDeepAll(el.shadowRoot, sel, acc);
+             }
+           }
+           const AIS_SELS = [
+             '.ProseMirror',
+             'ms-prompt-editor [contenteditable="true"]',
+             'ms-autosize-textarea textarea',
+             'ms-prompt-input textarea',
+             'textarea[aria-label*="Prompt" i]',
+             '[contenteditable="true"][aria-multiline="true"]',
+             '[contenteditable="true"][role="textbox"]',
+             '[contenteditable="true"]',
+             'textarea',
+           ];
+           let aiInput = null;
+           for (const sel of AIS_SELS) {
+             const hits = [];
+             aisDeepAll(document, sel, hits);
+             if (hits.length > 0) { aiInput = hits[hits.length - 1]; break; }
+           }
+           let x, y;
+           if (aiInput) {
+             const r = aiInput.getBoundingClientRect();
+             x = r.left + r.width * 0.5;
+             y = r.top  + r.height * 0.5;
+             highlightElement(aiInput);
+           } else {
+             x = window.innerWidth * 0.5;
+             y = window.innerHeight * 0.65;
+           }
+           moveGhostCursor(x, y);
+           return { success: true, x, y, mode: 'aistudio' };
+         }
 
         // ── GEMINI CHAT (gemini.google.com) ──────────────────────────────────
         if (host.includes('gemini.google.com')) {

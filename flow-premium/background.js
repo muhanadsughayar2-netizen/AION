@@ -1792,33 +1792,60 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               const aisFocusRes = await chrome.scripting.executeScript({
                 target: { tabId },
                 func: () => {
-                  function deepShadowQuery(root, selector) {
-                    if (!root) return null;
-                    const direct = root.querySelector(selector);
-                    if (direct) return direct;
-                    for (const el of root.querySelectorAll('*')) {
-                      if (el.shadowRoot) {
-                        const found = deepShadowQuery(el.shadowRoot, selector);
-                        if (found) return found;
+                  // Visibility-aware deep shadow query — AI Studio has one ProseMirror
+                  // div per conversation turn; all old turns are hidden.
+                  // querySelector() returns the FIRST (hidden) one — we need LAST VISIBLE.
+                  function dSQVAll(root, sel, acc) {
+                    if (!root) return;
+                    try {
+                      for (const el of root.querySelectorAll(sel)) {
+                        const r = el.getBoundingClientRect();
+                        if (r.width > 5 && r.height > 5) acc.push(el);
                       }
+                    } catch (_) {}
+                    for (const el of root.querySelectorAll('*')) {
+                      if (el.shadowRoot) dSQVAll(el.shadowRoot, sel, acc);
                     }
-                    return null;
                   }
-                  const editor = deepShadowQuery(document,
-                    '.ProseMirror, ms-prompt-editor [contenteditable="true"], ' +
-                    '.monaco-editor textarea, textarea[aria-label*="Prompt"], ' +
-                    '[contenteditable="true"][class*="editor"], [role="textbox"]');
-                  if (editor) { editor.focus(); return { found: true, tag: editor.tagName }; }
+                  const AIS_SELS = [
+                    '.ProseMirror',
+                    'ms-prompt-editor [contenteditable="true"]',
+                    'ms-autosize-textarea textarea',
+                    'ms-prompt-input textarea',
+                    'textarea[aria-label*="Prompt" i]',
+                    '[contenteditable="true"][aria-multiline="true"]',
+                    '[contenteditable="true"][role="textbox"]',
+                    '[contenteditable="true"]',
+                    'textarea',
+                  ];
+                  for (const sel of AIS_SELS) {
+                    const hits = [];
+                    dSQVAll(document, sel, hits);
+                    if (hits.length > 0) {
+                      const editor = hits[hits.length - 1]; // last visible = active input
+                      editor.focus();
+                      editor.click();
+                      const r = editor.getBoundingClientRect();
+                      return { found: true, tag: editor.tagName, sel,
+                               cx: r.left + r.width * 0.5, cy: r.top + r.height * 0.5 };
+                    }
+                  }
                   return { found: false };
                 }
               }).catch(() => [{ result: { found: false } }]);
-              const shadowFocused = aisFocusRes?.[0]?.result?.found;
+              const aisRes = aisFocusRes?.[0]?.result;
+              const shadowFocused = aisRes?.found;
+              // Use the exact editor coordinates returned by the script if available,
+              // otherwise fall back to what content.js reported.
+              const aisX = aisRes?.cx ?? x;
+              const aisY = aisRes?.cy ?? y;
 
-              if (!shadowFocused) {
-                // Fall back to CDP coordinate click if shadow search failed
-                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
-                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
-              }
+              // Always fire a CDP coordinate click AT THE EDITOR so ProseMirror
+              // activates its cursor. Without this, insertText fires but ProseMirror
+              // may ignore it because it hasn't received a real mousedown event.
+              await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: aisX, y: aisY, button: 'left', buttons: 1, clickCount: 1 });
+              await new Promise(r => setTimeout(r, 60));
+              await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: aisX, y: aisY, button: 'left', buttons: 1, clickCount: 1 });
               await new Promise(r => setTimeout(r, 200));
 
               if (params.clearFirst) {
@@ -2164,7 +2191,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             // Input.insertText fired into the void — return false so the agent
             // can refocus and retry instead of building on a silent miss.
             const isNotebookLM = (mode === 'notebooklm' || mode === 'notebooklm-fallback');
-            if (!isDocs && !isGrid && !isExcel && !isNotebookLM && text.trim().length > 0 && !params.run) {
+            if (!isDocs && !isGrid && !isExcel && !isNotebookLM && !isAiStudio && text.trim().length > 0 && !params.run) {
               try {
                 await new Promise(r => setTimeout(r, 180)); // React state settle
                 const vr = await sendR('Runtime.evaluate', {
@@ -2472,11 +2499,110 @@ If the element is not visible in the screenshot, return:
           }).catch(() => {});
         };
 
+         // ── DOM mutation watch helpers ────────────────────────────────────────
+         // Arms a MutationObserver before any click to verify something actually
+         // changed. If nothing mutates, smartClick auto-retries with a direct
+         // shadow-piercing DOM .click() — fixes Angular/Lit buttons that swallow
+         // CDP pointer events silently.
+         const armMutations = async () => {
+           await cdpCmd('Runtime.evaluate', {
+             expression: `(function(){
+               window.__aionMutCt = 0;
+               if (window.__aionMutObs2) window.__aionMutObs2.disconnect();
+               window.__aionMutObs2 = new MutationObserver(function(m){ window.__aionMutCt += m.length; });
+               window.__aionMutObs2.observe(document.documentElement,
+                 { childList:true, subtree:true, attributes:true, characterData:true });
+             })()`,
+             returnByValue: true
+           }).catch(() => {});
+         };
+
+         const checkMutations = async () => {
+           const res = await cdpCmd('Runtime.evaluate', {
+             expression: `(function(){
+               if(window.__aionMutObs2){window.__aionMutObs2.disconnect();window.__aionMutObs2=null;}
+               return window.__aionMutCt || 0;
+             })()`,
+             returnByValue: true
+           }).catch(() => ({ result: { value: 1 } }));
+           return (res?.result?.value || 0) > 0;
+         };
+
+         // smartClick — wraps cdpMouseClick with mutation verification.
+         // If the click lands but nothing changes, retries with a shadow-piercing
+         // direct DOM .click(). Also waits for any new dialog to settle.
+         const smartClick = async (cx, cy) => {
+           await armMutations();
+           await cdpMouseClick(cx, cy);
+           await new Promise(r => setTimeout(r, 500));
+           const mutated = await checkMutations();
+           if (!mutated) {
+             console.log(`[Aion] Click at (${cx},${cy}) had no DOM effect — retrying with shadow-piercing .click()`);
+             await cdpCmd('Runtime.evaluate', {
+               expression: `(function(){
+                 let el = document.elementFromPoint(${cx}, ${cy});
+                 if (!el) return false;
+                 for (let i = 0; i < 8; i++) {
+                   if (!el.shadowRoot) break;
+                   const inner = el.shadowRoot.elementFromPoint(${cx}, ${cy});
+                   if (!inner || inner === el) break;
+                   el = inner;
+                 }
+                 const btn = el.closest(
+                   'button,[role="button"],a,[role="link"],[role="menuitem"],' +
+                   '[role="option"],[role="tab"],[role="checkbox"],[role="switch"]'
+                 ) || el;
+                 btn.focus();
+                 btn.click();
+                 btn.dispatchEvent(new PointerEvent('pointerdown',{bubbles:true,cancelable:true,clientX:${cx},clientY:${cy},pointerId:1,isPrimary:true}));
+                 btn.dispatchEvent(new PointerEvent('pointerup',  {bubbles:true,cancelable:true,clientX:${cx},clientY:${cy},pointerId:1,isPrimary:true}));
+                 return true;
+               })()`,
+               returnByValue: true
+             }).catch(() => {});
+             await new Promise(r => setTimeout(r, 300));
+           }
+           // Wait for any newly-opened dialog/modal to settle
+           const dRes = await cdpCmd('Runtime.evaluate', {
+             expression: `(function(){
+               const d = document.querySelector(
+                 '[role="dialog"],[aria-modal="true"],[data-state="open"],' +
+                 '.mat-dialog-container,dialog[open],.cdk-overlay-pane');
+               return !!d;
+             })()`,
+             returnByValue: true
+           }).catch(() => ({ result: { value: false } }));
+           if (dRes?.result?.value === true) await new Promise(r => setTimeout(r, 420));
+         };
+
+         // ── Per-site click memory ─────────────────────────────────────────────
+         // Remembers the (cx,cy,strategy) that worked for a given (hostname,label).
+         // Next run tries the remembered position first, skipping the full cascade.
+         // Entries expire after 7 days.
+         const _cmKey = (lbl) =>
+           `aion_cm_${tabHostname}__${(lbl||'').toLowerCase().replace(/[^a-z0-9]+/g,'_').slice(0,40)}`;
+
+         const loadClickMem = async (lbl) => {
+           if (!lbl) return null;
+           try {
+             const r = await chrome.storage.local.get(_cmKey(lbl));
+             const m = r[_cmKey(lbl)];
+             if (m && m.cx && m.cy && (Date.now() - m.ts < 7 * 86400000)) return m;
+           } catch (_) {}
+           return null;
+         };
+
+         const saveClickMem = async (lbl, cx, cy, strategy) => {
+           if (!lbl) return;
+           try { await chrome.storage.local.set({ [_cmKey(lbl)]: { cx, cy, strategy, ts: Date.now() } }); } catch (_) {}
+         };
+
+
         try {
           if (loc && typeof loc.x === 'number') {
             // Content.js found it — click using trusted CDP events
-            await cdpMouseClick(loc.x, loc.y);
-            sendResponse({ success: true });
+            await smartClick(loc.x, loc.y);
+            sendResponse({ success: true, data: 'Clicked via content.js loc' });
             return;
           }
 
@@ -2494,7 +2620,7 @@ If the element is not visible in the screenshot, return:
             for (const sel of selectorsToTry) {
               const box = await getBoxModelBySelector(sel, cdpCmd).catch(() => null);
               if (box) {
-                await cdpMouseClick(box.x, box.y);
+                await smartClick(box.x, box.y);
                 sendResponse({ success: true, data: `Clicked via selector cascade (${sel})` });
                 return;
               }
@@ -2602,8 +2728,8 @@ If the element is not visible in the screenshot, return:
             } catch (_) {}
             const scaledX = Math.round(params.x / dpr);
             const scaledY = Math.round(params.y / dpr);
-            await cdpMouseClick(scaledX, scaledY);
-            sendResponse({ success: true, data: `Coordinate click scaled by DPR ${dpr}` });
+            await smartClick(scaledX, scaledY);
+            sendResponse({ success: true, data: `Coordinate click (DPR ${dpr})` });
             return;
           }
 
@@ -2705,8 +2831,9 @@ If the element is not visible in the screenshot, return:
               }).catch(() => ({ result: { value: { found: false } } }));
               if (xpathResult?.result?.value?.found) {
                 const { x, y } = xpathResult.result.value;
-                await cdpMouseClick(x, y);
-                sendResponse({ success: true, data: 'Clicked via XPath structural search' });
+                await smartClick(x, y);
+                await saveClickMem(searchLabel, x, y, 'xpath');
+                sendResponse({ success: true, data: 'Clicked via XPath' });
                 return;
               }
             } catch (_xpathErr) { /* ignore, fall through to failure */ }
@@ -2724,7 +2851,7 @@ If the element is not visible in the screenshot, return:
               params.text || params.description || ''
             );
             if (visionCoords) {
-              await cdpMouseClick(visionCoords.x, visionCoords.y);
+              await smartClick(visionCoords.x, visionCoords.y);
               sendResponse({ success: true, data: `Clicked via vision fallback at (${visionCoords.x}, ${visionCoords.y})` });
               return;
             }
