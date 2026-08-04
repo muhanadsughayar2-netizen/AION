@@ -11464,27 +11464,31 @@ Before clicking ANY Studio button, verify that at least one source is loaded:
 If the same click or type action fails or produces no change 2 times in a row, STOP immediately. Call snapshotPage() to re-read the current page state, then decide what to do next. NEVER repeat the same action more than 3 times without a snapshotPage() in between. A repeated action that keeps failing is a signal the page state has changed — not a reason to retry harder.
 
 ⚠️ CRITICAL — VERIFIED STUDIO CLICK (use this exact procedure for EVERY Studio button):
-The Studio panel is on the RIGHT side. All buttons are Shadow DOM Web Components. Use this 4-step verified-click every time:
+The Studio panel is on the RIGHT side. All buttons are Shadow DOM Web Components.
 
-  STEP A — LOCATE: snapshotPage() and find the button in the AX tree.
-    Known button names (exact, as they appear in NotebookLM):
-      "Audio Overview"  |  "Slide Deck"  |  "Video Overview"
-      "Mind Map"        |  "Reports"
-      "Flashcards"      |  "Quiz"
-      "Infographic"     |  "Data Table"
-    If the AX tree shows a slightly different label, use THAT exact label — not the name above.
+  ⚡ MANDATORY SEQUENCE — do NOT skip steps:
 
-  STEP B — CLICK: click(exactLabel). Use the label found in STEP A.
-    If click("label") is not found: take a screenshot, identify the button's on-screen x,y position from the right-side Studio panel, then click({x, y}) by coordinate.
+  STEP A — SNAPSHOT FIRST (always): snapshotPage() before touching anything in the Studio panel.
+    • Look for the Studio section header on the right. If you see "Notebook guide" instead of Studio buttons, look for a "Studio" tab/toggle and click it.
+    • Find the exact accessible name of your target button in the AX tree output.
+    • Known approximate names (use EXACT label from AX tree, not these):
+        "Audio Overview"  |  "Slide Deck"  |  "Video Overview"
+        "Mind Map"        |  "Reports"     |  "Flashcards"
+        "Quiz"            |  "Infographic" |  "Data Table"
 
-  STEP C — VERIFY: immediately snapshotPage() after the click.
-    Success = the AX tree now shows a "Generate" button, a difficulty picker, OR a modal overlay.
-    Failure = page looks the same as before (no modal, no new controls visible).
-    If FAILED: take a screenshot first, then click({x, y}) by coordinate from the Studio panel.
-    If coordinate click also fails: requestUserIntervention("Please click [Tool Name] in the Studio panel on the right, then let me know when it opens.")
-    ⛔ NEVER click the same button a 3rd time without a new snapshotPage() in between.
+  STEP B — COORDINATE CLICK (preferred): take a screenshot, locate the button visually in the right-side Studio panel, then click({x, y}) by coordinate.
+    • This is MORE RELIABLE than text-click for shadow DOM buttons. Always try this first.
+    • Only fall back to click("label") if you cannot identify coordinates from the screenshot.
 
-  STEP D — READ MODAL: use the accessible names from STEP C's snapshot for ALL interactions inside the modal (style options, textarea, language, Generate). Do NOT guess — always use names from the snapshot.
+  STEP C — VERIFY: snapshotPage() immediately after.
+    Success = AX tree now shows a "Generate" button, difficulty picker, or modal overlay.
+    Failure = page unchanged. Try click({x, y}) with fresh coordinates from a new screenshot.
+    If still failing after 2 coordinate attempts: requestUserIntervention("Please click [Tool Name] in the Studio panel on the right, then click Continue.")
+    ⛔ NEVER repeat the same failing click more than twice without a new snapshotPage().
+
+  STEP D — INSIDE MODAL: always read accessible names from STEP C snapshot before interacting. Never guess labels inside modals.
+
+  STEP E — GENERATE BUTTON: after the modal opens, snapshotPage() once more, find "Generate" in AX tree, then click({x, y}) by coordinate — do NOT click by text, as "Generate" inside a shadow modal is also unreachable by text.
 
 The same verify-and-read rule applies for every button press INSIDE modals too.
 
@@ -12510,36 +12514,24 @@ function addStudioGreetingBubble(thread) {
   bubble.style.cssText = [
     'background:linear-gradient(135deg,rgba(99,102,241,0.10),rgba(139,92,246,0.08))',
     'border:1px solid rgba(99,102,241,0.30)',
-    'padding:16px 18px',
+    'padding:12px 16px',
     'border-radius:14px',
     'margin:8px 0',
     'max-width:98%'
   ].join(';');
 
   bubble.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-      <span style="font-size:22px;line-height:1">📓</span>
-      <span style="font-weight:700;font-size:14.5px;color:#a5b4fc">Hey! I'm excited to help you create something great 🎉</span>
-    </div>
-    <div style="font-size:13px;color:rgba(226,232,240,0.88);line-height:1.65;margin-bottom:10px">
-      I'll use <strong style="color:#c4b5fd">Google NotebookLM</strong> to turn your source material into polished, ready-to-use content — and it's completely free.
-    </div>
-    <div style="font-size:12.5px;color:rgba(148,163,184,0.8);line-height:1.6">
-      Here's everything I can build for you:
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;margin-top:7px;font-size:12px;color:rgba(203,213,225,0.75)">
-        <span>📊 <strong>Slide Deck</strong> — Detailed or Presenter slides</span>
-        <span>🎙️ <strong>Audio Overview</strong> — AI podcast, Deep Dive or Brief</span>
-        <span>🎬 <strong>Video Overview</strong> — Whiteboard explainer</span>
-        <span>🧠 <strong>Mind Map</strong> — visual idea connections</span>
-        <span>📝 <strong>Report</strong> — Roadmap, Primer, or custom</span>
-        <span>💡 <strong>Infographic</strong> — Kawaii / Clay / Sketch style</span>
-        <span>🃏 <strong>Flashcards</strong> — adjustable difficulty</span>
-        <span>❓ <strong>Quiz</strong> — test your knowledge</span>
-        <span>📋 <strong>Data Table</strong> — structured comparisons</span>
-      </div>
-    </div>
-    <div style="margin-top:12px;font-size:13px;font-weight:600;color:#a5b4fc">
-      What would you like me to create? Pick one or more below 👇
+    <div style="font-size:13px;font-weight:600;color:#a5b4fc;margin-bottom:8px">Pick what you'd like me to create 👇</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3px 10px;font-size:12px;color:rgba(203,213,225,0.75)">
+      <span>📊 <strong>Slide Deck</strong> — Detailed or Presenter slides</span>
+      <span>🎙️ <strong>Audio Overview</strong> — AI podcast, Deep Dive or Brief</span>
+      <span>🎬 <strong>Video Overview</strong> — Whiteboard explainer</span>
+      <span>🧠 <strong>Mind Map</strong> — visual idea connections</span>
+      <span>📝 <strong>Report</strong> — Roadmap, Primer, or custom</span>
+      <span>💡 <strong>Infographic</strong> — Kawaii / Clay / Sketch style</span>
+      <span>🃏 <strong>Flashcards</strong> — adjustable difficulty</span>
+      <span>❓ <strong>Quiz</strong> — test your knowledge</span>
+      <span>📋 <strong>Data Table</strong> — structured comparisons</span>
     </div>`;
 
   thread.appendChild(bubble);
@@ -12610,13 +12602,18 @@ async function awaitSourcesStep(thread, tools, originalPrompt) {
           color:rgba(148,163,184,0.9);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;min-width:160px">
           📁 I'll add them in NotebookLM
         </button>
+        <button class="sources-file-btn" style="flex:1;padding:9px 12px;border-radius:10px;
+          background:rgba(30,30,50,0.5);border:1px solid rgba(255,255,255,0.12);
+          color:rgba(148,163,184,0.9);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;min-width:160px">
+          📤 I have a file to upload
+        </button>
       </div>`;
 
     thread.appendChild(card);
     thread.scrollTop = thread.scrollHeight;
 
     const freeze = (label, green) => {
-      card.querySelectorAll('.sources-confirm-btn,.sources-find-btn,.sources-manual-btn,.sources-input')
+      card.querySelectorAll('.sources-confirm-btn,.sources-find-btn,.sources-manual-btn,.sources-file-btn,.sources-input')
         .forEach(el => { el.disabled = true; el.style.pointerEvents = 'none'; el.style.opacity = '0.6'; });
       const active = card.querySelector(`.${green}`);
       if (active) {
@@ -12663,6 +12660,10 @@ async function awaitSourcesStep(thread, tools, originalPrompt) {
     });
     card.querySelector('.sources-manual-btn').addEventListener('click', () => {
       done('', 'manual', 'sources-manual-btn');
+    });
+    card.querySelector('.sources-file-btn').addEventListener('click', () => {
+      agentSpeak("No problem! I'll open NotebookLM, create your notebook, and then ask you to upload your file directly inside — that way there's no size limit!");
+      done('', 'file', 'sources-file-btn');
     });
   });
 }
@@ -12919,6 +12920,8 @@ async function runAgentTask(prompt, thread) {
         sourcesBlock = ` User-provided source material (add these as sources in NotebookLM before generating): "${sourcesResult.sources}".`;
       } else if (sourcesResult.mode === 'find') {
         sourcesBlock = ` The user has no sources — you must search the web for relevant URLs, then add them as sources in NotebookLM before generating.`;
+      } else if (sourcesResult.mode === 'file') {
+        sourcesBlock = ` The user has a local file to upload. Navigate to NotebookLM, create or open a notebook, then requestUserIntervention("Please click 'Add sources' → 'Upload' in the left panel and upload your file, then click Continue when it shows as Ready."). Wait for at least one source to be Ready before generating.`;
       } else if (sourcesResult.mode === 'manual') {
         sourcesBlock = ` The user will add sources manually inside NotebookLM. Navigate there, open or create a notebook, and wait for them to add sources — check the sources panel before generating.`;
       }
@@ -13695,7 +13698,15 @@ async function runAgentTask(prompt, thread) {
         agentState.history.push({ action: name, args, result: 'failed',
           error: execResult?.error || 'unknown error' });
         if (agentState.history.length > 10) agentState.history.shift();
-        if (_agentLogContainer?.isConnected) {
+        // Suppress retry noise on NotebookLM — the scary "Element not found"
+        // messages make users think the system is broken; the agent self-heals silently.
+        const _suppressRetryMsg = (() => {
+          try {
+            const url = (typeof tab !== 'undefined' && tab?.url) ? tab.url : '';
+            return /notebook\.google\.com|notebooklm\.google\.com/.test(url);
+          } catch (_) { return false; }
+        })();
+        if (!_suppressRetryMsg && _agentLogContainer?.isConnected) {
           const warn = document.createElement('div');
           warn.style.cssText = 'font-size:11px;color:rgba(255,180,50,0.75);padding-left:16px;';
           warn.textContent = `⚠ ${execResult?.error || 'failed'} — trying differently…`;
@@ -20255,20 +20266,12 @@ async function launchGeminiNotebook() {
   if (!notebookOnboarded) {
     const onboardBubble = document.createElement('div');
     onboardBubble.className = 'chat-bubble ai';
-    onboardBubble.style.cssText = 'background:linear-gradient(135deg,rgba(66,133,244,0.10),rgba(52,211,153,0.07));border:1px solid rgba(66,133,244,0.28);padding:16px 18px;border-radius:14px;margin:8px 0;animation:slideUp 0.4s ease';
-    onboardBubble.innerHTML = `
-      <div style="font-size:22px;margin-bottom:8px">🤖✨</div>
-      <div style="font-size:15px;font-weight:700;color:#74b0ff;margin-bottom:6px">Meet your Gemini Notebook agent!</div>
-      <div style="font-size:13px;color:rgba(226,232,240,0.85);line-height:1.6">
-        I'm going to open <b>Google NotebookLM</b> in your browser and build content for you
-        <b>completely automatically</b> — for free! 🎉<br><br>
-        Just pick what you want below and I'll handle everything: opening the notebook,
-        adding your sources, and generating your content. You just watch!
-      </div>`;
+    onboardBubble.style.cssText = 'background:rgba(66,133,244,0.07);border:1px solid rgba(66,133,244,0.22);padding:10px 14px;border-radius:12px;margin:6px 0;font-size:13px;color:rgba(226,232,240,0.85);line-height:1.5';
+    onboardBubble.textContent = '👋 First time? I\'ll open NotebookLM in your browser and build everything automatically — completely free. Just pick what you want below!';
     thread.appendChild(onboardBubble);
     thread.scrollTop = thread.scrollHeight;
     await chrome.storage.local.set({ notebookOnboarded: true });
-    await new Promise(r => setTimeout(r, 700));
+    await new Promise(r => setTimeout(r, 400));
   }
 
   // 4. Warm greeting + studio picker + sources step
@@ -20295,6 +20298,8 @@ async function launchGeminiNotebook() {
     sourcesBlock = ` User-provided source material (add these as sources in NotebookLM before generating): "${sourcesResult.sources}".`;
   } else if (sourcesResult.mode === 'find') {
     sourcesBlock = ` The user has no sources — search the web for 2–4 high-quality relevant URLs, then add them as sources in NotebookLM before generating.`;
+  } else if (sourcesResult.mode === 'file') {
+    sourcesBlock = ` The user has a local file to upload. Navigate to NotebookLM, create or open a notebook, then requestUserIntervention("Please click 'Add sources' → 'Upload' in the left panel and upload your file, then click Continue when it shows as Ready."). Wait for at least one source to be Ready before generating.`;
   } else {
     sourcesBlock = ` The user will add sources manually inside NotebookLM. Navigate there, create or open a notebook, then waitForElement and verify sources are Ready before generating.`;
   }
