@@ -11502,30 +11502,32 @@ AUDIO OVERVIEW:
 SLIDE DECK:
   1. snapshotPage() — confirm the "Slide Deck" button is visible in the AX tree and note its exact accessible name.
   2. click("Slide Deck") — a configuration modal appears. If not found: click({x, y}) using coordinates from screenshot.
-  3. snapshotPage() — find style options, the description textarea, and the Generate button inside the modal (all Shadow DOM).
-  4. Style: click("Detailed Deck") if the user wants to read it or email it. click("Presenter Slides") if they are giving a live talk. Use exact label from snapshot.
-  5. Description box (REQUIRED — confirmed aria-label: "Describe the slide deck you want to create"):
-     type({text:"..."}) — always fill this. If user didn't specify a style, generate one:
-     e.g. "Professional technical slides for developers focusing on implementation and architecture, clear and concise."
-     ⚠️ If type() fails, first click the textarea by coordinate (from snapshotPage screenshot), then type again.
-  6. Language: set dropdown if needed.
-  7. snapshotPage() — confirm "Generate" button accessible name.
-  8. click("Generate") → waitForElement({text:"View slides", timeout:180}).
+  3. ⚡ AUTO-GENERATE WITH DEFAULTS — do NOT change Format, Language, or any settings.
+     The modal opens with "Detailed Deck" already selected — leave it as-is.
+     ONLY fill the description box IF the [USER STUDIO SELECTION] block contains specific style/focus instructions.
+     If it does: type those instructions into "Describe the slide deck you want to create".
+     If not: skip the description box entirely — leave it blank.
+  4. agentSpeak("Perfect! Your slide deck is generating now — this usually takes about 30 seconds! 🎉")
+  5. click("Generate") — immediately, without any other steps.
+  6. waitForElement({text:"View slides", timeout:180}).
+  7. agentSpeak("Your slide deck is ready! Check it out — it looks amazing! 🎉")
 
 VIDEO OVERVIEW:
   1. snapshotPage() — confirm the "Video Overview" button is visible in the AX tree and note its exact accessible name.
   2. click("Video Overview") — a configuration modal appears. If not found: click({x, y}) using coordinates from screenshot.
-  3. snapshotPage() — find style options, format options, focus textarea, and Generate button inside the modal.
-  4. Style: "Whiteboard" for architecture/system diagrams, "Kawaii" for engaging/friendly, others as visible. Use exact label from snapshot.
-  5. Format: "Structured Explainer" for thorough walkthrough, "Short" for a bite-sized clip.
-  6. Focus box: fill with specific instructions.
-  7. snapshotPage() — confirm "Generate" button accessible name.
-  8. click("Generate") — takes 3–5 min. agentSpeak("Your video is being created — usually 3–5 minutes.")
+  3. ⚡ AUTO-GENERATE WITH DEFAULTS — do NOT change Style or any settings.
+     ONLY fill the focus/description box IF [USER STUDIO SELECTION] contains specific style instructions.
+  4. agentSpeak("Awesome, your video overview is being created — this usually takes 3 to 5 minutes! I'll let you know when it's done! 🎬")
+  5. click("Generate") — immediately.
+  6. waitForElement({text:"video", timeout:300}).
+  7. agentSpeak("Your video overview is ready! How exciting — go watch it! 🎬✨")
 
 MIND MAP:
   1. snapshotPage() — confirm the "Mind Map" button is visible in the AX tree and note its exact accessible name.
-  2. click("Mind Map") — generates automatically, no modal. If not found: click({x, y}) by coordinate.
-  3. waitForElement({text:"Mind map", timeout:60}) to confirm render.
+  2. agentSpeak("Creating your mind map now — this is one of my favourites to watch come to life! 🧠")
+  3. click("Mind Map") — generates automatically, no modal. If not found: click({x, y}) by coordinate.
+  4. waitForElement({text:"Mind map", timeout:60}) to confirm render.
+  5. agentSpeak("Your mind map is ready! The connections it found are really interesting! 🧠✨")
 
 REPORTS:
   1. snapshotPage() — confirm the "Reports" button is visible in the AX tree and note its exact accessible name.
@@ -11541,42 +11543,76 @@ REPORTS:
   8. type({text:"your detailed report instructions"}) — with the textarea focused, type works.
      The EXACT aria-label on the Reports "Create Your Own" textarea is: "Input to describe the kind of report to create"
      If type() still fails: use writeChunk({text:"..."}) which is more robust for Shadow DOM textareas.
-  9. snapshotPage() — confirm "Generate" button accessible name.
- 10. click("Generate") — waitForElement({text:"report", timeout:180}).
+  9. agentSpeak("Your report is generating now — I love this one! 📝")
+  10. click("Generate") — waitForElement({text:"report", timeout:180}).
+  11. agentSpeak("Report done! That came out really well — take a look! 📝✨")
 
 FLASHCARDS:
-  ⛔ FLASHCARDS HAS NO TEXT INPUT BOX. Do NOT attempt to type any description, title, or instructions — there is nowhere to type. The only controls are difficulty level and Generate.
+  ⛔ FLASHCARDS HAS NO TEXT INPUT BOX. Do NOT type anything. The only controls are difficulty level and Generate.
   1. snapshotPage() — confirm the "Flashcards" button is visible in the AX tree. Note its exact accessible name.
   2. click("Flashcards") — a difficulty selector panel appears. If not found: click({x, y}) by coordinate.
-  3. snapshotPage() — find the difficulty buttons (Easy / Medium / Hard) and the Generate button. Do NOT type anything.
-  4. If difficulty was specified by the user, click it. If not, click "Medium" as a sensible default.
-  5. snapshotPage() — confirm "Generate" button accessible name.
-  6. click("Generate") — waitForElement({text:"flashcard", timeout:120}).
-  If "Generate" is grey/disabled after clicking Flashcards: sources are still loading — waitForElement({text:"Ready", timeout:60}) then snapshotPage() and retry from step 3.
+  3. ⚡ AUTO-GENERATE — use "Medium" difficulty by default. Do NOT type anything.
+  4. agentSpeak("Flashcards coming right up — great choice for studying! 🃏")
+  5. click("Generate") — immediately.
+  6. waitForElement({text:"flashcard", timeout:120}).
+  7. agentSpeak("Your flashcards are ready — these are going to be so useful! 🃏✨")
+  If "Generate" is grey/disabled: sources are still loading — waitForElement({text:"Ready", timeout:60}) then retry.
 
 QUIZ:
-  ⛔ QUIZ HAS NO TEXT INPUT BOX. Do NOT attempt to type any description or instructions — there is nowhere to type. The only controls are difficulty level and Generate.
+  ⛔ QUIZ HAS NO TEXT INPUT BOX. Do NOT type anything. The only controls are difficulty level and Generate.
   1. snapshotPage() — confirm the "Quiz" button is visible in the AX tree. Note its exact accessible name.
   2. click("Quiz") — same difficulty selector panel as Flashcards. If not found: click({x, y}) by coordinate.
-  3. snapshotPage() — find difficulty buttons and Generate button. Do NOT type anything.
-  4. If difficulty was specified by the user, click it. If not, click "Medium" as a sensible default.
-  5. snapshotPage() — confirm "Generate" button accessible name.
-  6. click("Generate") — waitForElement({text:"question", timeout:120}).
+  3. ⚡ AUTO-GENERATE — use "Medium" difficulty by default. Do NOT type anything.
+  4. agentSpeak("Quiz time! Let's see how much you know — generating now! ❓")
+  5. click("Generate") — immediately.
+  6. waitForElement({text:"question", timeout:120}).
+  7. agentSpeak("Quiz is ready! This is going to be really fun — good luck! ❓✨")
 
 DATA TABLE:
   1. snapshotPage() — confirm the "Data Table" button is visible in the AX tree and note its exact accessible name.
   2. click("Data Table") — a modal appears. If not found: click({x, y}) by coordinate.
-  3. snapshotPage() — find the description textarea and Generate button inside the modal.
-  4. Specify columns in the description box: type({text:"Columns: Model Name, Parameters, Context Window, Pricing, Best Use Case", selector:"textarea"}).
-  5. click("Generate").
+  3. ⚡ AUTO-GENERATE WITH DEFAULTS — only fill description if [USER STUDIO SELECTION] has specific column instructions.
+  4. agentSpeak("Building your data table now — structured data is so satisfying! 📋")
+  5. click("Generate") — immediately.
+  6. waitForElement({text:"table", timeout:180}).
+  7. agentSpeak("Your data table is ready — look how clean that is! 📋✨")
 
 INFOGRAPHIC:
   1. snapshotPage() — confirm the "Infographic" button is visible in the AX tree and note its exact accessible name.
   2. click("Infographic") — a style picker appears. If not found: click({x, y}) by coordinate.
-  3. snapshotPage() — find style and detail options inside the picker.
-  4. Style: "Kawaii" (colorful/fun), "Clay" (3D clay), "Sketch Note" (hand-drawn), "Anime" (illustrated). Use exact label from snapshot.
-  5. Detail: "Concise" for high-level, "Standard" for balanced, "Detailed" for deep dive.
-  6. click("Generate").
+  3. ⚡ AUTO-GENERATE WITH DEFAULTS — use whatever style is already selected (default). Do NOT change Style or Detail settings unless user specified one.
+  4. agentSpeak("Creating your infographic now — this one is going to look stunning! 💡")
+  5. click("Generate") — immediately.
+  6. waitForElement({text:"infographic", timeout:180}).
+  7. agentSpeak("Your infographic is ready — absolutely gorgeous! 💡✨")
+
+### MULTIPLE VIDEO OVERVIEWS (e.g. "make 5 videos")
+When the user asks for multiple Video Overviews from different topics or sources:
+  1. agentSpeak("Love it! I'll create all N videos for you — let me get started right now! 🎬")
+  2. For each video: add its specific source(s) to a NEW notebook (or separate source), then run Video Overview → click Generate → wait for completion.
+  3. If sources need to be uploaded (PDF, file): agentSpeak("For video N, I need you to upload the source file. Please click 'Add sources' → 'Upload' and add the file for [topic], then let me know when it's added!")
+     then requestUserIntervention("Please upload the source for video N: [topic description]. Click 'Add sources' → 'Upload', then click Continue.")
+  4. After each video completes: agentSpeak("Video N is done and it looks amazing! Moving on to video N+1 now! 🎬")
+  5. When all done: agentSpeak("All N videos are complete! You're going to love these — check them all out! 🎉🎬")
+
+### ALWAYS SPEAK — MANDATORY COMMUNICATION RULES
+You MUST call agentSpeak() in ALL of these situations. Never be silent. NEVER skip agentSpeak. The user should always know what's happening:
+
+  ✅ ALWAYS speak when:
+  - Starting any task: agentSpeak("I'm on it! Let me [describe what you're about to do] right now!")
+  - After every successful action that moves the task forward
+  - Before any wait (waitForElement): agentSpeak("Just waiting for [thing] to load — almost there!")
+  - When stuck or retrying: agentSpeak("Hmm, I couldn't find that element — let me try a different approach!")
+  - When asking for help (requestUserIntervention): ALWAYS agentSpeak first explaining what you need and why
+  - When a step completes: agentSpeak("Done! [Brief exciting summary of what was achieved]")
+  - When the whole task is done: agentSpeak("Everything is complete! [Enthusiastic summary + 1 proactive idea for what they could do next]")
+
+  ❌ NEVER be silent for more than 2 consecutive tool calls without speaking.
+
+  🎤 TONE: Warm, excited, loving, fun, supportive. Like a best friend who's also amazing at tech. Use emojis naturally. Celebrate small wins. Give encouragement when waiting.
+
+  💡 PROACTIVE IDEAS: Whenever a task completes, suggest 1 bonus idea:
+     e.g. "Your slide deck is ready! 🎉 Pro tip — you could also generate an Audio Overview from the same sources and have an AI podcast to go with your deck. Want me to do that too?"
 
 ### API KEY HANDLING
 If you see a "Set up" banner, "Connect Gemini" prompt, or an API key input:
@@ -11585,11 +11621,11 @@ If you see a "Set up" banner, "Connect Gemini" prompt, or an API key input:
   3. If key missing: agentSpeak("I need your Gemini API key to use this Studio feature. Please add it in the Aion settings and then I'll continue.") then requestUserIntervention("Please enter your Gemini API key in the Aion extension settings, then click Continue.").
 
 ### EDGE CASES
-- GREY / DISABLED "Generate": sources still loading. waitForElement({text:"Ready", timeout:90}) then snapshotPage() and retry from the Studio tool click.
-- SOURCE LIMIT: NotebookLM supports up to 50 sources. If near limit, ask user which to prioritize.
-- GENERATION TIMEOUT: if waitForElement times out after 5 min, requestUserIntervention and tell user to check if it's still running.
-- SHADOW DOM FALLBACK CHAIN: (1) snapshotPage() to find exact accessible name → (2) click by that name → (3) if still not found, coordinate click from screenshot → (4) requestUserIntervention. Never retry the same failing click label more than twice without escalating.
-- TOPIC NOT IN SOURCES: NotebookLM refuses to generate about topics not in its sources. Add a relevant source URL first, then retry.
+- GREY / DISABLED "Generate": sources still loading. agentSpeak("Waiting for sources to finish loading — almost there!") then waitForElement({text:"Ready", timeout:90}) then snapshotPage() and retry.
+- SOURCE LIMIT: NotebookLM supports up to 50 sources. If near limit, agentSpeak to ask user which to prioritize.
+- GENERATION TIMEOUT: if waitForElement times out after 5 min, agentSpeak("Still waiting — this is taking a bit longer than usual. I'll check in with you!") then requestUserIntervention.
+- SHADOW DOM FALLBACK CHAIN: (1) snapshotPage() to find exact accessible name → (2) click by that name → (3) if still not found, coordinate click from screenshot → (4) agentSpeak the issue then requestUserIntervention. Never retry the same failing click label more than twice without escalating.
+- TOPIC NOT IN SOURCES: NotebookLM refuses to generate about topics not in its sources. agentSpeak about the issue, add a relevant source URL, then retry.
 - CONTENT GROUNDING: NotebookLM never hallucinates outside your sources — if output seems thin, the sources are too thin. Add more.`,
 
   ai_studio: `
@@ -12809,7 +12845,9 @@ async function runAgentTask(prompt, thread) {
   //   3. Sources step           — confirms choices, asks for source material
   // All selections are injected into the prompt so the agent executes exactly
   // what was agreed without guessing from keywords.
-  if (isNotebookLMTask(prompt)) {
+  // Guard: if the prompt was already pre-processed by launchGeminiNotebook() or a
+  // previous pre-flight pass (contains [USER STUDIO SELECTION]), skip pre-flight.
+  if (isNotebookLMTask(prompt) && !prompt.includes('[USER STUDIO SELECTION')) {
     try {
       // Step 1 — warm greeting (voice fires async; bubble appears immediately)
       agentSpeak("Hey! I'm so excited to help you create something with Google NotebookLM! Here's everything I can build for free — just pick what you'd like.");
@@ -20139,14 +20177,60 @@ document.querySelectorAll('.template-cat').forEach(cat => {
   cat.addEventListener('click', () => showTemplateCategory(cat.dataset.cat));
 });
 
+// ── Gemini Notebook direct launch ─────────────────────────────────────────────
+// Called when the user clicks the "Gemini Notebook" button in the toolbar.
+// Switches to Autopilot mode, runs the three-step pre-flight conversation
+// (greeting → studio picker → sources), and starts the agent.
+async function launchGeminiNotebook() {
+  // 1. Switch to Autopilot mode if not already active
+  if (currentAiMode !== 'agent') {
+    const agentBtn = document.getElementById('agentModeBtn');
+    if (agentBtn) agentBtn.click();
+    await new Promise(r => setTimeout(r, 180)); // let mode-switch animate
+  }
+
+  const thread = document.getElementById('chatThread');
+  if (!thread) return;
+
+  // 2. Guard: need an API key
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!keyResult.geminiApiKey) { showGeminiModal(); return; }
+
+  // 3. Warm greeting + studio picker + sources step
+  //    (same pre-flight flow as when the user types a NL task, but invoked directly)
+  const userName = (await chrome.storage.local.get(['aionUserName'])).aionUserName || '';
+  const greeting = userName
+    ? `Hey ${userName}! 🎉 I'm SO excited to help you create something amazing with Gemini Notebook — it's completely free! Pick what you'd like to build and I'll do the rest!`
+    : `Hey! 🎉 I'm SO excited to help you create something amazing with Gemini Notebook — it's completely free! Pick what you'd like to build and I'll do the rest!`;
+  agentSpeak(greeting);
+  addStudioGreetingBubble(thread);
+
+  let pickerResult, sourcesResult;
+  try {
+    pickerResult = await awaitStudioPicker(thread, '');
+    if (!pickerResult.tools || pickerResult.tools.length === 0) return;
+    sourcesResult = await awaitSourcesStep(thread, pickerResult.tools, '');
+  } catch (_) { return; } // user cancelled / stopped
+
+  // 4. Build the enriched prompt and hand off to runAgentTask
+  const toolList = pickerResult.tools.join(', ');
+  const extraDetail = pickerResult.details ? ` Style / focus instructions: "${pickerResult.details}".` : '';
+  let sourcesBlock = '';
+  if (sourcesResult.mode === 'provided' && sourcesResult.sources) {
+    sourcesBlock = ` User-provided source material (add these as sources in NotebookLM before generating): "${sourcesResult.sources}".`;
+  } else if (sourcesResult.mode === 'find') {
+    sourcesBlock = ` The user has no sources — search the web for 2–4 high-quality relevant URLs, then add them as sources in NotebookLM before generating.`;
+  } else {
+    sourcesBlock = ` The user will add sources manually inside NotebookLM. Navigate there, create or open a notebook, then waitForElement and verify sources are Ready before generating.`;
+  }
+
+  const enrichedPrompt = `Open Google NotebookLM and create the following content.\n\n[USER STUDIO SELECTION — build EXACTLY these NotebookLM outputs in this order: ${toolList}.${extraDetail}${sourcesBlock} Do NOT build any other output type. Follow the NOTEBOOKLM ROUTING protocol.]`;
+
+  await runAgentTask(enrichedPrompt, thread);
+}
+
 document.getElementById('addMagicBtn')?.addEventListener('click', () => {
-  editingMagicIndex = null;
-  document.getElementById('magicModal').classList.add('open');
-  document.getElementById('magicName').value = '';
-  document.getElementById('magicPrompt').value = '';
-  document.getElementById('promptCount').textContent = '0';
-  document.getElementById('selectedEmoji').value = '';
-  document.getElementById('saveMagicBtn').textContent = 'Create';
+  launchGeminiNotebook();
 });
 
 document.getElementById('closeMagicModal')?.addEventListener('click', () => {
