@@ -11334,8 +11334,8 @@ NotebookLM is a source-grounded reasoning engine — it ONLY creates content FRO
 3. Do NOT click any Studio button until the user has chosen their output format.
 
 ### NAVIGATION
-- If not on notebooklm.google.com: navigate("https://notebooklm.google.com/").
-- On the notebook list page: click an existing notebook to open it, or click "New notebook" to start fresh.
+- Navigate to https://notebooklm.google.com/ — it will redirect to https://notebook.google.com/. Both URLs are the same app. Do NOT re-navigate if you land on notebook.google.com — you are already in the right place.
+- On the notebook list page: click an existing notebook to open it, or click "New notebook" / "Create new notebook" to start fresh.
 
 ### ADDING SOURCES (must complete BEFORE any generation)
 ⚠️ CRITICAL: The ENTIRE NotebookLM UI uses Shadow DOM Web Components. Standard placeholder selectors WILL fail. After every modal or panel opens, you MUST call snapshotPage() to find the real accessible names of inputs before typing into them.
@@ -11368,11 +11368,21 @@ Sources panel is on the LEFT side of the page.
 
 ### STUDIO PANEL — ALL GENERATIVE TOOLS (right side of page)
 
+⚠️ MANDATORY SOURCES GATE — check this ONCE before the first Studio click:
+Before clicking ANY Studio button, verify that at least one source is loaded:
+  1. snapshotPage() — check the left Sources panel. Look for source items that show "Ready" status (not a spinner or error).
+  2. If NO sources are present: do NOT click any Studio tool. Either add the sources yourself (follow ADDING SOURCES above) or call requestUserIntervention("Please add your sources in the left panel (Add sources button), then let me know when they show as Ready.")
+  3. Only proceed to Studio once at least one source shows Ready.
+
+⚠️ ANTI-LOOP RULE — ALWAYS follow this:
+If the same click or type action fails or produces no change 2 times in a row, STOP immediately. Call snapshotPage() to re-read the current page state, then decide what to do next. NEVER repeat the same action more than 3 times without a snapshotPage() in between. A repeated action that keeps failing is a signal the page state has changed — not a reason to retry harder.
+
 ⚠️ CRITICAL — SHADOW DOM PRE-FLIGHT (apply before EVERY Studio button click):
 The Studio panel buttons (Audio Overview, Slide Deck, Video Overview, Mind Map, etc.) are Shadow DOM Web Components — standard label selectors often fail cold. Before clicking ANY Studio button:
   1. snapshotPage() — scan the AX tree for the button's exact accessible name (e.g. "Audio Overview", "Slide Deck"). It may differ slightly from the visible label.
   2. click(exactLabel) using the name found in step 1.
   3. If click still fails: take a screenshot to read the button's on-screen coordinates, then click({x, y}) by coordinate.
+  4. After a successful Studio button click — always call snapshotPage() IMMEDIATELY to confirm the modal/panel opened and find the real accessible names of controls inside it before interacting.
   4. If coordinate click also fails: requestUserIntervention("Please click the [Tool Name] button in the Studio panel on the right side of the page, then let me know when the modal appears.")
 
 The same pre-flight rule applies INSIDE modals (style pickers, Generate buttons, textarea inputs) — always snapshotPage() after a modal opens to find the real accessible names before interacting.
@@ -11423,17 +11433,23 @@ REPORTS:
   7. click("Generate").
 
 FLASHCARDS:
-  1. snapshotPage() — confirm the "Flashcards" button is visible in the AX tree and note its exact accessible name.
-  2. click("Flashcards") — a difficulty selector appears. If not found: click({x, y}) by coordinate.
-  3. snapshotPage() — find difficulty options and Generate button inside the modal.
-  4. Ask user if not specified: "Easy, Medium, or Hard?" then click the matching option using exact label from snapshot.
-  5. click("Generate").
+  ⛔ FLASHCARDS HAS NO TEXT INPUT BOX. Do NOT attempt to type any description, title, or instructions — there is nowhere to type. The only controls are difficulty level and Generate.
+  1. snapshotPage() — confirm the "Flashcards" button is visible in the AX tree. Note its exact accessible name.
+  2. click("Flashcards") — a difficulty selector panel appears. If not found: click({x, y}) by coordinate.
+  3. snapshotPage() — find the difficulty buttons (Easy / Medium / Hard) and the Generate button. Do NOT type anything.
+  4. If difficulty was specified by the user, click it. If not, click "Medium" as a sensible default.
+  5. snapshotPage() — confirm "Generate" button accessible name.
+  6. click("Generate") — waitForElement({text:"flashcard", timeout:120}).
+  If "Generate" is grey/disabled after clicking Flashcards: sources are still loading — waitForElement({text:"Ready", timeout:60}) then snapshotPage() and retry from step 3.
 
 QUIZ:
-  1. snapshotPage() — confirm the "Quiz" button is visible in the AX tree and note its exact accessible name.
-  2. click("Quiz") — same difficulty selector as Flashcards. If not found: click({x, y}) by coordinate.
-  3. snapshotPage() — find difficulty options and Generate button inside the modal.
-  4. Set language if needed. click("Generate").
+  ⛔ QUIZ HAS NO TEXT INPUT BOX. Do NOT attempt to type any description or instructions — there is nowhere to type. The only controls are difficulty level and Generate.
+  1. snapshotPage() — confirm the "Quiz" button is visible in the AX tree. Note its exact accessible name.
+  2. click("Quiz") — same difficulty selector panel as Flashcards. If not found: click({x, y}) by coordinate.
+  3. snapshotPage() — find difficulty buttons and Generate button. Do NOT type anything.
+  4. If difficulty was specified by the user, click it. If not, click "Medium" as a sensible default.
+  5. snapshotPage() — confirm "Generate" button accessible name.
+  6. click("Generate") — waitForElement({text:"question", timeout:120}).
 
 DATA TABLE:
   1. snapshotPage() — confirm the "Data Table" button is visible in the AX tree and note its exact accessible name.
@@ -11457,7 +11473,7 @@ If you see a "Set up" banner, "Connect Gemini" prompt, or an API key input:
   3. If key missing: agentSpeak("I need your Gemini API key to use this Studio feature. Please add it in the Aion settings and then I'll continue.") then requestUserIntervention("Please enter your Gemini API key in the Aion extension settings, then click Continue.").
 
 ### EDGE CASES
-- GREY / DISABLED "Generate": sources still loading. waitForElement({text:"Generate", timeout:90}) then retry.
+- GREY / DISABLED "Generate": sources still loading. waitForElement({text:"Ready", timeout:90}) then snapshotPage() and retry from the Studio tool click.
 - SOURCE LIMIT: NotebookLM supports up to 50 sources. If near limit, ask user which to prioritize.
 - GENERATION TIMEOUT: if waitForElement times out after 5 min, requestUserIntervention and tell user to check if it's still running.
 - SHADOW DOM FALLBACK CHAIN: (1) snapshotPage() to find exact accessible name → (2) click by that name → (3) if still not found, coordinate click from screenshot → (4) requestUserIntervention. Never retry the same failing click label more than twice without escalating.
