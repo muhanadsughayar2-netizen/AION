@@ -1370,6 +1370,44 @@
     .verdict-btn.red { background: linear-gradient(45deg, #ff4444, #cc0000); box-shadow: 0 0 20px rgba(255,0,0,0.6); }
     .verdict-btn.green { background: linear-gradient(45deg, #00ff88, #00cc66); box-shadow: 0 0 20px rgba(0,255,0,0.6); }
     
+    /* AION avatar bob + squish animation on the Autopilot mode button */
+    @keyframes aion-bob {
+      0%   { transform: translateY(0px)    scaleY(1)    scaleX(1); }
+      30%  { transform: translateY(-4px)   scaleY(1.06) scaleX(0.95); }
+      55%  { transform: translateY(-5px)   scaleY(1.08) scaleX(0.94); }
+      75%  { transform: translateY(-2px)   scaleY(1.03) scaleX(0.98); }
+      90%  { transform: translateY(1px)    scaleY(0.96) scaleX(1.03); }
+      100% { transform: translateY(0px)    scaleY(1)    scaleX(1); }
+    }
+    @keyframes aion-blink {
+      0%, 92%, 100% { transform: scaleY(1); }
+      95%           { transform: scaleY(0.1); }
+    }
+    .aion-avatar-wrap {
+      display: inline-flex;
+      align-items: flex-end;
+      justify-content: center;
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+    }
+    .aion-avatar-wrap img {
+      width: 24px;
+      height: 24px;
+      object-fit: contain;
+      animation: aion-bob 2.2s ease-in-out infinite, aion-blink 4s ease-in-out infinite;
+      transform-origin: bottom center;
+      filter: drop-shadow(0 2px 6px rgba(45,212,191,0.45));
+    }
+    #agentModeBtn:hover .aion-avatar-wrap img {
+      animation: aion-bob 1s ease-in-out infinite, aion-blink 3s ease-in-out infinite;
+      filter: drop-shadow(0 3px 10px rgba(45,212,191,0.7));
+    }
+    #agentModeBtn.active .aion-avatar-wrap img {
+      animation: aion-bob 0.7s ease-in-out infinite, aion-blink 2.5s ease-in-out infinite;
+      filter: drop-shadow(0 3px 12px rgba(45,212,191,0.9));
+    }
+
     /* Magic Buttons - User Created Agents (EXACT same size as + Magic Agents button) */
     .magic-buttons { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 0; min-height: 0; align-items: center; }
     .magic-btn { border: none; border-radius: 12px; padding: 9px 16px; color: white; font-size: 13px; font-weight: 700; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: all 0.2s; height: 36px; box-sizing: border-box; }
@@ -1779,7 +1817,10 @@
         <button class="mode-btn" data-mode="music" id="musicModeBtn" title="Create music clips"><span class="mode-emoji">🎵</span> Music</button>
         <button class="mode-btn" data-mode="video" id="videoModeBtn" title="Generate videos from prompts or screenshots"><span class="mode-emoji">🎬</span> Video</button>
         <button class="mode-btn" data-mode="broadcast" id="broadcastModeBtn" title="Multi-voice AI broadcast from any content"><span class="mode-emoji">🎙️</span> Broadcast</button>
-        <button class="mode-btn" data-mode="agent" id="agentModeBtn" title="Autopilot — give it a task and it clicks/types/scrolls on the page for you"><span class="mode-emoji"><img src="icons/icon48.png" class="mode-icon-img" alt=""></span> Autopilot</button>
+        <button class="mode-btn" data-mode="agent" id="agentModeBtn" title="AION Autopilot — give it a task and it clicks, types and scrolls for you" style="gap:7px;padding-left:10px;padding-right:13px;">
+          <span class="aion-avatar-wrap"><img src="icons/agent-avatar.png" alt="AION"></span>
+          <span style="font-weight:800;letter-spacing:0.04em;">AION</span>
+        </button>
         <div style="flex:1;"></div>
         <button class="mode-btn" id="addMagicBtn" title="Launch Gemini Notebook — turn any source into slides, podcasts, mind maps & more" style="background:rgba(66,133,244,0.08);border-color:rgba(66,133,244,0.3);color:#74b0ff;font-weight:600;letter-spacing:0.01em;gap:5px;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="flex-shrink:0;vertical-align:middle">
