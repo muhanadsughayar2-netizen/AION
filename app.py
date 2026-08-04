@@ -1451,6 +1451,10 @@ def add_headers(response):
         response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization'
     return response
 
+@app.route('/test-aion')
+def test_aion():
+    return send_from_directory('flow-premium', 'test-aion.html')
+
 @app.route('/accounting')
 def accounting_app():
     """Simple accounting app"""
