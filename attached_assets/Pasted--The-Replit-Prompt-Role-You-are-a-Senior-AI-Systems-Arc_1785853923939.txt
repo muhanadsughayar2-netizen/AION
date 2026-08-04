@@ -1,0 +1,33 @@
+ The Replit Prompt
+Role: You are a Senior AI Systems Architect specializing in Browser-Native Agents. Context: I am developing "Aion," a Chrome Extension (MV3) AI agent. I have attached the current codebase (popup.js, background.js, content.js, ai-chat.js).
+
+Current Status & Findings:
+
+Strengths: The code has excellent stealth (webdriver bypass) and DOM stability (freezeDOM logic).
+Critical Failure: The agent suffers from "Loop Drift." In recent tests on NotebookLM, it entered an infinite loop clicking the same button 10+ times because it lacked a state-verification circuit breaker.
+Hardware Limitation: The agent is "blind" to Canvas/WebGL elements (like Google Slides/Sheets), making it unable to type or click inside non-DOM UI.
+Task: Implement the following "2026 Standard" fixes:
+
+Loop Guardrail Middleware:
+
+Implement a StepCounter and ActionHistory tracker in ai-chat.js.
+If the same (action, selector, url) triplet repeats 3 times without a DOM change, trigger a mandatory Hard_Stop and request human intervention.
+Add a "Visual Verification" step: After an action, take a 200x200 crop of the target area to verify the UI state actually changed.
+Canvas/OCR Interaction Layer:
+
+Integrate an OCR-to-Coordinate mapper. When a target is not found in the DOM, use the captureVisibleTab screenshot and run it through a vision-check to find text coordinates.
+Use chrome.debugger (CDP) to inject raw mouse events at those coordinates to bypass the "Canvas Barrier."
+State Persistence & RAG:
+
+Replace the simple chrome.storage.local history with a structured local Vector Store (use a lightweight library like Wasm-Chroma or Ollama-local).
+The agent must be able to "remember" context across different browser tabs.
+Refactoring:
+
+Clean up the background.js to handle the new Veo-3.1 multimodal tokens for faster screenshot processing.
+Question for Replit: What is the most efficient way to structure the ActionHistory object to ensure it catches loops without bloating the context window? Please provide the updated code for ai-chat.js.
+
+Why this prompt works for you:
+Circuit Breakers: It tells Replit to stop the "endless pain" you saw in the logs by adding a hard-stop rule.
+Canvas Support: It solves the Google Slides problem by suggesting "OCR-to-Coordinate" mapping, which is how modern 2026 agents handle non-HTML interfaces.
+Professionalism: It uses terms like "MV3," "CDP," and "Loop Drift," which signals the AI to provide high-level, production-ready code instead of basic scripts.
+Next Step: Once Replit gives you the ai-chat.js code, check if it included the checkForInfiniteLoop function we discussed. If it did, your agent will never get stuck in a "digital hamster wheel" again!
