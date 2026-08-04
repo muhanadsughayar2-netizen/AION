@@ -1673,6 +1673,54 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               // guessing entirely. Tabs/newlines in the string move columns/rows naturally.
               await send('Input.insertText', { text });
 
+            } else if (mode === 'notebooklm' || mode === 'notebooklm-fallback') {
+              // ── NOTEBOOKLM (Shadow DOM inputs) ────────────────────────────────
+              // NotebookLM builds every input/textarea inside nested Shadow DOM
+              // Web Components. Input.insertText only works after the correct
+              // shadow-host element has browser focus. We pierce shadow roots via
+              // executeScript to focus the exact target, then insertText which
+              // operates on whatever element holds OS-level keyboard focus.
+              const nlFocus = await chrome.scripting.executeScript({
+                target: { tabId },
+                func: () => {
+                  function dSQ(root, sel) {
+                    if (!root) return null;
+                    const d = root.querySelector(sel);
+                    if (d) return d;
+                    for (const el of root.querySelectorAll('*')) {
+                      if (el.shadowRoot) { const f = dSQ(el.shadowRoot, sel); if (f) return f; }
+                    }
+                    return null;
+                  }
+                  const el = dSQ(document,
+                    "input[type='url'], input[placeholder*='links' i], input[placeholder*='url' i], " +
+                    "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
+                    "input[aria-label*='URL' i], input[aria-label*='website' i], " +
+                    "textarea[aria-label='Input to describe the kind of report to create'], " +
+                    "textarea[aria-label='What should the AI hosts focus on in this episode?'], " +
+                    "textarea[aria-label='Text area for custom topic'], " +
+                    "textarea[placeholder*='links' i], div[contenteditable='true'], textarea, input[type='text']"
+                  );
+                  if (!el) return { found: false };
+                  el.focus();
+                  return { found: true, tag: el.tagName, ph: el.placeholder || '', al: el.getAttribute('aria-label') || '' };
+                }
+              }).catch(() => [{ result: { found: false } }]);
+
+              const nlRes = nlFocus?.[0]?.result;
+              await new Promise(r => setTimeout(r, 150)); // let Shadow DOM focus settle
+              if (nlRes?.found) {
+                await send('Input.insertText', { text });
+                sendResponse({ success: true, data: `NotebookLM ${nlRes.tag} "${nlRes.al || nlRes.ph}"` });
+              } else {
+                // No input found yet — coordinate click then insertText as fallback
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await new Promise(r => setTimeout(r, 200));
+                await send('Input.insertText', { text });
+                sendResponse({ success: true, data: 'NotebookLM coordinate fallback' });
+              }
+
             } else {
               // ── WORD ONLINE / other canvas apps ──────────────────────────────
               // Word Online wraps documents inside cross-origin WAC frames
@@ -1741,16 +1789,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             // ── SPA / AIS / Word / generic: verify field received the text ────
             // Sheets & Excel are already verified above via Formula Bar.
             // Docs uses a canvas renderer — no DOM field to read — so we skip it.
+            // NotebookLM is already handled above (Shadow DOM path) — skip here.
             // For everything else: after a short React-settle pause, check the
             // active element is non-empty. If it's empty, the focus was lost and
             // Input.insertText fired into the void — return false so the agent
             // can refocus and retry instead of building on a silent miss.
-            if (!isDocs && !isGrid && !isExcel && text.trim().length > 0 && !params.run) {
+            const isNotebookLM = (mode === 'notebooklm' || mode === 'notebooklm-fallback');
+            if (!isDocs && !isGrid && !isExcel && !isNotebookLM && text.trim().length > 0 && !params.run) {
               try {
                 await new Promise(r => setTimeout(r, 180)); // React state settle
                 const vr = await sendR('Runtime.evaluate', {
+                  // Shadow DOM apps (e.g. AI Studio) keep keyboard focus inside a
+                  // shadow root, so document.activeElement returns the shadow HOST,
+                  // whose .value is always empty. Pierce shadow roots recursively
+                  // to find the actual focused element before reading its value.
                   expression: `(()=>{
-                    const el = document.activeElement;
+                    function getDeepActive(el) {
+                      while (el && el.shadowRoot && el.shadowRoot.activeElement)
+                        el = el.shadowRoot.activeElement;
+                      return el;
+                    }
+                    const el = getDeepActive(document.activeElement);
                     if (!el || el === document.body) return 'no-focus';
                     const val = (el.value ?? el.innerText ?? el.textContent ?? '').trim();
                     return val.length > 0 ? 'ok' : 'empty';

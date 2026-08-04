@@ -4465,17 +4465,27 @@
             return null;
           }
 
-          // Exact aria-label values for each Studio panel textarea (verified live):
-          //   Reports "Create Your Own"  → "Input to describe the kind of report to create"
-          //   Audio Overview focus box   → "What should the AI hosts focus on in this episode?"
-          //   Slide Deck / Video / etc.  → "Text area for custom topic"  OR generic textarea
-          //   Add sources Website URL    → textarea[placeholder*='links' i]  OR generic textarea
+          // Selector priority — most specific first so a visible Studio textarea wins
+          // over a hidden generic fallback:
+          //   "Add sources → Websites" URL input  → input[type='url'] or input[placeholder*='links']
+          //   Reports "Create Your Own"            → textarea[aria-label='Input to describe...']
+          //   Audio Overview focus box             → textarea[aria-label='What should the AI hosts...']
+          //   Slide Deck / Video / etc.            → textarea[aria-label='Text area for custom topic']
+          //   Generic input fallback               → input[type='text'], textarea
           const input = deepShadowQuery(document,
+            // ── "Add sources → Websites" URL input ─────────────────────────────
+            "input[type='url'], " +
+            "input[placeholder*='links' i], input[placeholder*='url' i], " +
+            "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
+            "input[aria-label*='URL' i], input[aria-label*='website' i], " +
+            "input[aria-label*='link' i], " +
+            // ── Studio panel textareas ──────────────────────────────────────────
             "textarea[aria-label='Input to describe the kind of report to create'], " +
             "textarea[aria-label='What should the AI hosts focus on in this episode?'], " +
             "textarea[aria-label='Text area for custom topic'], " +
             "textarea[placeholder*='links' i], " +
-            "div[contenteditable='true'], textarea"
+            // ── Generic fallbacks ───────────────────────────────────────────────
+            "div[contenteditable='true'], textarea, input[type='text']"
           );
 
           let x, y;
@@ -4847,6 +4857,52 @@
           await pasteViaClipboard(params.text, gridEl);
           showAgentBanner('✓ Value pasted into Excel');
           return { success: true, message: 'Pasted into Excel cell' };
+        }
+
+        // ── NOTEBOOKLM (Shadow DOM) ────────────────────────────────────────────
+        // content.js reaches this 'type' branch only when CDP attach failed and
+        // background.js called runFallbackType(). All NotebookLM inputs live inside
+        // nested Shadow DOM — standard document.querySelector() is blind to them.
+        // Recursively pierce shadow roots, set the value via native setter (so
+        // React/Lit controlled components update their state), then dispatch input
+        // events so the UI reflects the new value.
+        if (host.includes('notebooklm.google.com') || host.includes('notebook.google.com')) {
+          function deepShadowQueryForType(root, selector) {
+            if (!root) return null;
+            const direct = root.querySelector(selector);
+            if (direct) return direct;
+            for (const el of root.querySelectorAll('*')) {
+              if (el.shadowRoot) {
+                const found = deepShadowQueryForType(el.shadowRoot, selector);
+                if (found) return found;
+              }
+            }
+            return null;
+          }
+          const nlInput = deepShadowQueryForType(document,
+            "input[type='url'], input[placeholder*='links' i], input[placeholder*='url' i], " +
+            "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
+            "input[aria-label*='URL' i], input[aria-label*='website' i], " +
+            "textarea[aria-label='Input to describe the kind of report to create'], " +
+            "textarea[aria-label='What should the AI hosts focus on in this episode?'], " +
+            "textarea[aria-label='Text area for custom topic'], " +
+            "textarea[placeholder*='links' i], div[contenteditable='true'], textarea, input[type='text']"
+          );
+          if (nlInput) {
+            nlInput.focus();
+            const isTA = nlInput.tagName === 'TEXTAREA';
+            const proto = isTA ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+            const setter = Object.getOwnPropertyDescriptor(proto, 'value')?.set;
+            if (setter) setter.call(nlInput, params.text);
+            else nlInput.value = params.text;
+            nlInput.dispatchEvent(new Event('input',  { bubbles: true }));
+            nlInput.dispatchEvent(new Event('change', { bubbles: true }));
+            showAgentBanner(`⌨️ Typed into NotebookLM ${isTA ? 'textarea' : 'input'}`);
+            return { success: true, message: 'Typed into NotebookLM Shadow DOM input' };
+          }
+          // No input found — tell the agent explicitly so it can retry after the
+          // dialog fully loads, rather than silently using generic search selectors.
+          return { success: false, error: 'NotebookLM: no URL input or textarea found in Shadow DOM — dialog may still be loading. Wait 1s then retry.' };
         }
 
         // ── STANDARD INPUTS / SEARCH BOXES / CONTENTEDITABLE ──────────────────
