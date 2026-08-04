@@ -899,110 +899,72 @@ function speakText(text, langCode = null) {
 // speak a request aloud. Completely independent of the Read-button TTS session.
 const _agentVoice = { audio: null, controller: null };
 
-async function agentSpeak(text) {
-  // Stop anything already playing
-  if (_agentVoice.audio) { try { _agentVoice.audio.pause(); } catch (_) {} _agentVoice.audio = null; }
-  if (_agentVoice.controller) { try { _agentVoice.controller.abort(); } catch (_) {} }
-  try { window.speechSynthesis.cancel(); } catch (_) {}
+// ============================================================================
+// ZERO-LATENCY INSTANT AGENT SPEECH ENGINE (0ms Network Lag)
+// ============================================================================
+let activeUtterance = null;
 
-  // Sanitise — strip markdown symbols, keep plain speech
-  const clean = text
+function agentSpeak(text) {
+  // 1. Cancel any active speech or audio immediately
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+  if (_agentVoice.audio) {
+    try { _agentVoice.audio.pause(); } catch (_) {}
+    _agentVoice.audio = null;
+  }
+  if (_agentVoice.controller) {
+    try { _agentVoice.controller.abort(); } catch (_) {}
+    _agentVoice.controller = null;
+  }
+
+  // 2. Strip markdown — keep plain speakable text
+  const cleanSpeechText = text
     .replace(/```[\s\S]*?```/g, 'code block')
     .replace(/[#*_~`>|]/g, '')
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 1200);
+    .slice(0, 800);
 
-  if (!clean) return;
+  if (!cleanSpeechText) return;
 
-  // Fetch API key
-  let apiKey = '';
-  try { const r = await chrome.storage.sync.get(['geminiApiKey']); apiKey = r.geminiApiKey || ''; } catch (_) {}
+  try {
+    // 3. Fire instant local speech — zero network delay
+    const utterance = new SpeechSynthesisUtterance(cleanSpeechText);
+    utterance.rate  = 1.05; // slightly faster, natural pace
+    utterance.pitch = 1.02;
 
-  if (!apiKey) {
-    // No key → browser fallback
-    _browserFallbackSpeak(clean);
-    return;
+    const voicesList = window.speechSynthesis.getVoices();
+    // Prioritise premium natural-sounding local OS voices
+    const naturalVoice = voicesList.find(v =>
+      /natural|premium|google|samantha|victoria|karen|moira/i.test(v.name) &&
+      v.lang.startsWith('en')
+    ) || voicesList.find(v => v.lang.startsWith('en'));
+
+    if (naturalVoice) utterance.voice = naturalVoice;
+
+    activeUtterance = utterance;
+    window.speechSynthesis.speak(utterance);
+  } catch (e) {
+    console.warn('[Aion Voice] Instant speech failed:', e.message);
   }
-
-  const controller = new AbortController();
-  _agentVoice.controller = controller;
-
-  const models = [MODELS.ttsPrimary, MODELS.ttsFallback];
-  let audioUrl = null;
-
-  for (const model of models) {
-    if (controller.signal.aborted) break;
-    try {
-      const resp = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          signal: controller.signal,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: `In a calm, clear, natural tone: ${clean}` }] }],
-            generationConfig: {
-              responseModalities: ['AUDIO'],
-              speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } }
-            }
-          })
-        }
-      );
-      if (!resp.ok) continue;
-      const data = await resp.json();
-      const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
-      if (!part?.data) continue;
-
-      const mimeType = (part.mimeType || '').toLowerCase();
-      const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
-      let blob;
-      if (mimeType.includes('pcm') || mimeType.startsWith('audio/l16') || mimeType.startsWith('audio/l-16') || mimeType === '') {
-        // Wrap raw PCM in a WAV header
-        const sr = 24000, ch = 1, bps = 16;
-        const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
-        const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
-        ws(0,'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true); ws(8,'WAVE'); ws(12,'fmt ');
-        dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
-        dv.setUint32(24, sr, true); dv.setUint32(28, sr * ch * bps / 8, true);
-        dv.setUint16(32, ch * bps / 8, true); dv.setUint16(34, bps, true);
-        ws(36,'data'); dv.setUint32(40, rawBytes.byteLength, true);
-        blob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
-      } else {
-        blob = new Blob([rawBytes], { type: mimeType });
-      }
-      audioUrl = URL.createObjectURL(blob);
-      break;
-    } catch (e) {
-      if (e.name === 'AbortError') return;
-      // try next model
-    }
-  }
-
-  if (!audioUrl) {
-    // All models failed → browser fallback
-    _browserFallbackSpeak(clean);
-    return;
-  }
-
-  const audio = new Audio(audioUrl);
-  _agentVoice.audio = audio;
-  audio.onended = () => { try { URL.revokeObjectURL(audioUrl); } catch (_) {} _agentVoice.audio = null; };
-  audio.onerror  = () => { try { URL.revokeObjectURL(audioUrl); } catch (_) {} _agentVoice.audio = null; };
-  audio.play().catch(() => { _browserFallbackSpeak(clean); });
 }
 
-function _browserFallbackSpeak(text) {
-  try {
-    const u = new SpeechSynthesisUtterance(text);
-    u.rate = 0.92; u.pitch = 1.1;
-    const vList = window.speechSynthesis.getVoices();
-    const fem = vList.find(v => /female|zira|samantha|victoria|karen|moira|fiona/i.test(v.name)) ||
-                vList.find(v => v.lang.startsWith('en'));
-    if (fem) u.voice = fem;
-    window.speechSynthesis.speak(u);
-  } catch (_) {}
+// Helper: cancellable sleep — keeps the main thread responsive during pauses
+function sleepWithAbort(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new Error('Aborted'));
+    const t = setTimeout(() => {
+      if (signal) signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    function onAbort() {
+      clearTimeout(t);
+      reject(new Error('Aborted'));
+    }
+    if (signal) signal.addEventListener('abort', onAbort);
+  });
 }
 
 let currentImages = []; // Support multiple images
@@ -10419,6 +10381,7 @@ function removeLoading() {
 // the step cap. This reuses the automation "hands" that already existed in
 // content.js — this function is the missing "brain" that drives them.
 let agentStopRequested = false;
+let activeAgentController = null; // AbortController — instantly breaks CDP loop on Stop/Expand
 // Multi-step tasks ("go find a channel, open its analytics, read the numbers,
 // gather the data") take more than a handful of clicks once you count
 // searching, waiting for pages to load, and scrolling to find things. 10 was
@@ -11760,23 +11723,37 @@ function updateAutopilotMiniStep(current, max) {
 }
 
 function setupAutopilotMiniBar() {
-  const stopBtn = document.getElementById('autopilotMiniStop');
+  const stopBtn   = document.getElementById('autopilotMiniStop');
   const expandBtn = document.getElementById('autopilotMiniExpand');
-  const bar = document.getElementById('autopilotMiniBar');
+  const bar       = document.getElementById('autopilotMiniBar');
+
   if (stopBtn) {
     stopBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      e.preventDefault();
+      // 1. Flip state flags immediately
       agentStopRequested = true;
+      // 2. Abort any pending network fetch or sleep — breaks the loop instantly
+      if (activeAgentController) {
+        activeAgentController.abort();
+      }
+      chrome.storage.session.set({ agentStopRequested: true }).catch(() => {});
       stopBtn.disabled = true;
-      updateAutopilotMiniStatus('Stopping…');
-    });
-  }
-  if (expandBtn) {
-    expandBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
+      stopBtn.textContent = 'Stopping…';
+      updateAutopilotMiniStatus('Stopped');
+      // 3. Expand immediately so the user can interact with the page
       exitAutopilotMiniMode();
     });
   }
+
+  if (expandBtn) {
+    expandBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      exitAutopilotMiniMode();
+    });
+  }
+
   if (bar) {
     bar.addEventListener('click', () => exitAutopilotMiniMode());
   }
@@ -11991,6 +11968,63 @@ function smartWaitAfterAction(tabId, actionName) {
 // Speaks the agent's request aloud, renders an amber Co-Pilot card, and returns
 // a Promise that resolves only when the user clicks "I've done it". Cancels any
 // currently-playing TTS first so voices don't overlap.
+// ============================================================================
+// CLEAN CO-PILOT HAND-OFF — Non-blocking intervention card with abort support
+// ============================================================================
+function awaitUserInterventionClean(thread, verbalRequest, expectedOutcome, abortSignal) {
+  return new Promise((resolve, reject) => {
+    const card = document.createElement('div');
+    card.className = 'chat-bubble ai';
+    card.style.cssText = [
+      'background:rgba(45,212,191,0.05)',
+      'border:1px solid rgba(45,212,191,0.2)',
+      'padding:12px 14px',
+      'border-radius:12px',
+      'margin:6px 0',
+      'max-width:95%'
+    ].join(';');
+
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:6px;font-weight:700;color:#2dd4bf;margin-bottom:6px;font-size:13px;">
+        🤝 Co-Pilot Assist
+      </div>
+      <p style="font-size:12.5px;line-height:1.5;margin:0 0 10px;color:#e2e8f0">"${verbalRequest}"</p>
+      ${expectedOutcome ? `<p style="font-size:11px;color:rgba(45,212,191,0.65);margin:0 0 10px">Expected: ${expectedOutcome}</p>` : ''}
+      <div style="display:flex;gap:6px;">
+        <button class="intv-done-btn" style="padding:6px 14px;background:#2dd4bf;color:#0f172a;border:none;border-radius:8px;font-weight:700;font-size:11.5px;cursor:pointer;">I've done it</button>
+        <button class="intv-speak-btn" style="padding:6px 10px;background:rgba(255,255,255,0.05);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);border-radius:8px;font-size:11.5px;cursor:pointer;">🔊 Repeat</button>
+      </div>`;
+
+    thread.appendChild(card);
+    thread.scrollTop = thread.scrollHeight;
+
+    const cleanup = () => {
+      if (abortSignal) abortSignal.removeEventListener('abort', onAbort);
+    };
+
+    const onAbort = () => {
+      cleanup();
+      card.innerHTML = `<div style="color:#94a3b8;font-size:11px;">✕ Action cancelled.</div>`;
+      reject(new Error('Aborted'));
+    };
+
+    if (abortSignal) {
+      if (abortSignal.aborted) { onAbort(); return; }
+      abortSignal.addEventListener('abort', onAbort);
+    }
+
+    card.querySelector('.intv-speak-btn').addEventListener('click', () => agentSpeak(verbalRequest));
+
+    card.querySelector('.intv-done-btn').addEventListener('click', () => {
+      cleanup();
+      const btn = card.querySelector('.intv-done-btn');
+      if (btn) { btn.disabled = true; btn.textContent = 'Resuming…'; btn.style.opacity = '0.6'; }
+      resolve({ success: true, status: 'User confirmed action complete' });
+    });
+  });
+}
+
+// Original amber-styled intervention card (kept for any callers outside runAgentTask)
 function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
   return new Promise((resolve, reject) => {
     // Speak with Gemini TTS – Aoede (melodic, clear female voice)
@@ -12569,6 +12603,9 @@ async function runAgentTask(prompt, thread) {
   if (!apiKey) { showGeminiModal(); return; }
 
   agentStopRequested = false;
+  // Cancel any previous run's pending fetch/sleep instantly
+  if (activeAgentController) activeAgentController.abort();
+  activeAgentController = new AbortController();
   // Clear any stale stop signal from a previous run (e.g. hotkey pressed during
   // a run that already ended, or popup reload while agent was mid-task).
   await chrome.storage.session.remove('agentStopRequested').catch(() => {});
@@ -12576,15 +12613,18 @@ async function runAgentTask(prompt, thread) {
   const stopBtn = document.createElement('button');
   stopBtn.textContent = '■ Stop Autopilot';
   stopBtn.className = 'agent-stop-btn';
-  stopBtn.style.cssText = 'display:block;margin:8px auto;padding:6px 14px;font-size:12px;border-radius:20px;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.3);color:#ff8080;cursor:pointer;';
-  stopBtn.addEventListener('click', () => {
+  stopBtn.style.cssText = 'display:block;margin:8px auto;padding:6px 14px;font-size:12px;border-radius:20px;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.3);color:#ff8080;cursor:pointer;z-index:99999;position:relative;';
+  const handleStopTrigger = () => {
     agentStopRequested = true;
-    // Mirror into session storage so background.js hotkey and a re-opened
-    // popup both see the same signal.
+    // Abort the pending fetch or sleepWithAbort — breaks the loop instantly
+    if (activeAgentController) activeAgentController.abort();
     chrome.storage.session.set({ agentStopRequested: true }).catch(() => {});
     stopBtn.disabled = true;
     stopBtn.textContent = 'Stopping…';
-  });
+    updateAutopilotMiniStatus('Stopped');
+    exitAutopilotMiniMode();
+  };
+  stopBtn.addEventListener('click', (e) => { e.stopPropagation(); handleStopTrigger(); });
   thread.appendChild(stopBtn);
 
   // ── NotebookLM pre-flight conversation ──────────────────────────────────────
@@ -12773,24 +12813,29 @@ async function runAgentTask(prompt, thread) {
         generationConfig: { temperature: 0.2 }
       });
 
-      // ── 429 handling: back off 10 s then retry the same step ─────────────
+      // ── 429 handling: back off 10 s (abortable) then retry the same step ──
       // Gemini returns 429 (RESOURCE_EXHAUSTED) when the per-minute token quota
       // is hit mid-task. Back off 10 s and decrement the step counter so the
       // exact same context (with screenshot) is re-sent — no progress is lost.
       const res = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
-        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: geminiBody }
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: geminiBody,
+          signal: activeAgentController.signal }
       );
 
       if (res.status === 429) {
         addAgentStepBubble(thread, '⏳ Rate limit — backing off 10 s and retrying this step…');
-        await new Promise(r => setTimeout(r, 10000));
+        await sleepWithAbort(10000, activeAgentController.signal);
         step--; // retry the same step with the same context
         continue;
       }
 
       data = await res.json();
     } catch (e) {
+      if (e.name === 'AbortError' || agentStopRequested) {
+        console.log('[Aion] Autopilot loop aborted cleanly.');
+        break;
+      }
       addAgentStepBubble(thread, `Connection error: ${e.message}`, 'error');
       break;
     }
@@ -12871,7 +12916,9 @@ async function runAgentTask(prompt, thread) {
       updateAutopilotMiniStatus(`⏸ Waiting for you…`);
       await exitAutopilotMiniMode().catch(() => {});
       try {
-        const result = await awaitUserIntervention(thread, verbalRequest, expectedOutcome);
+        // Instant vocal announcement + clean non-blocking card
+        agentSpeak(verbalRequest);
+        const result = await awaitUserInterventionClean(thread, verbalRequest, expectedOutcome, activeAgentController.signal);
         await enterAutopilotMiniMode().catch(() => {});
         updateAutopilotMiniStatus('Resuming…');
         await focusAgentTab(tab);
@@ -12884,7 +12931,7 @@ async function runAgentTask(prompt, thread) {
           }}]
         });
       } catch (err) {
-        if (err.message === 'Task stopped by user') break;
+        if (err.name === 'AbortError' || err.message === 'Aborted' || err.message === 'Task stopped by user') break;
       }
       continue;
     }

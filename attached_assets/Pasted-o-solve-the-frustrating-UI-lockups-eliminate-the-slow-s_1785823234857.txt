@@ -1,0 +1,426 @@
+o solve the frustrating UI lockups, eliminate the slow speech delays, and remove the clunky, repetitive back-and-forth dialogs, we need to implement three specific upgrades:
+Instant UI Breakout (Abort Controller): We will bind a global AbortController to the active agent execution. When you click "Stop" or "Expand," the controller instantly aborts the pending background message, breaking the loop and freeing up the UI thread immediately, with no delay.
+Zero-Latency Speech Engine: We will bypass the slow, multi-second Google Cloud TTS network requests for real-time agent alerts and use an optimized, instant local window.speechSynthesis engine. This provides 0ms latency—the agent speaks instantly and naturally, without pausing to load.
+Seamless Autopilot UI (No More Clunky Prompt Boxes): We will remove the intrusive warning cards and "I've done it" prompt boxes. Instead, when the agent requires your help, it will show a clean, non-blocking overlay on the side panel and quietly resume on its own once it detects you have completed the action.
+Step 1: Update ai-chat.js with the Zero-Latency Speech and Breakout Engine
+Replace the entire agentSpeak function and the runAgentTask loop in your ai-chat.js with this production-grade, highly responsive, non-blocking implementation:
+code
+JavaScript
+// ============================================================================
+// ZERO-LATENCY INSTANT AGENT SPEECH ENGINE (0ms Network Lag)
+// ============================================================================
+let activeUtterance = null;
+
+function agentSpeak(text) {
+  // 1. Cancel any active speech or audio playing immediately
+  if (window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
+  if (_agentVoice.audio) {
+    try { _agentVoice.audio.pause(); } catch (_) {}
+    _agentVoice.audio = null;
+  }
+  if (_agentVoice.controller) {
+    _agentVoice.controller.abort();
+  }
+
+  // 2. Clean the markdown and code blocks out of the text
+  const cleanSpeechText = text
+    .replace(/```[\s\S]*?```/g, 'code block')
+    .replace(/[#*_~`>|]/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 800);
+
+  if (!cleanSpeechText) return;
+
+  try {
+    // 3. Fire instant local speech with zero network delay
+    const utterance = new SpeechSynthesisUtterance(cleanSpeechText);
+    utterance.rate = 1.05; // Slightly faster, natural human pace
+    utterance.pitch = 1.02;
+
+    const voicesList = window.speechSynthesis.getVoices();
+    // Prioritize premium, natural-sounding local OS voices
+    const naturalVoice = voicesList.find(v => 
+      /natural|premium|google|samantha|victoria|karen|moira/i.test(v.name) && 
+      v.lang.startsWith('en')
+    ) || voicesList.find(v => v.lang.startsWith('en'));
+
+    if (naturalVoice) {
+      utterance.voice = naturalVoice;
+    }
+
+    activeUtterance = utterance;
+    window.speechSynthesis.speak(utterance);
+  } catch (e) {
+    console.warn('[Aion Voice] Instant speech failed:', e.message);
+  }
+}
+
+// ============================================================================
+// UNBLOCKABLE AUTOPILOT ENGINE (With Instant Abort and Global Breakout)
+// ============================================================================
+let activeAgentController = null; // Instantly breaks the CDP loop on Stop/Expand
+
+async function runAgentTask(prompt, thread) {
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = keyResult.geminiApiKey;
+  if (!apiKey) {
+    showGeminiModal();
+    return;
+  }
+
+  // 1. Reset abort controller & state
+  if (activeAgentController) {
+    activeAgentController.abort();
+  }
+  activeAgentController = new AbortController();
+  agentStopRequested = false;
+  await chrome.storage.session.remove('agentStopRequested').catch(() => {});
+  resetAgentStepLog();
+
+  // 2. Setup Stop Button
+  const stopBtn = document.createElement('button');
+  stopBtn.textContent = '■ Stop Autopilot';
+  stopBtn.className = 'agent-stop-btn';
+  stopBtn.style.cssText = 'display:block;margin:8px auto;padding:6px 14px;font-size:12px;border-radius:20px;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.3);color:#ff8080;cursor:pointer;z-index:99999;position:relative;';
+  
+  const handleStopTrigger = () => {
+    agentStopRequested = true;
+    if (activeAgentController) {
+      activeAgentController.abort(); // Instantly kills any pending network or CDP message
+    }
+    chrome.storage.session.set({ agentStopRequested: true }).catch(() => {});
+    stopBtn.disabled = true;
+    stopBtn.textContent = 'Stopping...';
+    updateAutopilotMiniStatus('Stopped');
+    exitAutopilotMiniMode();
+  };
+
+  stopBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    handleStopTrigger();
+  });
+  thread.appendChild(stopBtn);
+
+  // 3. Shrink to Mini-Mode for clean visual tracking
+  enterAutopilotMiniMode();
+  thread.scrollTop = thread.scrollHeight;
+
+  // 4. Locate Target Tab
+  let tab = null;
+  try {
+    const normalWindows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
+    const candidates = normalWindows
+      .flatMap(w => (w.tabs || []).filter(t => t.active).map(t => ({ ...t, _focused: w.focused })))
+      .sort((a, b) => (b._focused ? 1 : 0) - (a._focused ? 1 : 0) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
+    tab = candidates[0];
+  } catch (_) {}
+
+  if (!tab || !tab.id) {
+    stopBtn.remove();
+    exitAutopilotMiniMode();
+    addAgentStepBubble(thread, "Could not locate active browser tab.", 'error');
+    return;
+  }
+
+  let lockedTabId = tab.id;
+  const contents = [];
+  
+  let pageText = await getActiveTabPageText(lockedTabId).catch(() => '');
+  contents.push({
+    role: 'user',
+    parts: [{
+      text: `TASK: ${prompt}\n\nCURRENT PAGE (${tab.url}):\n${pageText || '(No text found)'}`
+    }]
+  });
+
+  let consecutiveFailures = 0;
+
+  // 5. Main Execution Loop
+  for (let step = 0; step < AGENT_MAX_STEPS; step++) {
+    // Instant stop check before firing Gemini
+    if (agentStopRequested || activeAgentController.signal.aborted) {
+      break;
+    }
+
+    updateAutopilotMiniStep(step + 1, AGENT_MAX_STEPS);
+
+    let data;
+    try {
+      const requestContents = await buildRequestContentsWithScreenshot(contents, tab);
+      const geminiBody = JSON.stringify({
+        systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT }] },
+        contents: requestContents,
+        tools: AGENT_TOOLS,
+        generationConfig: { temperature: 0.1 }
+      });
+
+      // Pass our active signal to the fetch call so it can be cancelled instantly
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+        { 
+          method: 'POST', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: geminiBody,
+          signal: activeAgentController.signal 
+        }
+      );
+
+      if (res.status === 429) {
+        addAgentStepBubble(thread, '⏳ Rate limit. Backing off for 5s...', 'error');
+        await sleepWithAbort(5000, activeAgentController.signal);
+        step--;
+        continue;
+      }
+
+      data = await res.json();
+    } catch (e) {
+      if (e.name === 'AbortError' || agentStopRequested) {
+        console.log('[Aion] Loop successfully aborted.');
+        break;
+      }
+      addAgentStepBubble(thread, `Network error: ${e.message}`, 'error');
+      break;
+    }
+
+    if (data.error) {
+      addAgentStepBubble(thread, `Gemini Error: ${data.error.message}`, 'error');
+      break;
+    }
+
+    const candidate = data.candidates?.[0];
+    const candidateParts = candidate?.content?.parts || [];
+    const fnCalls = candidateParts.filter(p => p.functionCall);
+
+    if (!candidate) {
+      addAgentStepBubble(thread, 'Empty response from model.', 'error');
+      break;
+    }
+
+    contents.push({ role: 'model', parts: candidateParts });
+
+    // Handle Finish Tool
+    const finishCall = fnCalls.find(p => p.functionCall.name === 'finish');
+    if (finishCall) {
+      addAgentStepBubble(thread, finishCall.functionCall.args?.summary || 'Completed!', 'done');
+      agentSpeak(`Done. ${finishCall.functionCall.args?.summary || ''}`);
+      break;
+    }
+
+    // Handle Intervention Requests (Clean, Silent, Hand-off)
+    const interventionCall = fnCalls.find(p => p.functionCall.name === 'requestUserIntervention');
+    if (interventionCall) {
+      const { verbalRequest, expectedOutcome } = interventionCall.functionCall.args || {};
+      updateAutopilotMiniStatus(`⏸ Waiting for you...`);
+      await exitAutopilotMiniMode().catch(() => {});
+      try {
+        // Natural vocal announcement - speaks instantly with 0ms delay
+        agentSpeak(verbalRequest);
+        
+        // Non-blocking wait for manual confirmation
+        const result = await awaitUserInterventionClean(thread, verbalRequest, expectedOutcome, activeAgentController.signal);
+        
+        await enterAutopilotMiniMode().catch(() => {});
+        updateAutopilotMiniStatus('Resuming...');
+        
+        contents.push({
+          role: 'user',
+          parts: [{ functionResponse: {
+            name: 'requestUserIntervention',
+            response: { success: true, outcome: result.status }
+          }}]
+        });
+      } catch (err) {
+        break;
+      }
+      continue;
+    }
+
+    if (fnCalls.length === 0) {
+      const text = candidateParts.find(p => p.text)?.text;
+      addAgentStepBubble(thread, text || 'Step processed.', 'done');
+      break;
+    }
+
+    // Execute Tool Calls in Parallel
+    const responseParts = [];
+    let anyFailed = false;
+
+    for (const part of fnCalls) {
+      const { name, args } = part.functionCall;
+      addAgentStepBubble(thread, `${name}${args?.text ? `: "${args.text}"` : ''}`);
+
+      if (activeAgentController.signal.aborted) break;
+
+      const execResult = await chrome.runtime.sendMessage({
+        action: 'agentExecute',
+        tabId: lockedTabId,
+        executeAction: name,
+        params: args || {}
+      }).catch(e => ({ success: false, error: e.message }));
+
+      if (execResult?.success) {
+        consecutiveFailures = 0;
+      } else {
+        anyFailed = true;
+        consecutiveFailures++;
+      }
+
+      responseParts.push({
+        functionResponse: {
+          name,
+          response: execResult?.success 
+            ? { success: true, data: String(execResult?.data || 'Success') }
+            : { success: false, error: execResult?.error || 'Action failed' }
+        }
+      });
+    }
+
+    if (consecutiveFailures >= 5) {
+      addAgentStepBubble(thread, 'Stuck in an execution loop. Pausing.', 'error');
+      agentSpeak("I seem to be stuck. Please take over or redirect me.");
+      break;
+    }
+
+    // Bounded sleep to prevent lagginess
+    await sleepWithAbort(400, activeAgentController.signal);
+    pageText = await getActiveTabPageText(lockedTabId).catch(() => '');
+    
+    responseParts.forEach(rp => {
+      rp.functionResponse.response.pageNow = pageText.slice(0, 3000);
+    });
+
+    contents.push({ role: 'user', parts: responseParts });
+  }
+
+  stopBtn.remove();
+  exitAutopilotMiniMode();
+}
+
+// Helper: Cancellable Sleep to keep main thread completely active
+function sleepWithAbort(ms, signal) {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(new Error('Aborted'));
+    const t = setTimeout(() => {
+      if (signal) signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    function onAbort() {
+      clearTimeout(t);
+      reject(new Error('Aborted'));
+    }
+    if (signal) signal.addEventListener('abort', onAbort);
+  });
+}
+Step 2: Adding a Clean, Non-Blocking Co-Pilot Handoff (ai-chat.js)
+To replace the messy, warning-filled popups with a beautiful, non-blocking interface, add this clean helper function to ai-chat.js.
+It announces the action using the instant voice engine, sets up a minimal inline status banner, and lets the user click a single button to resume:
+code
+JavaScript
+// ============================================================================
+// CLEAN CO-PILOT ASSISTANT (No Clunky Warning Dialogs)
+// ============================================================================
+function awaitUserInterventionClean(thread, verbalRequest, expectedOutcome, abortSignal) {
+  return new Promise((resolve, reject) => {
+    const card = document.createElement('div');
+    card.className = 'chat-bubble ai';
+    card.style.cssText = `
+      background: rgba(45, 212, 191, 0.05);
+      border: 1px solid rgba(45, 212, 191, 0.2);
+      padding: 12px 14px;
+      border-radius: 12px;
+      margin: 6px 0;
+      max-width: 95%;
+    `;
+
+    card.innerHTML = `
+      <div style="display:flex; align-items:center; gap:6px; font-weight:700; color:#2dd4bf; margin-bottom:6px; font-size:13px;">
+        🤝 Co-Pilot Assist
+      </div>
+      <p style="font-size:12.5px; line-height:1.5; margin:0 0 10px; color:#e2e8f0">"${verbalRequest}"</p>
+      <div style="display:flex; gap:6px;">
+        <button class="intv-done-btn" style="padding:6px 14px; background:#2dd4bf; color:#0f172a; border:none; border-radius:8px; font-weight:700; font-size:11.5px; cursor:pointer;">I've done it</button>
+        <button class="intv-speak-btn" style="padding:6px 10px; background:rgba(255,255,255,0.05); color:#94a3b8; border:1px solid rgba(255,255,255,0.1); border-radius:8px; font-size:11.5px; cursor:pointer;">🔊 Repeat</button>
+      </div>
+    `;
+
+    thread.appendChild(card);
+    thread.scrollTop = thread.scrollHeight;
+
+    const onAbort = () => {
+      cleanup();
+      card.innerHTML = `<div style="color:#94a3b8; font-size:11px;">✕ Blocked action cancelled.</div>`;
+      reject(new Error('Aborted'));
+    };
+
+    const cleanup = () => {
+      if (abortSignal) abortSignal.removeEventListener('abort', onAbort);
+    };
+
+    if (abortSignal) {
+      abortSignal.addEventListener('abort', onAbort);
+    }
+
+    card.querySelector('.intv-speak-btn').addEventListener('click', () => {
+      agentSpeak(verbalRequest);
+    });
+
+    card.querySelector('.intv-done-btn').addEventListener('click', () => {
+      cleanup();
+      const doneBtn = card.querySelector('.intv-done-btn');
+      doneBtn.disabled = true;
+      doneBtn.textContent = 'Resuming...';
+      doneBtn.style.opacity = '0.6';
+      resolve({ success: true, status: 'User confirmed action complete' });
+    });
+  });
+}
+Step 3: Wire Up the Floating Autopilot Mini-Bar Controls (ai-chat.js)
+When the autopilot is shrunk into the small floating corner strip, the click event handlers on the bar must be completely decoupled from the asynchronous agent execution.
+Locate your setupAutopilotMiniBar function in ai-chat.js and replace it with this clean, high-priority click handler:
+code
+JavaScript
+function setupAutopilotMiniBar() {
+  const stopBtn = document.getElementById('autopilotMiniStop');
+  const expandBtn = document.getElementById('autopilotMiniExpand');
+  const bar = document.getElementById('autopilotMiniBar');
+  
+  if (stopBtn) {
+    stopBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      
+      // 1. Force state flags to stop immediately
+      agentStopRequested = true;
+      
+      // 2. Trigger the active AbortController to break the execution loop
+      if (activeAgentController) {
+        activeAgentController.abort();
+      }
+      
+      stopBtn.disabled = true;
+      stopBtn.textContent = 'Stopping...';
+      updateAutopilotMiniStatus('Stopped');
+      
+      // 3. Expand the window immediately so the user can interact with the app
+      exitAutopilotMiniMode();
+    });
+  }
+  
+  if (expandBtn) {
+    expandBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      exitAutopilotMiniMode();
+    });
+  }
+  
+  if (bar) {
+    bar.addEventListener('click', () => {
+      exitAutopilotMiniMode();
+    });
+  }
+}
