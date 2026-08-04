@@ -1692,6 +1692,12 @@
       <button class="autopilot-mini-btn" id="autopilotMiniExpand" title="Expand to see full log">⤢</button>
     </div>
     <div id="autopilotMiniLastAction"></div>
+    <div id="autopilotRedirectRow" style="display:none;padding:4px 8px 3px;gap:5px;align-items:center;flex-shrink:0;" onclick="event.stopPropagation()">
+      <input id="autopilotRedirectInput" type="text" placeholder="Redirect the agent…"
+        style="flex:1;background:rgba(255,255,255,0.07);border:1px solid rgba(255,255,255,0.15);border-radius:7px;padding:4px 8px;color:#e8eaed;font-size:11px;outline:none;min-width:0;">
+      <button id="autopilotRedirectSend"
+        style="background:rgba(66,133,244,0.25);border:1px solid rgba(66,133,244,0.4);border-radius:6px;padding:3px 9px;color:#74b0ff;font-size:11px;font-weight:700;cursor:pointer;flex-shrink:0;">↵</button>
+    </div>
     <div id="autopilotMiniProgressTrack">
       <div id="autopilotMiniProgressFill"></div>
     </div>

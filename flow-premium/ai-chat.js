@@ -11839,6 +11839,9 @@ Rules:
 // unaffected since resizing a window doesn't reload its page.
 let _autopilotMiniActive = false;
 let _autopilotOriginalBounds = null;
+// Holds a mid-run redirect message typed by the user in the mini-mode strip.
+// Cleared after it is injected into the agent loop's conversation history.
+let agentPendingRedirect = null;
 
 async function enterAutopilotMiniMode() {
   if (_autopilotMiniActive) return;
@@ -11857,12 +11860,17 @@ async function enterAutopilotMiniMode() {
   } catch (_e) { /* if resizing fails, just keep the full window — not fatal */ }
   document.body.classList.add('autopilot-mini');
   _autopilotMiniActive = true;
+  // Show the mid-run redirect input so the user can nudge the agent
+  const rr = document.getElementById('autopilotRedirectRow');
+  if (rr) rr.style.display = 'flex';
 }
 
 async function exitAutopilotMiniMode() {
   if (!_autopilotMiniActive) return;
   document.body.classList.remove('autopilot-mini');
   _autopilotMiniActive = false;
+  const rr = document.getElementById('autopilotRedirectRow');
+  if (rr) rr.style.display = 'none';
   try {
     const win = await chrome.windows.getCurrent();
     if (_autopilotOriginalBounds) {
@@ -11929,6 +11937,23 @@ function setupAutopilotMiniBar() {
   if (bar) {
     bar.addEventListener('click', () => exitAutopilotMiniMode());
   }
+
+  // ── Mid-run redirect input ────────────────────────────────────────────────
+  const redirectInput = document.getElementById('autopilotRedirectInput');
+  const redirectSend  = document.getElementById('autopilotRedirectSend');
+  const sendRedirect  = () => {
+    const msg = redirectInput?.value?.trim();
+    if (!msg) return;
+    agentPendingRedirect = msg;
+    redirectInput.value = '';
+    redirectInput.placeholder = '✓ Sent — agent will adjust on next step';
+    setTimeout(() => { if (redirectInput) redirectInput.placeholder = 'Redirect the agent…'; }, 3000);
+  };
+  if (redirectSend) redirectSend.addEventListener('click', (e) => { e.stopPropagation(); sendRedirect(); });
+  if (redirectInput) redirectInput.addEventListener('keydown', (e) => {
+    e.stopPropagation();
+    if (e.key === 'Enter') { e.preventDefault(); sendRedirect(); }
+  });
 }
 setupAutopilotMiniBar();
 
@@ -12524,8 +12549,8 @@ function addStudioGreetingBubble(thread) {
 // ── Sources conversation step ─────────────────────────────────────────────────
 // After the user picks their Studio outputs, this asks them for source material
 // in a warm, conversational way. Returns { sources, mode }.
-function awaitSourcesStep(thread, tools, originalPrompt) {
-  return new Promise((resolve, reject) => {
+async function awaitSourcesStep(thread, tools, originalPrompt) {
+  return new Promise(async (resolve, reject) => {
     // If a stop was already requested before this step rendered, abort at once —
     // the onChanged listener below would never fire for an already-set flag.
     chrome.storage.session.get('agentStopRequested').then(r => {
@@ -12533,6 +12558,16 @@ function awaitSourcesStep(thread, tools, originalPrompt) {
     }).catch(() => {});
     const toolLabel = tools.join(' + ');
     agentSpeak(`Awesome! I'll create ${toolLabel} for you. Do you have source material to add, or should I find sources on the web?`);
+
+    // Load previously saved sources so the user doesn't have to retype them
+    const { notebookSources: savedSources = '' } = await chrome.storage.local.get(['notebookSources']);
+    const savedBlock = savedSources
+      ? `<div style="margin-bottom:10px;padding:8px 10px;background:rgba(52,211,153,0.07);border:1px solid rgba(52,211,153,0.2);border-radius:8px">
+           <div style="font-size:10.5px;color:#6ee7b7;font-weight:600;margin-bottom:4px">💾 Saved from last time</div>
+           <div style="font-size:11.5px;color:rgba(226,232,240,0.75);white-space:pre-wrap;word-break:break-all;max-height:52px;overflow:hidden">${savedSources.slice(0,200)}${savedSources.length>200?'…':''}</div>
+           <button class="sources-use-saved-btn" style="margin-top:6px;padding:4px 10px;border-radius:6px;background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.3);color:#6ee7b7;font-size:11px;font-weight:600;cursor:pointer">Use saved sources</button>
+         </div>`
+      : '';
 
     const card = document.createElement('div');
     card.className = 'chat-bubble ai';
@@ -12552,6 +12587,7 @@ function awaitSourcesStep(thread, tools, originalPrompt) {
       <div style="font-size:13px;color:rgba(226,232,240,0.85);margin-bottom:12px;line-height:1.6">
         Now — do you have source material for me to work from? You can paste website links, a Google Doc URL, or describe a topic and I'll search for sources.
       </div>
+      ${savedBlock}
       <textarea class="sources-input" rows="3"
         placeholder="Paste URLs (one per line), describe a topic, or leave blank and I'll find sources…"
         style="width:100%;box-sizing:border-box;padding:9px 11px;border-radius:9px;
@@ -12606,12 +12642,21 @@ function awaitSourcesStep(thread, tools, originalPrompt) {
       resolve({ sources, mode });
     };
 
+    // "Use saved sources" pre-fills the textarea
+    card.querySelector('.sources-use-saved-btn')?.addEventListener('click', () => {
+      const ta = card.querySelector('.sources-input');
+      if (ta) { ta.value = savedSources; ta.focus(); }
+    });
+
     card.querySelector('.sources-confirm-btn').addEventListener('click', () => {
       const sources = card.querySelector('.sources-input').value.trim();
       // Blank textarea + "use these sources" = there are no sources to use —
       // fall through to "find" so the agent always gets one explicit mode.
-      if (sources) done(sources, 'provided', 'sources-confirm-btn');
-      else done('', 'find', 'sources-confirm-btn');
+      if (sources) {
+        // Persist so user doesn't have to retype next time
+        chrome.storage.local.set({ notebookSources: sources }).catch(() => {});
+        done(sources, 'provided', 'sources-confirm-btn');
+      } else done('', 'find', 'sources-confirm-btn');
     });
     card.querySelector('.sources-find-btn').addEventListener('click', () => {
       done('', 'find', 'sources-find-btn');
@@ -13009,6 +13054,15 @@ async function runAgentTask(prompt, thread) {
         break;
       }
     } catch (_) { /* session storage unavailable — continue */ }
+
+    // ── Mid-run redirect — inject user correction into conversation ───────────
+    if (agentPendingRedirect) {
+      const msg = agentPendingRedirect;
+      agentPendingRedirect = null;
+      contents.push({ role: 'user', parts: [{ text: `⚡ USER REDIRECT (mid-run correction from user): "${msg}"\nAcknowledge this, adjust your current plan accordingly, and continue. Do NOT start over — just adapt.` }] });
+      addAgentStepBubble(thread, `💬 You said: ${msg}`);
+      agentSpeak(`Got it! "${msg}" — adjusting right now!`);
+    }
 
     // Update the mini-mode strip so users can see progress live.
     updateAutopilotMiniStep(step + 1, AGENT_MAX_STEPS);
@@ -20196,7 +20250,28 @@ async function launchGeminiNotebook() {
   const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
   if (!keyResult.geminiApiKey) { showGeminiModal(); return; }
 
-  // 3. Warm greeting + studio picker + sources step
+  // 3. First-time onboarding hint — shown once, never again
+  const { notebookOnboarded } = await chrome.storage.local.get(['notebookOnboarded']);
+  if (!notebookOnboarded) {
+    const onboardBubble = document.createElement('div');
+    onboardBubble.className = 'chat-bubble ai';
+    onboardBubble.style.cssText = 'background:linear-gradient(135deg,rgba(66,133,244,0.10),rgba(52,211,153,0.07));border:1px solid rgba(66,133,244,0.28);padding:16px 18px;border-radius:14px;margin:8px 0;animation:slideUp 0.4s ease';
+    onboardBubble.innerHTML = `
+      <div style="font-size:22px;margin-bottom:8px">🤖✨</div>
+      <div style="font-size:15px;font-weight:700;color:#74b0ff;margin-bottom:6px">Meet your Gemini Notebook agent!</div>
+      <div style="font-size:13px;color:rgba(226,232,240,0.85);line-height:1.6">
+        I'm going to open <b>Google NotebookLM</b> in your browser and build content for you
+        <b>completely automatically</b> — for free! 🎉<br><br>
+        Just pick what you want below and I'll handle everything: opening the notebook,
+        adding your sources, and generating your content. You just watch!
+      </div>`;
+    thread.appendChild(onboardBubble);
+    thread.scrollTop = thread.scrollHeight;
+    await chrome.storage.local.set({ notebookOnboarded: true });
+    await new Promise(r => setTimeout(r, 700));
+  }
+
+  // 4. Warm greeting + studio picker + sources step
   //    (same pre-flight flow as when the user types a NL task, but invoked directly)
   const userName = (await chrome.storage.local.get(['aionUserName'])).aionUserName || '';
   const greeting = userName
