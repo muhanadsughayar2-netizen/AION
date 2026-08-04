@@ -3407,15 +3407,60 @@ If the element is not visible in the screenshot, return:
             return;
           }
           const useSelector = !params.text && !!params.selector;
-          const timeoutSec  = Math.min(30, Math.max(1, parseInt(params.timeout) || 10));
+          const timeoutSec  = Math.min(300, Math.max(1, parseInt(params.timeout) || 10));
           const deadline    = Date.now() + timeoutSec * 1000;
           let found = false;
+
+          // Shadow-DOM-aware text extraction: NotebookLM and AI Studio render ALL
+          // their UI inside nested Web Components. document.body.innerText only sees
+          // the light DOM — shadow roots are completely invisible to it. This recursive
+          // walker reads textContent from every shadow root so waitForElement("Ready"),
+          // waitForElement("Generate"), etc. reliably find elements in these apps.
+          const shadowTextExpr = `(function() {
+            const needle = ${JSON.stringify(target.toLowerCase())};
+            function collectText(root) {
+              let text = '';
+              try {
+                for (const el of root.querySelectorAll('*')) {
+                  if (el.shadowRoot) text += collectText(el.shadowRoot);
+                }
+                // Include aria-labels and button labels not in textContent
+                for (const el of root.querySelectorAll('[aria-label]')) {
+                  text += ' ' + (el.getAttribute('aria-label') || '');
+                }
+                text += ' ' + (root.body ? root.body.innerText : (root.innerText || root.textContent || ''));
+              } catch (_) {}
+              return text;
+            }
+            const fullText = collectText(document).toLowerCase();
+            return fullText.includes(needle);
+          })()`;
+
           while (Date.now() < deadline) {
-            const expr = useSelector
-              ? `!!document.querySelector(${JSON.stringify(target)})`
-              : `document.body.innerText.toLowerCase().includes(${JSON.stringify(target.toLowerCase())})`;
-            const r = await cdpC('Runtime.evaluate', { expression: expr, returnByValue: true });
-            if (r?.result?.value === true) { found = true; break; }
+            let matched = false;
+            if (useSelector) {
+              // Selector mode: try both regular DOM and shadow DOM
+              const selExpr = `(function() {
+                if (document.querySelector(${JSON.stringify(target)})) return true;
+                function findInShadow(root) {
+                  try {
+                    if (root.querySelector(${JSON.stringify(target)})) return true;
+                    for (const el of root.querySelectorAll('*')) {
+                      if (el.shadowRoot && findInShadow(el.shadowRoot)) return true;
+                    }
+                  } catch (_) {}
+                  return false;
+                }
+                return findInShadow(document);
+              })()`;
+              const r = await cdpC('Runtime.evaluate', { expression: selExpr, returnByValue: true });
+              matched = r?.result?.value === true;
+            } else {
+              // Text mode: check shadow-DOM-aware full text first, fall back to innerText
+              const r = await cdpC('Runtime.evaluate', { expression: shadowTextExpr, returnByValue: true });
+              matched = r?.result?.value === true;
+            }
+            if (matched) { found = true; break; }
             await new Promise(r => setTimeout(r, 500));
           }
           sendResponse(found

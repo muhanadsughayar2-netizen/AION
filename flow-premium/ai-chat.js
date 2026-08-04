@@ -11400,7 +11400,28 @@ NotebookLM is a source-grounded reasoning engine — it ONLY creates content FRO
 
 ### NAVIGATION
 - Navigate to https://notebooklm.google.com/ — it will redirect to https://notebook.google.com/. Both URLs are the same app. Do NOT re-navigate if you land on notebook.google.com — you are already in the right place.
-- On the notebook list page: click an existing notebook to open it, or click "New notebook" / "Create new notebook" to start fresh.
+- On the notebook list page: look for a button labelled exactly "New notebook" (NOT "Create new notebook"). Click it to start fresh. If you don't see it, call snapshotPage() to find the exact label.
+
+### EXACT BUTTON LABELS — MEMORISE THESE
+NotebookLM's UI uses shadow DOM and its button labels are EXACT. Using the wrong label = not found.
+
+HOME PAGE:
+  ✅ "New notebook"          ← the create button on the home/list page
+  ❌ "Create new notebook"   ← WRONG — this label does not exist
+
+SOURCE DIALOG (after clicking "Add sources"):
+  ✅ "Website"               ← singular, adds a URL (NOT "Websites")
+  ✅ "Google Drive"
+  ✅ "Google Docs"
+  ✅ "YouTube"
+  ✅ "Audio"
+  ✅ "Copied text"
+  ✅ "Upload"
+  ❌ "Websites"              ← WRONG plural — does not exist
+
+URL INPUT CONFIRM BUTTON (after typing a URL):
+  ✅ "Insert"                ← the button to submit the URL
+  ❌ "Submit", "Add", "Done" ← WRONG — the button says "Insert"
 
 ### ADDING SOURCES (must complete BEFORE any generation)
 ⚠️ CRITICAL: The ENTIRE NotebookLM UI uses Shadow DOM Web Components. Standard placeholder selectors WILL fail. After every modal or panel opens, you MUST call snapshotPage() to find the real accessible names of inputs before typing into them.
@@ -11409,11 +11430,11 @@ Sources panel is on the LEFT side of the page.
 
 - WEBSITE / URL (add ONE URL at a time — do NOT paste multiple URLs in one call):
   1. click("Add sources") — the sources panel opens or a modal appears.
-  2. snapshotPage() — find the "Website" option's accessible name in the AX tree.
-  3. click("Website") — a URL input dialog opens.
+  2. snapshotPage() — find the source-type option's exact accessible name in the AX tree.
+  3. click("Website") — EXACT label, singular. A URL input dialog opens.
   4. snapshotPage() — find the text input (look for role="textbox" or a text input element). Note its accessible name or coordinates.
   5. click the input by its accessible name or coordinates, then type({text:"https://example.com"}) — one URL only, no newlines.
-  6. Look for a confirm button — snapshotPage() to find it (may be labelled "Insert", "Add", "Done", or "Submit"). Click it.
+  6. click("Insert") — EXACT label. This submits the URL. Do NOT use "Submit", "Add", or "Done".
   7. waitForElement({text:"Ready", timeout:60}) OR watch for the source to appear in the left panel.
   8. Repeat from step 1 for each additional URL.
 
