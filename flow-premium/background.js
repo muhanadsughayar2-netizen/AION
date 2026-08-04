@@ -2038,7 +2038,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     "input[placeholder*='link' i], input[placeholder*='website' i], " +
                     "input[aria-label*='URL' i], input[aria-label*='website' i], " +
                     "input[aria-label*='link' i], " +
+                    // ── Studio modal textareas (exact aria-labels from live NotebookLM) ──
                     "textarea[aria-label='Input to describe the kind of report to create'], " +
+                    // Slide Deck dialog (confirmed from live UI screenshot)
+                    "[aria-label='Describe the slide deck you want to create'], " +
+                    "textarea[aria-label='Describe the slide deck you want to create'], " +
+                    // Video Overview dialog
+                    "[aria-label='Describe the video overview you want to create'], " +
+                    "textarea[aria-label='Describe the video overview you want to create'], " +
+                    "[aria-label='Describe the video you want to create'], " +
                     "[aria-label='Describe the data table you want to create'], " +
                     "[aria-label='Describe the infographic you want to create'], " +
                     "[aria-label='Describe the quiz you want to create'], " +

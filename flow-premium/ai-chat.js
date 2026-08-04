@@ -11504,7 +11504,10 @@ SLIDE DECK:
   2. click("Slide Deck") — a configuration modal appears. If not found: click({x, y}) using coordinates from screenshot.
   3. snapshotPage() — find style options, the description textarea, and the Generate button inside the modal (all Shadow DOM).
   4. Style: click("Detailed Deck") if the user wants to read it or email it. click("Presenter Slides") if they are giving a live talk. Use exact label from snapshot.
-  5. Description box (REQUIRED): type({text:"...", selector:"textarea"}) — always fill this. If user didn't specify a style, generate one: e.g. "Professional technical slides for developers focusing on implementation and architecture, clear and concise."
+  5. Description box (REQUIRED — confirmed aria-label: "Describe the slide deck you want to create"):
+     type({text:"..."}) — always fill this. If user didn't specify a style, generate one:
+     e.g. "Professional technical slides for developers focusing on implementation and architecture, clear and concise."
+     ⚠️ If type() fails, first click the textarea by coordinate (from snapshotPage screenshot), then type again.
   6. Language: set dropdown if needed.
   7. snapshotPage() — confirm "Generate" button accessible name.
   8. click("Generate") → waitForElement({text:"View slides", timeout:180}).
