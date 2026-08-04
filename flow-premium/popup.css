@@ -1,6 +1,82 @@
 /* Flow Premium Popup Styles */
 /* Dark glassmorphism with glowing cyan orb */
 
+/* ============================================================================
+   AION GLASSMORPHIC DESIGN TOKENS
+   ============================================================================ */
+:root {
+  --st-accent:        #2dd4bf;
+  --st-accent-border: rgba(45, 212, 191, 0.2);
+  --st-accent-soft:   rgba(45, 212, 191, 0.05);
+  --st-bg-app:        #0f172a;
+  --st-bg-card:       rgba(30, 41, 59, 0.7);
+  --st-text-primary:  #f8fafc;
+  --st-text-secondary:#94a3b8;
+}
+
+/* Compact Hero Panel */
+.hero-panel {
+  background: var(--st-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+/* Streamlined Quick-Action Columns */
+.hero-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.hero-action-btn {
+  height: 48px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-action-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--st-accent-border);
+}
+
+/* Status Row */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+/* Thumbnails Grid */
+.thumbnails {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 2px;
+}
+
+.thumbnail {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.thumbnail:hover {
+  transform: scale(1.02);
+  border-color: var(--st-accent-border);
+}
+
 * {
   margin: 0;
   padding: 0;

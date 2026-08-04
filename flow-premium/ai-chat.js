@@ -12773,21 +12773,22 @@ async function runAgentTask(prompt, thread) {
         generationConfig: { temperature: 0.2 }
       });
 
-      // ── 429 retry with backoff ─────────────────────────────────────────────
+      // ── 429 handling: back off 10 s then retry the same step ─────────────
       // Gemini returns 429 (RESOURCE_EXHAUSTED) when the per-minute token quota
-      // is hit mid-task. Instead of crashing the whole run, wait 6 s and retry
-      // up to 3 times — covers almost all transient quota bursts.
-      let res, retries = 0;
-      while (retries <= 3) {
-        res = await fetch(
-          `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
-          { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: geminiBody }
-        );
-        if (res.status !== 429 || retries === 3) break;
-        retries++;
-        addAgentStepBubble(thread, `⏳ Gemini rate limit hit — retrying in 6 s (attempt ${retries}/3)…`);
-        await new Promise(r => setTimeout(r, 6000));
+      // is hit mid-task. Back off 10 s and decrement the step counter so the
+      // exact same context (with screenshot) is re-sent — no progress is lost.
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: geminiBody }
+      );
+
+      if (res.status === 429) {
+        addAgentStepBubble(thread, '⏳ Rate limit — backing off 10 s and retrying this step…');
+        await new Promise(r => setTimeout(r, 10000));
+        step--; // retry the same step with the same context
+        continue;
       }
+
       data = await res.json();
     } catch (e) {
       addAgentStepBubble(thread, `Connection error: ${e.message}`, 'error');

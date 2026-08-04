@@ -56,40 +56,51 @@ function assessActionRisk(executeAction, params) {
 // are much less likely to flag the session.
 const jitter = v => Math.round(v + (Math.random() * 4 - 2));
 
-// ── Persistent CDP Session Pool ────────────────────────────────────────────
+// ── Persistent CDP Session Pool (Self-Healing & MV3 Compliant) ────────────
 // Eliminates per-action attach/detach flashing and race conditions.
 // • Reuses the connection for the same tab (ref-counted).
 // • Serialises commands on a per-tab mutex so rapid/parallel actions never race.
-// • Schedules idle detach 45 s after the last release to avoid constant re-attaching.
+// • Schedules idle detach 15 s after the last release to avoid constant re-attaching.
+// • Self-heals when the user clicks "Cancel" on the Chrome debugger infobar.
 class CdpSessionPool {
   constructor() {
-    this.sessions = new Map(); // tabId -> { count, timeout, attached }
-    this.locks    = new Map(); // tabId -> Promise chain (mutex)
+    this.sessions = new Map(); // tabId -> { refCount, timeout, attached }
+    this.mutexes  = new Map(); // tabId -> Promise chain (mutex)
+
+    // Self-healing: when the user cancels the debugger infobar, Chrome fires
+    // onDetach. Remove the stale session entry so the next acquire() re-attaches
+    // cleanly instead of thinking it's still connected.
+    chrome.debugger.onDetach.addListener((source) => {
+      const { tabId } = source;
+      if (tabId && this.sessions.has(tabId)) {
+        console.warn(`[Aion CDP] Debugger manually detached from tab ${tabId} — clearing pool entry`);
+        const s = this.sessions.get(tabId);
+        if (s?.timeout) clearTimeout(s.timeout);
+        this.sessions.delete(tabId);
+      }
+    });
   }
 
   async acquire(tabId) {
     // Serialised mutex per tab
     let releaseLock;
-    const prev = this.locks.get(tabId) || Promise.resolve();
+    const prev = this.mutexes.get(tabId) || Promise.resolve();
     const next  = new Promise(r => { releaseLock = r; });
-    this.locks.set(tabId, prev.then(() => next));
+    this.mutexes.set(tabId, prev.then(() => next));
     await prev;
 
     try {
       let s = this.sessions.get(tabId);
-      if (!s) { s = { count: 0, timeout: null, attached: false }; this.sessions.set(tabId, s); }
+      if (!s) { s = { refCount: 0, timeout: null, attached: false }; this.sessions.set(tabId, s); }
       if (s.timeout) { clearTimeout(s.timeout); s.timeout = null; }
       if (!s.attached) {
         try {
           await chrome.debugger.attach({ tabId }, '1.3');
           // Session grouping — captures spawned sub-windows (login popups, build
           // previews, OAuth flows) so the agent stays connected to child targets.
-          try {
-            await new Promise(resolve => {
-              chrome.debugger.sendCommand({ tabId }, 'Target.setAutoAttach',
-                { autoAttach: true, waitForDebuggerOnStart: false, flatten: true }, resolve);
-            });
-          } catch (_) {} // non-fatal: some tabs don't support Target domain
+          await chrome.debugger.sendCommand({ tabId }, 'Target.setAutoAttach',
+            { autoAttach: true, waitForDebuggerOnStart: false, flatten: true }
+          ).catch(() => {}); // non-fatal: some tabs don't support Target domain
         } catch (e) {
           const msg = (e && e.message) || String(e);
           if (!/already attached|Another debugger/i.test(msg)) { releaseLock(); throw e; }
@@ -97,7 +108,7 @@ class CdpSessionPool {
         }
         s.attached = true;
       }
-      s.count++;
+      s.refCount++;
 
       const send = (method, params) => new Promise((resolve, reject) => {
         chrome.debugger.sendCommand({ tabId }, method, params || {}, result => {
@@ -107,15 +118,15 @@ class CdpSessionPool {
       });
 
       const release = () => {
-        s.count = Math.max(0, s.count - 1);
-        if (s.count === 0) {
+        s.refCount = Math.max(0, s.refCount - 1);
+        if (s.refCount === 0) {
           s.timeout = setTimeout(async () => {
-            if (s.count === 0 && s.attached) {
+            if (s.refCount === 0 && s.attached) {
               try { await chrome.debugger.detach({ tabId }); } catch (_) {}
               s.attached = false;
               this.sessions.delete(tabId);
             }
-          }, 45000); // 45 s — survives long waitForElement polls and slow SPA loads
+          }, 15000); // 15 s — fast enough to release, long enough to survive rapid follow-ups
         }
         releaseLock();
       };

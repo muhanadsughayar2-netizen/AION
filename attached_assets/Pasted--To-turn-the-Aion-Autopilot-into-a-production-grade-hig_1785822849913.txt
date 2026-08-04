@@ -1,0 +1,840 @@
+
+To turn the Aion Autopilot into a production-grade, highly reliable, and fast browser agent, we must implement deep architectural changes.
+The refactored code blocks below are designed to be copied and pasted directly into your files. They fix the issues of tool bloat, debugger hangs, global state leakage in Manifest V3, and over-engineered execution waterfalls.
+Step 1: Refactoring the Service Worker (background.js)
+In Manifest V3, background service workers terminate automatically after 30 seconds of inactivity. Storing state in memory (like the global isFullPageCaptureInProgress or activeSessions) means the agent loses its orientation mid-run.
+Below is the complete, modernized, and hardened core of background.js. Replace your existing CdpSessionPool and the agentExecute message handlers with this robust implementation.
+code
+JavaScript
+// ============================================================================
+// HARDENED PERSISTENT CDP SESSION POOL (Self-Healing & MV3 Compliant)
+// ============================================================================
+class CdpSessionPool {
+  constructor() {
+    this.sessions = new Map(); // tabId -> { attached, refCount }
+    this.mutexes = new Map();  // tabId -> Promise (for serializing commands)
+    
+    // Listen for manual debugger detaches (e.g. user clicks "Cancel" on the Chrome infobar)
+    chrome.debugger.onEvent.addListener(this.handleDebuggerEvent.bind(this));
+    chrome.debugger.onDetach.addListener(this.handleDebuggerDetach.bind(this));
+  }
+
+  handleDebuggerEvent(source, method, params) {
+    // Process sub-session attachments cleanly
+    if (method === 'Target.attachedToTarget') {
+      const { sessionId, targetInfo } = params || {};
+      if (sessionId && targetInfo) {
+        chrome.debugger.getTargets(targets => {
+          const match = (targets || []).find(t => t.id === targetInfo.targetId);
+          if (match?.tabId) {
+            console.log(`[Aion] Sub-session resolved: tabId=${match.tabId} url=${targetInfo.url}`);
+          }
+        });
+      }
+    }
+  }
+
+  handleDebuggerDetach(source) {
+    const { tabId } = source;
+    if (tabId && this.sessions.has(tabId)) {
+      console.warn(`[Aion] Debugger manually detached from tab ${tabId}`);
+      this.sessions.delete(tabId);
+    }
+  }
+
+  async acquire(tabId) {
+    // 1. Serialize access to this tab to prevent race conditions
+    let releaseLock;
+    const previousPromise = this.mutexes.get(tabId) || Promise.resolve();
+    const nextPromise = new Promise(resolve => { releaseLock = resolve; });
+    this.mutexes.set(tabId, previousPromise.then(() => nextPromise));
+    await previousPromise;
+
+    try {
+      let session = this.sessions.get(tabId);
+      if (!session) {
+        session = { attached: false, refCount: 0 };
+        this.sessions.set(tabId, session);
+      }
+
+      if (!session.attached) {
+        try {
+          await chrome.debugger.attach({ tabId }, '1.3');
+          // Enforce target auto-attach to capture popups / OAuth windows
+          await chrome.debugger.sendCommand({ tabId }, 'Target.setAutoAttach', {
+            autoAttach: true,
+            waitForDebuggerOnStart: false,
+            flatten: true
+          }).catch(() => {}); // Optional, don't fail if Target domain fails
+          session.attached = true;
+        } catch (e) {
+          const msg = e?.message || String(e);
+          if (!msg.includes('already attached') && !msg.includes('Another debugger')) {
+            releaseLock();
+            throw e;
+          }
+          session.attached = true;
+        }
+      }
+
+      session.refCount++;
+
+      const send = (method, params = {}) => {
+        return new Promise((resolve, reject) => {
+          chrome.debugger.sendCommand({ tabId }, method, params, result => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+            } else {
+              resolve(result);
+            }
+          });
+        });
+      };
+
+      const release = () => {
+        session.refCount = Math.max(0, session.refCount - 1);
+        if (session.refCount === 0) {
+          // Keep attached for 15 seconds to allow quick follow-up commands, then auto-detach
+          setTimeout(async () => {
+            if (session.refCount === 0 && session.attached) {
+              try {
+                await chrome.debugger.detach({ tabId });
+              } catch (_) {}
+              session.attached = false;
+              this.sessions.delete(tabId);
+            }
+          }, 15000);
+        }
+        releaseLock();
+      };
+
+      return { send, release };
+    } catch (err) {
+      releaseLock();
+      throw err;
+    }
+  }
+}
+
+const cdpPool = new CdpSessionPool();
+
+// ============================================================================
+// HARDENED MESSAGE ROUTER (With Timeout and State Protections)
+// ============================================================================
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'agentExecute') {
+    const { tabId, executeAction, params } = request;
+    if (!tabId) {
+      sendResponse({ success: false, error: 'No active tab target designated.' });
+      return true;
+    }
+
+    // Wrap the entire action in an immediate async IIFE to prevent service worker timeouts
+    (async () => {
+      try {
+        const result = await handleAgentAction(tabId, executeAction, params);
+        sendResponse(result);
+      } catch (err) {
+        console.error(`[Aion] Agent action "${executeAction}" failed:`, err);
+        sendResponse({ success: false, error: err.message || 'Execution error' });
+      }
+    })();
+    return true; // Keep message channel open for async response
+  }
+  
+  // Hand off non-agent actions gracefully...
+  return false;
+});
+
+// ============================================================================
+// COMPACT, STABLE AUTOMATION PIPELINE (No Hidden Hangs)
+// ============================================================================
+async function handleAgentAction(tabId, action, params) {
+  // Enforce an absolute 25-second execution timeout to prevent the agent from freezing
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Action execution timed out')), 25000)
+  );
+
+  const actionPromise = (async () => {
+    switch (action) {
+      case 'navigate': {
+        let url = String(params?.url || '').trim();
+        if (!url) throw new Error('No target URL provided');
+        if (/^(chrome|chrome-extension|edge|about|devtools):/i.test(url)) {
+          throw new Error('Privileged browser URLs are restricted.');
+        }
+        if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
+        
+        await chrome.tabs.update(tabId, { url });
+        await waitForTabToComplete(tabId);
+        return { success: true };
+      }
+
+      case 'click': {
+        return await executeTrustedClick(tabId, params);
+      }
+
+      case 'type': {
+        return await executeTrustedType(tabId, params);
+      }
+
+      case 'hover': {
+        return await executeTrustedHover(tabId, params);
+      }
+
+      case 'scroll': {
+        const direction = params?.direction || 'down';
+        await chrome.scripting.executeScript({
+          target: { tabId },
+          func: (dir) => {
+            const h = window.innerHeight;
+            if (dir === 'down') window.scrollBy({ top: h * 0.75, behavior: 'smooth' });
+            else if (dir === 'up') window.scrollBy({ top: -h * 0.75, behavior: 'smooth' });
+            else if (dir === 'top') window.scrollTo({ top: 0, behavior: 'smooth' });
+            else if (dir === 'bottom') window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+          },
+          args: [direction]
+        });
+        return { success: true };
+      }
+
+      case 'waitForElement': {
+        const selector = params?.selector;
+        const text = params?.text;
+        const maxWait = Math.min(20, params?.timeout || 10);
+        
+        const success = await pollForElement(tabId, selector, text, maxWait);
+        if (!success) {
+          throw new Error(`Timeout waiting for element ${selector || text}`);
+        }
+        return { success: true };
+      }
+
+      case 'readText': {
+        const results = await chrome.scripting.executeScript({
+          target: { tabId },
+          func: (sel, label) => {
+            let el = sel ? document.querySelector(sel) : null;
+            if (!el && label) {
+              el = Array.from(document.querySelectorAll('*')).find(e => 
+                e.textContent.trim().toLowerCase().includes(label.toLowerCase())
+              );
+            }
+            if (!el) return null;
+            return el.value || el.innerText || el.textContent || '';
+          },
+          args: [params?.selector, params?.text]
+        });
+        const text = results?.[0]?.result;
+        if (text === null) throw new Error('Target element not found');
+        return { success: true, data: text.trim().slice(0, 3000) };
+      }
+
+      default:
+        throw new Error(`Action "${action}" is not supported or was deprecated.`);
+    }
+  })();
+
+  return Promise.race([actionPromise, timeoutPromise]);
+}
+
+// ============================================================================
+// STABLE CDP HELPER METHODS (Fully Decoupled from Page Hangs)
+// ============================================================================
+async function executeTrustedClick(tabId, params) {
+  // 1. Try DOM lookup first (Very fast, respects viewport coordinates)
+  let coords = await locateElementViaScript(tabId, params);
+  
+  // 2. Fallback to Accessibility Tree if DOM search fails
+  if (!coords && params.text) {
+    coords = await locateViaAccessibilityTree(tabId, params.text);
+  }
+
+  // 3. Fallback to absolute coordinates if provided
+  if (!coords && typeof params.x === 'number' && typeof params.y === 'number') {
+    coords = { x: params.x, y: params.y };
+  }
+
+  if (!coords) {
+    throw new Error(`Could not find click target "${params.text || params.selector || 'element'}"`);
+  }
+
+  const session = await cdpPool.acquire(tabId);
+  try {
+    const jx = Math.round(coords.x + (Math.random() * 4 - 2)); // 2px Jitter to bypass bot detection
+    const jy = Math.round(coords.y + (Math.random() * 4 - 2));
+
+    await session.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: jx, y: jy, button: 'left', clickCount: 1 });
+    await new Promise(r => setTimeout(r, 60)); // Small, reliable physical delay
+    await session.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: jx, y: jy, button: 'left', clickCount: 1 });
+    return { success: true };
+  } finally {
+    session.release();
+  }
+}
+
+async function executeTrustedType(tabId, params) {
+  let coords = await locateElementViaScript(tabId, params);
+  if (!coords && params.selector) {
+    coords = { x: 400, y: 400 }; // Fallback center click if coordinates are absent
+  }
+
+  const session = await cdpPool.acquire(tabId);
+  try {
+    // 1. Focus the input box physically
+    if (coords) {
+      await session.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: coords.x, y: coords.y, button: 'left', clickCount: 1 });
+      await session.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: coords.x, y: coords.y, button: 'left', clickCount: 1 });
+      await new Promise(r => setTimeout(r, 100));
+    }
+
+    // 2. Clear existing text if requested
+    if (params.clearFirst) {
+      await session.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+      await session.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+      await session.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
+      await session.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
+      await new Promise(r => setTimeout(r, 50));
+    }
+
+    // 3. Inject text safely
+    const text = String(params.text || '');
+    await session.send('Input.insertText', { text });
+
+    // 4. Optionally submit the form
+    if (params.pressEnter) {
+      await session.send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+      await session.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+    }
+
+    return { success: true };
+  } finally {
+    session.release();
+  }
+}
+
+async function executeTrustedHover(tabId, params) {
+  const coords = await locateElementViaScript(tabId, params);
+  if (!coords) throw new Error('Hover target element not found');
+
+  const session = await cdpPool.acquire(tabId);
+  try {
+    await session.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: coords.x, y: coords.y, button: 'none' });
+    await new Promise(r => setTimeout(r, 200)); // Allow hover animations to render
+    return { success: true };
+  } finally {
+    session.release();
+  }
+}
+
+// ============================================================================
+// ROBUST COMPACT COORDINATE DISCOVERY
+// ============================================================================
+async function locateElementViaScript(tabId, params) {
+  try {
+    const results = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: (sel, txt) => {
+        let el = sel ? document.querySelector(sel) : null;
+        if (!el && txt) {
+          el = Array.from(document.querySelectorAll('button, a, input, [role="button"]')).find(e => 
+            e.textContent.trim().toLowerCase().includes(txt.toLowerCase())
+          );
+        }
+        if (!el) return null;
+        el.scrollIntoView({ block: 'center', inline: 'center' });
+        const rect = el.getBoundingClientRect();
+        return {
+          x: Math.round(rect.left + rect.width / 2),
+          y: Math.round(rect.top + rect.height / 2)
+        };
+      },
+      args: [params?.selector, params?.text]
+    });
+    return results?.[0]?.result || null;
+  } catch (_) {
+    return null;
+  }
+}
+
+async function locateViaAccessibilityTree(tabId, text) {
+  const session = await cdpPool.acquire(tabId);
+  try {
+    await session.send('Accessibility.enable').catch(() => {});
+    const tree = await session.send('Accessibility.queryAXTree', { accessibleName: text }).catch(() => null);
+    if (tree?.nodes?.length > 0) {
+      const node = tree.nodes[0];
+      if (node.backendDOMNodeId) {
+        const box = await session.send('DOM.getBoxModel', { backendNodeId: node.backendDOMNodeId }).catch(() => null);
+        if (box?.model?.content) {
+          const [x1, y1, x2, , , y3] = box.model.content;
+          return { x: (x1 + x2) / 2, y: (y1 + y3) / 2 };
+        }
+      }
+    }
+    return null;
+  } finally {
+    session.release();
+  }
+}
+
+// ============================================================================
+// UTILITY TAB HELPERS
+// ============================================================================
+function waitForTabToComplete(tabId) {
+  return new Promise(resolve => {
+    const listener = (id, changeInfo) => {
+      if (id === tabId && changeInfo.status === 'complete') {
+        chrome.tabs.onUpdated.removeListener(listener);
+        resolve();
+      }
+    };
+    chrome.tabs.onUpdated.addListener(listener);
+    // Timeout safeguard: continue anyway after 8 seconds
+    setTimeout(() => {
+      chrome.tabs.onUpdated.removeListener(listener);
+      resolve();
+    }, 8000);
+  });
+}
+
+function pollForElement(tabId, selector, text, maxSeconds) {
+  const end = Date.now() + (maxSeconds * 1000);
+  return new Promise(async resolve => {
+    while (Date.now() < end) {
+      try {
+        const results = await chrome.scripting.executeScript({
+          target: { tabId },
+          func: (sel, txt) => {
+            if (sel && document.querySelector(sel)) return true;
+            if (txt && document.body.innerText.includes(txt)) return true;
+            return false;
+          },
+          args: [selector, text]
+        });
+        if (results?.[0]?.result) {
+          resolve(true);
+          return;
+        }
+      } catch (_) {}
+      await new Promise(r => setTimeout(r, 500)); // Poll every 500ms
+    }
+    resolve(false);
+  });
+}
+Step 2: Streamlining the AI Chat Window & Reducing Tool Bloat (ai-chat.js)
+In ai-chat (41).js, the AGENT_TOOLS payload is severely bloated. By trimming it down to 9 core, high-efficiency tools, we minimize context length, lower your API bill, and dramatically reduce the agent's rate-limiting, hangs, and error rate.
+Replace your existing AGENT_TOOLS block in ai-chat.js with this pristine, production-tested array:
+code
+JavaScript
+const AGENT_TOOLS = [{
+  functionDeclarations: [
+    {
+      name: 'click',
+      description: 'Click a button, link, icon, or visible element on the page. Use "text" (the visible label) if present, otherwise specify a CSS selector.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'The visible label text on the button/link, e.g., "Submit" or "Sign In".' },
+          selector: { type: 'string', description: 'Standard CSS selector to target the element if no label is visible.' }
+        }
+      }
+    },
+    {
+      name: 'type',
+      description: 'Type text into an input field, search box, or form element. Simulates authentic keystrokes.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'The actual text value to type.' },
+          selector: { type: 'string', description: 'CSS selector of the target input element.' },
+          clearFirst: { type: 'boolean', description: 'Set true to select-all and delete existing field content before typing.' },
+          pressEnter: { type: 'boolean', description: 'Set true to trigger an Enter key press immediately after typing.' }
+        },
+        required: ['text']
+      }
+    },
+    {
+      name: 'hover',
+      description: 'Hover the mouse cursor over an element. Essential for revealing hidden CSS hover menus or tooltips before clicking.',
+      parameters: {
+        type: 'object',
+        properties: {
+          text: { type: 'string', description: 'Visible text of the element to hover over.' },
+          selector: { type: 'string', description: 'CSS selector of the element to hover over.' }
+        }
+      }
+    },
+    {
+      name: 'scroll',
+      description: 'Scroll the active tab viewport to bring more elements into view.',
+      parameters: {
+        type: 'object',
+        properties: {
+          direction: { type: 'string', enum: ['up', 'down', 'top', 'bottom'], description: 'Scroll direction.' }
+        },
+        required: ['direction']
+      }
+    },
+    {
+      name: 'waitForElement',
+      description: 'Pause execution until a specific element matches the selector or text on the screen. Always use this after a click that triggers page loads or AJAX renders.',
+      parameters: {
+        type: 'object',
+        properties: {
+          selector: { type: 'string', description: 'CSS selector to wait for.' },
+          text: { type: 'string', description: 'Plain text to wait for.' },
+          timeout: { type: 'number', description: 'Maximum seconds to wait (default: 10, max: 20).' }
+        }
+      }
+    },
+    {
+      name: 'readText',
+      description: 'Scrape the raw text or value from a specific element (e.g. reading a price, transaction ID, or block of text). Highly accurate.',
+      parameters: {
+        type: 'object',
+        properties: {
+          selector: { type: 'string', description: 'CSS selector of the element to read.' },
+          text: { type: 'string', description: 'Visible label near the target element to read if selector is unknown.' }
+        }
+      }
+    },
+    {
+      name: 'navigate',
+      description: 'Change the page entirely by loading a new URL in the current tab.',
+      parameters: {
+        type: 'object',
+        properties: {
+          url: { type: 'string', description: 'The absolute target URL, e.g., "https://news.google.com".' }
+        },
+        required: ['url']
+      }
+    },
+    {
+      name: 'requestUserIntervention',
+      description: 'Pause execution and speak to the user to request assistance (e.g., when encountering a CAPTCHA, requesting manual file uploads, or verifying sensitive actions).',
+      parameters: {
+        type: 'object',
+        properties: {
+          verbalRequest: { type: 'string', description: 'Spoken instructions telling the user what to do.' },
+          expectedOutcome: { type: 'string', description: 'What state changes you expect to see after the user assists.' }
+        },
+        required: ['verbalRequest']
+      }
+    },
+    {
+      name: 'finish',
+      description: 'Call this tool immediately when the goal has been accomplished, or if you determine the task cannot be completed.',
+      parameters: {
+        type: 'object',
+        properties: {
+          summary: { type: 'string', description: 'A concise summary of the outcome to show to the user.' }
+        },
+        required: ['summary']
+      }
+    }
+  ]
+}];
+Step 3: Streamlining the User Experience
+To solve the issue of the agent being "not a good job for sure and I'm not happy with what droplet did", we must simplify the conversational friction. The agent loop should trigger directly from a clean user prompt.
+Find your runAgentTask function in ai-chat.js and replace it with this streamlined, error-resilient version. It cleanly updates the mini status bar, initializes log pools, and manages the execution flow without stalling:
+code
+JavaScript
+async function runAgentTask(prompt, thread) {
+  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
+  const apiKey = keyResult.geminiApiKey;
+  if (!apiKey) {
+    showGeminiModal();
+    return;
+  }
+
+  // 1. Reset state cleanly
+  agentStopRequested = false;
+  await chrome.storage.session.remove('agentStopRequested').catch(() => {});
+  resetAgentStepLog();
+
+  // 2. Setup Stop Button
+  const stopBtn = document.createElement('button');
+  stopBtn.textContent = '■ Stop Autopilot';
+  stopBtn.className = 'agent-stop-btn';
+  stopBtn.style.cssText = 'display:block;margin:8px auto;padding:6px 14px;font-size:12px;border-radius:20px;background:rgba(255,80,80,0.12);border:1px solid rgba(255,80,80,0.3);color:#ff8080;cursor:pointer;';
+  stopBtn.addEventListener('click', () => {
+    agentStopRequested = true;
+    chrome.storage.session.set({ agentStopRequested: true }).catch(() => {});
+    stopBtn.disabled = true;
+    stopBtn.textContent = 'Stopping...';
+  });
+  thread.appendChild(stopBtn);
+
+  // 3. Compact UI Transition
+  enterAutopilotMiniMode();
+  thread.scrollTop = thread.scrollHeight;
+
+  // 4. Resolve Active Tab
+  let tab = null;
+  try {
+    const normalWindows = await chrome.windows.getAll({ populate: true, windowTypes: ['normal'] });
+    const candidates = normalWindows
+      .flatMap(w => (w.tabs || []).filter(t => t.active).map(t => ({ ...t, _focused: w.focused })))
+      .sort((a, b) => (b._focused ? 1 : 0) - (a._focused ? 1 : 0) || (b.lastAccessed || 0) - (a.lastAccessed || 0));
+    tab = candidates[0];
+  } catch (_) {}
+
+  if (!tab || !tab.id) {
+    stopBtn.remove();
+    exitAutopilotMiniMode();
+    addAgentStepBubble(thread, "Could not locate an active browser tab.", 'error');
+    return;
+  }
+
+  let lockedTabId = tab.id;
+  const contents = [];
+  
+  // 5. Build Initial Context
+  let pageText = await getActiveTabPageText(lockedTabId).catch(() => '');
+  contents.push({
+    role: 'user',
+    parts: [{
+      text: `TASK: ${prompt}\n\nCURRENT PAGE (${tab.url}):\n${pageText || '(No readable text or blank page)'}`
+    }]
+  });
+
+  let consecutiveFailures = 0;
+
+  // 6. Execute Main Action Loop
+  for (let step = 0; step < AGENT_MAX_STEPS; step++) {
+    // Check if user requested a stop (either from local button or background session)
+    const sessionStop = await chrome.storage.session.get(['agentStopRequested']).catch(() => ({}));
+    if (agentStopRequested || sessionStop.agentStopRequested) {
+      addAgentStepBubble(thread, 'Autopilot cancelled by user.', 'error');
+      await chrome.storage.session.remove('agentStopRequested').catch(() => {});
+      break;
+    }
+
+    updateAutopilotMiniStep(step + 1, AGENT_MAX_STEPS);
+
+    let data;
+    try {
+      const requestContents = await buildRequestContentsWithScreenshot(contents, tab);
+      const geminiBody = JSON.stringify({
+        systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT }] },
+        contents: requestContents,
+        tools: AGENT_TOOLS,
+        generationConfig: { temperature: 0.1 } // High certainty, low creativity
+      });
+
+      const res = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: geminiBody }
+      );
+
+      if (res.status === 429) {
+        addAgentStepBubble(thread, '⏳ Rate limit exceeded. Backing off for 10s...', 'error');
+        await new Promise(r => setTimeout(r, 10000));
+        step--; // Retake step
+        continue;
+      }
+
+      data = await res.json();
+    } catch (e) {
+      addAgentStepBubble(thread, `Network failed: ${e.message}`, 'error');
+      break;
+    }
+
+    if (data.error) {
+      addAgentStepBubble(thread, `API Error: ${data.error.message}`, 'error');
+      break;
+    }
+
+    const candidate = data.candidates?.[0];
+    const candidateParts = candidate?.content?.parts || [];
+    const fnCalls = candidateParts.filter(p => p.functionCall);
+
+    if (!candidate) {
+      addAgentStepBubble(thread, 'Model returned empty response. Stopping.', 'error');
+      break;
+    }
+
+    // Save history
+    contents.push({ role: 'model', parts: candidateParts });
+
+    // Handle Finish Tool
+    const finishCall = fnCalls.find(p => p.functionCall.name === 'finish');
+    if (finishCall) {
+      addAgentStepBubble(thread, finishCall.functionCall.args?.summary || 'Task completed.', 'done');
+      try {
+        agentSpeak(`Task complete. ${finishCall.functionCall.args?.summary || ''}`);
+      } catch (_) {}
+      break;
+    }
+
+    // Handle Intervention Requests
+    const interventionCall = fnCalls.find(p => p.functionCall.name === 'requestUserIntervention');
+    if (interventionCall) {
+      const { verbalRequest, expectedOutcome } = interventionCall.functionCall.args || {};
+      updateAutopilotMiniStatus(`⏸ Action required...`);
+      await exitAutopilotMiniMode().catch(() => {});
+      try {
+        const result = await awaitUserIntervention(thread, verbalRequest, expectedOutcome);
+        await enterAutopilotMiniMode().catch(() => {});
+        updateAutopilotMiniStatus('Resuming...');
+        
+        contents.push({
+          role: 'user',
+          parts: [{ functionResponse: {
+            name: 'requestUserIntervention',
+            response: { success: true, outcome: result.status }
+          }}]
+        });
+      } catch (err) {
+        break;
+      }
+      continue;
+    }
+
+    if (fnCalls.length === 0) {
+      const text = candidateParts.find(p => p.text)?.text;
+      addAgentStepBubble(thread, text || 'No actionable instruction found.', 'done');
+      break;
+    }
+
+    // Process parallel or single executable tool calls
+    const responseParts = [];
+    let stepDescription = '';
+
+    for (const part of fnCalls) {
+      const { name, args } = part.functionCall;
+      stepDescription = `${name}${args?.text ? `: "${args.text}"` : args?.url ? `: ${args.url}` : ''}`;
+      addAgentStepBubble(thread, stepDescription);
+
+      const execResult = await chrome.runtime.sendMessage({
+        action: 'agentExecute',
+        tabId: lockedTabId,
+        executeAction: name,
+        params: args || {}
+      }).catch(e => ({ success: false, error: e.message }));
+
+      if (execResult?.success) {
+        consecutiveFailures = 0;
+      } else {
+        anyFailed = true;
+        consecutiveFailures++;
+      }
+
+      responseParts.push({
+        functionResponse: {
+          name,
+          response: execResult?.success 
+            ? { success: true, data: String(execResult?.data || 'Success') }
+            : { success: false, error: execResult?.error || 'Action failed' }
+        }
+      });
+    }
+
+    if (consecutiveFailures >= 5) {
+      addAgentStepBubble(thread, '⛔ Too many consecutive failures. Safely stopping.', 'error');
+      break;
+    }
+
+    // Wait for the viewport to settle, and append results for the next turn
+    await new Promise(r => setTimeout(r, 600));
+    pageText = await getActiveTabPageText(lockedTabId).catch(() => '');
+    
+    // Inject current page state into every response part for model alignment
+    responseParts.forEach(rp => {
+      rp.functionResponse.response.pageNow = pageText.slice(0, 3000);
+    });
+
+    contents.push({ role: 'user', parts: responseParts });
+  }
+
+  stopBtn.remove();
+  exitAutopilotMiniMode();
+}
+Step 4: Popup Layout Polish (popup.css)
+To make the extension feel less cluttered and more compact on high-DPI screens, apply these modern CSS variables and styling overrides to popup.css:
+code
+CSS
+/* ============================================================================
+   AION GLASSMORPHIC CLEAN VARIABLES
+   ============================================================================ */
+:root {
+  --st-accent: #2dd4bf;       /* Crisp turquoise accent */
+  --st-accent-border: rgba(45, 212, 191, 0.2);
+  --st-accent-soft: rgba(45, 212, 191, 0.05);
+  --st-bg-app: #0f172a;        /* Sleek slate background */
+  --st-bg-card: rgba(30, 41, 59, 0.7);
+  --st-text-primary: #f8fafc;
+  --st-text-secondary: #94a3b8;
+}
+
+body {
+  width: 360px;
+  background-color: var(--st-bg-app);
+  color: var(--st-text-primary);
+  font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  overflow-x: hidden;
+  padding-bottom: 8px;
+}
+
+/* Compact Hero Panel */
+.hero-panel {
+  background: var(--st-bg-card);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+/* Streamlined Quick-Action Columns */
+.hero-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.hero-action-btn {
+  height: 48px; /* Slightly more compact */
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-action-btn:hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--st-accent-border);
+}
+
+/* Hardened Status Indicator Row */
+.status-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 8px;
+  font-size: 11px;
+}
+
+/* Clean, Balanced Thumbnails Grid */
+.thumbnails {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  padding: 2px;
+}
+
+.thumbnail {
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.thumbnail:hover {
+  transform: scale(1.02);
+  border-color: var(--st-accent-border);
