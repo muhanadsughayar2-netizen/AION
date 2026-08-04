@@ -12875,8 +12875,14 @@ async function runAgentTask(prompt, thread) {
         `📋 **Plan:**\n${agentState.plan.map((s, i) => `${i + 1}. ${s}`).join('\n')}`);
     }
   } catch (planErr) {
-    if (planErr.name === 'AbortError' || agentStopRequested) { stopBtn.remove(); exitAutopilotMiniMode(); return; }
-    // Plan generation failed — fall through to the standard tool-calling loop
+    // Chrome extension fetch aborts sometimes surface as TypeError("Failed to fetch")
+    // rather than DOMException("AbortError") — treat both as a clean stop.
+    const isAbort = planErr.name === 'AbortError'
+      || agentStopRequested
+      || activeAgentController.signal.aborted
+      || planErr.message === 'Failed to fetch';
+    if (isAbort) { stopBtn.remove(); exitAutopilotMiniMode(); return; }
+    // Plan generation failed for a real reason — fall through without a plan
     console.warn('[Aion] generateAgentPlan failed (non-fatal):', planErr.message);
   }
 
@@ -12969,7 +12975,13 @@ async function runAgentTask(prompt, thread) {
 
       data = await res.json();
     } catch (e) {
-      if (e.name === 'AbortError' || agentStopRequested) {
+      // Chrome extension aborts sometimes arrive as TypeError("Failed to fetch")
+      // rather than DOMException("AbortError") — treat both as a clean stop.
+      const isAbort = e.name === 'AbortError'
+        || agentStopRequested
+        || activeAgentController.signal.aborted
+        || e.message === 'Failed to fetch';
+      if (isAbort) {
         console.log('[Aion] Autopilot loop aborted cleanly.');
         break;
       }
@@ -13700,10 +13712,17 @@ of 3–6 high-level milestones needed to reach the goal.
 Focus on logical phases (Navigate, Fill form, Submit, Verify) — avoid specific CSS selectors.
 Return ONLY a raw JSON string array. Example: ["Navigate to site","Fill search box","Click Search","Read top result"]`;
 
+  // Use a dedicated 15 s timeout so the plan call never hangs.
+  // Combine with the caller's abort signal so Stop still works instantly.
+  const planTimeout = AbortSignal.timeout(15000);
+  const planSignal = (signal && typeof AbortSignal.any === 'function')
+    ? AbortSignal.any([signal, planTimeout])
+    : planTimeout;
+
   const resp = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/${MODELS.chat}:generateContent?key=${apiKey}`,
     {
-      method: 'POST', signal,
+      method: 'POST', signal: planSignal,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         systemInstruction: { parts: [{ text: systemPrompt }] },
