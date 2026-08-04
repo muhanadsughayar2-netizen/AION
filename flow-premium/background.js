@@ -809,6 +809,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.action === 'capture') {
     captureScreenshot().then(sendResponse);
     return true;
+  } else if (request.action === 'keepAlive') {
+    // Lightweight ping from content script's keepServiceWorkerAlive().
+    // The round-trip itself resets the service worker's 30-second idle timer —
+    // no work needed here beyond responding so the promise resolves cleanly.
+    sendResponse({ success: true });
+    return true;
   } else if (request.action === 'askAiDirect') {
     const sourceTabId = request.sourceTabId;
     (async () => {
@@ -5437,9 +5443,10 @@ async function startFullPageCapture(targetTabId = null) {
 // Capture a single viewport during full page capture
 async function captureFullPageStep(tabId) {
   try {
-    // Delay for lazy-loading (500ms allows dynamic content to load - like GoFullPage)
-    // Increase this to 1000ms for very dynamic sites (investing.com, etc)
-    await new Promise(resolve => setTimeout(resolve, 500));
+    // Reduced from 500ms → 100ms: content script's waitForScrollStabilization already
+    // confirms the layout has fully settled before requesting capture, so only a
+    // lightweight paint-cycle buffer is needed here. Speeds up long captures significantly.
+    await new Promise(resolve => setTimeout(resolve, 100));
     
     // Get the tab info using the provided tabId (more reliable than querying active tab)
     const tab = await chrome.tabs.get(tabId);

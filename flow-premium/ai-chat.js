@@ -890,7 +890,10 @@ function speakText(text, langCode = null) {
 
   utterance.rate = 1.0;
   utterance.pitch = 1.0;
-  
+
+  // Explicitly trigger speech — without this call the utterance is constructed
+  // but never played, so the fallback voice was completely silent.
+  synth.speak(utterance);
   return utterance;
 }
 
@@ -937,7 +940,9 @@ function agentSpeak(text) {
   (async () => {
     let apiKey = '';
     try { const r = await chrome.storage.sync.get(['geminiApiKey']); apiKey = r.geminiApiKey || ''; } catch (_) {}
-    if (!apiKey) return;
+    // No personal API key — fall back to browser TTS so free-tier users still
+    // hear the Autopilot speak (previously this returned silently with nothing).
+    if (!apiKey) { speakFallback(cleanSpeechText); return; }
 
     const controller = new AbortController();
     _agentVoice.controller = controller;

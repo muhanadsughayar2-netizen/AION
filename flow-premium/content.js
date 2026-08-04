@@ -3373,10 +3373,12 @@
         const now = Date.now();
         if (now - lastKeepAliveTime >= KEEP_ALIVE_INTERVAL) {
           try {
-            // Any chrome.storage call resets the service worker timer
-            await chrome.storage.session.set({ keepAlive: now });
+            // MV3: content scripts cannot access chrome.storage.session unless
+            // the background explicitly grants it. Use message passing instead —
+            // any round-trip to the service worker resets its 30-second idle timer.
+            await chrome.runtime.sendMessage({ action: 'keepAlive' }).catch(() => {});
             lastKeepAliveTime = now;
-            console.log('[SnapToAI] Service worker keep-alive ping sent');
+            console.log('[SnapToAI] Service worker keep-alive ping sent via messaging channel');
           } catch (e) {
             // Ignore keep-alive errors
           }
