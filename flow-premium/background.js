@@ -2027,6 +2027,78 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       return true;
     }
     if (executeAction === 'click') {
+      // ── S5 helper: Vision Fallback ────────────────────────────────────────────
+      // Called when every DOM/AX/XPath strategy has failed.
+      // Captures the current tab screenshot, sends it to Gemini Vision with a
+      // tight prompt, and parses back {x,y} center coordinates for the target.
+      // Returns null on any failure so the caller can fall through gracefully.
+      async function visionFindCoordinates(tId, targetLabel) {
+        if (!targetLabel) return null;
+        // 1. Get API key
+        const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
+        if (!geminiApiKey) return null;
+
+        // 2. Screenshot the tab (must be focused — session is still active here)
+        let dataUrl;
+        try {
+          const tabInfo = await chrome.tabs.get(tId);
+          dataUrl = await chrome.tabs.captureVisibleTab(tabInfo.windowId, { format: 'jpeg', quality: 80 });
+        } catch (_) { return null; }
+        if (!dataUrl) return null;
+
+        // Strip the "data:image/jpeg;base64," prefix
+        const base64 = dataUrl.split(',')[1];
+        if (!base64) return null;
+
+        // 3. Ask Gemini Vision for center pixel coordinates
+        // We use a zero-temperature, single-sentence response format so the
+        // model can't ramble. The prompt explicitly states the output contract.
+        const prompt = `You are a precise UI element locator for browser automation.
+Look at this screenshot of a web page.
+Find the clickable element that best matches this description: "${targetLabel.replace(/"/g, "'")}"
+Return ONLY a valid JSON object on a single line — no markdown, no explanation:
+{"x": <center_x_integer>, "y": <center_y_integer>}
+If the element is not visible in the screenshot, return:
+{"x": null, "y": null}`;
+
+        let resp;
+        try {
+          resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiApiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{
+                  parts: [
+                    { inlineData: { mimeType: 'image/jpeg', data: base64 } },
+                    { text: prompt }
+                  ]
+                }],
+                generationConfig: { temperature: 0, maxOutputTokens: 64 }
+              }),
+              signal: AbortSignal.timeout(12000)
+            }
+          );
+        } catch (_) { return null; }
+
+        if (!resp.ok) return null;
+        const json = await resp.json().catch(() => null);
+        const raw = json?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        // 4. Parse JSON out of the response (strip any accidental markdown fences)
+        const cleaned = raw.replace(/```[a-z]*\n?/gi, '').trim();
+        let coords;
+        try { coords = JSON.parse(cleaned); } catch (_) {
+          // Try to extract with regex as last resort
+          const m = cleaned.match(/"x"\s*:\s*(\d+).*?"y"\s*:\s*(\d+)/s);
+          if (m) coords = { x: parseInt(m[1], 10), y: parseInt(m[2], 10) };
+        }
+        if (!coords || coords.x == null || coords.y == null) return null;
+        console.log(`[Aion Vision] Found "${targetLabel}" at (${coords.x}, ${coords.y})`);
+        return { x: coords.x, y: coords.y };
+      }
+
       // CDP-first click pipeline:
       //   1. content.js DOM/text search  → finds x,y  → CDP trusted mouse click
       //   2. If not found               → CDP Accessibility.queryAXTree by visible label
@@ -2415,8 +2487,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             } catch (_xpathErr) { /* ignore, fall through to failure */ }
           }
 
+          // ── S5: Vision Fallback ───────────────────────────────────────────────
+          // All DOM/AX/XPath paths failed. Canvas-rendered UIs (Google Slides,
+          // NotebookLM modals, Figma, etc.) have no DOM nodes for their buttons —
+          // they are painted pixels. Last resort: send the live screenshot to
+          // Gemini Vision and ask it to locate the target by appearance, then
+          // fire a CDP mouse event at the returned coordinates.
+          try {
+            const visionCoords = await visionFindCoordinates(
+              tabId,
+              params.text || params.description || ''
+            );
+            if (visionCoords) {
+              await cdpMouseClick(visionCoords.x, visionCoords.y);
+              sendResponse({ success: true, data: `Clicked via vision fallback at (${visionCoords.x}, ${visionCoords.y})` });
+              return;
+            }
+          } catch (_visionErr) { /* fall through to failure */ }
+
           // Nothing worked — tell the AI so it can try a different approach
-          sendResponse({ success: false, error: `Element "${params.text || params.description || '?'}" not found via DOM, Accessibility tree, or DOM search` });
+          sendResponse({ success: false, error: `Element "${params.text || params.description || '?'}" not found via DOM, Accessibility tree, DOM search, or vision fallback` });
 
         } catch (e) {
           console.warn('[Aion Agent] CDP click failed:', e && e.message);
