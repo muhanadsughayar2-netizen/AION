@@ -1,13 +1,6 @@
 // Flow Popup Script
 // Handles UI interactions, thumbnail display, and communication with background
 
-// ── BACKEND_URL guard ─────────────────────────────────────────────────────────
-// branding.js sets window.BACKEND_URL; this fallback prevents a ReferenceError
-// crash on any auth/activity fetch if that file hasn't loaded yet.
-const BACKEND_URL = (typeof window !== 'undefined' && window.BACKEND_URL)
-  ? window.BACKEND_URL
-  : 'https://www.snaptoai.com';
-
 // ============ MODEL REGISTRY ============
 // Single source of truth for Gemini model IDs used in the popup.
 const MODELS = {
