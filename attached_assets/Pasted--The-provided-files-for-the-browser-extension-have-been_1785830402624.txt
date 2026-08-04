@@ -1,0 +1,256 @@
+
+The provided files for the browser extension have been reviewed. The overall architecture is robust and leverages advanced patterns under Manifest V3, including a persistent Chrome DevTools Protocol (CDP) session pool, custom WebM EBML duration patching, and deep DOM/canvas stabilization for full-page captures.
+To ensure the Autopilot agent executes smoothly and to eliminate a few silent-failure edge cases, we have identified several important fixes.
+Key Areas of Improvement
+Silent Fallback Speech in ai-chat (46).js
+Problem: The helper function speakText constructs and returns a SpeechSynthesisUtterance but never calls synth.speak(utterance). As a result, when the personal API key is missing or the first audio chunk fails to generate, the browser-voice fallback runs completely silent [46].
+Fix: Add synth.speak(utterance) inside speakText before the return statement [46].
+Silent Autopilot Agent Speech in ai-chat (46).js
+Problem: In agentSpeak, if the personal Gemini API key is missing, the execution returns early and does nothing. This means free-tier/anonymous users will never hear the Autopilot vocalize its requests [46].
+Fix: Call speakFallback(cleanSpeechText) on the early return path so that browser-based TTS is used if no API key is available [46].
+Inaccessible Storage Call in Content Script (content (12).js)
+Problem: The content script's keep-alive loop attempts to call chrome.storage.session.set [12]. In Manifest V3, content scripts are forbidden from accessing chrome.storage.session unless the access level is explicitly configured by the background script, causing this call to throw an error and fail to keep the service worker active.
+Fix: Use chrome.runtime.sendMessage to send a lightweight ping to the background service worker, which natively resets the worker’s 30-second idle termination timer.
+Redundant Full-Page Capture Delays in background (18).js
+Problem: captureFullPageStep enforces a hard 500ms delay before taking each viewport screenshot [18]. Because the content script's waitForScrollStabilization already ensures that the page layout has fully settled before requesting the capture [12], this second delay is mostly redundant and slows down long captures significantly.
+Fix: Reduce this delay to 100ms to speed up stitching tasks while maintaining a safe interval for the browser's painting cycle [18].
+Fixing Code
+1. Updates for ai-chat (46).js
+Update the speakText function to ensure it triggers the speech engine, and modify the early return inside agentSpeak to call the fallback voice [46]:
+code
+JavaScript
+// Locate speakText in ai-chat (46).js and update the end of the function:
+function speakText(text, langCode = null) {
+  synth.cancel(); // Stop any existing speech
+  
+  // Always refresh voices
+  voices = synth.getVoices();
+  
+  const utterance = new SpeechSynthesisUtterance(text);
+  
+  // Auto-detect language if not provided
+  const detectedLang = langCode || detectLanguage(text);
+  console.log('[SnapToAI] Detected language:', detectedLang);
+  
+  // Find voice matching the language
+  let bestVoice = null;
+  
+  if (detectedLang === 'ar') {
+    bestVoice = voices.find(v => v.lang.startsWith('ar') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ar')) ||
+                voices.find(v => v.name.toLowerCase().includes('arabic'));
+  } else if (detectedLang === 'fr') {
+    bestVoice = voices.find(v => v.lang.startsWith('fr') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('fr')) ||
+                voices.find(v => v.name.toLowerCase().includes('french') || v.name.toLowerCase().includes('français'));
+  } else if (detectedLang === 'es') {
+    bestVoice = voices.find(v => v.lang.startsWith('es') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('es'));
+  } else if (detectedLang === 'de') {
+    bestVoice = voices.find(v => v.lang.startsWith('de') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('de'));
+  } else if (detectedLang === 'zh') {
+    bestVoice = voices.find(v => v.lang.startsWith('zh') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('zh'));
+  } else if (detectedLang === 'ja') {
+    bestVoice = voices.find(v => v.lang.startsWith('ja') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ja'));
+  } else if (detectedLang === 'ko') {
+    bestVoice = voices.find(v => v.lang.startsWith('ko') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ko'));
+  } else if (detectedLang === 'ru') {
+    bestVoice = voices.find(v => v.lang.startsWith('ru') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('ru'));
+  } else {
+    bestVoice = voices.find(v => v.lang.startsWith('en') && v.name.includes('Google')) ||
+                voices.find(v => v.lang.startsWith('en'));
+  }
+
+  if (bestVoice) {
+    utterance.voice = bestVoice;
+    utterance.lang = bestVoice.lang;
+    console.log(`[SnapToAI] Using voice: ${bestVoice.name} (${bestVoice.lang})`);
+  } else {
+    utterance.lang = detectedLang;
+    console.log(`[SnapToAI] No voice found for ${detectedLang}, using browser default`);
+  }
+
+  utterance.rate = 1.0;
+  utterance.pitch = 1.0;
+  
+  // FIX: Explicitly speak the utterance
+  synth.speak(utterance);
+  return utterance;
+}
+
+// Locate agentSpeak in ai-chat (46).js and update its self-invoking function path:
+function agentSpeak(text) {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (_agentVoice.audio) {
+    try { _agentVoice.audio.pause(); } catch (_) {}
+    _agentVoice.audio = null;
+  }
+  if (_agentVoice.controller) {
+    try { _agentVoice.controller.abort(); } catch (_) {}
+    _agentVoice.controller = null;
+  }
+
+  const cleanSpeechText = text
+    .replace(/```[\s\S]*?```/g, 'code block')
+    .replace(/[#*_~`>|]/g, '')
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 800);
+
+  if (!cleanSpeechText) return;
+
+  (async () => {
+    let apiKey = '';
+    try { const r = await chrome.storage.sync.get(['geminiApiKey']); apiKey = r.geminiApiKey || ''; } catch (_) {}
+    
+    // FIX: Speak via local fallback if no personal key is available
+    if (!apiKey) {
+      speakFallback(cleanSpeechText);
+      return;
+    }
+
+    const controller = new AbortController();
+    _agentVoice.controller = controller;
+
+    const chunks = [];
+    const sentences = cleanSpeechText.split(/(?<=[.!?])\s+/);
+    let current = '';
+    for (const s of sentences) {
+      if (current.length + s.length > 280 && current) { chunks.push(current.trim()); current = s; }
+      else current += (current ? ' ' : '') + s;
+    }
+    if (current.trim()) chunks.push(current.trim());
+
+    const fetchChunk = async (chunk) => {
+      const models = [MODELS.ttsPrimary, MODELS.ttsFallback];
+      for (const model of models) {
+        if (controller.signal.aborted) return null;
+        try {
+          const resp = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST', signal: controller.signal,
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: `In a natural, warm, conversational pace: ${chunk}` }] }],
+                generationConfig: {
+                  responseModalities: ['AUDIO'],
+                  speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Aoede' } } }
+                }
+              })
+            }
+          );
+          if (!resp.ok) continue;
+          const data = await resp.json();
+          const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
+          if (!part?.data) continue;
+          const mimeType = (part.mimeType || '').toLowerCase();
+          const rawBytes = Uint8Array.from(atob(part.data), c => c.charCodeAt(0));
+          let blob;
+          if (mimeType.includes('pcm') || mimeType.startsWith('audio/l16') || mimeType.startsWith('audio/l-16') || mimeType === '') {
+            const sr = 24000, ch = 1, bps = 16;
+            const hdr = new ArrayBuffer(44); const dv = new DataView(hdr);
+            const ws = (o, v) => { for (let i = 0; i < v.length; i++) dv.setUint8(o + i, v.charCodeAt(i)); };
+            ws(0,'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true); ws(8,'WAVE'); ws(12,'fmt ');
+            dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
+            dv.setUint32(24, sr, true); dv.setUint32(28, sr * ch * bps / 8, true);
+            dv.setUint16(32, ch * bps / 8, true); dv.setUint16(34, bps, true);
+            ws(36,'data'); dv.setUint32(40, rawBytes.byteLength, true);
+            blob = new Blob([hdr, rawBytes], { type: 'audio/wav' });
+          } else {
+            blob = new Blob([rawBytes], { type: mimeType });
+          }
+          return URL.createObjectURL(blob);
+        } catch (e) {
+          if (e.name === 'AbortError') return null;
+        }
+      }
+      return null;
+    };
+
+    const prefetched = chunks.map((c, i) => i <= 1 ? fetchChunk(c) : null);
+
+    for (let i = 0; i < chunks.length; i++) {
+      if (controller.signal.aborted) break;
+      if (i + 1 < chunks.length && !prefetched[i + 1]) {
+        prefetched[i + 1] = fetchChunk(chunks[i + 1]);
+      }
+      const url = await (prefetched[i] || fetchChunk(chunks[i]));
+      if (!url || controller.signal.aborted) continue;
+      await new Promise(resolve => {
+        const audio = new Audio(url);
+        _agentVoice.audio = audio;
+        audio.onended = () => { try { URL.revokeObjectURL(url); } catch (_) {} _agentVoice.audio = null; resolve(); };
+        audio.onerror  = () => { try { URL.revokeObjectURL(url); } catch (_) {} _agentVoice.audio = null; resolve(); };
+        audio.play().catch(resolve);
+      });
+    }
+
+    _agentVoice.controller = null;
+  })();
+}
+2. Updates for content (12).js
+Replace the inaccessible session storage calls with a standard runtime ping to keep the service worker active [12]:
+code
+JavaScript
+// Locate keepServiceWorkerAlive in content (12).js and modify:
+async function keepServiceWorkerAlive() {
+  const now = Date.now();
+  if (now - lastKeepAliveTime >= KEEP_ALIVE_INTERVAL) {
+    try {
+      // FIX: Message passing is a standard, robust keep-alive trigger in Manifest V3
+      await chrome.runtime.sendMessage({ action: 'keepAlive' }).catch(() => {});
+      lastKeepAliveTime = now;
+      console.log('[SnapToAI] Service worker keep-alive ping sent via messaging channel');
+    } catch (e) {
+      // Ignore keep-alive errors
+    }
+  }
+}
+3. Updates for background (18).js
+Add the matching keepAlive response handler and optimize the capture delay [18]:
+code
+JavaScript
+// Locate the main chrome.runtime.onMessage listener in background (18).js and add:
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'capture') {
+    captureScreenshot().then(sendResponse);
+    return true;
+  }
+  // FIX: Handle the keep-alive ping
+  else if (request.action === 'keepAlive') {
+    sendResponse({ success: true });
+    return true;
+  }
+  // ... Keep existing action handlers ...
+});
+
+// Locate captureFullPageStep in background (18).js and update:
+async function captureFullPageStep(tabId) {
+  try {
+    // FIX: Reduced from 500ms to 100ms. The content script has already verified
+    // document stabilization, so we only need a lightweight buffer to let the browser paint.
+    await new Promise(resolve => setTimeout(resolve, 100));
+    
+    const tab = await chrome.tabs.get(tabId);
+    
+    let dataUrl;
+    try {
+      dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+    } catch (captureError) {
+      console.log('[SnapToAI] Retrying capture with current window...');
+      dataUrl = await chrome.tabs.captureVisibleTab(null, { format: 'png' });
+    }
+    
+    return { success: true, dataUrl };
+  } catch (error) {
+    console.log('[SnapToAI] Capture step error:', error.message || error);
+    return { success: false, error: error.message };
+  }
+}

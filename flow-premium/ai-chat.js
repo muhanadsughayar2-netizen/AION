@@ -11499,11 +11499,18 @@ MIND MAP:
 REPORTS:
   1. snapshotPage() — confirm the "Reports" button is visible in the AX tree and note its exact accessible name.
   2. click("Reports") — a template list appears. If not found: click({x, y}) by coordinate.
-  3. snapshotPage() — find the template options inside the panel.
-  4. Templates: "Technical Implementation Roadmap" / "Prompt Engineering Framework" / "Platform Selection Primer" / "Create Your Own". Use exact label from snapshot.
-  5. For "Create Your Own": type a description of structure, tone, and style needed.
-  6. snapshotPage() — confirm "Generate" button accessible name.
-  7. click("Generate").
+  3. snapshotPage() — find ALL template options inside the panel. Templates shown may include: "Technical Implementation Roadmap", "Prompt Engineering Framework", "Platform Selection Primer", "Briefing Doc", "Study Guide", "Blog Post", "Create Your Own", and others. Use the EXACT label from the AX tree — not from this list.
+  4. click(exactTemplateName) — click the template the user wants. Use exact label from step 3.
+  5. snapshotPage() — REQUIRED after clicking the template. A textarea for report instructions now appears. Find it in the AX tree (look for role="textbox" with accessible name containing "describe", "report", "instructions", or similar). Note BOTH its accessible name AND its x,y coordinates from the screenshot.
+  6. ⚠️ MANDATORY — CLICK the textarea FIRST to focus it. Shadow DOM blocks unfocused type() calls entirely.
+     - First try: click(accessibleNameFromStep5) using the AX tree name.
+     - If not found by name: click({x, y}) using coordinates from the screenshot.
+     - ⛔ NEVER call type() on this textarea without clicking it first — it ALWAYS fails without focus.
+  7. snapshotPage() — verify the textarea is focused.
+  8. type({text:"your detailed report instructions"}) — with the textarea focused, type works.
+     If type() still fails: use writeChunk({text:"..."}) which is more robust for Shadow DOM textareas.
+  9. snapshotPage() — confirm "Generate" button accessible name.
+ 10. click("Generate") — waitForElement({text:"report", timeout:180}).
 
 FLASHCARDS:
   ⛔ FLASHCARDS HAS NO TEXT INPUT BOX. Do NOT attempt to type any description, title, or instructions — there is nowhere to type. The only controls are difficulty level and Generate.
