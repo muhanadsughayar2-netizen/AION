@@ -1485,6 +1485,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             const isGrid    = (mode === 'sheets');
             const isExcel   = (mode === 'excel');
             const isAiStudio = (mode === 'aistudio');
+            const isGemini   = (mode === 'gemini');
 
             // clearFirst: select all + delete before typing, so existing field
             // content is replaced instead of appended.
@@ -1512,7 +1513,91 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               }
             };
 
-            if (isAiStudio) {
+            if (isGemini) {
+              // ── GEMINI CHAT (gemini.google.com) ───────────────────────────────
+              // Gemini's prompt box is a <rich-textarea> custom element whose
+              // inner .ql-editor / contenteditable lives inside a Shadow Root.
+              // We pierce it with a visibility-aware executeScript query, then
+              // use Input.insertText so Angular's change detection fires correctly.
+              const gemFocusRes = await chrome.scripting.executeScript({
+                target: { tabId },
+                func: () => {
+                  function gemShadowFindVisible(root) {
+                    if (!root) return null;
+                    const sels = [
+                      'rich-textarea .ql-editor',
+                      'rich-textarea div[contenteditable="true"]',
+                      'div[contenteditable="true"][aria-label]',
+                      'div[contenteditable="true"][role="textbox"]',
+                      '.ql-editor',
+                      'div[contenteditable="true"]',
+                    ];
+                    for (const sel of sels) {
+                      try {
+                        for (const el of root.querySelectorAll(sel)) {
+                          const r = el.getBoundingClientRect();
+                          if (r.width > 10 && r.height > 10) return el;
+                        }
+                      } catch (_) {}
+                    }
+                    for (const el of root.querySelectorAll('*')) {
+                      if (el.shadowRoot) {
+                        const f = gemShadowFindVisible(el.shadowRoot);
+                        if (f) return f;
+                      }
+                    }
+                    return null;
+                  }
+                  const el = gemShadowFindVisible(document);
+                  if (!el) return { found: false };
+                  el.focus();
+                  return { found: true, tag: el.tagName, cls: el.className.slice(0, 60) };
+                }
+              }).catch(() => [{ result: { found: false } }]);
+
+              const gemFocused = gemFocusRes?.[0]?.result?.found;
+              if (!gemFocused) {
+                // Hard fallback: coordinate click at the centre of the textarea area
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+              }
+              await new Promise(r => setTimeout(r, 150));
+
+              if (params.clearFirst) {
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'a', code: 'KeyA', windowsVirtualKeyCode: 65, modifiers: 2 });
+                await new Promise(r => setTimeout(r, 80));
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Delete', code: 'Delete', windowsVirtualKeyCode: 46 });
+                await new Promise(r => setTimeout(r, 80));
+              }
+
+              // Input.insertText operates on OS-level focus so it works inside shadow roots
+              await send('Input.insertText', { text });
+
+              // ── Verify text actually appeared; auto-retry once via coordinate click ──
+              const gemSample = text.slice(0, 20);
+              if (gemSample && !(await verifyTextInPage(tabId, gemSample))) {
+                // First attempt: text didn't land — click at coordinates and retry
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await new Promise(r => setTimeout(r, 250));
+                await send('Input.insertText', { text });
+                if (!(await verifyTextInPage(tabId, gemSample))) {
+                  sendResponse({ success: false, error: 'Text not detected in Gemini input after two attempts — the field may not have accepted focus. Try clicking the input first, then retype.' });
+                  return;
+                }
+              }
+
+              // params.run = true → press Enter to send the message
+              if (params.run) {
+                await new Promise(r => setTimeout(r, 80));
+                await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+              }
+              sendResponse({ success: true, data: gemFocused ? 'Typed via Gemini shadow focus' : 'Typed via coordinate fallback' });
+
+            } else if (isAiStudio) {
               // ── GOOGLE AI STUDIO ──────────────────────────────────────────────
               // AI Studio uses Lit/Angular Web Components (<ms-prompt-editor>)
               // with nested Shadow Roots. Standard querySelector is blind to shadow
@@ -1560,6 +1645,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 await new Promise(r => setTimeout(r, 80));
               }
               await send('Input.insertText', { text });
+
+              // ── Verify text actually appeared; auto-retry once via coordinate click ──
+              const aisSample = text.slice(0, 20);
+              if (aisSample && !(await verifyTextInPage(tabId, aisSample))) {
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
+                await new Promise(r => setTimeout(r, 250));
+                await send('Input.insertText', { text });
+                if (!(await verifyTextInPage(tabId, aisSample))) {
+                  sendResponse({ success: false, error: 'Text not detected in AI Studio input after two attempts — the editor may not have accepted focus. Try clicking the prompt area first.' });
+                  return;
+                }
+              }
 
               // If params.run is true, fire Ctrl+Enter to submit the prompt
               if (params.run) {
@@ -5850,6 +5948,35 @@ async function blobToDataUrl(blob) {
 // by the browser (especially during 30-60 second Autopilot sequences). Saving
 // state to chrome.storage.session (survives SW restarts, cleared on browser quit)
 // lets the agent resume exactly where it left off instead of losing its place.
+
+// ── Post-type DOM verification ────────────────────────────────────────────────
+// After Input.insertText we check whether the text actually landed in the
+// focused element.  Returns true if verified (or if the check itself can't run),
+// false if the element is provably empty after typing.
+async function verifyTextInPage(tabId, sample) {
+  if (!sample || sample.length === 0) return true;
+  try {
+    const res = await chrome.scripting.executeScript({
+      target: { tabId },
+      func: (s) => {
+        // Walk shadow roots to reach the truly active leaf element
+        function deepActive(root) {
+          const ae = root.activeElement;
+          return (ae && ae.shadowRoot) ? deepActive(ae.shadowRoot) : ae;
+        }
+        const el = deepActive(document);
+        if (!el) return true; // can't verify — assume ok
+        const content = el.value ?? el.textContent ?? el.innerText ?? '';
+        return content.includes(s);
+      },
+      args: [sample]
+    });
+    const result = res?.[0]?.result;
+    return result !== false; // treat undefined/null as ok (verify failed to run)
+  } catch (_) {
+    return true; // executeScript blocked (e.g. CSP) — assume ok
+  }
+}
 
 async function saveAgentCheckpoint(tabId, state) {
   try {

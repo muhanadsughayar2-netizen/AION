@@ -4424,13 +4424,37 @@
 
         // ── GEMINI CHAT (gemini.google.com) ──────────────────────────────────
         if (host.includes('gemini.google.com')) {
-          const input = findVisible([
-            'rich-textarea div[contenteditable="true"]',
-            '.ql-editor',
-            'div[contenteditable="true"][role="textbox"]',
-            'div[contenteditable="true"]',
-            'textarea',
-          ]);
+          // Gemini wraps its chat input inside <rich-textarea> which may use
+          // Shadow DOM. Use a visibility-aware shadow-piercing walk so we always
+          // land on the actual rendered editor, not a hidden DOM duplicate.
+          function geminiShadowFind(root) {
+            if (!root) return null;
+            const candidates = [
+              'rich-textarea .ql-editor',
+              'rich-textarea div[contenteditable="true"]',
+              'div[contenteditable="true"][aria-label]',
+              'div[contenteditable="true"][role="textbox"]',
+              '.ql-editor',
+              'div[contenteditable="true"]',
+            ];
+            for (const sel of candidates) {
+              try {
+                const els = root.querySelectorAll(sel);
+                for (const el of els) {
+                  const r = el.getBoundingClientRect();
+                  if (r.width > 10 && r.height > 10) return el;
+                }
+              } catch (_) {}
+            }
+            for (const el of root.querySelectorAll('*')) {
+              if (el.shadowRoot) {
+                const f = geminiShadowFind(el.shadowRoot);
+                if (f) return f;
+              }
+            }
+            return null;
+          }
+          const input = geminiShadowFind(document);
           let x, y;
           if (input) {
             const r = input.getBoundingClientRect();
@@ -4442,7 +4466,7 @@
             y = window.innerHeight * 0.85;
           }
           moveGhostCursor(x, y);
-          return { success: true, x, y, mode: 'aistudio' };
+          return { success: true, x, y, mode: 'gemini' };
         }
 
         // ── NOTEBOOKLM (GEMINI NOTEBOOK) ────────────────────────────────────

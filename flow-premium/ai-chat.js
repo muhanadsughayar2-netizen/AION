@@ -13351,6 +13351,20 @@ async function runAgentTask(prompt, thread) {
       if (!agentWin || !agentWin.focused) await focusAgentTab(tab);
     } catch (_) { await focusAgentTab(tab); }
 
+    // Capture a pre-action screenshot for the Reflexion critic.
+    // Only pay the cost when there's a type or transition-click action this turn.
+    const _hasTransition = executableCalls.some(p => {
+      const n = p.functionCall.name;
+      const a = p.functionCall.args || {};
+      return n === 'type' || n === 'navigate' ||
+        ((n === 'click' || n === 'doubleClick') &&
+          /\b(send|submit|run|generate|post|save|confirm|publish|apply|create|build|start|launch|next|continue|finish|done|ok|yes)\b/i
+            .test(String(a.text || a.description || a.selector || '')));
+    });
+    const _preActionScreenshot = _hasTransition
+      ? await captureActiveTabScreenshot(tab).catch(() => null)
+      : null;
+
     // ── PARALLEL execution of all CDP calls ───────────────────────────────────
     const settledResults = await Promise.allSettled(
       executableCalls.map(part =>
@@ -13608,13 +13622,74 @@ async function runAgentTask(prompt, thread) {
     }
 
     // ── PHASE 3: REFLECTION / CRITIC ──────────────────────────────────────────
-    // After a successful "transition" action (navigate / submit-like click),
-    // run a lightweight Critic call comparing pre vs post screenshots.
-    // This implements the Reflexion self-verification pattern: the agent is
-    // never allowed to ASSUME a click worked — it must confirm the page changed.
-    // Only fires on transition actions to avoid doubling API cost every step.
-    if (!anyFailed) {
-      // Record success into agentState history
+    // After a successful transition action, run verifyActionResult (screenshot
+    // comparison) to confirm the page actually changed. If it didn't, convert
+    // the success response to a failure so the self-healing system engages
+    // instead of the model blindly assuming the action worked.
+    if (!anyFailed && _preActionScreenshot && apiKey) {
+      try {
+        const postScreenshot = await captureActiveTabScreenshot(tab).catch(() => null);
+        if (postScreenshot) {
+          for (let vi = 0; vi < executableCalls.length; vi++) {
+            const { name, args } = executableCalls[vi].functionCall;
+            const isTransition = name === 'type' || name === 'navigate' ||
+              ((name === 'click' || name === 'doubleClick') &&
+                /\b(send|submit|run|generate|post|save|confirm|publish|apply|create|build|start|launch|next|continue|finish|done|ok|yes)\b/i
+                  .test(String(args?.text || args?.description || args?.selector || '')));
+            if (!isTransition) continue;
+            const settled = settledResults[vi];
+            if (settled.status !== 'fulfilled' || !settled.value?.success) continue;
+
+            const critique = await verifyActionResult(
+              { action: name, args },
+              settled.value,
+              _preActionScreenshot,
+              postScreenshot,
+              pageText,
+              apiKey
+            ).catch(() => null);
+
+            if (critique && critique.isSuccessful === false) {
+              // Critic says the action didn't actually work — convert to failure
+              // so self-healing hints and retry logic kick in automatically.
+              const rp = responseParts[vi];
+              if (rp?.functionResponse?.response) {
+                rp.functionResponse.response.success = false;
+                rp.functionResponse.response.error =
+                  `CRITIC: action appeared to fail visually. ${critique.critique}`;
+                rp.functionResponse.response.selfHealingHint = critique.critique;
+                delete rp.functionResponse.response.VERIFY_HINT;
+              }
+              anyFailed = true;
+              consecutiveFailures++;
+              agentState.history.push({ action: name, args, result: 'failed',
+                error: `Critic: ${critique.critique}` });
+              if (agentState.history.length > 10) agentState.history.shift();
+            } else if (critique?.isSuccessful) {
+              // Verified — stamp the response with a positive note
+              const rp = responseParts[vi];
+              if (rp?.functionResponse?.response) {
+                rp.functionResponse.response.VERIFIED = critique.progressNotes || 'Action confirmed by visual critic.';
+              }
+              agentState.history.push({ action: name, args, result: 'success',
+                note: critique.progressNotes });
+              if (agentState.history.length > 10) agentState.history.shift();
+            }
+            break; // only critique the first transition action per turn
+          }
+        }
+      } catch (_criticErr) {
+        // Critic failure is non-fatal — fall through to normal history recording
+        if (!anyFailed) {
+          for (const part of executableCalls) {
+            const { name, args } = part.functionCall;
+            agentState.history.push({ action: name, args, result: 'success' });
+            if (agentState.history.length > 10) agentState.history.shift();
+          }
+        }
+      }
+    } else if (!anyFailed) {
+      // No critic this turn — record success directly
       for (const part of executableCalls) {
         const { name, args } = part.functionCall;
         agentState.history.push({ action: name, args, result: 'success' });
