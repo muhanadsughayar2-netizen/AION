@@ -1,0 +1,216 @@
+To ensure the stability, security, and performance of your browser automation and AI co-pilot system, several concrete code modifications and configuration adjustments should be implemented.
+Below is a detailed guide on how to resolve the identified scoping anomalies, Manifest V3 security blocks, and performance edge cases.
+1. Scoping & Missing Variables (Popup Script)
+Defining BACKEND_URL
+If BACKEND_URL is not defined in an external file like branding.js, you should explicitly define it at the very top of popup.js to avoid runtime ReferenceError crashes during authentication or tracking events.
+Add this definition at the beginning of popup.js:
+code
+JavaScript
+// popup.js - Global Configuration
+const BACKEND_URL = window.BACKEND_URL || "https://www.snaptoai.com"; 
+// Replace with your actual production backend URL if different
+Consolidating Chat Portal Logic
+If you are transitioning to a dedicated window model via ai-chat.html, keeping the inline chat code in popup.js consumes unnecessary memory and risks event-handling conflicts.
+The Fix: Remove the #aiChatPortal event listeners and DOM references from popup.js entirely. Retain only the redirection function:
+code
+JavaScript
+// Consolidate in popup.js to launch the dedicated chat window
+function openAiChat(direct = true) {
+  const url = chrome.runtime.getURL(`ai-chat.html?direct=${direct}`);
+  chrome.windows.create({
+    url: url,
+    type: 'popup',
+    width: 1000,
+    height: 700,
+    focused: true
+  });
+}
+
+// Wire the "Ask AI" button in the popup to use the dedicated window
+document.getElementById('directAiButton')?.addEventListener('click', () => {
+  openAiChat(true);
+});
+2. Manifest V3 Declarations (manifest.json)
+To prevent the browser from blocking injected visual assets, debugger APIs, or network requests, ensure your manifest.json contains the following configurations:
+code
+JSON
+{
+  "manifest_version": 3,
+  "name": "Aion",
+  "version": "1.0.0",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "scripting",
+    "debugger"
+  ],
+  "host_permissions": [
+    "https://generativelanguage.googleapis.com/*",
+    "https://api.netlify.com/*",
+    "https://www.snaptoai.com/*"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "icons/agent-avatar.png",
+        "sandbox.html",
+        "welcome.html"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  }
+}
+3. Canvas & WebGL Tainted Canvas Fallback
+When capturing a third-party WebGL canvas (such as in Figma or Google Sheets), calling canvas.toDataURL() can throw a SecurityError (due to cross-origin textures) or return a blank image if preserveDrawingBuffer is set to false.
+Modify the canvas capture routine in content.js to catch these cases cleanly and fall back to a programmatic message or a generic screenshot request:
+code
+JavaScript
+// content.js - Robust WebGL & Canvas Capture
+function captureCanvasAndVideo() {
+  const canvases = document.querySelectorAll('canvas');
+  canvases.forEach((canvas, index) => {
+    try {
+      if (canvas.width < 10 || canvas.height < 10) return;
+      if (canvas.offsetWidth === 0 || canvas.offsetHeight === 0) return;
+      
+      let dataUrl = null;
+      
+      // Attempt standard read
+      try {
+        dataUrl = canvas.toDataURL('image/png');
+      } catch (securityError) {
+        console.warn(`[Aion] Canvas ${index} is tainted by CORS. Skipping direct capture.`);
+        return; 
+      }
+
+      // Check if image is blank/transparent (common when preserveDrawingBuffer is false)
+      if (!dataUrl || dataUrl === 'data:,' || isCanvasBlank(canvas, dataUrl)) {
+        console.warn(`[Aion] Canvas ${index} returned blank data. WebGL context buffer may have cleared.`);
+        // Optional: Trigger a hook to notify the parent to request a standard page screenshot instead
+        return;
+      }
+      
+      // Substitute with static image if valid
+      const img = document.createElement('img');
+      img.src = dataUrl;
+      img.style.cssText = window.getComputedStyle(canvas).cssText;
+      img.style.width = canvas.offsetWidth + 'px';
+      img.style.height = canvas.offsetHeight + 'px';
+      img.className = canvas.className;
+      
+      mediaState.canvasElements.push({
+        original: canvas,
+        replacement: img,
+        originalDisplay: canvas.style.display
+      });
+      
+      canvas.style.display = 'none';
+      canvas.parentNode.insertBefore(img, canvas);
+    } catch (e) {
+      console.error(`[Aion] Non-fatal canvas capture error:`, e);
+    }
+  });
+}
+
+// Helper to inspect if dataURL represents a completely transparent image
+function isCanvasBlank(canvas, dataUrl) {
+  const blankLen = 120; // approx length of a minimal transparent 1x1 PNG
+  if (dataUrl.length < blankLen) return true;
+  
+  // For deep checking, we can verify if the canvas context pixel data is all zeros
+  try {
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return false; // If WebGL, we cannot easily check pixels without performance hit
+    const buffer = ctx.getImageData(0, 0, 10, 10).data;
+    return !buffer.some(channel => channel !== 0);
+  } catch (e) {
+    return false; 
+  }
+}
+4. Resilient Service Worker State (Keep-Alive & Session Storage)
+Since Manifest V3 background service workers are ephemeral and can terminate during long operations (such as a 45-second multi-step sequence), saving critical state to chrome.storage.session prevents the automation loop from losing its place.
+In background.js, save and load the state at key milestones:
+code
+JavaScript
+// background.js - Save automation checkpoint
+async function saveAgentCheckpoint(tabId, state) {
+  try {
+    await chrome.storage.session.set({
+      [`agent_checkpoint_${tabId}`]: {
+        state: state,
+        timestamp: Date.now()
+      }
+    });
+  } catch (e) {
+    console.error('[Aion] Failed to save session checkpoint:', e);
+  }
+}
+
+// background.js - Load and resume if worker restarted mid-task
+async function resumeAgentCheckpoint(tabId) {
+  try {
+    const key = `agent_checkpoint_${tabId}`;
+    const result = await chrome.storage.session.get([key]);
+    const checkpoint = result[key];
+    
+    // Only restore if checkpoint is recent (e.g., under 5 minutes old)
+    if (checkpoint && (Date.now() - checkpoint.timestamp < 300000)) {
+      console.log('[Aion] Resuming previous task from session checkpoint');
+      return checkpoint.state;
+    }
+  } catch (e) {
+    console.error('[Aion] Failed to read session checkpoint:', e);
+  }
+  return null;
+}
+5. Leak-Free AudioContext Lifecycle
+Browsers restrict the number of active AudioContext instances. To ensure we do not hit these limits during multiple consecutive video stitching operations, we should use a robust, structured try...catch...finally block to dispose of the context under all circumstances.
+Refactor the AudioContext lifecycle within ai-chat.js (specifically around stitchVideos):
+code
+JavaScript
+// ai-chat.js - Resource-safe audio stitching
+async function stitchVideos(videoUrls, stitchCtx) {
+  let audioCtx = null;
+  let offlineCtx = null;
+  
+  try {
+    // ... video pre-load and canvas initialization ...
+
+    // Instantiate contexts inside the try block
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await audioCtx.resume();
+    
+    // ... setup media recording, canvas capture, and drawing loop ...
+    
+    // ... once ready, start offline rendering ...
+    offlineCtx = new OfflineAudioContext(2, Math.ceil(44100 * totalDur), 44100);
+    
+    // ... perform audio/video mix and wait for completion ...
+    
+  } catch (error) {
+    console.error('[Aion Audio] Error during video/audio stitching:', error);
+    throw error;
+  } finally {
+    // This block is guaranteed to execute even if fetch, playback, or recording fails
+    if (audioCtx) {
+      try {
+        if (audioCtx.state !== 'closed') {
+          await Promise.race([
+            audioCtx.close(),
+            new Promise(resolve => setTimeout(resolve, 1000)) // 1s safety limit
+          ]);
+          console.log('[Aion Audio] AudioContext closed successfully.');
+        }
+      } catch (closeError) {
+        console.error('[Aion Audio] Error closing AudioContext:', closeError);
+      }
+    }
+    // Clean up variables and arrays to free heap memory
+    audioCtx = null;
+    offlineCtx = null;
+  }
+}

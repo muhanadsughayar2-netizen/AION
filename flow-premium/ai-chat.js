@@ -4797,6 +4797,11 @@ async function stitchVideos(videoUrls, stitchCtx) {
   // throws "User stopped" instantly because aborted is still true from before.
   stitchCtx.aborted = false;
   stitchCtx.userStopped = false;
+
+  // Hoisted to outer scope so the outer finally can close it on ANY exit path
+  // (timeout, thrown error, user stop). Browsers cap the number of active
+  // AudioContext instances — leaving them open across retries silently fails.
+  let _stitchAudioCtx = null;
   const timeoutPromise = new Promise((_, reject) => {
     timeoutHandle = setTimeout(() => {
       stitchCtx.aborted = true;
@@ -4898,6 +4903,7 @@ async function stitchVideos(videoUrls, stitchCtx) {
     const ctx2d = canvas.getContext('2d', { alpha: false, desynchronized: true });
 
     const audioCtx = new AudioContext();
+    _stitchAudioCtx = audioCtx; // expose to outer finally for leak-free cleanup
     try { await audioCtx.resume(); } catch (_) {}
     const audioDest = audioCtx.createMediaStreamDestination();
 
@@ -5111,11 +5117,14 @@ async function stitchVideos(videoUrls, stitchCtx) {
       await recordingDone;
       // Don't let audioCtx.close() hang the user (rare Chrome bug under load).
       try {
-        await Promise.race([
-          audioCtx.close(),
-          new Promise(r => setTimeout(r, 2000))
-        ]);
+        if (audioCtx.state !== 'closed') {
+          await Promise.race([
+            audioCtx.close(),
+            new Promise(r => setTimeout(r, 2000))
+          ]);
+        }
       } catch (_) {}
+      _stitchAudioCtx = null; // successfully closed — outer finally is a no-op
       // Drop references to the raw clip blobs so GC can reclaim them —
       // architect flagged this as a memory leak across retry sessions.
       blobs.length = 0;
@@ -5138,6 +5147,18 @@ async function stitchVideos(videoUrls, stitchCtx) {
     return await Promise.race([stitchPromise, timeoutPromise]);
   } finally {
     if (timeoutHandle) clearTimeout(timeoutHandle);
+    // Guaranteed AudioContext close on ANY exit path: timeout, thrown error,
+    // user stop. The success path already set _stitchAudioCtx = null above,
+    // so this only fires when we exit abnormally — no double-close possible.
+    if (_stitchAudioCtx && _stitchAudioCtx.state !== 'closed') {
+      try {
+        await Promise.race([
+          _stitchAudioCtx.close(),
+          new Promise(r => setTimeout(r, 1000))
+        ]);
+      } catch (_) {}
+      _stitchAudioCtx = null;
+    }
   }
 }
 

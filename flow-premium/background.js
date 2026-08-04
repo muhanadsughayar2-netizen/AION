@@ -5760,3 +5760,39 @@ async function blobToDataUrl(blob) {
   const base64 = btoa(binary);
   return `data:${blob.type};base64,${base64}`;
 }
+
+// ── Resilient Service Worker Checkpoints ────────────────────────────────────
+// MV3 background service workers are ephemeral — they can be terminated mid-task
+// by the browser (especially during 30-60 second Autopilot sequences). Saving
+// state to chrome.storage.session (survives SW restarts, cleared on browser quit)
+// lets the agent resume exactly where it left off instead of losing its place.
+
+async function saveAgentCheckpoint(tabId, state) {
+  try {
+    await chrome.storage.session.set({
+      [`agent_checkpoint_${tabId}`]: {
+        state,
+        timestamp: Date.now()
+      }
+    });
+  } catch (e) {
+    console.error('[Aion] Failed to save session checkpoint:', e);
+  }
+}
+
+async function resumeAgentCheckpoint(tabId) {
+  try {
+    const key = `agent_checkpoint_${tabId}`;
+    const result = await chrome.storage.session.get([key]);
+    const checkpoint = result[key];
+    // Only restore if the checkpoint is recent (under 5 minutes old);
+    // stale checkpoints from a previous browsing session are discarded.
+    if (checkpoint && (Date.now() - checkpoint.timestamp < 300000)) {
+      console.log('[Aion] Resuming previous task from session checkpoint');
+      return checkpoint.state;
+    }
+  } catch (e) {
+    console.error('[Aion] Failed to read session checkpoint:', e);
+  }
+  return null;
+}

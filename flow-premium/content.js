@@ -1232,6 +1232,22 @@
    * Replaces each video with a static image of its current frame
    * This ensures dynamic content appears in screenshots instead of black boxes
    */
+  // Helper: returns true when a canvas's pixel data is entirely transparent/blank.
+  // Catches the common WebGL preserveDrawingBuffer=false case where toDataURL()
+  // succeeds but returns a fully-transparent image rather than throwing.
+  function isCanvasBlank(canvas, dataUrl) {
+    // Quick length check: a minimal transparent 1×1 PNG is ~70 bytes as base64
+    if (!dataUrl || dataUrl.length < 120) return true;
+    try {
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return false; // WebGL — can't cheaply inspect pixels; assume non-blank
+      const buffer = ctx.getImageData(0, 0, Math.min(canvas.width, 10), Math.min(canvas.height, 10)).data;
+      return !Array.prototype.some.call(buffer, channel => channel !== 0);
+    } catch (_) {
+      return false;
+    }
+  }
+
   function captureCanvasAndVideo() {
     if (mediaState.isMediaCaptured) {
       console.log('[SnapToAI] Media already captured, skipping');
@@ -1265,12 +1281,16 @@
               dataUrl = canvas.toDataURL('image/png');
             }
           } catch (e) {
-            // Canvas may be tainted by CORS
-            console.log(`[SnapToAI] Canvas ${index} is tainted, cannot capture`);
+            // Canvas tainted by cross-origin textures (Figma, Google Sheets WebGL, etc.)
+            console.warn(`[SnapToAI] Canvas ${index} is tainted by CORS — skipping direct capture.`);
             return;
           }
           
-          if (!dataUrl || dataUrl === 'data:,') return;
+          if (!dataUrl || dataUrl === 'data:,' || isCanvasBlank(canvas, dataUrl)) {
+            // preserveDrawingBuffer=false causes blank captures on many WebGL apps
+            console.warn(`[SnapToAI] Canvas ${index} returned blank/transparent data — WebGL buffer may have cleared.`);
+            return;
+          }
           
           // Create replacement image
           const img = document.createElement('img');
