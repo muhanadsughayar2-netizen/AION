@@ -1775,6 +1775,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               }
 
               // params.run = true → press Enter to send the message
+              // ChatGPT, Claude, Grok, Perplexity, Copilot: chatbots use plain Enter (not Ctrl+Enter)
               if (params.run) {
                 await new Promise(r => setTimeout(r, 80));
                 await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
@@ -2631,6 +2632,18 @@ If the element is not visible in the screenshot, return:
           // queryAXTree finds elements by accessible name (visible label) — works
           // in iframes, shadow DOM, and canvas apps where DOM text search fails.
           const searchLabel = (params.text || params.description || '').trim();
+
+           // Memory-first: try remembered coords before full AX cascade
+           if (searchLabel) {
+             const mem = await loadClickMem(searchLabel);
+             if (mem) {
+               console.log(`[Aion] Memory hit for "${searchLabel}" at (${mem.cx},${mem.cy}) via ${mem.strategy}`);
+               await smartClick(mem.cx, mem.cy);
+               sendResponse({ success: true, data: `Clicked via memory (${mem.strategy})` });
+               return;
+             }
+           }
+
           if (searchLabel) {
             await cdpCmd('Accessibility.enable');
             await cdpCmd('DOM.enable');
@@ -2677,10 +2690,10 @@ If the element is not visible in the screenshot, return:
                 const [x1, y1, x2, , , y3] = box.model.content;
                 const cx = (x1 + x2) / 2;
                 const cy = (y1 + y3) / 2;
-                if (cx > 0 && cy > 0 && cx < 8000 && cy < 6000) {
-                  await cdpMouseClick(cx, cy);
-                  sendResponse({ success: true });
-                  return;
+                 if (cx > 0 && cy > 0 && cx < 8000 && cy < 6000) {
+                   await smartClick(cx, cy);
+                   await saveClickMem(searchLabel, cx, cy, 'ax');
+                   sendResponse({ success: true, data: 'Clicked via AX tree' });
                 }
               } catch (_) { continue; }
             }
@@ -2703,10 +2716,10 @@ If the element is not visible in the screenshot, return:
                     if (!box?.model?.content) continue;
                     const [x1, y1, x2, , , y3] = box.model.content;
                     const cx = (x1 + x2) / 2, cy = (y1 + y3) / 2;
-                    if (cx > 0 && cy > 0 && cx < 8000 && cy < 6000) {
-                      await cdpMouseClick(cx, cy);
-                      sendResponse({ success: true });
-                      return;
+                     if (cx > 0 && cy > 0 && cx < 8000 && cy < 6000) {
+                       await smartClick(cx, cy);
+                       await saveClickMem(searchLabel, cx, cy, 'dom-search');
+                       sendResponse({ success: true, data: 'Clicked via DOM search' });
                     }
                   } catch (_) { continue; }
                 }
