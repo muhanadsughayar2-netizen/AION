@@ -56,6 +56,23 @@ function assessActionRisk(executeAction, params) {
 // are much less likely to flag the session.
 const jitter = v => Math.round(v + (Math.random() * 4 - 2));
 
+// ── Pattern 2 helper: resolve a CSS selector to viewport centre via CDP ────
+// Tries DOM.querySelector → DOM.getBoxModel so background.js can find any
+// element by its exact selector without going through content.js messaging.
+// Used by the S2 selector-cascade expansion in the click pipeline.
+async function getBoxModelBySelector(selector, cdpCmd) {
+  try {
+    const { root } = await cdpCmd('DOM.getDocument', { depth: 0 });
+    const { nodeId } = await cdpCmd('DOM.querySelector', { nodeId: root.nodeId, selector });
+    if (!nodeId) return null;
+    await cdpCmd('DOM.scrollIntoViewIfNeeded', { nodeId }).catch(() => {});
+    const box = await cdpCmd('DOM.getBoxModel', { nodeId });
+    if (!box?.model?.content) return null;
+    const [x1, y1, x2,,,y3] = box.model.content;
+    return { x: (x1 + x2) / 2, y: (y1 + y3) / 2 };
+  } catch (_) { return null; }
+}
+
 // ── Persistent CDP Session Pool (Self-Healing & MV3 Compliant) ────────────
 // Eliminates per-action attach/detach flashing and race conditions.
 // • Reuses the connection for the same tab (ref-counted).
@@ -1990,6 +2007,41 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           });
         });
 
+        // ── Step 0: Integer index resolution (zero-fallback fast path) ────────
+        // If the agent supplied an element index from the INTERACTIVE ELEMENTS
+        // list, resolve it directly through the content script's live element
+        // map and click immediately — no text search, no AXTree, no retries.
+        if (params.index != null) {
+          const idxLoc = await new Promise(resolve => {
+            chrome.tabs.sendMessage(tabId, {
+              action: 'agentExecute',
+              executeAction: 'resolveByIndex',
+              params: { index: params.index }
+            }, r => resolve(chrome.runtime.lastError ? null : r));
+          }).catch(() => null);
+
+          if (idxLoc?.success && typeof idxLoc.x === 'number') {
+            console.log(`[Aion Agent] Index [${params.index}] resolved → (${idxLoc.x.toFixed(0)}, ${idxLoc.y.toFixed(0)})`);
+            let idxSession;
+            try {
+              idxSession = await cdpPool.acquire(tabId);
+              const jx = jitter(idxLoc.x), jy = jitter(idxLoc.y);
+              const base = { x: jx, y: jy, button: 'left', buttons: 1, clickCount: 1 };
+              await idxSession.send('Input.dispatchMouseEvent', { ...base, type: 'mousePressed' });
+              await new Promise(r => setTimeout(r, 40 + Math.random() * 30));
+              await idxSession.send('Input.dispatchMouseEvent', { ...base, type: 'mouseReleased' });
+              sendResponse({ success: true, data: `Clicked via element index [${params.index}]` });
+              return;
+            } catch (e) {
+              console.warn('[Aion Agent] Index click failed, falling through to text search:', e?.message);
+            } finally {
+              if (idxSession) idxSession.release();
+            }
+          }
+          // Index miss (element scrolled off viewport, DOM changed) — fall through
+          console.log(`[Aion Agent] Index [${params.index}] not resolved, falling back to text search`);
+        }
+
         // ── Step 1: DOM text search via content.js (500 ms budget) ──────────
         // Race the DOM locate against a 500 ms timeout. 300 ms was too tight on
         // heavy SPAs (Google AI Studio, Grok, React apps) — the content-script
@@ -2026,6 +2078,43 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         const cdpCmd = session.send;
 
         const cdpMouseClick = async (x, y) => {
+          // Pattern 3 — Proactive overlay dismissal (browser-use watchdog pattern):
+          // Before clicking, check whether the target coordinates are obscured by a
+          // high-z-index fixed overlay (cookie banner, newsletter gate, modal).
+          // If found, auto-click its close button and wait for the animation.
+          try {
+            const overlayDismissed = await cdpCmd('Runtime.evaluate', {
+              expression: `(() => {
+                const topEl = document.elementFromPoint(${x}, ${y});
+                if (!topEl) return false;
+                let cur = topEl;
+                while (cur && cur !== document.body) {
+                  const s = window.getComputedStyle(cur);
+                  const z = parseInt(s.zIndex, 10);
+                  if ((s.position === 'fixed' || s.position === 'absolute') &&
+                      z > 100 && cur.offsetHeight > window.innerHeight * 0.3) {
+                    const closeSel = [
+                      'button[aria-label*="close" i]','button[class*="close" i]',
+                      '[id*="close" i]','.close-btn','.modal-close'
+                    ].join(',');
+                    const btn = cur.querySelector(closeSel) ||
+                      Array.from(cur.querySelectorAll('button,span,a')).find(el =>
+                        /^(close|dismiss|✕|×|hide|cancel)$/i.test((el.innerText||'').trim())
+                      );
+                    if (btn) { btn.click(); return true; }
+                  }
+                  cur = cur.parentElement;
+                }
+                return false;
+              })()`,
+              returnByValue: true
+            }).catch(() => ({ result: { value: false } }));
+            if (overlayDismissed?.result?.value === true) {
+              console.log('[Aion Watchdog] Dismissed blocking overlay before click');
+              await new Promise(r => setTimeout(r, 300)); // let overlay animate out
+            }
+          } catch (_) {}
+
           // Apply ±2 px jitter — makes pointer events indistinguishable from a
           // real mouse, avoids bot-detection on exact-integer centroid coordinates.
           const jx = jitter(x), jy = jitter(y);
@@ -2041,6 +2130,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             await cdpMouseClick(loc.x, loc.y);
             sendResponse({ success: true });
             return;
+          }
+
+          // ── Step 1b: Selector cascade expansion (Pattern 2 / S2) ───────────
+          // If a selector was given, also probe stable data-attributes that survive
+          // DOM refactors — data-testid, data-id, and bare ID before hitting AXTree.
+          if (params.selector) {
+            const rawSel = params.selector.replace(/^[#.]/, '');
+            const selectorsToTry = [
+              params.selector,
+              `[data-testid="${rawSel}"]`,
+              `[data-id="${rawSel}"]`,
+              `#${rawSel}`
+            ];
+            for (const sel of selectorsToTry) {
+              const box = await getBoxModelBySelector(sel, cdpCmd).catch(() => null);
+              if (box) {
+                await cdpMouseClick(box.x, box.y);
+                sendResponse({ success: true, data: `Clicked via selector cascade (${sel})` });
+                return;
+              }
+            }
           }
 
           // ── Step 2: CDP Accessibility fallback ─────────────────────────
@@ -2209,6 +2319,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               return;
             }
           } catch (_domFallbackErr) { /* ignore, fall through to failure */ }
+
+          // ── S4: XPath structural search (Pattern 2 / S4) ──────────────────
+          // Case-insensitive XPath catches elements whose label is set via
+          // child text nodes rather than accessible-name attributes — a common
+          // pattern in legacy CMSs and server-rendered HTML.
+          const xpathLabel = (params.text || params.description || '').trim();
+          if (xpathLabel) {
+            try {
+              const xpathResult = await session.send('Runtime.evaluate', {
+                expression: `(() => {
+                  const txt = ${JSON.stringify(xpathLabel.toLowerCase())};
+                  const xpath = "//*[self::button or self::a or @role='button' or @role='link']" +
+                    "[contains(translate(normalize-space(.),'ABCDEFGHIJKLMNOPQRSTUVWXYZ','abcdefghijklmnopqrstuvwxyz'),'" + txt.replace(/'/g,"'") + "')]";
+                  const result = document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null);
+                  const el = result.singleNodeValue;
+                  if (el) {
+                    el.scrollIntoView({ behavior: 'auto', block: 'center' });
+                    const r = el.getBoundingClientRect();
+                    return { x: r.left + r.width / 2, y: r.top + r.height / 2, found: true };
+                  }
+                  return { found: false };
+                })()`,
+                returnByValue: true
+              }).catch(() => ({ result: { value: { found: false } } }));
+              if (xpathResult?.result?.value?.found) {
+                const { x, y } = xpathResult.result.value;
+                await cdpMouseClick(x, y);
+                sendResponse({ success: true, data: 'Clicked via XPath structural search' });
+                return;
+              }
+            } catch (_xpathErr) { /* ignore, fall through to failure */ }
+          }
 
           // Nothing worked — tell the AI so it can try a different approach
           sendResponse({ success: false, error: `Element "${params.text || params.description || '?'}" not found via DOM, Accessibility tree, or DOM search` });

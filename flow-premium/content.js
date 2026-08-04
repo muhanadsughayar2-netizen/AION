@@ -4036,6 +4036,98 @@
     setTimeout(() => { if (svg) svg.innerHTML = ''; }, 1100);
   }
 
+  // ── Element Index ──────────────────────────────────────────────────────────
+  // Assigns a stable integer to every visible interactive element on the page.
+  // The agent receives this compact list alongside the page text so it can
+  // reference elements as [idx] instead of guessing text/selector strings.
+  // The map is stored on window.__aionElementIndex so background.js can
+  // resolve indices to coordinates via the 'resolveByIndex' message.
+
+  const _AION_IDX_SEL = [
+    'a[href]','button','input:not([type="hidden"])','textarea','select',
+    '[role="button"]','[role="link"]','[role="checkbox"]','[role="radio"]',
+    '[role="tab"]','[role="menuitem"]','[role="option"]','[role="combobox"]',
+    '[role="textbox"]','[contenteditable="true"]'
+  ].join(',');
+
+  function _aionVisible(el) {
+    if (!el) return false;
+    const r = el.getBoundingClientRect();
+    if (r.width === 0 && r.height === 0) return false;
+    if (r.bottom < -300 || r.top > window.innerHeight + 300) return false;
+    const s = window.getComputedStyle(el);
+    return s.display !== 'none' && s.visibility !== 'hidden' && parseFloat(s.opacity) > 0.01;
+  }
+
+  function _aionLabel(el) {
+    return (
+      el.getAttribute('aria-label') ||
+      el.getAttribute('title') ||
+      el.getAttribute('placeholder') ||
+      el.getAttribute('alt') ||
+      (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60) ||
+      el.getAttribute('name') ||
+      el.id || ''
+    ).trim();
+  }
+
+  function _aionType(el) {
+    const tag = el.tagName.toLowerCase();
+    if (tag === 'input') return `input[${el.type || 'text'}]`;
+    const role = el.getAttribute('role');
+    if (role) return role;
+    return tag;
+  }
+
+  function buildElementIndex() {
+    // Clear stale data-aion-idx attributes from a previous step so the CDP
+    // Runtime.evaluate lookup in background.js always hits the live element.
+    document.querySelectorAll('[data-aion-idx]').forEach(el => el.removeAttribute('data-aion-idx'));
+
+    window.__aionElementIndex = new Map();
+    const seen = new Set();
+    const lines = [];
+    let idx = 0;
+
+    // Collect from main DOM and one level of shadow roots
+    const pool = [];
+    document.querySelectorAll(_AION_IDX_SEL).forEach(el => pool.push(el));
+    document.querySelectorAll('*').forEach(host => {
+      if (host.shadowRoot) {
+        host.shadowRoot.querySelectorAll(_AION_IDX_SEL).forEach(el => pool.push(el));
+      }
+    });
+
+    for (const el of pool) {
+      if (seen.has(el) || !_aionVisible(el)) continue;
+      seen.add(el);
+      const r = el.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      // Tag the physical element so background.js can find it via
+      // Runtime.evaluate('[data-aion-idx="N"]') without a JS message round-trip.
+      el.setAttribute('data-aion-idx', String(idx));
+      window.__aionElementIndex.set(idx, { el, x: cx, y: cy });
+      const label = _aionLabel(el);
+      const type  = _aionType(el);
+      const extra = el.disabled ? ' (disabled)' : '';
+      lines.push(`[${idx}] ${type}${label ? ' "' + label + '"' : ''}${extra}`);
+      idx++;
+    }
+
+    return { indexText: lines.join('\n'), count: idx };
+  }
+
+  function resolveByIndex(index) {
+    const map = window.__aionElementIndex;
+    if (!map) return null;
+    const entry = map.get(Number(index));
+    if (!entry || !_aionVisible(entry.el)) return null;
+    const r = entry.el.getBoundingClientRect();
+    return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+  }
+  // ── End Element Index ───────────────────────────────────────────────────────
+
   // === AGENT AUTOMATION HANDLER ===
   // Handles click, type, scroll, checkElement actions from agent-chat.js
   async function handleAgentAction(action, params) {
@@ -5202,6 +5294,22 @@
         return { success: true };
       }
       
+      case 'buildElementIndex': {
+        // Rebuild the integer index map and return the compact text list.
+        // Called by background.js before each agent step to populate the
+        // element list that gets prepended to the page-state sent to the LLM.
+        return buildElementIndex();
+      }
+
+      case 'resolveByIndex': {
+        // Resolve a previously-assigned element index to viewport coordinates.
+        // Returns { success, x, y } so background.js can dispatch a CDP click
+        // without any text/selector/AXTree fallback overhead.
+        const coords = resolveByIndex(params.index);
+        if (!coords) return { success: false, error: `Index ${params.index} not found or element no longer visible` };
+        return { success: true, x: coords.x, y: coords.y };
+      }
+
       default:
         throw new Error(`Unknown action: ${action}`);
     }

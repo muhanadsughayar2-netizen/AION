@@ -10493,15 +10493,16 @@ const AGENT_TOOLS = [{
   functionDeclarations: [
     {
       name: 'click',
-      description: 'Click a button, link, or element on the current page. Prefer "text" (the visible label) over "selector". If the element cannot be found by text, use x and y pixel coordinates from the current screenshot as a last resort.',
+      description: 'Click a button, link, or element on the current page. BEST: use "index" from the INTERACTIVE ELEMENTS list — it hits the exact element with zero ambiguity. Otherwise prefer "text" (the visible label). Fall back to x/y pixel coordinates only as a last resort.',
       parameters: {
         type: 'object',
         properties: {
+          index: { type: 'number', description: 'Element index from the INTERACTIVE ELEMENTS list at the top of the page snapshot (e.g. 0, 5, 23). Most reliable — use this whenever the list is present.' },
           text: { type: 'string', description: 'Visible text on the element to click, e.g. "Sign up" or "Buy"' },
           selector: { type: 'string', description: 'CSS selector, only if known precisely' },
           description: { type: 'string', description: 'Fallback description of the element if text/selector are unknown' },
-          x: { type: 'number', description: 'X pixel coordinate on the current screenshot — last resort if text/selector cannot find the element' },
-          y: { type: 'number', description: 'Y pixel coordinate on the current screenshot — last resort if text/selector cannot find the element' }
+          x: { type: 'number', description: 'X pixel coordinate on the current screenshot — last resort if index/text/selector cannot find the element' },
+          y: { type: 'number', description: 'Y pixel coordinate on the current screenshot — last resort if index/text/selector cannot find the element' }
         }
       }
     },
@@ -10541,6 +10542,7 @@ const AGENT_TOOLS = [{
         type: 'object',
         properties: {
           text: { type: 'string', description: 'The text to type. In spreadsheets: use \\t between column values and \\n between rows to fill a table in one call.' },
+          index: { type: 'number', description: 'Element index from the INTERACTIVE ELEMENTS list — targets the exact input field without any text/selector guessing. Prefer this when the list is available.' },
           selector: { type: 'string', description: 'CSS selector of the input, if known' },
           placeholder: { type: 'string', description: 'Placeholder text of the input, if known' },
           cell: { type: 'string', description: 'Spreadsheet cell address to navigate to before typing, e.g. "A1", "B3", "C10". Use this in Excel Online and Google Sheets to target a specific starting cell.' },
@@ -11735,6 +11737,7 @@ Rules:
 - WAITING FOR CONTENT: After a click that triggers a page load, form submit, or AJAX request, use waitForElement before your next action. Example: waitForElement({text:"Search results", timeout:10}). Without this, you risk clicking elements that have not loaded yet.
 - READING DATA: Use readText to extract exact values from the page — a price, a number, a field value — when the screenshot alone is not precise enough. The extracted text is returned directly in the tool response so you can use it in your next step. Example: readText({selector:".total-price"}) or readText({text:"Balance"}). 
 - REPLACING FIELD VALUES: When typing into a field that already has content (a search box, a form field with a pre-filled value), add clearFirst:true to "type" to erase the old value before typing. Example: type({text:"new search", clearFirst:true}).
+- ELEMENT INDEX: At the top of each page snapshot you will see an "INTERACTIVE ELEMENTS" section with numbered indices like [0], [1], [23]. When you need to click or type into a specific element, pass its number as the 'index' parameter — this is the most reliable method because it targets the exact DOM element without any text/selector ambiguity. Examples: click({index:5}), type({text:"hello", index:12}). Always prefer index over text, selector, or coordinates when the list is present.
 - COORDINATE CLICK: If you have tried text/selector and an element still cannot be found, use click with x and y coordinates from the screenshot. Example: click({x:540, y:320}). Use this as a last resort only.
 - FORM FILLING: When a task involves filling multiple fields on a form, use autofill with a fields object — one call fills everything. Example: autofill({fields:{"First name":"Joseph","Email":"j@example.com","Country":"Jordan"}}). Only fall back to typing field-by-field if autofill fails.
 - PAGE PDF EXPORT: To save any page as a PDF, call exportPDF({filename:"my-file"}). Works on articles, invoices, Docs, spreadsheets — no need to open menus or find a print button.
@@ -11994,9 +11997,34 @@ async function getActiveTabPageText(tabId) {
     } catch (_) { return null; }
   };
 
+  // Build interactive-element index via the content script.
+  // This gives the LLM a compact numbered list ([0] button "Submit", [1] input…)
+  // so it can reference elements by integer instead of guessing text/selectors.
+  const fetchElementIndex = async () => {
+    try {
+      return await Promise.race([
+        new Promise(resolve =>
+          chrome.tabs.sendMessage(tabId,
+            { action: 'agentExecute', executeAction: 'buildElementIndex', params: {} },
+            r => resolve(chrome.runtime.lastError ? null : r)
+          )
+        ),
+        new Promise(r => setTimeout(() => r(null), 900))
+      ]);
+    } catch (_) { return null; }
+  };
+
   // Try rich snapshot first (works on any page once scripting permission is granted)
   let rich = await richSnapshotScript();
-  if (rich) return rich.slice(0, 6500);
+
+  // Augment with element index (run in parallel opportunity is gone since rich
+  // snapshot is async, but index is fast and small so we fetch it here)
+  const idxResult = await fetchElementIndex();
+  const elementIndexSection = (idxResult?.count > 0)
+    ? `INTERACTIVE ELEMENTS (reference by index for precise clicks/types):\n${idxResult.indexText}\n\n`
+    : '';
+
+  if (rich) return (elementIndexSection + rich).slice(0, 8000);
 
   // Fallback: ask the already-injected content script
   const ask = () => chrome.tabs.sendMessage(tabId, { action: 'get_page_text' });
