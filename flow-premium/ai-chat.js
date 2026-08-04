@@ -13226,7 +13226,8 @@ async function runAgentTask(prompt, thread) {
         // like "Done." or "OK." don't need audio and become annoying fast.
         try {
           const spokenSummary = text.replace(/[#*`>_~\[\]()]/g, '').replace(/\s+/g, ' ').trim().slice(0, 220);
-          if (spokenSummary.length > 40) agentSpeak(`Task complete. ${spokenSummary}`);
+          const nameTag = _agentUserName ? ` ${_agentUserName}` : '';
+          agentSpeak(spokenSummary.length > 5 ? `${spokenSummary}` : `All done${nameTag}!`);
         } catch (_) {}
       } else {
         addAgentStepBubble(thread,
@@ -13247,7 +13248,12 @@ async function runAgentTask(prompt, thread) {
         name: 'finish',
         response: { success: true, data: finishCall.functionCall.args?.summary || 'done' }
       }}]});
-      addAgentStepBubble(thread, finishCall.functionCall.args?.summary || 'Task finished.', 'done');
+      const finishSummary = finishCall.functionCall.args?.summary || 'Task finished.';
+      addAgentStepBubble(thread, finishSummary, 'done');
+      try {
+        const spokenFinish = finishSummary.replace(/[#*`>_~\[\]()]/g, '').replace(/\s+/g, ' ').trim().slice(0, 220);
+        agentSpeak(spokenFinish.length > 5 ? spokenFinish : `All done${_agentUserName ? ' ' + _agentUserName : ''}!`);
+      } catch (_) {}
       break;
     }
 
