@@ -13407,6 +13407,70 @@ async function runAgentTask(prompt, thread) {
       ? await captureActiveTabScreenshot(tab).catch(() => null)
       : null;
 
+    // ── Pre-execution loop hard-stop ──────────────────────────────────────────
+    // The post-execution warning (below) tells Gemini it's looping; it clearly
+    // isn't enough — the NotebookLM run cycled 10+ times ignoring warnings.
+    // This layer fires BEFORE CDP executes: if any non-snapshot action in this
+    // turn has already appeared 3+ times in the recent window, we block the
+    // entire turn, inject a forced snapshot + hard error, and continue so
+    // Gemini sees current page state and must choose a different path.
+    {
+      const _buildSig = (name, args) =>
+        `${name}:${args?.index !== undefined ? `#${args.index}` : String(args?.text || args?.selector || args?.url || args?.description || args?.direction || '').slice(0, 60)}`;
+
+      const _candidateSigs = executableCalls
+        .filter(p => p.functionCall.name !== 'snapshotPage')
+        .map(p => _buildSig(p.functionCall.name, p.functionCall.args || {}));
+
+      const _loopedSig = _candidateSigs.find(sig =>
+        recentActions.filter(s => s === sig).length >= 3
+      );
+
+      if (_loopedSig) {
+        const _repeatCount = recentActions.filter(s => s === _loopedSig).length;
+        addAgentStepBubble(thread,
+          `⛔ Loop blocked: "${_loopedSig}" repeated ${_repeatCount}× — forcing snapshot instead of executing.`,
+          'error');
+
+        // Take a fresh snapshot so Gemini has current page context
+        const _loopSnap  = await captureActiveTabScreenshot(tab).catch(() => null);
+        const _loopPage  = await getActiveTabPageText(tab.id).catch(() => '');
+
+        const _syntheticParts = executableCalls.map(p => ({
+          functionResponse: {
+            name: p.functionCall.name,
+            response: {
+              success: false,
+              error: `LOOP HARD-STOP: "${_loopedSig}" has been called ${_repeatCount} times already and is clearly NOT working. ` +
+                `Your action was BLOCKED — it was not executed. ` +
+                `You MUST try a fundamentally different approach right now: ` +
+                `(1) use a keyboard shortcut (pressKey Tab/Enter/Escape), ` +
+                `(2) scroll to reveal a different entry point, ` +
+                `(3) navigate away and back to reset page state, ` +
+                `(4) try clicking a parent or sibling element instead, or ` +
+                `(5) call finish() and honestly explain what is blocking you. ` +
+                `The current page is shown below — read it carefully before deciding.` +
+                (_loopPage ? `\n\nCURRENT PAGE SNAPSHOT:\n${_loopPage.slice(0, 1000)}` : '')
+            }
+          }
+        }));
+
+        const _allLoopParts = _loopSnap
+          ? [{ inlineData: { mimeType: 'image/jpeg', data: _loopSnap } }, ..._syntheticParts]
+          : _syntheticParts;
+
+        // Record the block so the post-execution tracker stays consistent
+        recentActions.push(`BLOCKED:${_loopedSig}`);
+        if (recentActions.length > 16) recentActions.shift();
+
+        await addAgentMemoryNote(hostnameOf(tab.url || ''),
+          `Autopilot loop-blocked on "${_loopedSig}" — avoid repeating this action blindly; try keyboard shortcuts, parent elements, or navigate away first.`);
+
+        contents.push({ role: 'user', parts: _allLoopParts });
+        continue; // skip CDP execution entirely; let Gemini re-plan
+      }
+    }
+
     // ── PARALLEL execution of all CDP calls ───────────────────────────────────
     const settledResults = await Promise.allSettled(
       executableCalls.map(part =>
@@ -13741,45 +13805,65 @@ async function runAgentTask(prompt, thread) {
       }
     }
 
-    // ── Loop detection ────────────────────────────────────────────────────────
-    // Track recent actions and warn Gemini when it's clearly repeating itself.
-    // Detects two patterns:
-    //   A) Same single action repeated 3+ times: AAAAA
-    //   B) Same 2-action pair repeated 3+ times: ABABAB  (e.g. "click:Insert image" + "click:By URL" cycling)
+    // ── Loop detection (post-execution advisory) ─────────────────────────────
+    // The hard-stop above blocks at 3 repeats BEFORE execution. This advisory
+    // layer tracks the history and injects escalating warnings into the function
+    // response so Gemini gets a clear signal even before the hard-stop kicks in.
+    //
+    // Sig includes the element index (new primary locator) so index-based clicks
+    // don't all collapse to "click:" and falsely trip or miss detection.
+    // Pattern B now uses a sliding window (i+=1) instead of stride (i+=2) so
+    // interleaved cycles like A→B→snapshot→A→B→snapshot are caught correctly.
+    // Pattern C catches 3-action cycles (ABCABCABC) — the NotebookLM failure mode.
     for (const part of executableCalls) {
       const { name, args } = part.functionCall;
-      const sig = `${name}:${String(args?.text || args?.selector || args?.url || args?.description || args?.direction || '').slice(0, 60)}`;
+      const sig = `${name}:${args?.index !== undefined ? `#${args.index}` : String(args?.text || args?.selector || args?.url || args?.description || args?.direction || '').slice(0, 60)}`;
       recentActions.push(sig);
-      if (recentActions.length > 12) recentActions.shift();
+      if (recentActions.length > 16) recentActions.shift();
     }
 
     let loopWarning = null;
+    const _ra = recentActions;
+    const _rn = _ra.length;
 
     // Pattern A: same single action 3+ times
-    const lastSig = recentActions[recentActions.length - 1];
-    const repeatCount = recentActions.filter(s => s === lastSig).length;
+    const lastSig = _ra[_rn - 1];
+    const repeatCount = _ra.filter(s => s === lastSig).length;
     if (repeatCount >= 3) {
-      loopWarning = `⚠ LOOP DETECTED: You have called "${lastSig}" ${repeatCount} times without progress. ` +
-        `STOP immediately. Do NOT call this again. You MUST try a completely different approach: ` +
-        `snapshotPage to see what is on screen, try a different selector/label, navigate away and back, ` +
-        `or call finish() to report what is blocking you.`;
+      loopWarning = `⚠ LOOP DETECTED (Pattern A): "${lastSig}" called ${repeatCount} times. ` +
+        `STOP — do NOT call this again. Try a keyboard shortcut, a parent/sibling element, ` +
+        `navigate away and back, or call finish() to report the blocker.`;
     }
 
-    // Pattern B: same 2-action sequence repeated 3+ times (ABABAB)
-    if (!loopWarning && recentActions.length >= 6) {
-      const n = recentActions.length;
-      const a = recentActions[n - 2];
-      const b = recentActions[n - 1];
+    // Pattern B: same 2-action sequence repeated 3+ times — sliding window
+    if (!loopWarning && _rn >= 6) {
+      const a = _ra[_rn - 2], b = _ra[_rn - 1];
       if (a !== b) {
         let pairCount = 0;
-        for (let i = 0; i + 1 < n; i += 2) {
-          if (recentActions[i] === a && recentActions[i + 1] === b) pairCount++;
+        for (let i = 0; i + 1 < _rn; i++) { // sliding window, not stride
+          if (_ra[i] === a && _ra[i + 1] === b) pairCount++;
         }
         if (pairCount >= 3) {
-          loopWarning = `⚠ LOOP DETECTED: You are cycling "${a}" → "${b}" repeatedly (${pairCount} times). ` +
-            `STOP this cycle immediately. This approach is NOT working. You MUST try something completely different: ` +
-            `snapshotPage first, try different element labels, use a keyboard shortcut instead of clicking, ` +
+          loopWarning = `⚠ LOOP DETECTED (Pattern B): cycling "${a}" → "${b}" × ${pairCount}. ` +
+            `This pair is NOT working. Try a keyboard shortcut, different labels, scroll to a new entry point, ` +
             `or call finish() to explain what is blocking you.`;
+        }
+      }
+    }
+
+    // Pattern C: same 3-action sequence repeated 3+ times — ABCABCABC
+    // Catches the NotebookLM failure mode: click:X → click:Y → snapshotPage → repeat
+    if (!loopWarning && _rn >= 9) {
+      const c1 = _ra[_rn - 3], c2 = _ra[_rn - 2], c3 = _ra[_rn - 1];
+      if (c1 !== c2 || c2 !== c3) {
+        let tripleCount = 0;
+        for (let i = 0; i + 2 < _rn; i++) {
+          if (_ra[i] === c1 && _ra[i + 1] === c2 && _ra[i + 2] === c3) tripleCount++;
+        }
+        if (tripleCount >= 3) {
+          loopWarning = `⚠ LOOP DETECTED (Pattern C): 3-action cycle "${c1}" → "${c2}" → "${c3}" repeated × ${tripleCount}. ` +
+            `This sequence is clearly stuck. You MUST break out completely: navigate away, ` +
+            `use the keyboard (Tab/Enter/Escape), or call finish() to report the blocker.`;
         }
       }
     }
@@ -13789,10 +13873,9 @@ async function runAgentTask(prompt, thread) {
       if (last?.functionResponse?.response) {
         last.functionResponse.response.LOOP_WARNING = loopWarning;
       }
-      // Record the loop for future runs so the agent doesn't walk into the same trap
-      const loopSig = recentActions[recentActions.length - 1] || '';
+      const loopSig = _ra[_rn - 1] || '';
       await addAgentMemoryNote(hostnameOf(tab.url || ''),
-        `Got stuck looping on "${loopSig}" here before — don't repeat this action blindly if it doesn't work on the first couple of tries.`);
+        `Loop detected on "${loopSig}" — don't repeat blindly; try keyboard shortcuts or navigate away first.`);
     }
 
     // Fix 6 (cont): if planTask/checkPlan ran alongside CDP calls this turn,
