@@ -4131,9 +4131,9 @@
           throw new Error(`Element not found. Tried: ${attemptedMethods.join(', ')}. Try describing the button text exactly.`);
         }
         
-        // Scroll into view first
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        await new Promise(r => setTimeout(r, 400));
+        // Use instant scroll so the element is static before coordinate calculation
+        element.scrollIntoView({ behavior: 'auto', block: 'center' });
+        await new Promise(r => setTimeout(r, 150)); // short buffer for layout engine to stabilize
         
         // Move ghost cursor to element with smooth animation
         const center = getElementCenter(element);
@@ -5024,9 +5024,9 @@
           throw new Error(`Input not found. Tried: ${attemptedSelectors.slice(0, 5).join(', ')}. Page may have different structure.`);
         }
         
-        // Scroll into view and move cursor
-        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        await new Promise(r => setTimeout(r, 300));
+        // Use instant scroll so the element is static before coordinate calculation
+        element.scrollIntoView({ behavior: 'auto', block: 'center' });
+        await new Promise(r => setTimeout(r, 150));
         const center = getElementCenter(element);
         moveGhostCursor(center.x, center.y);
         await new Promise(r => setTimeout(r, 300));
@@ -5115,7 +5115,8 @@
         if (params.selector) {
           const el = document.querySelector(params.selector);
           if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.scrollIntoView({ behavior: 'auto', block: 'center' });
+            await new Promise(r => setTimeout(r, 100));
             const center = getElementCenter(el);
             moveGhostCursor(center.x, center.y);
           }

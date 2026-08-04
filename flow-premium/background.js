@@ -2183,6 +2183,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             }
           }
 
+          // Backup fallback: dispatch a direct DOM .click() via Runtime.evaluate
+          // before giving up — catches elements the AX tree temporarily missed.
+          try {
+            const selectorQuery = params.selector || '';
+            const textQuery     = (params.text || params.description || '').toLowerCase();
+            const domFallback = await session.send('Runtime.evaluate', {
+              expression: `(() => {
+                const sel = ${JSON.stringify(selectorQuery)};
+                const txt = ${JSON.stringify(textQuery)};
+                let el = sel ? document.querySelector(sel) : null;
+                if (!el && txt) {
+                  for (const c of document.querySelectorAll('button,a,[role="button"],span,[role="link"]')) {
+                    if ((c.textContent || '').toLowerCase().includes(txt)) { el = c; break; }
+                  }
+                }
+                if (el) { el.scrollIntoView({ behavior:'auto', block:'center' }); el.click(); return true; }
+                return false;
+              })()`,
+              returnByValue: true
+            }).catch(() => ({ result: { value: false } }));
+            if (domFallback?.result?.value === true) {
+              console.log('[Aion Agent] Click completed via direct DOM fallback');
+              sendResponse({ success: true, data: 'Clicked via DOM fallback (AX tree miss)' });
+              return;
+            }
+          } catch (_domFallbackErr) { /* ignore, fall through to failure */ }
+
           // Nothing worked — tell the AI so it can try a different approach
           sendResponse({ success: false, error: `Element "${params.text || params.description || '?'}" not found via DOM, Accessibility tree, or DOM search` });
 

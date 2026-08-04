@@ -13576,6 +13576,8 @@ async function runAgentTask(prompt, thread) {
 
     // Wait for navigation / DOM settle, then enforce the Session Anchor
     await smartWaitAfterAction(tab.id, executableCalls[0]?.functionCall?.name);
+    // Extra settle so dynamic JS frameworks finish rendering before screenshot/page-text
+    await new Promise(r => setTimeout(r, 250));
 
     try {
       const actionName = executableCalls[0]?.functionCall?.name || '';
