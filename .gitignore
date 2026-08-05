@@ -9,3 +9,49 @@ dist/
 .cache/
 attached_assets/
 .claude/
+
+# Root-level copies of the extension, kept only so Chrome's "Load unpacked"
+# (pointed at this repo's root) keeps working with the original extension ID.
+# The real tracked source lives in flow-premium/.
+/_locales/
+/icons/
+/utils/
+/ai-chat.html
+/ai-chat.js
+/annotate.css
+/annotate.html
+/annotate.js
+/background.js
+/branding.js
+/content.js
+/jspdf.min.js
+/learn.html
+/learn.js
+/magic-card.html
+/magic-card.js
+/manifest.json
+/marked.min.js
+/options.css
+/options.html
+/options.js
+/popup (copy).css
+/popup.css
+/popup.html
+/popup.js
+/preview-output.html
+/preview-output.js
+/prompts.js
+/purify.min.js
+/sandbox.html
+/sidebar.html
+/sidebar.js
+/subscription.js
+/test-aion.html
+/theme-cycle-btn.js
+/theme.css
+/theme.js
+/tour.css
+/tour.js
+/video-pipeline-core.js
+/welcome.html
+/welcome.js
