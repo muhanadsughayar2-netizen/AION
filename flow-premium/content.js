@@ -4190,6 +4190,43 @@
     return { indexText: lines.join('\n'), semanticTree, count: idx };
   }
 
+  // A bare "element not found" tells the model nothing about the page, so its
+  // only move is to guess another label and fail again — the ChatGPT Read-Aloud
+  // hunt went "More actions" → hover → "Read Aloud" → findElement, four blind
+  // guesses in a row, then gave up and asked the user. Hand back what is
+  // ACTUALLY on the page, closest matches first, so the next turn can pick a
+  // real target by index instead of guessing.
+  function describeAvailableElements(wantedRaw) {
+    const wanted = (wantedRaw || '').toLowerCase().trim();
+    try {
+      const { indexText, count } = buildElementIndex();
+      const lines = indexText.split('\n').filter(Boolean);
+      if (!lines.length) return '\nNothing interactive is visible on the page right now — it may still be loading, or the content sits inside an iframe.';
+
+      if (wanted) {
+        const words = wanted.split(/\s+/).filter(w => w.length > 2);
+        const score = (line) => {
+          const l = line.toLowerCase();
+          if (l.includes(wanted)) return 100;
+          if (!words.length) return 0;
+          const hits = words.filter(w => l.includes(w)).length;
+          return hits ? hits / words.length : 0;
+        };
+        const close = lines.map(l => ({ l, s: score(l) }))
+                           .filter(r => r.s > 0)
+                           .sort((a, b) => b.s - a.s)
+                           .slice(0, 15)
+                           .map(r => r.l);
+        if (close.length) {
+          return `\nCLOSE MATCHES already on the page (click by index — the label may differ in wording or capitalisation):\n${close.join('\n')}`;
+        }
+      }
+      return `\nWhat IS clickable on the page right now (${count} total, showing first 30) — click by index:\n${lines.slice(0, 30).join('\n')}`;
+    } catch (_) {
+      return '';
+    }
+  }
+
   function resolveByIndex(index) {
     const map = window.__aionElementIndex;
     if (!map) return null;
@@ -4292,7 +4329,12 @@
         }
         
         if (!element) {
-          throw new Error(`Element not found. Tried: ${attemptedMethods.join(', ')}. Try describing the button text exactly.`);
+          const wanted = params.text || params.description || '';
+          throw new Error(
+            `Element not found for "${wanted || '(no label given)'}". Tried: ${attemptedMethods.join(', ')}.` +
+            describeAvailableElements(wanted) +
+            `\nNEXT STEP: pick one of the numbered elements above with click({index:N}) — do not guess another label blindly. If what you want genuinely is not listed, it is probably hidden behind a hover menu or a "…" overflow button: hover the relevant row/message first, then look again.`
+          );
         }
         
         // Use instant scroll so the element is static before coordinate calculation
@@ -5246,7 +5288,11 @@
         }
         
         if (!element) {
-          throw new Error(`Input not found. Tried: ${attemptedSelectors.slice(0, 5).join(', ')}. Page may have different structure.`);
+          throw new Error(
+            `Input not found. Tried: ${attemptedSelectors.slice(0, 5).join(', ')}.` +
+            describeAvailableElements(params.description || params.selector || '') +
+            `\nNEXT STEP: target the field by index with type({text:"…", index:N}) using the list above.`
+          );
         }
         
         // Use instant scroll so the element is static before coordinate calculation

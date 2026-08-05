@@ -915,7 +915,71 @@ let activeUtterance = null;
 // stops future *fetches* but cannot un-play audio that has already loaded.
 let _agentSpeakGen = 0;
 
+// ── Global audio traffic control ─────────────────────────────────────────────
+// Two speech systems can play at the same time: the Autopilot's agentSpeak()
+// below, and each chat bubble's Read-aloud button (runTts/stopTts). Each one
+// tracked its own <audio> element in its own variable — _agentVoice.audio vs.
+// the per-bubble ttsSession.audio — so neither could silence the other. Result:
+// two different Gemini voices (Aoede vs. the user's pick) playing over each
+// other, drifting further apart as their chunks arrived at different times.
+// Every player now registers a stop function here and silences the others
+// before it starts.
+const _audioStoppers = new Set();
+
+function registerAudioStopper(stopFn) {
+  _audioStoppers.add(stopFn);
+  return () => { _audioStoppers.delete(stopFn); };
+}
+
+function stopOtherAudio(selfStopFn) {
+  for (const stopFn of _audioStoppers) {
+    if (stopFn === selfStopFn) continue;
+    try { stopFn(); } catch (_) {}
+  }
+}
+
+// Tear down whatever agentSpeak() currently has playing. Registered below so the
+// Read-aloud button can silence the agent, and vice versa.
+function stopAgentVoice() {
+  _agentSpeakGen++;            // strands any in-flight IIFE from an older call
+  if (_agentVoice.audio) {
+    try { _agentVoice.audio.pause(); _agentVoice.audio.src = ''; } catch (_) {}
+    _agentVoice.audio = null;
+  }
+  if (_agentVoice.controller) {
+    try { _agentVoice.controller.abort(); } catch (_) {}
+    _agentVoice.controller = null;
+  }
+  try { synth.cancel(); } catch (_) {}
+  activeUtterance = null;
+}
+registerAudioStopper(stopAgentVoice);
+
+// Browser-voice fallback for users with no Gemini API key. A function with this
+// name previously existed ONLY inside BUILD_SYSTEM_PROMPT — i.e. as example text
+// in a string literal, never as runnable code — so agentSpeak()'s no-key branch
+// threw ReferenceError into an unhandled rejection and the agent stayed silent
+// for every free-tier user, which is the exact failure its comment claims to fix.
+function speakFallback(text) {
+  if (!text || !synth) return;
+  try {
+    synth.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 0.95;
+    u.pitch = 1.05;
+    activeUtterance = u;
+    u.onend   = () => { if (activeUtterance === u) activeUtterance = null; };
+    u.onerror = () => { if (activeUtterance === u) activeUtterance = null; };
+    synth.speak(u);
+  } catch (e) {
+    console.warn('[SnapToAI] speakFallback failed:', e);
+  }
+}
+
 function agentSpeak(text) {
+  // 0. Silence any other player first (Read-aloud button, another bubble) —
+  //    without this both keep playing and you hear two overlapping voices.
+  stopOtherAudio(stopAgentVoice);
   // 1. Stop anything already playing (including any stale browser TTS)
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   if (_agentVoice.audio) {
@@ -938,7 +1002,11 @@ function agentSpeak(text) {
     .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 800);
+    // Was 800, which silently cut off anything longer than a short paragraph —
+    // a read-aloud story died mid-sentence. The player below already splits text
+    // at sentence boundaries and prefetches the next piece while the current one
+    // plays, so long passages stream fine; this cap is just a runaway guard.
+    .slice(0, 8000);
 
   if (!cleanSpeechText) return;
 
@@ -11340,6 +11408,18 @@ const AGENT_TOOLS = [{
       }
     },
     {
+      name: 'speak',
+      description: 'Say something out loud to the user in your own voice, and show it in the chat. USE THIS TO DELIVER CONTENT YOU WROTE YOURSELF — a story, a poem, a summary, an answer, an explanation. You are a capable writer: if the user asks you to write something and read it, WRITE IT YOURSELF and pass it here. Do NOT open ChatGPT, Gemini, Claude, or any other AI website to write text for you, and do NOT hunt for a "Read Aloud" button on some page — you have your own voice and this is it. Only use the browser when the task genuinely needs a specific website (checking a real account, buying something, using NotebookLM\'s special outputs, reading a live page).',
+      parameters: {
+        type: 'object',
+        properties: {
+          text:      { type: 'string',  description: 'The full text to say out loud and show in the chat. Write the complete content here — a whole story, the whole answer. Long text is fine; it is spoken in order.' },
+          alsoShow:  { type: 'boolean', description: 'Default true. Set false to speak without printing the text in the chat.' }
+        },
+        required: ['text']
+      }
+    },
+    {
       name: 'finish',
       description: 'Call this when the task is complete, impossible, or you need to stop and tell the user something.',
       parameters: {
@@ -11792,7 +11872,24 @@ function getDynamicSkill(url) {
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-const AGENT_SYSTEM_PROMPT = `You are an in-browser automation agent controlling the user's ACTIVE browser tab, one small step at a time.
+const AGENT_SYSTEM_PROMPT = `You are AION — a capable assistant who can BOTH think and act. You can write, answer, and speak in your own voice, AND you can control the user's ACTIVE browser tab when a task truly needs a website.
+
+### 🥇 RULE ZERO — DO IT YOURSELF FIRST. CHECK THIS BEFORE EVERY TASK.
+Before you touch the browser, ask: "Can I just do this myself?"
+
+You are a strong writer and you have your own voice (the speak tool). So:
+  ✅ "Write me a story / poem / email / summary" → WRITE IT YOURSELF, deliver with speak. Zero browser steps.
+  ✅ "...and read it to me" → that is the speak tool. You already have a voice.
+  ✅ "Explain X" / "What do you think of Y" / "Translate this" → answer directly with speak, then finish.
+  ✅ "Summarise this page" → readText or snapshotPage to get the text, then write the summary yourself and speak it.
+
+  ❌ NEVER open ChatGPT, Claude, Gemini, Grok, Perplexity, or any other AI site to write text for you. You ARE the AI. Going to another chatbot to write a story is like driving to a neighbour's house to use their pen. (The only exception is invokeCouncil, when the user explicitly wants several AIs compared.)
+  ❌ NEVER hunt for a "Read Aloud" / "Listen" / speaker button on a webpage to read something out. That is the speak tool's job.
+  ❌ NEVER build a multi-step browser plan for something you could have answered in one turn.
+
+USE THE BROWSER when the task genuinely needs a specific site: checking a real account or inbox, booking/buying, filling a real form, reading a live page or live data, or using a tool with abilities you lack (NotebookLM's audio/video/mind-map outputs, AI Studio's app builder, a site's own search).
+
+Quick test: if the user would have accepted the answer typed straight into this chat, do NOT open a browser tab.
 
 ### 🤝 GOLDEN RULE — ALWAYS TALK TO THE USER WHEN STUCK
 You are never alone. The user is watching and can help you instantly. Follow this rule without exception:
@@ -11829,7 +11926,9 @@ When the user asks for a specific number of items (e.g. "find 10 videos", "add 5
 Rules:
 - Each turn you are given BOTH a text snapshot of the page AND a real screenshot image of what it currently looks like. Use the screenshot to visually confirm where you actually are (e.g. did the click really open the product page, are you still on a search results list, did a popup/modal appear) before deciding your next move — don't rely on text alone.
 - If the screenshot and the text disagree, or the screenshot shows you're not where you expected, trust the screenshot and re-orient (e.g. close a popup, scroll, or navigate again) instead of repeating the same action blindly.
-- PARALLEL EXECUTION: You CAN call multiple independent functions in a single turn — do this whenever actions don't depend on each other's results. Examples: call readNetworkResponse AND click together to intercept an API; call snapshotPage AND getCookies AND getSecurityInfo all at once for a site audit; run two unrelated clicks in the same turn. Use single-action turns only when each step depends on the prior result (e.g. click → wait for result → type into what appeared).
+- PARALLEL EXECUTION — READ-ONLY ONLY: You may call multiple functions in one turn ONLY when every one of them is a read-only inspection (snapshotPage, readText, getCookies, getSecurityInfo, auditPage, findElement, readStorage, etc.). Example: snapshotPage AND getCookies AND getSecurityInfo together for a site audit.
+  ❌ NEVER put two page-changing actions in the same turn, and NEVER pair a click with a type/click that depends on it. Actions in one turn are not guaranteed to help each other: if the first fails, the second acts on the wrong place. Real damage this caused: click("Untitled document") + type("Sonnet") in one turn — the click missed the title box, so "Sonnet" was typed into the document body and overwrote the poem that was already there.
+  ✅ Anything sequential gets its OWN turn: click → see the result → then type. One page-changing action per turn. It is slower by one round-trip and far more reliable.
 - PLANNING: For tasks with more than 5 steps, call planTask FIRST to lay out a numbered plan before executing anything. Use checkPlan after completing each milestone to track progress and stay oriented across long sessions.
 - MULTI-TAB: Use openTab to open a URL in a new browser tab, switchTab to move the agent's focus to a different tab, closeTab to close one. Use listTargets to see all open tabs and their IDs. This lets you work across multiple sites in one session — open a reference page alongside the current one, fill forms in parallel across tabs, or compare two sites.
 - If the task asks you to go to a specific website/URL that is not the current page, use "navigate" with the full address — do NOT try to fake it by typing the URL into a search box or link on the page.
@@ -13433,6 +13532,23 @@ async function runAgentTask(prompt, thread) {
         response: { success: true, data: `Plan recorded (${steps.length} steps). Begin executing step 1 now.` } } });
     }
 
+    // ── speak — the agent delivers its OWN writing, out loud ──────────────────
+    // Without this tool the model had 72 ways to drive someone else's website
+    // and zero ways to say a sentence, so "write me a story and read it" turned
+    // into: open ChatGPT, type a prompt, then hunt for their Read Aloud button.
+    const speakCall = fnCallParts.find(p => p.functionCall.name === 'speak');
+    if (speakCall) {
+      const { text: speechText = '', alsoShow = true } = speakCall.functionCall.args || {};
+      if (speechText.trim()) {
+        if (alsoShow !== false) addBubble(speechText, 'ai', thread);
+        agentSpeak(speechText);
+      }
+      clientSideResponses.push({ functionResponse: { name: 'speak',
+        response: { success: true, data: speechText.trim()
+          ? 'Spoken aloud to the user in your own voice and shown in the chat. If this delivered what they asked for, call finish now — do not open any website for it.'
+          : 'No text supplied, nothing spoken.' } } });
+    }
+
     const checkCall = fnCallParts.find(p => p.functionCall.name === 'checkPlan');
     if (checkCall) {
       const { stepIndex = 0, note = '' } = checkCall.functionCall.args || {};
@@ -13732,8 +13848,17 @@ async function runAgentTask(prompt, thread) {
           }
         }));
 
-        const _allLoopParts = _loopSnap
-          ? [{ inlineData: { mimeType: 'image/jpeg', data: _loopSnap } }, ..._syntheticParts]
+        // captureActiveTabScreenshot returns a full data URL. Gemini's
+        // inlineData.data wants RAW base64 — every other screenshot site strips
+        // the "data:image/jpeg;base64," prefix with .split(',')[1], but this one
+        // did not, so the moment a loop was blocked the request was rejected
+        // ("Base64 decoding failed") and the raw API error was dumped in the
+        // user's face. Strip defensively in case a bare base64 string is passed.
+        const _loopSnapB64 = _loopSnap && _loopSnap.includes(',')
+          ? _loopSnap.split(',')[1]
+          : _loopSnap;
+        const _allLoopParts = _loopSnapB64
+          ? [{ inlineData: { mimeType: 'image/jpeg', data: _loopSnapB64 } }, ..._syntheticParts]
           : _syntheticParts;
 
         // Record the block so the post-execution tracker stays consistent
@@ -13748,17 +13873,53 @@ async function runAgentTask(prompt, thread) {
       }
     }
 
-    // ── PARALLEL execution of all CDP calls ───────────────────────────────────
-    const settledResults = await Promise.allSettled(
-      executableCalls.map(part =>
-        chrome.runtime.sendMessage({
-          action: 'agentExecute',
-          tabId: tab.id,
-          executeAction: part.functionCall.name,
-          params: part.functionCall.args || {}
-        }).catch(e => ({ success: false, error: e.message }))
-      )
-    );
+    // ── Execution: parallel ONLY when every call is read-only ─────────────────
+    // This used to be an unconditional Promise.allSettled, firing every call in
+    // the turn simultaneously. A dependent pair like
+    //   click("Untitled document") + type("Sonnet")
+    // therefore raced instead of running in order: the click failed to find the
+    // title box, the type ran anyway with nothing focused, and "Sonnet" landed
+    // in the document body on top of the sonnet that had just been written
+    // there — destroying it. Read-only inspection calls can still run together
+    // (that's the legitimate speed win); anything that touches page state runs
+    // in order and stops the moment one fails.
+    const READ_ONLY_ACTIONS = new Set([
+      'snapshotPage', 'readText', 'readDocContent', 'findElement', 'getComputedStyle',
+      'getCookies', 'readStorage', 'readDOMStorage', 'readIndexedDB', 'readCache',
+      'getPerformance', 'auditPage', 'getEventListeners', 'readBrowserLog',
+      'getSecurityInfo', 'listTargets', 'getSystemInfo', 'getAnimations',
+      'getMemoryInfo', 'trackWebVitals', 'getPreloadRules', 'getPWAInfo',
+      'getCDPSchema', 'inspectMedia', 'getFileSystem', 'getLayerTree',
+      'getFedCmInfo', 'highlightElement', 'readNetworkResponse', 'captureConsole',
+      'readBackgroundEvents', 'inspectWebAudio'
+    ]);
+
+    const _runOne = (part) => chrome.runtime.sendMessage({
+      action: 'agentExecute',
+      tabId: tab.id,
+      executeAction: part.functionCall.name,
+      params: part.functionCall.args || {}
+    }).catch(e => ({ success: false, error: e.message }));
+
+    const _allReadOnly = executableCalls.every(p => READ_ONLY_ACTIONS.has(p.functionCall.name));
+
+    let settledResults;
+    if (executableCalls.length <= 1 || _allReadOnly) {
+      settledResults = await Promise.allSettled(executableCalls.map(_runOne));
+    } else {
+      settledResults = [];
+      let _chainBroken = false;
+      for (const part of executableCalls) {
+        if (_chainBroken) {
+          settledResults.push({ status: 'fulfilled', value: { success: false,
+            error: 'SKIPPED — an earlier action in this same turn failed, so this one was not run (it most likely depended on that action succeeding). Check the page as it is now, then issue this step again on its own.' } });
+          continue;
+        }
+        const value = await _runOne(part);
+        settledResults.push({ status: 'fulfilled', value });
+        if (!value || value.success !== true) _chainBroken = true;
+      }
+    }
 
     // ── Process results + self-healing ────────────────────────────────────────
     let anyFailed = false;
@@ -16991,6 +17152,9 @@ function addBubbleActions(bubble, text) {
       try { ttsSession.controller.abort(); } catch (e) {}
       if (ttsSession.audio) { try { ttsSession.audio.pause(); } catch (e) {} }
       ttsSession.urls.forEach(u => { try { URL.revokeObjectURL(u); } catch (e) {} });
+      // Drop out of the global stopper registry — this bubble is no longer
+      // playing, and leaving it registered would leak one closure per message.
+      if (ttsSession.unregister) { try { ttsSession.unregister(); } catch (e) {} }
       ttsSession = null;
     }
     synth.cancel();
@@ -17173,6 +17337,11 @@ function addBubbleActions(bubble, text) {
     // always maps to Stop, never a concurrent second read.
     const session = { stopped: false, controller: new AbortController(), audio: null, urls: [], workingModel: null };
     ttsSession = session;
+
+    // Silence the Autopilot voice and any other bubble that is mid-read, then
+    // join the registry so they can silence us in turn.
+    stopOtherAudio(stopTts);
+    session.unregister = registerAudioStopper(stopTts);
 
     const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
     if (session.stopped) return; // user hit Stop during key fetch
