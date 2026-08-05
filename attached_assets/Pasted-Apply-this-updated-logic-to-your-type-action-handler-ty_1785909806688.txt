@@ -1,0 +1,84 @@
+Apply this updated logic to your type action handler (typically in background.js or your CDP controller). This ensures that every time the agent types, the NotebookLM "Insert" button wakes up.
+
+Updated type Action (CDP Implementation)
+// Inside your background.js agentExecute 'type' handler:
+
+// 1. Perform the actual text insertion via CDP
+await send('Input.insertText', { text });
+
+// 2. IMMEDIATELY follow up with a Force-Sync Script
+await send('Runtime.evaluate', {
+  expression: `(function() {
+    // Find the element that was just typed into, even in Shadow DOM
+    let el = document.activeElement;
+    while (el && el.shadowRoot && el.shadowRoot.activeElement) {
+      el = el.shadowRoot.activeElement;
+    }
+
+    if (el) {
+      const events = ['input', 'change', 'blur'];
+      events.forEach(type => {
+        // Dispatch to the element itself
+        el.dispatchEvent(new Event(type, { 
+          bubbles: true, 
+          composed: true, // Crucial: allows event to cross Shadow DOM boundary
+          cancelable: true 
+        }));
+        
+        // If there is a shadow host, dispatch to it as well
+        const host = el.getRootNode().host;
+        if (host) {
+          host.dispatchEvent(new Event(type, { 
+            bubbles: true, 
+            composed: true, 
+            cancelable: true 
+          }));
+        }
+      });
+      return true;
+    }
+    return false;
+  })()`,
+  returnByValue: true
+});
+Updated fastInject for ai-chat.js / content.js
+If you are using a content-script based injection for the URLs, use this version:
+
+async function fastInject(value) {
+  const input = document.querySelector('input[type="url"]') || 
+                document.querySelector('textarea') || 
+                document.activeElement;
+                
+  if (input) {
+    input.focus();
+    input.value = value;
+
+    // Trigger the framework state update
+    const eventConfig = { bubbles: true, composed: true, cancelable: true };
+    input.dispatchEvent(new InputEvent('input', eventConfig));
+    input.dispatchEvent(new Event('change', eventConfig));
+    
+    // Pierce back up to the Shadow Host if applicable
+    const host = input.getRootNode().host;
+    if (host) {
+      host.dispatchEvent(new InputEvent('input', eventConfig));
+      host.dispatchEvent(new Event('change', eventConfig));
+    }
+    
+    console.log("State sync forced for NotebookLM.");
+    return true;
+  }
+  return false;
+}
+Why this solves the "Double Talk" & "Navigation" issues:
+Navigation: By forcing the state sync, the "Insert" button becomes active. The agent can then click it and move to the next page without getting stuck in a loop.
+Double Talk: Since the agent is no longer "stuck" trying to click a disabled button, it won't trigger repeated "I'm trying to click..." verbal status updates, which was a secondary cause of the overlapping audio.
+Sources
+Google Lit Documentation: Event Bubbling and Shadow DOM [1]
+Angular Guide: Manual Change Detection and Synthetic Events [2]
+Chrome DevTools Protocol: Input.insertText Specifications [3]
+W3C UI Events: The Composed Property in Shadow DOM [4]
+📋 Copy
+🔊 Read
+▾
+✨ Magic Card
