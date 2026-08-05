@@ -11793,6 +11793,14 @@ You are never alone. The user is watching and can help you instantly. Follow thi
   ✅ ALWAYS: treat the user as your partner — they can do things you can't, and that's perfectly fine
   ✅ ALWAYS: speak warm and friendly, like asking a colleague for help — never clinical or apologetic
 
+### 🔢 EXACT QUANTITIES — NEVER CUT SHORT
+When the user asks for a specific number of items (e.g. "find 10 videos", "add 5 sources", "generate 3 slides"), treat that number as a hard contract:
+  - Count every item as you complete it. Keep an internal tally.
+  - Do NOT stop until you have reached the exact count the user requested.
+  - If you finish a batch and the count is short, immediately loop back and continue gathering more.
+  - When the full count is reached, announce it clearly: e.g. "I've added all 10 videos — done!"
+  - Never round down silently. "Close enough" is not acceptable. 1 video when asked for 10 is a failure.
+
 ### CRITICAL OPERATING PROCEDURES — READ FIRST, ALWAYS:
 1. **STAY ON TASK TAB.** Do NOT navigate away from the tab you started on unless the user explicitly says to switchTab. If you find yourself on a New Tab or wrong page, call navigate() back to the original URL immediately.
 
@@ -13002,6 +13010,45 @@ async function runAgentTask(prompt, thread) {
     return;
   }
 
+  // ── Persistent STOP overlay on the target page ─────────────────────────────
+  // The extension popup can shrink to mini-mode or be hard to reach mid-task.
+  // This injects a always-visible STOP button directly onto the page being
+  // controlled, so the user can halt the agent instantly at any time.
+  const _injectStopOverlay = () => chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => {
+      if (document.getElementById('__aion_stop__')) return; // already injected
+      const btn = document.createElement('button');
+      btn.id = '__aion_stop__';
+      btn.textContent = '⏹ Stop AION';
+      btn.style.cssText = [
+        'position:fixed', 'top:14px', 'right:14px', 'z-index:2147483647',
+        'background:rgba(220,38,38,0.92)', 'color:#fff',
+        'border:none', 'border-radius:24px',
+        'padding:10px 20px', 'font:700 13px/1 system-ui,sans-serif',
+        'cursor:pointer', 'box-shadow:0 4px 20px rgba(0,0,0,0.4)',
+        'backdrop-filter:blur(6px)', 'letter-spacing:0.02em',
+        'transition:transform 0.15s,box-shadow 0.15s'
+      ].join(';');
+      btn.onmouseenter = () => { btn.style.transform = 'scale(1.07)'; btn.style.boxShadow = '0 6px 24px rgba(0,0,0,0.5)'; };
+      btn.onmouseleave = () => { btn.style.transform = ''; btn.style.boxShadow = '0 4px 20px rgba(0,0,0,0.4)'; };
+      btn.onclick = () => {
+        chrome.storage.session.set({ agentStopRequested: true });
+        btn.textContent = '✓ Stopping…';
+        btn.style.background = 'rgba(100,100,100,0.85)';
+        btn.style.cursor = 'default';
+      };
+      document.body.appendChild(btn);
+    }
+  }).catch(() => {});
+
+  const _removeStopOverlay = () => chrome.scripting.executeScript({
+    target: { tabId: tab.id },
+    func: () => document.getElementById('__aion_stop__')?.remove()
+  }).catch(() => {});
+
+  _injectStopOverlay();
+
   // ── Session Anchor ─────────────────────────────────────────────────────────
   // Lock the agent to the tab it started on. Without this the agent follows
   // the user's mouse — if the user switches tabs the next action fires on the
@@ -13073,7 +13120,7 @@ async function runAgentTask(prompt, thread) {
       || agentStopRequested
       || activeAgentController.signal.aborted
       || planErr.message === 'Failed to fetch';
-    if (isAbort) { stopBtn.remove(); exitAutopilotMiniMode(); return; }
+    if (isAbort) { stopBtn.remove(); _removeStopOverlay(); exitAutopilotMiniMode(); return; }
     // Plan generation failed for a real reason — fall through without a plan
     console.warn('[Aion] generateAgentPlan failed (non-fatal):', planErr.message);
   }
@@ -13847,20 +13894,29 @@ async function runAgentTask(prompt, thread) {
       break;
     }
 
-    // Hard stop: 5 consecutive failures = genuinely stuck
-    // (raised from 3 — gives agent more room to try alternative approaches)
-    if (consecutiveFailures >= 5) {
-      addAgentStepBubble(thread,
-        `Stuck after ${consecutiveFailures} failed steps in a row. Try using highlightElement to confirm the target, coordinate-based click, or a different selector strategy.`,
-        'error');
-      // Persist a lesson so the next run on this domain starts aware of the dead end
+    // Two-strike rule: 2 consecutive failures = ask the user immediately,
+    // don't burn more steps looping on the same broken action.
+    if (consecutiveFailures >= 2) {
+      // Persist a lesson so the next run on this domain remembers the dead end
       const stuckCall = executableCalls[0]?.functionCall;
       if (stuckCall) {
         const stuckDesc = stuckCall.args?.text || stuckCall.args?.selector || stuckCall.args?.description || '';
         await addAgentMemoryNote(hostnameOf(tab.url || ''),
-          `"${stuckCall.name}"${stuckDesc ? ` targeting "${stuckDesc}"` : ''} repeatedly failed here — try snapshotPage or a different approach before retrying it directly.`);
+          `"${stuckCall.name}"${stuckDesc ? ` targeting "${stuckDesc}"` : ''} repeatedly failed here — try snapshotPage or a different approach before retrying it directly.`).catch(() => {});
       }
-      break;
+      // Build a user-friendly message — no technical jargon
+      const stuckTarget = stuckCall?.args?.text || stuckCall?.args?.description || stuckCall?.args?.selector || 'that element';
+      const nameTag = _agentUserName ? `, ${_agentUserName}` : '';
+      const verbalMsg = `Hey${nameTag}! I've tried twice and I'm having trouble with "${stuckTarget}". Could you do this step for me? I'll carry on the moment you're done.`;
+      const cardMsg   = `I tried twice but couldn't interact with "${stuckTarget}". Could you do this one step for me? Click the button or fill in the field, then press Continue and I'll take it from there.`;
+      agentSpeak(verbalMsg);
+      exitAutopilotMiniMode().catch(() => {});
+      try {
+        await awaitUserInterventionClean(thread, verbalMsg, cardMsg, activeAgentController.signal);
+        consecutiveFailures = 0; // user helped — reset and continue
+      } catch (_interventionAborted) {
+        break; // agent was stopped while waiting
+      }
     }
 
     // Wait for navigation / DOM settle, then enforce the Session Anchor
@@ -14075,6 +14131,7 @@ async function runAgentTask(prompt, thread) {
   }
 
   stopBtn.remove();
+  _removeStopOverlay();
   exitAutopilotMiniMode();
   scheduleChatHistorySave();
 }

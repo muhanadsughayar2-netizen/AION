@@ -1647,21 +1647,22 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               await send('Input.insertText', { text });
 
               // Step 4: fire framework synthetic events so React/Vue/Angular see the change.
-              // Without this ChatGPT's send button stays disabled after insertText.
-              await chrome.scripting.executeScript({
-                target: { tabId },
-                func: (sels) => {
-                  for (const sel of sels) {
-                    const el = document.querySelector(sel);
-                    if (el) {
-                      el.dispatchEvent(new InputEvent('input',  { bubbles: true, cancelable: true }));
-                      el.dispatchEvent(new Event('change', { bubbles: true }));
-                      return true;
-                    }
-                  }
-                  return false;
-                },
-                args: [cbSels]
+              // Uses Runtime.evaluate + deep shadow activeElement traversal + composed:true
+              // so events cross shadow boundaries and reach Lit/Angular host listeners.
+              await send('Runtime.evaluate', {
+                expression: `(function() {
+                  let el = document.activeElement;
+                  while (el && el.shadowRoot && el.shadowRoot.activeElement) { el = el.shadowRoot.activeElement; }
+                  if (!el) return false;
+                  const cfg = { bubbles: true, composed: true, cancelable: true };
+                  ['input', 'change', 'blur'].forEach(t => {
+                    el.dispatchEvent(new Event(t, cfg));
+                    const host = el.getRootNode && el.getRootNode().host;
+                    if (host) host.dispatchEvent(new Event(t, cfg));
+                  });
+                  return true;
+                })()`,
+                returnByValue: true
               }).catch(() => {});
 
               // Step 5: verify text appeared; auto-retry once via coordinate click
@@ -2272,12 +2273,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }).catch(() => {});
                 await new Promise(r => setTimeout(r, 150));
                 await send('Input.insertText', { text });
+                // Word Online / Office: blur+focus toggle wakes the auto-save state
+                // machine and triggers framework change-detection listeners.
+                await send('Runtime.evaluate', {
+                  expression: `(function() {
+                    let el = document.activeElement;
+                    while (el && el.shadowRoot && el.shadowRoot.activeElement) { el = el.shadowRoot.activeElement; }
+                    if (!el) return false;
+                    const cfg = { bubbles: true, composed: true, cancelable: true };
+                    ['input', 'change'].forEach(t => el.dispatchEvent(new Event(t, cfg)));
+                    el.blur(); el.focus();
+                    return true;
+                  })()`,
+                  returnByValue: true
+                }).catch(() => {});
               } else {
                 // Generic canvas / unknown app — CDP coordinate click then char-by-char
                 await send('Input.dispatchMouseEvent', { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 });
                 await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x, y, button: 'left', buttons: 1, clickCount: 1 });
                 await new Promise(r => setTimeout(r, 200));
                 await typeChars(text);
+                // Generic fallback: also force framework sync after char-by-char typing
+                await send('Runtime.evaluate', {
+                  expression: `(function() {
+                    let el = document.activeElement;
+                    while (el && el.shadowRoot && el.shadowRoot.activeElement) { el = el.shadowRoot.activeElement; }
+                    if (!el) return false;
+                    const cfg = { bubbles: true, composed: true, cancelable: true };
+                    ['input', 'change'].forEach(t => el.dispatchEvent(new Event(t, cfg)));
+                    return true;
+                  })()`,
+                  returnByValue: true
+                }).catch(() => {});
               }
             }
 
