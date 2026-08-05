@@ -908,12 +908,18 @@ const _agentVoice = { audio: null, controller: null };
 // Net result: audio starts in ~0ms, transitions to the nice paid voice when ready.
 // ============================================================================
 let activeUtterance = null;
+// Monotonic generation counter — incremented on every agentSpeak() call.
+// Every async IIFE captures its own snapshot; if the counter advances
+// before the IIFE reaches playback, that IIFE exits silently.
+// This is the only reliable fix for the double-speak race: the AbortController
+// stops future *fetches* but cannot un-play audio that has already loaded.
+let _agentSpeakGen = 0;
 
 function agentSpeak(text) {
   // 1. Stop anything already playing (including any stale browser TTS)
   if (window.speechSynthesis) window.speechSynthesis.cancel();
   if (_agentVoice.audio) {
-    try { _agentVoice.audio.pause(); } catch (_) {}
+    try { _agentVoice.audio.pause(); _agentVoice.audio.src = ''; } catch (_) {}
     _agentVoice.audio = null;
   }
   if (_agentVoice.controller) {
@@ -921,7 +927,11 @@ function agentSpeak(text) {
     _agentVoice.controller = null;
   }
 
-  // 2. Clean markdown out of the text
+  // 2. Advance generation — any IIFE from a previous call that is still
+  //    awaiting a fetch or storage read will see its gen is stale and exit.
+  const myGen = ++_agentSpeakGen;
+
+  // 3. Clean markdown out of the text
   const cleanSpeechText = text
     .replace(/```[\s\S]*?```/g, 'code block')
     .replace(/[#*_~`>|]/g, '')
@@ -932,7 +942,7 @@ function agentSpeak(text) {
 
   if (!cleanSpeechText) return;
 
-  // 3. Chunked Gemini-only TTS (Aoede voice — no browser TTS bridge)
+  // 4. Chunked Gemini-only TTS (Aoede voice — no browser TTS bridge)
   // Split text into sentence-boundary chunks (~280 chars each). Chunk 0 is
   // sent to Gemini immediately; chunk 1 is prefetched while chunk 0 plays.
   // This achieves the same ~1-2s start time as the old browser TTS but with
@@ -940,6 +950,8 @@ function agentSpeak(text) {
   (async () => {
     let apiKey = '';
     try { const r = await chrome.storage.sync.get(['geminiApiKey']); apiKey = r.geminiApiKey || ''; } catch (_) {}
+    // Bail if a newer agentSpeak() fired while we were awaiting storage
+    if (_agentSpeakGen !== myGen) return;
     // No personal API key — fall back to browser TTS so free-tier users still
     // hear the Autopilot speak (previously this returned silently with nothing).
     if (!apiKey) { speakFallback(cleanSpeechText); return; }
@@ -961,7 +973,7 @@ function agentSpeak(text) {
     const fetchChunk = async (chunk) => {
       const models = [MODELS.ttsPrimary, MODELS.ttsFallback];
       for (const model of models) {
-        if (controller.signal.aborted) return null;
+        if (controller.signal.aborted || _agentSpeakGen !== myGen) return null;
         try {
           const resp = await fetch(
             `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
@@ -978,7 +990,12 @@ function agentSpeak(text) {
             }
           );
           if (!resp.ok) continue;
+          // Final staleness check after the network round-trip — this is the
+          // critical guard that prevents a completed fetch from older call
+          // from reaching the audio player after a newer call has taken over.
+          if (_agentSpeakGen !== myGen) return null;
           const data = await resp.json();
+          if (_agentSpeakGen !== myGen) return null;
           const part = data?.candidates?.[0]?.content?.parts?.[0]?.inlineData;
           if (!part?.data) continue;
           const mimeType = (part.mimeType || '').toLowerCase();
@@ -1010,13 +1027,16 @@ function agentSpeak(text) {
 
     // Play queue: start chunk 0 as soon as it arrives, prefetch next while playing
     for (let i = 0; i < chunks.length; i++) {
-      if (controller.signal.aborted) break;
+      if (controller.signal.aborted || _agentSpeakGen !== myGen) break;
       // Kick off next chunk's fetch while we wait for current
       if (i + 1 < chunks.length && !prefetched[i + 1]) {
         prefetched[i + 1] = fetchChunk(chunks[i + 1]);
       }
       const url = await (prefetched[i] || fetchChunk(chunks[i]));
-      if (!url || controller.signal.aborted) continue;
+      if (!url || controller.signal.aborted || _agentSpeakGen !== myGen) {
+        if (url) try { URL.revokeObjectURL(url); } catch (_) {}
+        continue;
+      }
       await new Promise(resolve => {
         const audio = new Audio(url);
         _agentVoice.audio = audio;
@@ -1024,9 +1044,11 @@ function agentSpeak(text) {
         audio.onerror  = () => { try { URL.revokeObjectURL(url); } catch (_) {} _agentVoice.audio = null; resolve(); };
         audio.play().catch(resolve);
       });
+      // After playing, check again — the next chunk belongs to this gen only
+      if (_agentSpeakGen !== myGen) break;
     }
 
-    _agentVoice.controller = null;
+    if (_agentSpeakGen === myGen) _agentVoice.controller = null;
   })();
 }
 
@@ -12266,18 +12288,28 @@ function awaitUserInterventionClean(thread, verbalRequest, expectedOutcome, abor
       .replace(/\b(shadow DOM|AX tree|DOM search|accessibility tree|xpath|CSS selector|aria-label|element not found)\b/gi, '')
       .replace(/\s{2,}/g, ' ').trim();
 
-    const _namePrefix = _agentUserName ? `${_agentUserName}, ` : '';
-    const _nameSuffix = _agentUserName ? ` — thanks ${_agentUserName}! 🙏` : ' 🙏';
+    const _n = _agentUserName || '';
+    // Rotate through playful "I need your magic hands" openers
+    const _funnyLines = [
+      `I'm basically a very enthusiastic semi-bot — I can do SO much, but I still need your magic hands for this one! 🪄`,
+      `Okay, real talk${_n ? ' ' + _n : ''} — I'm incredibly capable but I am NOT able to physically reach through the screen. Yet. 😅`,
+      `Plot twist: the most powerful AI in your browser needs a human for 10 seconds. That human is you. You're the chosen one. 🧙`,
+      `I've automated 47 steps and this is the one that requires actual fingers. Yours. Right now. Let's go! 👆`,
+      `This is our teamwork moment${_n ? ', ' + _n : ''}! You do this one thing, I do everything else. Deal? 🤝`,
+    ];
+    const _funnyLine = _funnyLines[Math.floor(Date.now() / 1000) % _funnyLines.length];
+    const _nameSuffix = _n ? ` — you're the best, ${_n}! 🙌` : ' 🙌';
     card.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#fbbf24;margin-bottom:8px;font-size:13.5px;">
-        🙋 Hey${_agentUserName ? ' ' + _agentUserName : ''}! I need your help for a second
+        🪄 I need your magic hands${_n ? ', ' + _n : ''}!
       </div>
+      <p style="font-size:12.5px;color:rgba(251,191,36,0.8);margin:0 0 8px;line-height:1.5;font-style:italic">${_funnyLine}</p>
       <p style="font-size:13px;line-height:1.6;margin:0 0 12px;color:#f1f5f9">${cleanMsg}</p>
-      ${expectedOutcome ? `<p style="font-size:11.5px;color:rgba(251,191,36,0.7);margin:0 0 12px;line-height:1.5">✅ Once you've done it: ${expectedOutcome}</p>` : ''}
-      <p style="font-size:12px;color:rgba(251,191,36,0.55);margin:0 0 12px">Just click the button below when you're ready and I'll jump straight back in${_nameSuffix}</p>
+      ${expectedOutcome ? `<p style="font-size:11.5px;color:rgba(251,191,36,0.7);margin:0 0 12px;line-height:1.5">✅ When done: ${expectedOutcome}</p>` : ''}
+      <p style="font-size:12px;color:rgba(251,191,36,0.50);margin:0 0 12px">Hit the button when you're done and I'll jump right back in${_nameSuffix}</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="intv-done-btn" style="flex:1;padding:10px 16px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;min-width:140px;">✓ Done! Keep going →</button>
-        <button class="intv-speak-btn" style="padding:10px 12px;background:rgba(251,191,36,0.10);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);border-radius:10px;font-size:12px;cursor:pointer;">🔊 Hear again</button>
+        <button class="intv-done-btn" style="flex:1;padding:10px 16px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;min-width:140px;">✓ Done! Let's keep going →</button>
+        <button class="intv-speak-btn" style="padding:10px 12px;background:rgba(251,191,36,0.10);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);border-radius:10px;font-size:12px;cursor:pointer;">🔊 Say it again</button>
       </div>`;
 
     thread.appendChild(card);
@@ -12594,7 +12626,8 @@ async function awaitSourcesStep(thread, tools, originalPrompt) {
       if (r?.agentStopRequested) reject(new Error('Task stopped by user'));
     }).catch(() => {});
     const toolLabel = tools.join(' + ');
-    agentSpeak(`Awesome! I'll create ${toolLabel} for you. Do you have source material to add, or should I find sources on the web?`);
+    const _firstName = _agentUserName ? ` ${_agentUserName}` : '';
+    agentSpeak(`Okay${_firstName}! Before we dive in — what's the topic? Just tell me and I'll go grab YouTube videos and web links for you. No empty notebooks, ever! 🎬`);
 
     // Load previously saved sources so the user doesn't have to retype them
     const { notebookSources: savedSources = '' } = await chrome.storage.local.get(['notebookSources']);
@@ -12618,39 +12651,41 @@ async function awaitSourcesStep(thread, tools, originalPrompt) {
     ].join(';');
 
     card.innerHTML = `
-      <div style="font-size:14px;font-weight:700;color:#6ee7b7;margin-bottom:8px">
-        ✅ Great choices! I'll create: <span style="color:#a5b4fc">${toolLabel}</span>
+      <div style="font-size:14px;font-weight:700;color:#6ee7b7;margin-bottom:4px">
+        🎉 Let's build: <span style="color:#a5b4fc">${toolLabel}</span>
       </div>
-      <div style="font-size:13px;color:rgba(226,232,240,0.85);margin-bottom:12px;line-height:1.6">
-        Now — do you have source material for me to work from? You can paste website links, a Google Doc URL, or describe a topic and I'll search for sources.
+      <div style="font-size:13px;color:rgba(226,232,240,0.85);margin-bottom:10px;line-height:1.6">
+        <strong style="color:#fbbf24">Rule #1:</strong> No empty notebooks! I need sources before I can create anything good. 🍳<br>
+        What's the topic? I'll go hunt down YouTube videos and web articles for you — or paste your own links below.
       </div>
       ${savedBlock}
-      <textarea class="sources-input" rows="3"
-        placeholder="Paste URLs (one per line), describe a topic, or leave blank and I'll find sources…"
+      <textarea class="sources-input" rows="2"
+        placeholder="Type a topic (e.g. 'quantum computing for beginners') or paste URLs one per line…"
         style="width:100%;box-sizing:border-box;padding:9px 11px;border-radius:9px;
                border:1px solid rgba(99,102,241,0.3);background:rgba(20,20,35,0.8);
                color:#e2e8f0;font-size:12.5px;resize:vertical;font-family:inherit;
                margin-bottom:10px;"></textarea>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        <button class="sources-confirm-btn" style="flex:1;padding:9px 12px;border-radius:10px;
-          background:rgba(99,102,241,0.28);border:1px solid rgba(99,102,241,0.45);
-          color:#a5b4fc;font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;min-width:160px">
-          ✓ Use these sources &amp; build
+        <button class="sources-youtube-btn" style="flex:1 1 100%;padding:11px 14px;border-radius:10px;
+          background:linear-gradient(135deg,rgba(239,68,68,0.28),rgba(220,38,38,0.18));
+          border:1px solid rgba(239,68,68,0.5);
+          color:#fca5a5;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;min-width:160px">
+          🎬 Find YouTube videos &amp; web links for me!
         </button>
-        <button class="sources-find-btn" style="flex:1;padding:9px 12px;border-radius:10px;
-          background:rgba(30,30,50,0.5);border:1px solid rgba(255,255,255,0.12);
-          color:rgba(148,163,184,0.9);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;min-width:160px">
-          🔍 Find sources yourself
+        <button class="sources-confirm-btn" style="flex:1;padding:9px 12px;border-radius:10px;
+          background:rgba(99,102,241,0.22);border:1px solid rgba(99,102,241,0.40);
+          color:#a5b4fc;font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s;min-width:140px">
+          ✓ I have my own links
         </button>
         <button class="sources-manual-btn" style="flex:1;padding:9px 12px;border-radius:10px;
           background:rgba(30,30,50,0.5);border:1px solid rgba(255,255,255,0.12);
-          color:rgba(148,163,184,0.9);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;min-width:160px">
-          📁 I'll add them in NotebookLM
+          color:rgba(148,163,184,0.9);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s;min-width:140px">
+          📁 I'll add in NotebookLM
         </button>
         <button class="sources-file-btn" style="flex:1;padding:9px 12px;border-radius:10px;
           background:rgba(30,30,50,0.5);border:1px solid rgba(255,255,255,0.12);
-          color:rgba(148,163,184,0.9);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;min-width:160px">
-          📤 I have a file to upload
+          color:rgba(148,163,184,0.9);font-size:12.5px;font-weight:600;cursor:pointer;transition:all .2s;min-width:140px">
+          📤 I have a file
         </button>
       </div>`;
 
@@ -12690,24 +12725,43 @@ async function awaitSourcesStep(thread, tools, originalPrompt) {
       if (ta) { ta.value = savedSources; ta.focus(); }
     });
 
+    // ── 🎬 YouTube / web hunt ─────────────────────────────────────────────────
+    card.querySelector('.sources-youtube-btn').addEventListener('click', () => {
+      const topic = card.querySelector('.sources-input').value.trim();
+      if (!topic) {
+        // Nudge — need a topic first
+        const ta = card.querySelector('.sources-input');
+        ta.style.borderColor = 'rgba(239,68,68,0.6)';
+        ta.placeholder = '← type your topic here first! e.g. "AI and the future of work"';
+        ta.focus();
+        agentSpeak(`Hey${_firstName}! Just type the topic in the box first and then I'll go hunting! 🕵️`);
+        return;
+      }
+      if (topic) chrome.storage.local.set({ notebookSources: topic }).catch(() => {});
+      agentSpeak(`On it${_firstName}! I'm going to search YouTube and the web for the best "${topic}" content. Sit tight — this is the fun part! 🚀`);
+      done(topic, 'youtube', 'sources-youtube-btn');
+    });
+
     card.querySelector('.sources-confirm-btn').addEventListener('click', () => {
       const sources = card.querySelector('.sources-input').value.trim();
-      // Blank textarea + "use these sources" = there are no sources to use —
-      // fall through to "find" so the agent always gets one explicit mode.
       if (sources) {
-        // Persist so user doesn't have to retype next time
         chrome.storage.local.set({ notebookSources: sources }).catch(() => {});
         done(sources, 'provided', 'sources-confirm-btn');
-      } else done('', 'find', 'sources-confirm-btn');
-    });
-    card.querySelector('.sources-find-btn').addEventListener('click', () => {
-      done('', 'find', 'sources-find-btn');
+      } else {
+        // No links typed — nudge to use YouTube instead
+        const ta = card.querySelector('.sources-input');
+        ta.style.borderColor = 'rgba(239,68,68,0.6)';
+        ta.placeholder = '← paste some URLs or a topic, or hit the YouTube button above!';
+        ta.focus();
+        agentSpeak(`Hey${_firstName}, the box is empty! Type a topic or paste some links — or just hit the YouTube button and I'll find everything for you! 🎬`);
+      }
     });
     card.querySelector('.sources-manual-btn').addEventListener('click', () => {
+      agentSpeak(`Got it${_firstName}! I'll create the notebook and wait for you to add your sources inside. Just click Continue when they're all loaded! 📁`);
       done('', 'manual', 'sources-manual-btn');
     });
     card.querySelector('.sources-file-btn').addEventListener('click', () => {
-      agentSpeak("No problem! I'll open NotebookLM, create your notebook, and then ask you to upload your file directly inside — that way there's no size limit!");
+      agentSpeak(`No worries${_firstName}! I'll create the notebook and wave at you when it's time to drop in your file. No size limits that way! 📤`);
       done('', 'file', 'sources-file-btn');
     });
   });
@@ -12963,10 +13017,20 @@ async function runAgentTask(prompt, thread) {
         : '';
 
       let sourcesBlock = '';
-      if (sourcesResult.mode === 'provided' && sourcesResult.sources) {
-        sourcesBlock = ` User-provided source material (add these as sources in NotebookLM before generating): "${sourcesResult.sources}".`;
+      if (sourcesResult.mode === 'youtube') {
+        const ytTopic = sourcesResult.sources || pickerResult.details || prompt.slice(0, 120);
+        sourcesBlock = ` SOURCE GATHERING REQUIRED — do this BEFORE opening NotebookLM:
+1. agentSpeak("I'm on the hunt for the best YouTube videos and web articles on '${ytTopic}'! 🕵️ Give me a moment!")
+2. navigate("https://www.youtube.com/results?search_query=${encodeURIComponent(ytTopic).replace(/%20/g,'+')}") — collect at least 5 real video URLs (youtube.com/watch?v=...) from the results page using snapshotPage(). Pick videos with high views or "explained", "guide", "tutorial", "deep dive" in the title.
+3. navigate("https://www.youtube.com/results?search_query=${encodeURIComponent(ytTopic + ' explained').replace(/%20/g,'+')}") — grab 3–5 more video URLs.
+4. navigate("https://www.google.com/search?q=${encodeURIComponent(ytTopic + ' site:medium.com OR site:wikipedia.org OR site:towardsdatascience.com').replace(/%20/g,'+')}") — grab 3–5 web article URLs from the results.
+5. agentSpeak("Found some great stuff! Let me load it all into your notebook now. 🚀")
+6. NOW open NotebookLM and add ALL gathered YouTube URLs plus web article URLs as sources. Never start with fewer than 5 sources.
+7. agentSpeak once all sources are loaded and confirmed Ready.`;
+      } else if (sourcesResult.mode === 'provided' && sourcesResult.sources) {
+        sourcesBlock = ` User-provided source material (add these as sources in NotebookLM before generating): "${sourcesResult.sources}". If any entry looks like a topic description rather than a URL, search YouTube and the web for it first and add the real links instead.`;
       } else if (sourcesResult.mode === 'find') {
-        sourcesBlock = ` The user has no sources — you must search the web for relevant URLs, then add them as sources in NotebookLM before generating.`;
+        sourcesBlock = ` The user has no sources — search YouTube AND the web for relevant content on the topic, collect at least 5 URLs, then add them as sources in NotebookLM before generating. Do NOT start with an empty notebook.`;
       } else if (sourcesResult.mode === 'file') {
         sourcesBlock = ` The user has a local file to upload. Navigate to NotebookLM, create or open a notebook, then requestUserIntervention("Please click 'Add sources' → 'Upload' in the left panel and upload your file, then click Continue when it shows as Ready."). Wait for at least one source to be Ready before generating.`;
       } else if (sourcesResult.mode === 'manual') {
@@ -13087,6 +13151,7 @@ async function runAgentTask(prompt, thread) {
 
   let consecutiveFailures = 0;
   const actionFailCounts = {}; // key: "actionName:argText" → count
+  let _agentLastFailedCall = null; // tracks the most recently failed call for accurate intervention messages
   let agentPlan = null;        // [{step, done, note}] set by planTask tool
   const recentActions = [];    // loop detection: last 12 "action:arg" strings
 
@@ -13885,7 +13950,16 @@ async function runAgentTask(prompt, thread) {
       });
     }
 
-    if (!anyFailed) consecutiveFailures = 0;
+    if (!anyFailed) {
+      consecutiveFailures = 0;
+    } else {
+      // Track the last-failed call so intervention messages are accurate
+      const _lastFailed = executableCalls.find(c => {
+        const k = `${c.functionCall.name}:${String(c.functionCall.args?.text || c.functionCall.args?.selector || c.functionCall.args?.description || '')}`;
+        return (actionFailCounts[k] || 0) >= 1;
+      });
+      if (_lastFailed) _agentLastFailedCall = _lastFailed.functionCall;
+    }
 
     // 2.4: if all calls were client-side (planTask/checkPlan only) and responseParts
     // ended up empty, there's nothing to push — avoid an empty user turn
@@ -13894,28 +13968,46 @@ async function runAgentTask(prompt, thread) {
       break;
     }
 
-    // Two-strike rule: 2 consecutive failures = ask the user immediately,
-    // don't burn more steps looping on the same broken action.
-    if (consecutiveFailures >= 2) {
+    // Intervention rule: fire when the SAME action+target fails twice in a row,
+    // OR when 3+ different actions all fail consecutively (broadly stuck).
+    // Using the same-action check prevents false positives where the agent
+    // succeeds at step A (e.g. creates a notebook) but step B is still loading —
+    // those are different actions so "twice on the same thing" is never met.
+    const _stuckCall = _agentLastFailedCall;
+    const _stuckKey  = _stuckCall
+      ? `${_stuckCall.name}:${String(_stuckCall.args?.text || _stuckCall.args?.selector || _stuckCall.args?.description || '')}`
+      : '';
+    const _sameActionFailCount = _stuckKey ? (actionFailCounts[_stuckKey] || 0) : 0;
+    const _shouldIntervene = (_sameActionFailCount >= 2) || (consecutiveFailures >= 3);
+
+    if (_shouldIntervene) {
       // Persist a lesson so the next run on this domain remembers the dead end
-      const stuckCall = executableCalls[0]?.functionCall;
-      if (stuckCall) {
-        const stuckDesc = stuckCall.args?.text || stuckCall.args?.selector || stuckCall.args?.description || '';
+      if (_stuckCall) {
+        const stuckDesc = _stuckCall.args?.text || _stuckCall.args?.selector || _stuckCall.args?.description || '';
         await addAgentMemoryNote(hostnameOf(tab.url || ''),
-          `"${stuckCall.name}"${stuckDesc ? ` targeting "${stuckDesc}"` : ''} repeatedly failed here — try snapshotPage or a different approach before retrying it directly.`).catch(() => {});
+          `"${_stuckCall.name}"${stuckDesc ? ` targeting "${stuckDesc}"` : ''} repeatedly failed here — try snapshotPage or a different approach before retrying it directly.`).catch(() => {});
       }
-      // Build a user-friendly message — no technical jargon
-      const stuckTarget = stuckCall?.args?.text || stuckCall?.args?.description || stuckCall?.args?.selector || 'that element';
+      // Build a fun, friendly message describing WHAT specifically failed
+      const stuckTarget = _stuckCall?.args?.text || _stuckCall?.args?.description || _stuckCall?.args?.selector || 'that step';
       const nameTag = _agentUserName ? `, ${_agentUserName}` : '';
-      const verbalMsg = `Hey${nameTag}! I've tried twice and I'm having trouble with "${stuckTarget}". Could you do this step for me? I'll carry on the moment you're done.`;
-      const cardMsg   = `I tried twice but couldn't interact with "${stuckTarget}". Could you do this one step for me? Click the button or fill in the field, then press Continue and I'll take it from there.`;
+      const _stuckFunnyLines = [
+        `I've tried it twice and this step is laughing at me 😂 — I need your magic hands!`,
+        `Okay${nameTag}, I'm going to be honest: this step is outsmarting me. You've got this though!`,
+        `Two attempts, zero luck. I'm a semi-bot and I still need a human for the tricky bits! 🪄`,
+        `I could try a third time… or I could ask the expert (you). I'm going with the expert.`,
+        `Plot twist: the AI needs backup${nameTag}. This is our collab moment! 🤝`,
+      ];
+      const _stuckFunny = _stuckFunnyLines[Math.floor(Date.now() / 1000) % _stuckFunnyLines.length];
+      const verbalMsg = `Hey${nameTag}! ${_stuckFunny} I'm stuck on "${stuckTarget}" — could you do this one step for me?`;
+      const cardMsg   = `${_stuckFunny}\n\nI'm stuck on: "${stuckTarget}"\n\nDo this one step and hit Continue — I'll pick up right where we left off!`;
       agentSpeak(verbalMsg);
       exitAutopilotMiniMode().catch(() => {});
       try {
         await awaitUserInterventionClean(thread, verbalMsg, cardMsg, activeAgentController.signal);
-        consecutiveFailures = 0; // user helped — reset and continue
+        consecutiveFailures = 0;
+        _agentLastFailedCall = null;
       } catch (_interventionAborted) {
-        break; // agent was stopped while waiting
+        break;
       }
     }
 
