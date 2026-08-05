@@ -2129,6 +2129,29 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
               await send('Input.insertText', { text });
 
+              // ── React/Lit/Angular event dispatch (Fix: "Insert button stays grey") ──
+              // NotebookLM is a Lit + Angular app. Input.insertText writes bytes into
+              // the OS input buffer but does NOT fire synthetic framework events.
+              // Without input + change events, the framework's internal state never
+              // updates — the "Insert" / "Generate" button stays disabled and the
+              // agent appears stuck. We fire these events directly on the shadow-DOM
+              // element that was focused, mirroring the fastInject approach.
+              await chrome.scripting.executeScript({
+                target: { tabId },
+                func: () => {
+                  const el = document.activeElement;
+                  if (!el) return;
+                  el.dispatchEvent(new InputEvent('input',  { bubbles: true, cancelable: true, composed: true }));
+                  el.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                  // Also fire on the shadow host in case the framework listens there
+                  const host = el.getRootNode()?.host;
+                  if (host) {
+                    host.dispatchEvent(new InputEvent('input',  { bubbles: true, cancelable: true, composed: true }));
+                    host.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                  }
+                }
+              }).catch(() => {});
+
               // Verify text actually landed — NotebookLM's Shadow DOM focus can
               // silently fail if a modal just opened and focus hasn't settled yet.
               const nlSample = text.slice(0, 20);
@@ -2138,6 +2161,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
                 await new Promise(r => setTimeout(r, 300));
                 await send('Input.insertText', { text });
+                // Fire framework events again after retry insert
+                await chrome.scripting.executeScript({
+                  target: { tabId },
+                  func: () => {
+                    const el = document.activeElement;
+                    if (!el) return;
+                    el.dispatchEvent(new InputEvent('input',  { bubbles: true, cancelable: true, composed: true }));
+                    el.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                    const host = el.getRootNode()?.host;
+                    if (host) {
+                      host.dispatchEvent(new InputEvent('input',  { bubbles: true, cancelable: true, composed: true }));
+                      host.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
+                    }
+                  }
+                }).catch(() => {});
                 if (!(await verifyTextInPage(tabId, nlSample))) {
                   sendResponse({ success: false, error: 'Text did not appear in NotebookLM input after two attempts. The target input may not be open yet — try clicking the button that opens it first.' });
                   return;

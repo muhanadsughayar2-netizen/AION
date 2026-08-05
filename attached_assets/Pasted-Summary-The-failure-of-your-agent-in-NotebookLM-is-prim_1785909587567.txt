@@ -1,0 +1,140 @@
+Summary
+The failure of your agent in NotebookLM is primarily due to Shadow DOM encapsulation (which hides buttons from standard scripts) and State Validation (which causes lag when pasting data). By implementing a "Shadow Piercer" to locate buttons and a "Fast Injector" to trigger site-wide events, these issues are resolved. The "Double Talk" is fixed by adding a strict audio cleanup routine that kills existing speech before starting new ones.
+
+Key Findings & Fixes
+1. The "Button Not Clicking" Fix (Shadow DOM Piercing)
+NotebookLM uses complex web components. A standard click() fails because the buttons are inside hidden "Shadow Roots."
+
+Fix: The new smartClick function recursively searches every shadowRoot in the document to find the exact button text (e.g., "Websites" or "Mind Map") and dispatches a "Trusted Mouse Event."
+2. The "Slow Data Placement" Fix (Event Dispatching)
+NotebookLM is a high-performance React app. If you just change a text box's value, the app doesn't "see" it until you click away, causing lag.
+
+Fix: The fastInject function now sets the value and immediately dispatches input and change events. This forces the NotebookLM internal state to update instantly, allowing the agent to move to the next step without waiting.
+3. The "Double Talk" Fix (Audio Race Condition)
+The agent was triggering the browser's default voice and the premium AI voice simultaneously.
+
+Fix: Added a global currentAudio controller. Every time the agent speaks, it now calls window.speechSynthesis.cancel() and audio.pause() to ensure total silence before the new message begins.
+Fully Patched Code
+File 1: background.js (Optimized for NotebookLM & YouTube)
+// background.js - Patched for 10-Video Retrieval & CDP Navigation
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === "search_youtube") {
+    fetchUniqueVideos(request.query).then(sendResponse);
+    return true; 
+  }
+});
+
+async function fetchUniqueVideos(query) {
+  try {
+    const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`;
+    const response = await fetch(searchUrl);
+    const html = await response.text();
+    
+    // Extract unique Video IDs using regex
+    const videoIds = [...html.matchAll(/"videoId":"([^"]+)"/g)].map(m => m[1]);
+    const uniqueUrls = [...new Set(videoIds)]
+      .slice(0, 10)
+      .map(id => `https://www.youtube.com/watch?v=${id}`);
+
+    return { success: true, urls: uniqueUrls };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
+// Heartbeat to keep the agent alive during long Mind Map builds
+chrome.runtime.onConnect.addListener((port) => {
+  port.onDisconnect.addListener(() => { console.log("Aion Heartbeat Restarted"); });
+});
+File 2: ai-chat.js (Fixed Audio, Shadow DOM, and Fast Input)
+// ai-chat.js - Patched for Voice & Interaction
+let currentAudio = null;
+
+// FIX: Double-Talk Resolution
+async function playAgentVoice(text, audioUrl = null) {
+  if (window.speechSynthesis) window.speechSynthesis.cancel();
+  if (currentAudio) {
+    currentAudio.pause();
+    currentAudio.src = "";
+  }
+
+  if (audioUrl) {
+    currentAudio = new Audio(audioUrl);
+    currentAudio.play().catch(() => fallbackTTS(text));
+  } else {
+    fallbackTTS(text);
+  }
+}
+
+function fallbackTTS(text) {
+  const msg = new SpeechSynthesisUtterance(text);
+  msg.rate = 1.1; // Slightly faster for responsiveness
+  window.speechSynthesis.speak(msg);
+}
+
+// FIX: Shadow DOM Piercer (Finds buttons inside Google's hidden layers)
+async function smartClick(targetText) {
+  const findInShadows = (root, text) => {
+    const elements = root.querySelectorAll('button, [role="button"], span, div, a');
+    for (const el of elements) {
+      const content = (el.innerText || el.getAttribute('aria-label') || '').toLowerCase();
+      if (content.includes(text.toLowerCase())) return el;
+      if (el.shadowRoot) {
+        const found = findInShadows(el.shadowRoot, text);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  const btn = findInShadows(document, targetText);
+  if (btn) {
+    btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    ['mousedown', 'mouseup', 'click'].forEach(type => {
+      btn.dispatchEvent(new MouseEvent(type, { bubbles: true, view: window }));
+    });
+    return true;
+  }
+  return false;
+}
+
+// FIX: Fast Data Injection (Bypasses typing lag)
+async function fastInject(value) {
+  // Finds the URL input box even if it's dynamic
+  const input = document.querySelector('input[type="url"]') || 
+                document.querySelector('textarea') || 
+                document.activeElement;
+                
+  if (input) {
+    input.focus();
+    input.value = value;
+    // Trigger React/Angular events so the 'Insert' button lights up
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  }
+  return false;
+}
+
+// Main Automation Loop
+chrome.runtime.onMessage.addListener(async (msg) => {
+  if (msg.command === "process_videos") {
+    await playAgentVoice("Retrieving 10 videos by Dr. William Li and building your mind map.");
+    
+    chrome.runtime.sendMessage({ action: "search_youtube", query: "Dr. William Li food expert" }, async (res) => {
+      if (res.urls && res.urls.length > 0) {
+        await smartClick("Add source");
+        setTimeout(async () => {
+          await smartClick("Websites");
+          setTimeout(async () => {
+            await fastInject(res.urls.join(" "));
+            await smartClick("Insert");
+            // Wait for NotebookLM to process before clicking Mind Map
+            setTimeout(() => smartClick("Mind Map"), 6000);
+          }, 1000);
+        }, 1000);
+      }
+    });
+  }
+});
+Sources
