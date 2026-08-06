@@ -12049,6 +12049,21 @@ let agentPendingRedirect = null;
 // personalise every spoken message and intervention card.
 let _agentUserName = '';
 
+// When awaitSourcesStep() shows its "what's the topic?" card, it opens its
+// OWN small textarea inside that card — completely separate from the main
+// chat input at the bottom of the screen. Real failure: asked "what's the
+// topic? I'll go hunt down YouTube videos for you", the user naturally typed
+// their topic in the MAIN chat box (the only input they'd been using the
+// whole conversation) instead of the card's own textarea. Nothing was
+// listening for that — the card's promise never resolved from it, so the
+// message fell through to ordinary chat handling instead, and the agent
+// never actually gathered any sources, generating long generic essays about
+// "what is a resource" instead of doing the task, while the user, having
+// been told sources would be found automatically, had no way to know their
+// answer went to the wrong place. This lets handleSend() intercept a normal
+// chat message and redirect it here when a sources-step card is waiting.
+let _pendingSourcesStepInput = null; // { submitTopic(topic) } while awaitSourcesStep is active
+
 async function enterAutopilotMiniMode() {
   if (_autopilotMiniActive) return;
   try {
@@ -12847,6 +12862,7 @@ async function awaitSourcesStep(thread, tools, originalPrompt) {
     const stopListener = (changes, area) => {
       if ((area === 'local' || area === 'session') && changes.agentStopRequested?.newValue) {
         chrome.storage.onChanged.removeListener(stopListener);
+        _pendingSourcesStepInput = null;
         card.innerHTML = `<div style="color:#ff8080;font-size:12px">🚫 Autopilot cancelled.</div>`;
         reject(new Error('Task stopped by user'));
       }
@@ -12855,8 +12871,22 @@ async function awaitSourcesStep(thread, tools, originalPrompt) {
 
     const done = (sources, mode, btnClass) => {
       chrome.storage.onChanged.removeListener(stopListener);
+      _pendingSourcesStepInput = null;
       freeze('', btnClass);
       resolve({ sources, mode });
+    };
+
+    // Register this card as the target for handleSend() to redirect into —
+    // see the comment above _pendingSourcesStepInput's declaration for why.
+    // A topic typed in the MAIN chat box while this card is open is treated
+    // exactly like typing it in the card's textarea and clicking the YouTube
+    // button, since that is what the spoken prompt above actually promised.
+    _pendingSourcesStepInput = {
+      submitTopic(topic) {
+        const ta = card.querySelector('.sources-input');
+        if (ta) ta.value = topic;
+        card.querySelector('.sources-youtube-btn')?.click();
+      }
     };
 
     // "Use saved sources" pre-fills the textarea
@@ -15350,6 +15380,19 @@ async function handleSend() {
   // Allow send if files are attached even with no text typed
   if (!prompt && filesQueue.length === 0) return;
   if (!prompt) prompt = 'Analyze this image.';
+
+  // A NotebookLM sources-gathering card is waiting for a topic and the user
+  // typed it in the main chat box, not the card's own textarea — redirect it
+  // there instead of letting it fall through to ordinary chat/build/agent
+  // routing. See _pendingSourcesStepInput's declaration for the real failure
+  // this fixes: without this, the agent never gathered any sources and
+  // generated unrelated generic essays instead of doing the task.
+  if (_pendingSourcesStepInput) {
+    input.value = '';
+    resetInputSize(input);
+    _pendingSourcesStepInput.submitTopic(prompt);
+    return;
+  }
 
   // Dismiss any pending "Build it" button from the previous AI turn.
   document.querySelectorAll('.build-it-btn').forEach(b => b.remove());
