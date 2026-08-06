@@ -286,6 +286,50 @@
     return a.text || a.description || fallback || 'that step';
   }
 
+  /**
+   * Pull every absolute http(s) URL out of a blob of text. Used to build the
+   * set of URLs the model has actually been SHOWN this task (tool responses,
+   * the INTERACTIVE ELEMENTS list, the user's own prompt), so a later
+   * navigate/openTab can be checked against real, previously-seen links
+   * instead of trusted at face value — see isFabricatedYouTubeUrl.
+   */
+  function extractUrls(text) {
+    const matches = String(text || '').match(/https?:\/\/[^\s"'<>)\]]+/g) || [];
+    return matches.map(u => u.replace(/[.,;:!?]+$/, '')); // strip trailing sentence punctuation
+  }
+
+  /**
+   * Is this a YouTube "watch" URL specifically — the one kind of link that
+   * must never be guessed or constructed, since video IDs are opaque,
+   * unguessable strings with no derivable pattern (unlike, say, a search
+   * URL, which is legitimately built from a query the model already knows).
+   */
+  function isYouTubeWatchUrl(url) {
+    return /^https?:\/\/(www\.)?youtube\.com\/watch\?v=[\w-]{6,}/i.test((url || '').trim());
+  }
+
+  /**
+   * Guard against a fabricated YouTube link.
+   *
+   * Real failure: asked to gather 5 real video links, normal exploration
+   * (findElement, readNetworkResponse) kept failing, and instead of saying
+   * so, the model invented five openTab() calls to URLs it made up on the
+   * spot — "watch?v=Y-Y-Y-Y-Y-Y", "watch?v=Z-Z-Z-Z-Z-Z", "watch?v=W-W-W-W-W-W".
+   * Those particular ones are obviously fake (repeated-letter placeholder
+   * patterns, not real IDs), but even a plausible-LOOKING made-up ID would
+   * be just as wrong and far harder to catch by pattern alone. The only
+   * reliable check is: was this exact URL ever actually shown to the model
+   * by a real tool response (or the user's own prompt) this task? If it
+   * never appeared anywhere, it was never read off a page — it was guessed.
+   *
+   * `seenUrls` is a Set of every URL that has appeared, verbatim, in a tool
+   * response or the user's prompt so far this task.
+   */
+  function isFabricatedYouTubeUrl(url, seenUrls) {
+    if (!isYouTubeWatchUrl(url)) return false;
+    return !(seenUrls && seenUrls.has(String(url || '').trim()));
+  }
+
   const AionLogic = {
     SEARCH_ENGINE_HOSTS,
     READ_ONLY_ACTIONS,
@@ -299,6 +343,9 @@
     hasSearchTarget,
     isTextRepeatedTooOften,
     pickStuckTargetLabel,
+    extractUrls,
+    isYouTubeWatchUrl,
+    isFabricatedYouTubeUrl,
   };
 
   if (typeof module !== 'undefined' && module.exports) {

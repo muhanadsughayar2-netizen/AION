@@ -31,6 +31,9 @@ const {
   hasSearchTarget,
   isTextRepeatedTooOften,
   pickStuckTargetLabel,
+  extractUrls,
+  isYouTubeWatchUrl,
+  isFabricatedYouTubeUrl,
 } = require('../flow-premium/agent-logic-core.js');
 
 // ===========================================================================
@@ -372,5 +375,64 @@ describe('pickStuckTargetLabel', () => {
 
   test('a caller-supplied fallback still loses to real text/description', () => {
     expect(pickStuckTargetLabel({ text: 'Continue' }, 'custom fallback')).toBe('Continue');
+  });
+});
+
+// ===========================================================================
+// extractUrls / isYouTubeWatchUrl / isFabricatedYouTubeUrl — the agent
+// inventing fake YouTube links when real ones were hard to find
+// ===========================================================================
+describe('extractUrls', () => {
+  test('pulls multiple URLs out of a sentence, stripping trailing punctuation', () => {
+    const text = 'Sources: https://www.youtube.com/watch?v=abc123XYZ, and https://example.com/page.';
+    expect(extractUrls(text)).toEqual([
+      'https://www.youtube.com/watch?v=abc123XYZ',
+      'https://example.com/page',
+    ]);
+  });
+
+  test('returns an empty array when there are no URLs', () => {
+    expect(extractUrls('no links here at all')).toEqual([]);
+  });
+
+  test('handles empty/undefined input safely', () => {
+    expect(extractUrls('')).toEqual([]);
+    expect(extractUrls(undefined)).toEqual([]);
+  });
+});
+
+describe('isYouTubeWatchUrl', () => {
+  test('recognises a real watch URL', () => {
+    expect(isYouTubeWatchUrl('https://www.youtube.com/watch?v=B9bDZ5-zPtY')).toBe(true);
+    expect(isYouTubeWatchUrl('https://youtube.com/watch?v=B9bDZ5-zPtY')).toBe(true);
+  });
+
+  test('rejects non-watch YouTube URLs and other sites', () => {
+    expect(isYouTubeWatchUrl('https://www.youtube.com/results?search_query=x')).toBe(false);
+    expect(isYouTubeWatchUrl('https://example.com/watch?v=abc123')).toBe(false);
+    expect(isYouTubeWatchUrl('')).toBe(false);
+  });
+});
+
+describe('isFabricatedYouTubeUrl', () => {
+  test('the exact real failure: obviously placeholder video IDs, never seen anywhere', () => {
+    const seen = new Set(['https://www.youtube.com/watch?v=RealID12345']);
+    expect(isFabricatedYouTubeUrl('https://www.youtube.com/watch?v=Y-Y-Y-Y-Y-Y', seen)).toBe(true);
+    expect(isFabricatedYouTubeUrl('https://www.youtube.com/watch?v=Z-Z-Z-Z-Z-Z', seen)).toBe(true);
+  });
+
+  test('a URL that really was shown earlier this task is never blocked', () => {
+    const seen = new Set(['https://www.youtube.com/watch?v=RealID12345']);
+    expect(isFabricatedYouTubeUrl('https://www.youtube.com/watch?v=RealID12345', seen)).toBe(false);
+  });
+
+  test('non-YouTube-watch URLs are never checked against seenUrls at all', () => {
+    // A constructed search/navigation URL is legitimate even if never "seen" —
+    // only opaque, unguessable video IDs need this guard.
+    expect(isFabricatedYouTubeUrl('https://www.google.com/search?q=anything', new Set())).toBe(false);
+  });
+
+  test('an empty seenUrls set blocks every watch URL, including the very first one', () => {
+    expect(isFabricatedYouTubeUrl('https://www.youtube.com/watch?v=RealID12345', new Set())).toBe(true);
   });
 });

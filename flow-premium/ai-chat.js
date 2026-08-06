@@ -13381,6 +13381,16 @@ async function runAgentTask(prompt, thread) {
                                 // once marked "Read the poem out loud" done via checkPlan
                                 // without ever having called speak, and the user was told
                                 // it had been read aloud when nothing was ever spoken.
+  // Anti-fabrication: every URL the model has actually been shown this task —
+  // a tool response, the INTERACTIVE ELEMENTS list, or the user's own prompt.
+  // Real failure: asked to gather 5 real YouTube links, normal exploration
+  // kept failing, and the model invented openTab() calls to made-up video
+  // IDs ("watch?v=Y-Y-Y-Y-Y-Y") instead of saying it couldn't find real
+  // ones. See isFabricatedYouTubeUrl in agent-logic-core.js. Seeded with the
+  // user's own prompt so a URL they typed themselves is never wrongly
+  // treated as invented.
+  const _seenUrls = new Set(extractUrls(prompt));
+  for (const u of extractUrls(pageText || '')) _seenUrls.add(u);
   let _searchToolRejected = false; // set true if Gemini rejects functionDeclarations
                                 // + googleSearch combined in one request — falls back
                                 // to functionDeclarations-only for the rest of this task
@@ -14133,6 +14143,36 @@ async function runAgentTask(prompt, thread) {
       }
     }
 
+    // ── Anti-fabrication guard ──────────────────────────────────────────────
+    // Real failure: asked to gather 5 real YouTube links, normal exploration
+    // kept failing, and instead of saying so, the model invented openTab()
+    // calls to made-up video IDs ("watch?v=Y-Y-Y-Y-Y-Y") instead of an
+    // honest "I couldn't find them." Blocks BEFORE the fake URL is ever
+    // actually opened — see isFabricatedYouTubeUrl in agent-logic-core.js.
+    const _fabricatedCall = executableCalls.find(p =>
+      (p.functionCall.name === 'navigate' || p.functionCall.name === 'openTab') &&
+      isFabricatedYouTubeUrl(p.functionCall.args?.url, _seenUrls)
+    );
+    if (_fabricatedCall) {
+      const _fakeUrl = _fabricatedCall.functionCall.args?.url || '';
+      addAgentStepBubble(thread,
+        `⛔ Blocked: "${_fakeUrl}" was never actually seen on any page this task — refusing to open a made-up link.`,
+        'error');
+      const _syntheticFabParts = executableCalls.map(p => ({
+        functionResponse: {
+          name: p.functionCall.name,
+          response: {
+            success: false,
+            error: p === _fabricatedCall
+              ? `BLOCKED: "${_fakeUrl}" does not match any URL you have actually been shown by a real tool response this task — it looks invented, not read off a page. Never construct or guess a YouTube video URL. Only ever use one exactly as it appeared in the INTERACTIVE ELEMENTS list (the "→ https://..." part of a link's line) or a tool result. Call snapshotPage on the results page and copy a real URL from there — if none are visible yet, say so honestly instead of guessing one.`
+              : 'SKIPPED — a different action in this same turn was blocked as a fabricated link, so this one was not run. Re-issue it on its own once you have real URLs.'
+          }
+        }
+      }));
+      contents.push({ role: 'user', parts: _syntheticFabParts });
+      continue;
+    }
+
     // ── Execution: parallel ONLY when every call is read-only ─────────────────
     // This used to be an unconditional Promise.allSettled, firing every call in
     // the turn simultaneously. A dependent pair like
@@ -14627,6 +14667,16 @@ async function runAgentTask(prompt, thread) {
     const allResponseParts = clientSideResponses.length > 0
       ? [...clientSideResponses, ...responseParts]
       : responseParts;
+
+    // Anti-fabrication: harvest every real URL just shown to the model
+    // (snapshotPage/buildElementIndex results, navigate results, etc.) so
+    // the guard above can tell a real link from an invented one on the
+    // NEXT turn. See _seenUrls init above and isFabricatedYouTubeUrl.
+    for (const part of allResponseParts) {
+      const respText = JSON.stringify(part?.functionResponse?.response || '');
+      for (const u of extractUrls(respText)) _seenUrls.add(u);
+    }
+
     contents.push({ role: 'user', parts: allResponseParts });
 
     if (step === AGENT_MAX_STEPS - 1) {
