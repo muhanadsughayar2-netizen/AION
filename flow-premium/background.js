@@ -1705,13 +1705,21 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
               // Step 6: submit if requested — Enter key works on all these bots.
               // ChatGPT, Claude, Grok, Perplexity all send on Enter (not Ctrl+Enter).
-              if (params.run) {
+              // The 'type' tool's actual declared parameter is 'pressEnter' (see its
+              // schema in ai-chat.js) — this checked 'params.run' instead, a name
+              // that was never declared in the tool schema and never mentioned
+              // anywhere in the system prompt, so the model had no documented way
+              // to ever set it. 'run' is still accepted too in case anything else
+              // relies on it, but 'pressEnter' — what the model is actually told to
+              // use — now works for real.
+              const _shouldSubmit = params.pressEnter || params.run;
+              if (_shouldSubmit) {
                 await new Promise(r => setTimeout(r, 150));
                 await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
                 await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
               }
 
-              sendResponse({ success: true, data: `Typed into ${mode} (${cbFocus?.found ? 'DOM focus' : 'coordinate fallback'})${params.run ? ' + submitted' : ''}` });
+              sendResponse({ success: true, data: `Typed into ${mode} (${cbFocus?.found ? 'DOM focus' : 'coordinate fallback'})${_shouldSubmit ? ' + submitted' : ''}` });
 
             } else if (isGemini) {
               // ── GEMINI CHAT (gemini.google.com) ───────────────────────────────
@@ -1789,9 +1797,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
               }
 
-              // params.run = true → press Enter to send the message
+              // The tool's real parameter is 'pressEnter' (see its schema) — this
+              // checked 'params.run' instead, which the model was never told about.
+              // Both accepted now; 'pressEnter' is the one that actually works.
               // ChatGPT, Claude, Grok, Perplexity, Copilot: chatbots use plain Enter (not Ctrl+Enter)
-              if (params.run) {
+              if (params.pressEnter || params.run) {
                 await new Promise(r => setTimeout(r, 80));
                 await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
                 await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
@@ -1887,8 +1897,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
               }
 
-              // If params.run is true, fire Ctrl+Enter to submit the prompt
-              if (params.run) {
+              // Same fix as the two branches above: the tool's real parameter is
+              // 'pressEnter', not 'run'. If params.pressEnter or params.run is true, fire Ctrl+Enter to submit the prompt
+              if (params.pressEnter || params.run) {
                 await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, modifiers: 2 });
                 await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13, modifiers: 2 });
               }
@@ -2348,15 +2359,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 return;
               }
 
-              // Submit if requested: Enter sends the query in the chat box;
-              // for Studio modal textareas use params.run to also click Generate.
-              if (params.run) {
+              // Submit if requested: Enter sends the query in the chat box; for
+              // Studio modal textareas this also serves as the Generate trigger.
+              // The tool's real parameter is 'pressEnter', not 'run' — see the
+              // same fix in the chatbot/Gemini/AI Studio branches above.
+              const _nlShouldSubmit = params.pressEnter || params.run;
+              if (_nlShouldSubmit) {
                 await new Promise(r => setTimeout(r, 150));
                 await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
                 await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
               }
 
-              sendResponse({ success: true, data: `NotebookLM ${nlRes?.found ? `${nlRes.tag} "${nlRes.al || nlRes.ph}"` : 'coordinate fallback'}${params.run ? ' + submitted' : ''}` });
+              sendResponse({ success: true, data: `NotebookLM ${nlRes?.found ? `${nlRes.tag} "${nlRes.al || nlRes.ph}"` : 'coordinate fallback'}${_nlShouldSubmit ? ' + submitted' : ''}` });
 
             } else if (isSlides) {
               // ── GOOGLE SLIDES (canvas typing stop condition) ──────────────────
@@ -2502,7 +2516,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
             // Input.insertText fired into the void — return false so the agent
             // can refocus and retry instead of building on a silent miss.
             const isNotebookLM = (mode === 'notebooklm' || mode === 'notebooklm-fallback');
-            if (!isDocs && !isGrid && !isExcel && !isNotebookLM && !isAiStudio && text.trim().length > 0 && !params.run) {
+            // Skip this check when Enter was pressed to submit (params.pressEnter,
+            // the tool's real parameter — params.run kept too for consistency with
+            // the branches above): a chat box legitimately empties itself right
+            // after sending, so checking "is it empty now" would misreport a
+            // successful submission as a failure.
+            if (!isDocs && !isGrid && !isExcel && !isNotebookLM && !isAiStudio && text.trim().length > 0 && !params.pressEnter && !params.run) {
               try {
                 await new Promise(r => setTimeout(r, 180)); // React state settle
                 const vr = await sendR('Runtime.evaluate', {
