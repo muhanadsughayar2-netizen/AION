@@ -2289,30 +2289,38 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               // Studio textareas below use params.run/Enter instead, which
               // already works and is left alone.
               if (nlRes?.urlInput) {
-                await new Promise(r => setTimeout(r, 250)); // let the Insert button's disabled state update
-                const insertLoc = await chrome.scripting.executeScript({
-                  target: { tabId },
-                  func: () => {
-                    function findInsertBtn(root) {
-                      if (!root) return null;
-                      try {
-                        for (const el of root.querySelectorAll('button, [role="button"]')) {
-                          const label = (el.getAttribute('aria-label') || el.textContent || '').trim();
-                          if (/^insert$/i.test(label) && !el.disabled && el.getAttribute('aria-disabled') !== 'true') {
-                            const r = el.getBoundingClientRect();
-                            if (r.width > 0 && r.height > 0) return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+                // A single URL enables Insert almost immediately; validating 5 at
+                // once (the whole point of the newline-joined paste above) plausibly
+                // takes the framework longer, and the old single 250ms/one-shot
+                // check would give up before that finished. Retry a few times with
+                // growing delays instead of checking once and reporting failure.
+                let insertXY = null;
+                for (let _attempt = 0; _attempt < 3 && !insertXY; _attempt++) {
+                  await new Promise(r => setTimeout(r, 250 + _attempt * 300));
+                  const insertLoc = await chrome.scripting.executeScript({
+                    target: { tabId },
+                    func: () => {
+                      function findInsertBtn(root) {
+                        if (!root) return null;
+                        try {
+                          for (const el of root.querySelectorAll('button, [role="button"]')) {
+                            const label = (el.getAttribute('aria-label') || el.textContent || '').trim();
+                            if (/^insert$/i.test(label) && !el.disabled && el.getAttribute('aria-disabled') !== 'true') {
+                              const r = el.getBoundingClientRect();
+                              if (r.width > 0 && r.height > 0) return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+                            }
                           }
+                        } catch (_) {}
+                        for (const el of root.querySelectorAll('*')) {
+                          if (el.shadowRoot) { const f = findInsertBtn(el.shadowRoot); if (f) return f; }
                         }
-                      } catch (_) {}
-                      for (const el of root.querySelectorAll('*')) {
-                        if (el.shadowRoot) { const f = findInsertBtn(el.shadowRoot); if (f) return f; }
+                        return null;
                       }
-                      return null;
+                      return findInsertBtn(document);
                     }
-                    return findInsertBtn(document);
-                  }
-                }).catch(() => [{ result: null }]);
-                const insertXY = insertLoc?.[0]?.result;
+                  }).catch(() => [{ result: null }]);
+                  insertXY = insertLoc?.[0]?.result;
+                }
                 if (insertXY) {
                   await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: insertXY.x, y: insertXY.y, button: 'left', buttons: 1, clickCount: 1 });
                   await new Promise(r => setTimeout(r, 60));

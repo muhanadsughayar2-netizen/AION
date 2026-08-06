@@ -13392,6 +13392,17 @@ async function runAgentTask(prompt, thread) {
   // treated as invented.
   const _seenUrls = new Set(extractUrls(prompt));
   for (const u of extractUrls(pageText || '')) _seenUrls.add(u);
+  // Real failure, reproduced on THREE separate live tests (YouTube sources
+  // twice, website sources once): URLs get typed into NotebookLM's source
+  // box successfully, background.js can't find an ENABLED "Insert" button
+  // yet and says so in writing — "Insert button could not be found... Do
+  // NOT click 'Add sources'" — and the model clicks "Add sources" anyway,
+  // discarding everything just typed and reopening the picker from
+  // scratch. A written warning isn't reliably stopping this, so it's
+  // enforced here instead: when the last NotebookLM type() left sources
+  // typed-but-unsubmitted, the next click on "Add sources" gets blocked
+  // in code before it can discard that work.
+  let _blockAddSourcesClick = false;
   let _searchToolRejected = false; // set true if Gemini rejects functionDeclarations
                                 // + googleSearch combined in one request — falls back
                                 // to functionDeclarations-only for the rest of this task
@@ -14174,6 +14185,39 @@ async function runAgentTask(prompt, thread) {
       continue;
     }
 
+    // ── Block "Add sources" while NotebookLM URLs are typed-but-unsubmitted ──
+    // Real failure, reproduced on three separate live tests: URLs get typed
+    // successfully, background.js can't find an ENABLED "Insert" button yet
+    // and says so in writing — "Do NOT click 'Add sources'" — and the model
+    // clicks it anyway, discarding the typed URLs and reopening the source
+    // picker from scratch. A written warning wasn't reliably stopping this
+    // (see _blockAddSourcesClick above), so it's enforced here instead.
+    // Scoped to NotebookLM's own domain so this can never misfire on an
+    // unrelated site that happens to have a differently-meant "Add sources".
+    const _onNotebookLM = /notebooklm\.google\.com|notebook\.google\.com/i.test(hostnameOf(tab.url || ''));
+    const _blockedAddSourcesCall = (_blockAddSourcesClick && _onNotebookLM)
+      ? executableCalls.find(p => p.functionCall.name === 'click' &&
+          /add sources/i.test(String(p.functionCall.args?.text || p.functionCall.args?.description || '')))
+      : null;
+    if (_blockedAddSourcesCall) {
+      addAgentStepBubble(thread,
+        `⛔ Blocked: clicking "Add sources" now would discard the URLs already typed and waiting for Insert.`,
+        'error');
+      const _syntheticInsertParts = executableCalls.map(p => ({
+        functionResponse: {
+          name: p.functionCall.name,
+          response: {
+            success: false,
+            error: p === _blockedAddSourcesCall
+              ? `BLOCKED: "Add sources" was not clicked. The URLs you already typed are still sitting there waiting for "Insert" — clicking "Add sources" now would reopen the picker and throw them away. Call snapshotPage() to find the actual "Insert" button (it may just need a moment after typing to become enabled) and click it BY INDEX. If it genuinely never appears after a snapshot or two, call requestUserIntervention and ask the user to click it themselves — do not click "Add sources" as a substitute.`
+              : 'SKIPPED — a different action in this same turn was blocked to protect typed-but-unsubmitted NotebookLM URLs, so this one was not run. Re-issue it on its own once sources are confirmed.'
+          }
+        }
+      }));
+      contents.push({ role: 'user', parts: _syntheticInsertParts });
+      continue;
+    }
+
     // ── Execution: parallel ONLY when every call is read-only ─────────────────
     // This used to be an unconditional Promise.allSettled, firing every call in
     // the turn simultaneously. A dependent pair like
@@ -14227,6 +14271,33 @@ async function runAgentTask(prompt, thread) {
       // 2.4: guard against undefined response (worker restart / message channel error)
       if (!execResult || typeof execResult.success !== 'boolean') {
         execResult = { success: false, error: 'No response from background tool handler (worker may have restarted). Retry.' };
+      }
+
+      // ── Track NotebookLM's typed-but-unsubmitted state ─────────────────────
+      // See _blockAddSourcesClick above for the failure this exists to stop.
+      // background.js's own response text is the source of truth here: it
+      // already knows exactly whether Insert got auto-clicked or not.
+      if (name === 'type') {
+        const _typeMsg = String(execResult?.data || execResult?.error || '');
+        if (/insert clicked automatically/i.test(_typeMsg)) {
+          _blockAddSourcesClick = false; // submitted for real — a later "Add sources" click is legitimate again
+        } else if (/insert.{0,40}(could not be found|disabled)/i.test(_typeMsg)) {
+          _blockAddSourcesClick = true;
+        }
+      }
+      // Also clear it if the model successfully clicks the real "Insert"
+      // button itself (via snapshotPage + index, per the block message's own
+      // instruction) rather than through the auto-click path above — without
+      // this, a later, genuinely legitimate "Add sources" click (e.g. adding
+      // a second batch of different sources) would stay wrongly blocked for
+      // the rest of the task. Checks both the click's own args (in case it
+      // was targeted by text/description) and background.js's own success
+      // message (in case it was targeted by index, which is what the block
+      // message itself instructs — an index click carries no text of its
+      // own to check).
+      if (name === 'click' && execResult?.success &&
+          /\binsert\b/i.test(String(args?.text || args?.description || execResult?.data || ''))) {
+        _blockAddSourcesClick = false;
       }
 
       // ── Risk-guard confirmation ─────────────────────────────────────────────
