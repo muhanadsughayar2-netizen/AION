@@ -2203,17 +2203,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
               await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
               await new Promise(r => setTimeout(r, 200)); // let shadow DOM focus settle
 
-              await send('Input.insertText', { text });
-
-              // ── React/Lit/Angular event dispatch (Fix: "Insert button stays grey") ──
-              // NotebookLM is a Lit + Angular app. Input.insertText writes bytes into
-              // the OS input buffer but does NOT fire synthetic framework events.
-              // Without input + change + blur events the framework's internal state
-              // never updates — the "Insert" / "Generate" button stays disabled.
-              // We use Runtime.evaluate (CDP, no round-trip to scripting API) and
-              // walk shadowRoot.activeElement recursively to reach the deepest focused
-              // element, then fire events with composed:true so they cross boundaries.
-              await send('Runtime.evaluate', {
+              // ── React/Lit/Angular event dispatch helper (Fix: "Insert button stays
+              // grey") — NotebookLM is a Lit + Angular app. Input.insertText writes
+              // bytes into the OS input buffer but does NOT fire synthetic framework
+              // events. Without input + change + blur events the framework's internal
+              // state never updates — the "Insert" / "Generate" button stays disabled.
+              // Runtime.evaluate walks shadowRoot.activeElement recursively to reach
+              // the deepest focused element, then fires events with composed:true so
+              // they cross shadow boundaries.
+              const _fireNlEvents = (types) => send('Runtime.evaluate', {
                 expression: `(function() {
                   let el = document.activeElement;
                   while (el && el.shadowRoot && el.shadowRoot.activeElement) {
@@ -2221,7 +2219,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   }
                   if (!el) return false;
                   const cfg = { bubbles: true, composed: true, cancelable: true };
-                  ['input', 'change', 'blur'].forEach(type => {
+                  ${JSON.stringify(types)}.forEach(type => {
                     el.dispatchEvent(new Event(type, cfg));
                     const host = el.getRootNode && el.getRootNode().host;
                     if (host) host.dispatchEvent(new Event(type, cfg));
@@ -2231,36 +2229,58 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 returnByValue: true
               }).catch(() => {});
 
-              // Verify text actually landed — NotebookLM's Shadow DOM focus can
-              // silently fail if a modal just opened and focus hasn't settled yet.
-              const nlSample = text.slice(0, 20);
-              if (nlSample && !(await verifyTextInPage(tabId, nlSample))) {
-                // Retry: coordinate click to force focus then re-insert
-                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
-                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
-                await new Promise(r => setTimeout(r, 300));
+              // Repeated, real user report, reproduced twice: the FIRST URL in a
+              // multi-URL paste always lands, every URL after it silently vanishes.
+              // Root cause: Input.insertText writes the whole space-joined blob as
+              // ONE atomic value change — it does not fire a real clipboard 'paste'
+              // event, which is what a chip/tag-style "add multiple links" input
+              // (the common pattern for exactly this kind of box) listens for to
+              // split a paste into separate entries. Without that event, the field
+              // likely just holds one long unparseable string, and whatever
+              // NotebookLM does with it on submit only recovers the first
+              // URL-shaped substring. Typing each URL individually and pressing
+              // Enter after each one commits it as its own entry before the next
+              // is typed, instead of gambling on one bulk insert being auto-split
+              // correctly.
+              const _multiUrlTokens = nlRes?.urlInput
+                ? text.split(/\s+/).map(t => t.trim()).filter(t => /^https?:\/\//i.test(t))
+                : [];
+
+              if (nlRes?.urlInput && _multiUrlTokens.length > 1) {
+                for (let ui = 0; ui < _multiUrlTokens.length; ui++) {
+                  await send('Input.insertText', { text: _multiUrlTokens[ui] });
+                  await _fireNlEvents(['input', 'change']);
+                  await new Promise(r => setTimeout(r, 150));
+                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
+                  await new Promise(r => setTimeout(r, 200));
+                }
+                await _fireNlEvents(['blur']);
+                // Not verifying via a text substring here — after N Enter commits
+                // the field's own content is whatever NotebookLM's chip UI leaves
+                // behind (often cleared), so a "does this text still appear"
+                // check would be checking the wrong thing. The Insert-button step
+                // right below still guards this honestly: if nothing actually
+                // registered, Insert stays disabled and that's reported plainly
+                // instead of assumed successful.
+              } else {
                 await send('Input.insertText', { text });
-                // Fire framework events again after retry insert
-                await send('Runtime.evaluate', {
-                  expression: `(function() {
-                    let el = document.activeElement;
-                    while (el && el.shadowRoot && el.shadowRoot.activeElement) {
-                      el = el.shadowRoot.activeElement;
-                    }
-                    if (!el) return false;
-                    const cfg = { bubbles: true, composed: true, cancelable: true };
-                    ['input', 'change', 'blur'].forEach(type => {
-                      el.dispatchEvent(new Event(type, cfg));
-                      const host = el.getRootNode && el.getRootNode().host;
-                      if (host) host.dispatchEvent(new Event(type, cfg));
-                    });
-                    return true;
-                  })()`,
-                  returnByValue: true
-                }).catch(() => {});
-                if (!(await verifyTextInPage(tabId, nlSample))) {
-                  sendResponse({ success: false, error: 'Text did not appear in NotebookLM input after two attempts. The target input may not be open yet — try clicking the button that opens it first.' });
-                  return;
+                await _fireNlEvents(['input', 'change', 'blur']);
+
+                // Verify text actually landed — NotebookLM's Shadow DOM focus can
+                // silently fail if a modal just opened and focus hasn't settled yet.
+                const nlSample = text.slice(0, 20);
+                if (nlSample && !(await verifyTextInPage(tabId, nlSample))) {
+                  // Retry: coordinate click to force focus then re-insert
+                  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
+                  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
+                  await new Promise(r => setTimeout(r, 300));
+                  await send('Input.insertText', { text });
+                  await _fireNlEvents(['input', 'change', 'blur']);
+                  if (!(await verifyTextInPage(tabId, nlSample))) {
+                    sendResponse({ success: false, error: 'Text did not appear in NotebookLM input after two attempts. The target input may not be open yet — try clicking the button that opens it first.' });
+                    return;
+                  }
                 }
               }
 
@@ -2306,7 +2326,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: insertXY.x, y: insertXY.y, button: 'left', buttons: 1, clickCount: 1 });
                   await new Promise(r => setTimeout(r, 60));
                   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: insertXY.x, y: insertXY.y, button: 'left', buttons: 1, clickCount: 1 });
-                  sendResponse({ success: true, data: `NotebookLM URL(s) typed and Insert clicked automatically` });
+                  sendResponse({ success: true, data: _multiUrlTokens.length > 1
+                    ? `${_multiUrlTokens.length} NotebookLM URLs typed individually (one at a time, Enter after each) and Insert clicked automatically`
+                    : `NotebookLM URL(s) typed and Insert clicked automatically` });
                   return;
                 }
                 // Insert button not found/enabled — text is still safely typed
