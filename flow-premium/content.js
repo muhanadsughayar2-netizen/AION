@@ -4685,11 +4685,22 @@
              '[contenteditable="true"]',
              'textarea',
            ];
+           // Real failure: on a page that had just switched between AI Studio's
+           // Playground and Composer modes (e.g. Lyria's "Describe your music..."
+           // box vs. its richer Composer prompt field), this ran once, immediately,
+           // found nothing on that pass, and fell back to a blind coordinate guess
+           // — "No focused element found after typing — document.body has focus."
+           // Same root cause and same fix already proven for gemini.google.com just
+           // above (also in this file): retry briefly instead of accepting
+           // "not found yet" as "not there."
            let aiInput = null;
-           for (const sel of AIS_SELS) {
-             const hits = [];
-             aisDeepAll(document, sel, hits);
-             if (hits.length > 0) { aiInput = hits[hits.length - 1]; break; }
+           for (let _attempt = 0; _attempt < 6 && !aiInput; _attempt++) {
+             for (const sel of AIS_SELS) {
+               const hits = [];
+               aisDeepAll(document, sel, hits);
+               if (hits.length > 0) { aiInput = hits[hits.length - 1]; break; }
+             }
+             if (!aiInput) await new Promise(r => setTimeout(r, 200));
            }
            let x, y;
            if (aiInput) {
