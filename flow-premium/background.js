@@ -3806,6 +3806,21 @@ If the element is not visible in the screenshot, return:
                 }
                 if (!el) el = document.querySelector('[aria-label*="' + lbl.replace(/"/g,'') + '"]');
               }
+              // Real failure: asked to read Gemini's answer back out loud, readText
+              // was called both with a keyword ("inflammation") and blank, neither
+              // reliably found the WHOLE response — a keyword match on visible text
+              // nodes returns whatever small element happens to contain that one
+              // word (a single bullet, not the full answer), and a blank call has
+              // nothing to search for at all. Confirmed live on the real page:
+              // Gemini's own DOM already exposes the full, clean answer (no "Gemini
+              // said" label mixed in) in a dedicated <message-content> element.
+              // Falls back to the LAST one (the most recent response) whenever the
+              // normal selector/label search comes up empty on gemini.google.com,
+              // instead of leaving the model to hunt for fragments turn after turn.
+              if (!el && location.hostname.includes('gemini.google.com')) {
+                const responses = document.querySelectorAll('message-content');
+                if (responses.length > 0) el = responses[responses.length - 1];
+              }
               if (!el) return JSON.stringify({ ok:false, error:'Element not found' });
               const tag = el.tagName;
               let text = (tag==='INPUT'||tag==='TEXTAREA') ? el.value
