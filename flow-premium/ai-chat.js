@@ -12018,7 +12018,7 @@ Rules:
 
 - RENAMING A GOOGLE DOC: clicking "Untitled document" or "Rename" by exact text often fails because the title field only exists once the doc has fully loaded, and its accessible name is frequently something else entirely (e.g. an unlabeled text field near the Docs logo). If clicking the title/Rename by text fails ONCE, call snapshotPage and look for a text-input-type element near the top-left of the page rather than guessing the same label again — click that by index. If it STILL cannot be found after that one retry, STOP — do not type the new name into whatever currently has focus. Typing a filename into the document body instead of the title field has actually happened and corrupted the document content it was supposed to just be renaming. Use requestUserIntervention and ask the user to rename it themselves instead.
 
-- NOTEBOOKLM ROUTING: Google NotebookLM (notebooklm.google.com) is the best tool for turning source material (links, PDFs, text) into polished outputs. When the user's request matches any trigger below, run this EXACT 3-step protocol before touching the browser:
+- NOTEBOOKLM ROUTING: Google NotebookLM (notebooklm.google.com) is the best tool for turning source material (links, PDFs, text) into polished outputs, and it is completely free. This is a core feature of this product — treat it that way: be warm, be a genuine guide through it, not a silent executor. Talk the user through what you're doing as you go (you're already told to agentSpeak at each stage below — actually do it, don't skip it). If they need to upload a file, tell them plainly and kindly where to click. If something isn't clear, ask instead of guessing. The goal is that anyone — including someone who's never touched NotebookLM before — can just say "make me a presentation about X" and feel like they have a friend walking them through it, not a script running in the background. When the user's request matches any trigger below, run this EXACT 3-step protocol before touching the browser:
 
   TRIGGERS — use the NotebookLM protocol whenever the user's task involves: podcast, audio overview, deep dive, presentation, slide deck, PPT, PowerPoint, video explainer, mind map, concept map, report, infographic, flashcard, quiz, data table, notebook, notebooklm, or creating content from source material.
 
@@ -13210,6 +13210,19 @@ async function runAgentTask(prompt, thread) {
       } else if (sourcesResult.mode === 'manual') {
         sourcesBlock = ` The user will add sources manually inside NotebookLM. Navigate there, open or create a notebook, and wait for them to add sources — check the sources panel before generating.`;
       }
+
+      // Real failure: told to gather sources on "Dr. William Li's food and
+      // health findings," the agent never once visited YouTube or Google —
+      // it wrote a detailed, accurate-READING paragraph entirely from its
+      // own training knowledge, then tried to paste that as if it were a
+      // gathered source. This is Rule Zero (added earlier this session:
+      // "if you can write it yourself, don't browse for it") applied where
+      // it does not belong. Rule Zero is right for a poem or a plain
+      // question; it is wrong here, because the entire point of NotebookLM
+      // is that its outputs are grounded in real, verifiable sources — your
+      // own recollection, however accurate-sounding, is not a source and
+      // defeats the purpose of using NotebookLM at all.
+      sourcesBlock += ` ⚠️ Rule Zero (write it yourself instead of browsing) does NOT apply to gathering NotebookLM sources. Do not write your own summary of what you already know about the topic and paste it in as if it were a source — you must actually navigate to real pages/videos and add their REAL URLs. A notebook fed your own recollection instead of real sources produces outputs that are not actually grounded in anything, which defeats the entire reason to use NotebookLM.`;
 
       prompt = `${prompt}\n\n[USER STUDIO SELECTION — build EXACTLY these NotebookLM outputs in this order: ${toolList}.${extraDetail}${sourcesBlock} Do NOT build any other output type. Follow the NOTEBOOKLM ROUTING protocol.]`;
 
@@ -20885,6 +20898,11 @@ async function launchGeminiNotebook() {
   } else {
     sourcesBlock = ` The user will add sources manually inside NotebookLM. Navigate there, create or open a notebook, then waitForElement and verify sources are Ready before generating.`;
   }
+  // See the matching comment on the other awaitSourcesStep call site — Rule
+  // Zero must not apply to gathering NotebookLM sources. Writing a summary
+  // from memory and pasting it in as if it were a source defeats the entire
+  // point of NotebookLM, which is grounding output in real material.
+  sourcesBlock += ` ⚠️ Rule Zero (write it yourself instead of browsing) does NOT apply to gathering NotebookLM sources. Do not write your own summary of what you already know and paste it in as if it were a source — actually navigate to real pages/videos and add their REAL URLs.`;
 
   const enrichedPrompt = `Open Google NotebookLM and create the following content.\n\n[USER STUDIO SELECTION — build EXACTLY these NotebookLM outputs in this order: ${toolList}.${extraDetail}${sourcesBlock} Do NOT build any other output type. Follow the NOTEBOOKLM ROUTING protocol.]`;
 
