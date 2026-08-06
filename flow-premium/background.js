@@ -1,6 +1,14 @@
 // SnapToAI Background Service Worker
 // Handles screenshot capture, storage management, downloads, and messaging
 
+// Load the shared Autopilot decision-logic (hasSearchTarget, detectBlockPage,
+// etc.) into this service worker's OWN global scope. clearAndInject() below
+// separately injects agent-logic-core.js into TARGET TABS for content.js to
+// use — that is a completely different JS environment from this file, which
+// runs as its own service worker and needs the same functions loaded here
+// too if this file wants to call them directly (not through a tab).
+importScripts('agent-logic-core.js');
+
 // ── Autopilot risk guard ────────────────────────────────────────────────────
 // A code-level (not just prompt-level) checkpoint for irreversible actions.
 // The system prompt already tells Gemini to stop before payments/deletions/
@@ -2560,6 +2568,19 @@ If the element is not visible in the screenshot, return:
           }
           // Index miss (element scrolled off viewport, DOM changed) — fall through
           console.log(`[Aion Agent] Index [${params.index}] not resolved, falling back to text search`);
+        }
+
+        // ── Step 0.5: reject a click with NOTHING to search by ──────────────
+        // Rule lives in agent-logic-core.js as hasSearchTarget — see there for
+        // the real failure that motivated it, and tests/agent-logic.test.js
+        // for the check. Fail fast and cheaply instead of burning DOM search,
+        // Accessibility tree, XPath, AND a real paid Gemini Vision API call on
+        // a call that was doomed from the start.
+        if (!hasSearchTarget(params)) {
+          sendResponse({ success: false, error:
+            'click was called with no index, text, description, or selector — nothing to search for. ' +
+            'Look at the most recent INTERACTIVE ELEMENTS list from snapshotPage or a prior error and click by index, e.g. click({index:5}).' });
+          return;
         }
 
         // ── Step 1: DOM text search via content.js (500 ms budget) ──────────

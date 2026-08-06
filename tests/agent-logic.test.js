@@ -28,6 +28,7 @@ const {
   evaluateReadClaim,
   evaluateOpenedResultClaim,
   detectBlockPage,
+  hasSearchTarget,
 } = require('../flow-premium/agent-logic-core.js');
 
 // ===========================================================================
@@ -248,5 +249,32 @@ describe('detectBlockPage', () => {
   test('catches a few common phrasing variants', () => {
     expect(detectBlockPage('Please verify you are human before continuing.')).toBe(true);
     expect(detectBlockPage("Confirm you're not a robot to proceed.")).toBe(true);
+  });
+});
+
+// ===========================================================================
+// hasSearchTarget — click() called with nothing to search by, right after
+// being shown the correct index in a numbered list
+// ===========================================================================
+describe('hasSearchTarget', () => {
+  test('rejects a truly empty click call', () => {
+    // Real failure: given "[35] The Best Noise-Cancelling Headphones...",
+    // the very next call was click() with none of index/text/description/
+    // selector set. Every fallback (DOM, AX tree, XPath, a real paid Vision
+    // API call) ran anyway before failing -- all doomed from the start.
+    expect(hasSearchTarget({})).toBe(false);
+    expect(hasSearchTarget(undefined)).toBe(false);
+    expect(hasSearchTarget({ index: undefined, text: '', description: '', selector: '' })).toBe(false);
+  });
+
+  test('an index alone is a valid target, even index 0', () => {
+    expect(hasSearchTarget({ index: 35 })).toBe(true);
+    expect(hasSearchTarget({ index: 0 })).toBe(true); // falsy number, must not be treated as missing
+  });
+
+  test('text, description, or selector alone are each valid', () => {
+    expect(hasSearchTarget({ text: 'Send' })).toBe(true);
+    expect(hasSearchTarget({ description: 'the blue button' })).toBe(true);
+    expect(hasSearchTarget({ selector: '#submit' })).toBe(true);
   });
 });

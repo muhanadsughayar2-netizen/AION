@@ -175,6 +175,23 @@
   }
 
   /**
+   * Does a click/type call have ANYTHING to search by?
+   *
+   * Real failure: given a numbered element list with the correct target
+   * clearly listed ("[35] The Best Noise-Cancelling Headphones..."), the next
+   * call was click() with no index, no text, no description, no selector —
+   * nothing at all. Every fallback strategy (DOM search, Accessibility tree,
+   * XPath, and a real paid Gemini Vision API call) was then attempted anyway,
+   * all doomed from the start, before failing with a vague "?" error. This
+   * lets the caller fail fast and cheaply instead, with an error that names
+   * the actual problem.
+   */
+  function hasSearchTarget(params) {
+    const p = params || {};
+    return p.index != null || !!p.text || !!p.description || !!p.selector;
+  }
+
+  /**
    * Recognise a search-engine bot-detection / CAPTCHA interstitial for what it
    * is, instead of letting the agent treat it as a normal "can't find the
    * button" failure and retry blindly forever.
@@ -211,6 +228,7 @@
     evaluateReadClaim,
     evaluateOpenedResultClaim,
     detectBlockPage,
+    hasSearchTarget,
   };
 
   if (typeof module !== 'undefined' && module.exports) {
