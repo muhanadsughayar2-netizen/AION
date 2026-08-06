@@ -13185,6 +13185,11 @@ async function runAgentTask(prompt, thread) {
   // Load the user's name once per run so every agentSpeak / card can personalise
   _agentUserName = (await chrome.storage.local.get(['aionUserName']).catch(() => ({}))).aionUserName || '';
   resetAgentStepLog();
+  // Fresh debug log for THIS run — see background.js's _autopilotDebugLog.
+  // Cleared here (not just capped) so "Export Debug Log" after a run always
+  // corresponds to the run that just happened, not everything since the
+  // browser opened.
+  chrome.runtime.sendMessage({ action: 'clearDebugLog' }).catch(() => {});
   const stopBtn = document.createElement('button');
   stopBtn.textContent = '■ Stop Autopilot';
   stopBtn.className = 'agent-stop-btn';
@@ -13201,6 +13206,49 @@ async function runAgentTask(prompt, thread) {
   };
   stopBtn.addEventListener('click', (e) => { e.stopPropagation(); handleStopTrigger(); });
   thread.appendChild(stopBtn);
+
+  // ── Export Debug Log ──────────────────────────────────────────────────────
+  // Real, repeatedly-expressed need this session: diagnosing a failed run
+  // meant either an approximate chat transcript (tool name + truncated args)
+  // or manually opening the invisible service worker console. This pulls the
+  // full request/response log background.js has been recording for this run
+  // (see _autopilotDebugLog there) and downloads it as one readable file —
+  // full args, full results, not truncated, with timestamps.
+  const debugLogBtn = document.createElement('button');
+  debugLogBtn.textContent = '📋 Export Debug Log';
+  debugLogBtn.className = 'agent-debug-log-btn';
+  debugLogBtn.style.cssText = 'display:block;margin:4px auto 8px;padding:5px 12px;font-size:11px;border-radius:20px;background:rgba(120,120,120,0.1);border:1px solid rgba(120,120,120,0.25);color:inherit;opacity:0.75;cursor:pointer;z-index:99999;position:relative;';
+  debugLogBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    debugLogBtn.disabled = true;
+    const _prevText = debugLogBtn.textContent;
+    debugLogBtn.textContent = 'Exporting…';
+    try {
+      const res = await chrome.runtime.sendMessage({ action: 'exportDebugLog' });
+      const log = res?.log || [];
+      const lines = log.map(entry => {
+        const t = new Date(entry.ts).toLocaleTimeString();
+        if (entry.type === 'request') {
+          return `[${t}] → ${entry.executeAction}\n    params: ${JSON.stringify(entry.params)}`;
+        }
+        return `[${t}] ← ${entry.executeAction}\n    result: ${JSON.stringify(entry.response)}`;
+      });
+      const text = `AION Autopilot Debug Log — ${new Date().toLocaleString()}\nTask: ${prompt}\n${'='.repeat(60)}\n\n${lines.join('\n\n')}`;
+      const blob = new Blob([text], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `aion-debug-log-${Date.now()}.txt`;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    } catch (_) {
+      addAgentStepBubble(thread, 'Could not export debug log', 'error');
+    } finally {
+      debugLogBtn.disabled = false;
+      debugLogBtn.textContent = _prevText;
+    }
+  });
+  thread.appendChild(debugLogBtn);
 
   // ── NotebookLM pre-flight conversation ──────────────────────────────────────
   // Three-step warm conversation BEFORE mini-mode starts:

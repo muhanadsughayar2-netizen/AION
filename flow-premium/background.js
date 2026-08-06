@@ -877,7 +877,45 @@ chrome.action.onClicked.addListener(async (tab) => {
 });
 
 // Listen for messages from popup and content scripts
+// ── Autopilot Debug Log ─────────────────────────────────────────────────────
+// Real, repeatedly-expressed need this session: reviewing what actually
+// happened during a run meant either an approximate chat transcript (tool
+// name + truncated args) or manually opening the invisible service worker
+// console. Every agentExecute request AND its real response (full args, full
+// result, not truncated) now gets recorded here, in order, with timestamps —
+// retrievable after any run instead of lost the moment a console.log line
+// scrolls out of view. Capped so a runaway task can't grow this unbounded;
+// cleared at the start of each new Autopilot task (see runAgentTask) so an
+// export corresponds to one run, not everything since the browser opened.
+let _autopilotDebugLog = [];
+const AUTOPILOT_DEBUG_LOG_MAX = 500;
+
+function _logAutopilotStep(entry) {
+  _autopilotDebugLog.push({ ts: Date.now(), ...entry });
+  if (_autopilotDebugLog.length > AUTOPILOT_DEBUG_LOG_MAX) _autopilotDebugLog.shift();
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (request.action === 'clearDebugLog') {
+    _autopilotDebugLog = [];
+    sendResponse({ success: true });
+    return true;
+  }
+  if (request.action === 'exportDebugLog') {
+    sendResponse({ success: true, log: _autopilotDebugLog });
+    return true;
+  }
+  if (request.action === 'agentExecute') {
+    // Wrap sendResponse once, here, instead of editing every individual
+    // executeAction branch below — every existing call site's sendResponse(...)
+    // now also logs, with zero changes needed anywhere else in this file.
+    _logAutopilotStep({ type: 'request', executeAction: request.executeAction, params: request.params, tabId: request.tabId });
+    const _origSendResponse = sendResponse;
+    sendResponse = (response) => {
+      _logAutopilotStep({ type: 'response', executeAction: request.executeAction, response });
+      return _origSendResponse(response);
+    };
+  }
   if (request.action === 'capture') {
     captureScreenshot().then(sendResponse);
     return true;
