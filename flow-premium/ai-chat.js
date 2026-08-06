@@ -13436,6 +13436,19 @@ async function runAgentTask(prompt, thread) {
         systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT + (_agentUserName ? `\n\n### USER'S NAME\nThe user's name is "${_agentUserName}". Use it naturally in every agentSpeak() call — greet them by name, thank them by name, celebrate with them by name. Make every message feel personal and warm, like talking to a close friend.` : '') + getDynamicSkill(tab.url) + _buildAgentStateContext(agentState) }] },
         contents: requestContents,
         tools: useSearchTool ? AGENT_TOOLS_WITH_SEARCH : AGENT_TOOLS,
+        // Verified live: Gemini rejects functionDeclarations + googleSearch
+        // together with "Please enable tool_config.include_server_side_tool_
+        // invocations to use Built-in tools with Function calling." — this
+        // sets exactly the field the error names. Everywhere else in this
+        // request body uses camelCase (systemInstruction, generationConfig),
+        // so that convention is used here too (includeServerSideToolInvocations)
+        // rather than the snake_case shown in the error text, which is more
+        // likely the internal proto field path than the literal REST JSON key.
+        // This is an educated attempt, not a verified fix — if the casing is
+        // wrong, isToolConflict below still catches the resulting rejection
+        // and falls back to functions-only, so a wrong guess here degrades
+        // rather than breaks.
+        ...(useSearchTool ? { toolConfig: { includeServerSideToolInvocations: true } } : {}),
         generationConfig: { temperature: 0.2 }
       });
       let geminiBody = buildGeminiBody(!_searchToolRejected);
@@ -13482,14 +13495,20 @@ async function runAgentTask(prompt, thread) {
       // and retry this step immediately rather than surfacing a confusing
       // "tool config" error to the user for what is really an internal
       // request-shape issue with a straightforward fix.
-      // Must mention BOTH search grounding AND function-calling together —
-      // a bare "invalid function declaration" (a real bug worth surfacing,
-      // not hiding) would otherwise false-match on the function-related half
-      // alone and silently swallow a genuine error for the rest of the task.
+      // Must mention BOTH a built-in/server-side tool AND function-calling
+      // together — a bare "invalid function declaration" (a real bug worth
+      // surfacing, not hiding) would otherwise false-match on the function
+      // half alone and silently swallow a genuine error for the rest of the
+      // task. The real error Google actually returns here was verified live:
+      // "Please enable tool_config.include_server_side_tool_invocations to
+      // use Built-in tools with Function calling." — it does NOT say
+      // "google search" or "not supported"/"invalid", so the original,
+      // narrower version of this check MISSED this exact real error and let
+      // it abort the whole task instead of falling back. Broadened to match
+      // Google's actual wording instead of a guess at what it might say.
       const isToolConflict = !_searchToolRejected
-        && /google.?search/i.test(errMsg)
-        && /function.?declaration|function.?calling/i.test(errMsg)
-        && /not supported|invalid|cannot|incompatib/i.test(errMsg);
+        && /built-?in tool|google.?search|server.?side tool/i.test(errMsg)
+        && /function.?declaration|function.?calling/i.test(errMsg);
       if (isToolConflict) {
         console.warn('[Aion Agent] Gemini rejected functionDeclarations+googleSearch combined — falling back to functions-only for this task:', errMsg);
         _searchToolRejected = true;
