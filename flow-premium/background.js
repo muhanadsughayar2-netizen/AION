@@ -2063,13 +2063,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   const _textToType = textToType;
                   const _looksLikeUrl = /^https?:\/\//i.test(_textToType.trim());
 
+                  // Real failure: NotebookLM's actual "paste multiple URLs" modal
+                  // ("Website and YouTube URLs — Paste in Website and YouTube URLs
+                  // below") is a resizable <textarea placeholder="Paste any links">,
+                  // not an <input>. Every clause here only ever matched input tags,
+                  // so the agent correctly opened the real multi-URL box and this
+                  // code still could not see it — it only ever found the SINGLE-url
+                  // quick-add <input> from an earlier step, which is why exactly one
+                  // video landed as a source and every subsequent multi-URL paste
+                  // attempt silently searched for something that was never there.
                   const NL_URL_ONLY =
                     "input[type='url'], " +
                     "input[placeholder*='links' i], input[placeholder*='url' i], " +
                     "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
                     "input[placeholder*='website' i], input[placeholder*='link' i], " +
                     "input[aria-label*='URL' i], input[aria-label*='website' i], " +
-                    "input[aria-label*='link' i]";
+                    "input[aria-label*='link' i], " +
+                    "textarea[placeholder*='links' i], textarea[placeholder*='url' i], " +
+                    "textarea[placeholder*='https' i], textarea[placeholder*='website' i], " +
+                    "textarea[placeholder*='link' i], " +
+                    "textarea[aria-label*='URL' i], textarea[aria-label*='website' i], " +
+                    "textarea[aria-label*='link' i]";
 
                   const NL_FULL =
                     "[aria-label='Query box'], [aria-label='query box'], " +
@@ -2119,6 +2133,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                         };
                       }
                       await new Promise(r => setTimeout(r, 150));
+                    }
+                    // The precise URL-labelled search found nothing after 1.8s — before
+                    // giving up, try the broad catch-all (any visible textarea/
+                    // contenteditable) once. NotebookLM's actual wording for this box
+                    // has already been wrong once (a textarea when only inputs were
+                    // expected); this is a real last resort against the NEXT wording
+                    // change, not a guess dressed up as a fix.
+                    const fallbackEl = dSQV(document, 'textarea, div[contenteditable="true"]');
+                    if (fallbackEl) {
+                      fallbackEl.focus();
+                      const r = fallbackEl.getBoundingClientRect();
+                      return {
+                        found: true, urlInput: true, viaFallback: true,
+                        tag: fallbackEl.tagName,
+                        ph: fallbackEl.placeholder || '',
+                        al: fallbackEl.getAttribute('aria-label') || '',
+                        isContentEditable: fallbackEl.getAttribute('contenteditable') === 'true',
+                        cx: r.left + r.width * 0.5,
+                        cy: r.top  + r.height * 0.5
+                      };
                     }
                     // URL input dialog never appeared — signal clearly so background.js
                     // can return a helpful error instead of typing into the query box.
