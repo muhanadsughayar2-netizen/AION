@@ -29,6 +29,7 @@ const {
   evaluateOpenedResultClaim,
   detectBlockPage,
   hasSearchTarget,
+  isTextRepeatedTooOften,
 } = require('../flow-premium/agent-logic-core.js');
 
 // ===========================================================================
@@ -276,5 +277,36 @@ describe('hasSearchTarget', () => {
     expect(hasSearchTarget({ text: 'Send' })).toBe(true);
     expect(hasSearchTarget({ description: 'the blue button' })).toBe(true);
     expect(hasSearchTarget({ selector: '#submit' })).toBe(true);
+  });
+});
+
+// ===========================================================================
+// isTextRepeatedTooOften — the Astronaut Bio rename loop: 6 identical retypes
+// at 6 different guessed targets, none of which the target-based detector
+// (buildActionSignature) could ever catch since every target differed
+// ===========================================================================
+describe('isTextRepeatedTooOften', () => {
+  test('the exact real failure: same text, 6 different guessed targets', () => {
+    // recentTypedTexts only ever records the TEXT — target-based signatures
+    // are a separate, complementary check (see shouldRunSequentially /
+    // buildActionSignature tests above) and are irrelevant here.
+    const history = ['Astronaut Bio', 'Astronaut Bio'];
+    const r = isTextRepeatedTooOften(history, 'Astronaut Bio');
+    expect(r.blocked).toBe(true);
+    expect(r.count).toBe(3);
+  });
+
+  test('does not block on the first or second attempt', () => {
+    expect(isTextRepeatedTooOften([], 'Astronaut Bio').blocked).toBe(false);
+    expect(isTextRepeatedTooOften(['Astronaut Bio'], 'Astronaut Bio').blocked).toBe(false);
+  });
+
+  test('different text each time never triggers it', () => {
+    const history = ['first draft', 'second draft'];
+    expect(isTextRepeatedTooOften(history, 'third draft').blocked).toBe(false);
+  });
+
+  test('empty text is never flagged', () => {
+    expect(isTextRepeatedTooOften(['a', 'a', 'a'], '').blocked).toBe(false);
   });
 });

@@ -218,6 +218,28 @@
     return patterns.some(p => t.includes(p));
   }
 
+  /**
+   * Has this exact text been typed too many times already, regardless of
+   * WHERE each attempt targeted?
+   *
+   * Real failure: renaming a Google Doc to "Astronaut Bio" failed silently
+   * six times in a row. Each attempt clicked a different guessed target
+   * ("Rename", "Untitled document", "File", a bare click) so the existing
+   * signature-based loop detector — which fingerprints on the TARGET — never
+   * saw two identical signatures and never fired, even though the outcome
+   * (retyping the identical string, again, still not working) was plainly
+   * the same failure repeating. This checks the TEXT itself, independent of
+   * target, so a person retyping the same string at guess after guess gets
+   * caught even when every guess looks superficially "new" to target-based
+   * detection.
+   */
+  function isTextRepeatedTooOften(recentTypedTexts, newText, threshold) {
+    const limit = threshold || 3;
+    if (!newText) return { blocked: false, count: 0 };
+    const count = (recentTypedTexts || []).filter(t => t === newText).length + 1;
+    return { blocked: count >= limit, count };
+  }
+
   const AionLogic = {
     SEARCH_ENGINE_HOSTS,
     READ_ONLY_ACTIONS,
@@ -229,6 +251,7 @@
     evaluateOpenedResultClaim,
     detectBlockPage,
     hasSearchTarget,
+    isTextRepeatedTooOften,
   };
 
   if (typeof module !== 'undefined' && module.exports) {

@@ -11929,6 +11929,10 @@ Only mention what you DID (searched, wrote it into a doc, saved it) as a short t
 This has actually happened: asked to write "the description" into a document, you typed back a paraphrase of THIS system prompt's own opening lines ("AION is a capable assistant who can both think and act...") instead of the real content the user meant. That is never correct — the user cannot see this prompt, so text from it means nothing to them and is never what they asked for.
 If a request refers back to something ("the description", "that list", "what I gave you earlier", "it"), find the ACTUAL real content earlier in this specific conversation — the real text you or the user actually produced — before typing or speaking anything. If you cannot find what "it" refers to, do not guess or improvise substitute content: call askUser and ask the user to state plainly what they want written, rather than typing anything that isn't traceable to real prior content in this conversation.
 
+### 🚫 NEVER SILENTLY SUBSTITUTE A DIFFERENT TARGET AND REPORT IT AS THE ONE ASKED FOR
+This has actually happened: asked to open the "Chrome extension" Wikipedia article and read its first sentence, several guessed URLs failed, so a DIFFERENT article ("Browser extension" — a real page, but not the one asked for) was opened instead, its first sentence was read, and the finish summary said "I found the article on browser extensions and read the first sentence" — worded to sound like the original request was fulfilled. It was not. The user was, correctly, furious.
+The specific page, article, product, or result the user names is not a suggestion — it is the actual target. If you cannot reach the EXACT thing asked for after two real attempts, do not quietly pick something similar and present it as satisfying the request. Two honest options only: (1) stop and tell the user plainly — "I couldn't find the exact Chrome extension article, but there's a Browser extension article that covers similar ground — want me to use that instead?" — and let them decide, or (2) call requestUserIntervention and ask them to point you to it. Substituting without saying so, in wording that reads as if you succeeded at the original ask, is a form of the same problem as typing your own instructions instead of the real content: presenting something other than what was actually asked for as if it were the answer.
+
 ### 🤝 GOLDEN RULE — ALWAYS TALK TO THE USER WHEN STUCK
 You are never alone. The user is watching and can help you instantly. Follow this rule without exception:
 
@@ -13290,6 +13294,9 @@ async function runAgentTask(prompt, thread) {
   let _agentLastFailedCall = null; // tracks the most recently failed call for accurate intervention messages
   let agentPlan = null;        // [{step, done, note}] set by planTask tool
   const recentActions = [];    // loop detection: last 12 "action:arg" strings
+  const recentTypedTexts = []; // loop detection: last 10 'type' texts, regardless
+                                // of which target each attempt guessed — see
+                                // isTextRepeatedTooOften in agent-logic-core.js
   let _speakCallsThisTask = 0; // counts real speak() calls — checkPlan cross-checks this
                                 // against "read"/"speak" steps below, since the model
                                 // once marked "Read the poem out loud" done via checkPlan
@@ -13966,21 +13973,37 @@ async function runAgentTask(prompt, thread) {
     // entire turn, inject a forced snapshot + hard error, and continue so
     // Gemini sees current page state and must choose a different path.
     {
-      const _buildSig = (name, args) =>
-        `${name}:${args?.index !== undefined ? `#${args.index}` : String(args?.text || args?.selector || args?.url || args?.description || args?.direction || '').slice(0, 60)}`;
-
+      // Was a separate, unpatched duplicate of buildActionSignature — the
+      // shared, tested version (agent-logic-core.js) already collapses blind
+      // 'type' calls to one signature; this inline copy never got that fix,
+      // so it stayed vulnerable to exactly the failure buildActionSignature
+      // was written to catch. Now calls the same shared function both places.
       const _candidateSigs = executableCalls
         .filter(p => p.functionCall.name !== 'snapshotPage')
-        .map(p => _buildSig(p.functionCall.name, p.functionCall.args || {}));
+        .map(p => buildActionSignature(p.functionCall.name, p.functionCall.args || {}));
 
       const _loopedSig = _candidateSigs.find(sig =>
         recentActions.filter(s => s === sig).length >= 3
       );
 
-      if (_loopedSig) {
-        const _repeatCount = recentActions.filter(s => s === _loopedSig).length;
+      // Separate signal: the SAME TEXT typed repeatedly regardless of target.
+      // Real failure: renaming a Google Doc to "Astronaut Bio" retyped that
+      // exact string 6 times at 6 different guessed targets ("Rename",
+      // "Untitled document", "File"...) — each guess had a different
+      // index/selector, so target-based signatures above never matched twice
+      // and this ran for 26 turns before anything caught it.
+      const _typeCallThisTurn = executableCalls.find(p => p.functionCall.name === 'type');
+      const _typedTextRepeat = _typeCallThisTurn
+        ? isTextRepeatedTooOften(recentTypedTexts, _typeCallThisTurn.functionCall.args?.text || '')
+        : { blocked: false };
+
+      if (_loopedSig || _typedTextRepeat.blocked) {
+        const _repeatCount = _loopedSig
+          ? recentActions.filter(s => s === _loopedSig).length
+          : _typedTextRepeat.count;
+        const _blockedDesc = _loopedSig || `typing "${(_typeCallThisTurn.functionCall.args?.text || '').slice(0, 60)}"`;
         addAgentStepBubble(thread,
-          `⛔ Loop blocked: "${_loopedSig}" repeated ${_repeatCount}× — forcing snapshot instead of executing.`,
+          `⛔ Loop blocked: "${_blockedDesc}" repeated ${_repeatCount}× — forcing snapshot instead of executing.`,
           'error');
 
         // Take a fresh snapshot so Gemini has current page context
@@ -13992,7 +14015,7 @@ async function runAgentTask(prompt, thread) {
             name: p.functionCall.name,
             response: {
               success: false,
-              error: `LOOP HARD-STOP: "${_loopedSig}" has been called ${_repeatCount} times already and is clearly NOT working. ` +
+              error: `LOOP HARD-STOP: "${_blockedDesc}" has been attempted ${_repeatCount} times already and is clearly NOT working. ` +
                 `Your action was BLOCKED — it was not executed. ` +
                 `You MUST try a fundamentally different approach right now: ` +
                 `(1) use a keyboard shortcut (pressKey Tab/Enter/Escape), ` +
@@ -14020,11 +14043,11 @@ async function runAgentTask(prompt, thread) {
           : _syntheticParts;
 
         // Record the block so the post-execution tracker stays consistent
-        recentActions.push(`BLOCKED:${_loopedSig}`);
+        recentActions.push(`BLOCKED:${_blockedDesc}`);
         if (recentActions.length > 16) recentActions.shift();
 
         await addAgentMemoryNote(hostnameOf(tab.url || ''),
-          `Autopilot loop-blocked on "${_loopedSig}" — avoid repeating this action blindly; try keyboard shortcuts, parent elements, or navigate away first.`);
+          `Autopilot loop-blocked on "${_blockedDesc}" — avoid repeating this action blindly; try keyboard shortcuts, parent elements, or navigate away first.`);
 
         contents.push({ role: 'user', parts: _allLoopParts });
         continue; // skip CDP execution entirely; let Gemini re-plan
@@ -14457,6 +14480,10 @@ async function runAgentTask(prompt, thread) {
       const { name, args } = part.functionCall;
       recentActions.push(buildActionSignature(name, args));
       if (recentActions.length > 16) recentActions.shift();
+      if (name === 'type' && args?.text) {
+        recentTypedTexts.push(args.text);
+        if (recentTypedTexts.length > 10) recentTypedTexts.shift();
+      }
     }
 
     let loopWarning = null;
