@@ -4675,6 +4675,20 @@
              }
            }
            const AIS_SELS = [
+             // Real failure: asked to edit an already-built app ("change the
+             // color"), typing failed, and every subsequent element search only
+             // ever found the BUILT APP's own elements (its Add Task button, its
+             // task rows) — never AI Studio's own "Make changes, add new
+             // features, ask for anything" edit box, confirmed live by
+             // screenshot to be the real, current placeholder text of the
+             // App-Builder's own edit field. aisDeepAll below takes the LAST
+             // matching element in traversal order, which on this page can
+             // easily be something inside the running app's own preview rather
+             // than the surrounding App-Builder chrome. Checked first, by exact
+             // known text, so it wins regardless of where it falls in traversal
+             // order or what else on the page also happens to be a textarea.
+             'textarea[placeholder*="Make changes" i]',
+             'textarea[placeholder*="ask for anything" i]',
              '.ProseMirror',
              'ms-prompt-editor [contenteditable="true"]',
              'ms-autosize-textarea textarea',
