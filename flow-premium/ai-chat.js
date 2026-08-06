@@ -12020,7 +12020,7 @@ Rules:
 
   TRIGGERS — use the NotebookLM protocol whenever the user's task involves: podcast, audio overview, deep dive, presentation, slide deck, PPT, PowerPoint, video explainer, mind map, concept map, report, infographic, flashcard, quiz, data table, notebook, notebooklm, or creating content from source material.
 
-  IMPORTANT: There is NO picker and NO menu. The user is not shown a list of output types to choose from, and you must not show them one either. YOU decide which single Studio output best fits what they asked for, and you gather the sources yourself. The task prompt will carry a [NOTEBOOKLM TASK] block spelling this out — read it and follow it. If a task prompt instead carries an older [USER STUDIO SELECTION] block (a pre-confirmed choice), honour that block exactly as written and don't second-guess it.
+  IMPORTANT: There is NO picker and NO menu. The user is never shown a list of output types to choose from, and you must not show them one either. YOU decide which Studio output fits. What you SHOULD do is have a short, natural conversation first about the CONTENT — what angle, who it's for, whether they have their own material — using askUser, the way a helpful colleague would. Never ask which NotebookLM feature or button to use; they shouldn't need to know Google's internal names for things. The task prompt carries a [NOTEBOOKLM TASK] block spelling all this out — read it and follow it. If a task prompt instead carries an older [USER STUDIO SELECTION] block (a pre-confirmed choice), honour that block exactly and don't re-ask.
 
   STEP 1 — SOURCE MATERIAL (gather it yourself, before opening NotebookLM):
   → If the user gave you URLs or named specific videos/articles, use exactly those.
@@ -13170,7 +13170,7 @@ async function runAgentTask(prompt, thread) {
   //   3. Sources step           — confirms choices, asks for source material
   // All selections are injected into the prompt so the agent executes exactly
   // what was agreed without guessing from keywords.
-  // Guard: if the prompt was already pre-processed by launchGeminiNotebook() or a
+  // Guard: if the prompt was already pre-processed by a
   // previous pre-flight pass (contains [USER STUDIO SELECTION]), skip pre-flight.
   if (isNotebookLMTask(prompt) && !prompt.includes('[USER STUDIO SELECTION')) {
     // No picker card, no sources card — AION works it out from the request.
@@ -13189,9 +13189,20 @@ async function runAgentTask(prompt, thread) {
     // that whole class of problem too.
     prompt = `${prompt}
 
-[NOTEBOOKLM TASK — DECIDE EVERYTHING YOURSELF. DO NOT ASK THE USER TO PICK.
+[NOTEBOOKLM TASK — TALK IT THROUGH LIKE A PERSON, THEN GO BUILD IT.
 
-1. CHOOSE THE OUTPUT. Read what the user actually asked for and pick the single NotebookLM Studio output that genuinely fits it best. Do not present a menu, do not ask them to choose, do not build several and let them sort it out. Map their words to the right tool:
+0. HAVE A SHORT, REAL CONVERSATION FIRST — but ask like a helpful colleague, never like a form.
+   Use askUser (which shows your question in the normal chat, with optional quick-reply buttons) to fill in what you genuinely need and cannot reasonably infer. Ask about the CONTENT, never about the mechanics:
+   ✅ What's it about — the specific angle or focus, not just the broad topic?
+   ✅ Who's it for — colleagues, students, a client, yourself? (this changes the tone and depth completely)
+   ✅ Do they already have material — a file, a PDF, links, notes they want used? Or should you go find everything yourself?
+   ✅ Anything specific it must cover — a section, a comparison, a particular point they care about?
+   ❌ NEVER ask which NotebookLM output type to use, which button to press, or how you should do it. That is your job, not theirs. They asked for a presentation; they should not have to know what "Slide Deck" is called inside Google's UI.
+   Keep it SHORT — one or two questions, in one message, warm and natural ("Nice, happy to put that together — what angle are you after, and is this for colleagues or something more public? Also, do you have any material you want me to use, or shall I go find it?"). Not an interrogation, not one question per turn.
+   If they already told you enough in their original request, don't ask at all — just say what you're doing and start. If they say "just do it" or "you decide," stop asking immediately and get on with it.
+   If they mention having a FILE: tell them plainly you can't upload it for them, and guide them — "once we're in NotebookLM I'll point you to Add sources → Upload and you can drop it in, takes a second."
+
+1. CHOOSE THE OUTPUT YOURSELF. Based on what they asked for and what they told you, pick the single NotebookLM Studio output that genuinely fits best. Never present a menu of output types. Map their words to the right tool:
    - "presentation", "slides", "slide deck", "PowerPoint", "PPT", "deck" → Slide Deck
    - "podcast", "audio", "listen", "deep dive", "discussion" → Audio Overview
    - "video", "explainer", "whiteboard" → Video Overview
@@ -13203,7 +13214,7 @@ async function runAgentTask(prompt, thread) {
    - "table", "compare", "side by side", "structured data" → Data Table
    If the request is genuinely ambiguous ("make me something about X"), pick the one that best serves the intent rather than stalling — a Report is a sensible default for research/knowledge, a Slide Deck for anything presented to other people. Say which one you chose and why, in one short sentence, then get on with it. Only ask the user if the request is so unclear you cannot reasonably infer intent at all.
 
-2. GATHER REAL SOURCES YOURSELF, BEFORE opening NotebookLM. Do not ask the user for links unless they already gave some.
+2. GATHER REAL SOURCES YOURSELF, BEFORE opening NotebookLM — unless step 0 established they're supplying material.
    - If the user supplied URLs or named specific videos/articles, use exactly those.
    - Otherwise: agentSpeak something warm about going hunting, then navigate to YouTube search for the topic and collect real watch URLs via snapshotPage(), then search again with a second phrasing (e.g. topic + " explained") for more, then search the web for a few high-quality articles. Aim for 5+ real sources; more is better for a richer output. Never open an empty notebook.
    - ⚠️ Rule Zero (write it yourself instead of browsing) does NOT apply here. Do NOT write your own summary of what you already know and paste it in as a source. The entire point of NotebookLM is that outputs are grounded in real, verifiable material — your own recollection, however accurate it reads, is not a source and defeats the purpose.
@@ -20818,67 +20829,12 @@ document.querySelectorAll('.template-cat').forEach(cat => {
   cat.addEventListener('click', () => showTemplateCategory(cat.dataset.cat));
 });
 
-// ── Gemini Notebook direct launch ─────────────────────────────────────────────
-// Called when the user clicks the "Gemini Notebook" button in the toolbar.
-// Switches to Autopilot mode, runs the three-step pre-flight conversation
-// (greeting → studio picker → sources), and starts the agent.
-async function launchGeminiNotebook() {
-  // 1. Switch to Autopilot mode if not already active
-  if (currentAiMode !== 'agent') {
-    const agentBtn = document.getElementById('agentModeBtn');
-    if (agentBtn) agentBtn.click();
-    await new Promise(r => setTimeout(r, 180)); // let mode-switch animate
-  }
-
-  const thread = document.getElementById('chatThread');
-  if (!thread) return;
-
-  // 2. Guard: need an API key
-  const keyResult = await chrome.storage.sync.get(['geminiApiKey']);
-  if (!keyResult.geminiApiKey) { showGeminiModal(); return; }
-
-  // 3. First-time onboarding hint — shown once, never again
-  const { notebookOnboarded } = await chrome.storage.local.get(['notebookOnboarded']);
-  if (!notebookOnboarded) {
-    const onboardBubble = document.createElement('div');
-    onboardBubble.className = 'chat-bubble ai';
-    onboardBubble.style.cssText = 'background:rgba(66,133,244,0.07);border:1px solid rgba(66,133,244,0.22);padding:10px 14px;border-radius:12px;margin:6px 0;font-size:13px;color:rgba(226,232,240,0.85);line-height:1.5';
-    onboardBubble.textContent = '👋 First time? Just tell me what you want — a presentation, a podcast, a report, flashcards — and I\'ll go find the sources and build it in NotebookLM for you. Completely free.';
-    thread.appendChild(onboardBubble);
-    thread.scrollTop = thread.scrollHeight;
-    await chrome.storage.local.set({ notebookOnboarded: true });
-    await new Promise(r => setTimeout(r, 400));
-  }
-
-  // 4. Just start a conversation — no picker, no menu, no cards.
-  //    This used to show the same 9-button Studio picker and 4-button sources
-  //    card as the typed-task path. Both are gone by explicit request: the user
-  //    wants to say what they want in plain words and have AION work out which
-  //    NotebookLM output fits and where the sources come from. So this button
-  //    now only opens the conversation; whatever the user types next flows
-  //    through the normal agent path, where isNotebookLMTask() picks it up and
-  //    the [NOTEBOOKLM TASK] block tells the model to decide everything itself.
-  const userName = (await chrome.storage.local.get(['aionUserName'])).aionUserName || '';
-  const namePart = userName ? ` ${userName}` : '';
-  const greeting = `Hey${namePart}! Tell me what you'd like and I'll build it in Gemini Notebook — a presentation, a podcast, a report, a mind map, flashcards, a quiz, whatever fits. Just say it in your own words and I'll go find the sources and put it together. What are we making?`;
-  agentSpeak(greeting);
-
-  const bubble = document.createElement('div');
-  bubble.className = 'chat-bubble ai';
-  bubble.style.cssText = 'background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);padding:14px 16px;border-radius:14px;margin:8px 0;font-size:13px;color:rgba(226,232,240,0.9);line-height:1.6';
-  bubble.textContent = greeting;
-  thread.appendChild(bubble);
-  thread.scrollTop = thread.scrollHeight;
-
-  // Focus the MAIN chat input so the user answers in the one box they always
-  // use — the old cards had their own separate inputs, which is exactly how a
-  // typed topic once went nowhere at all.
-  document.getElementById('chatInput')?.focus();
-}
-
-document.getElementById('addMagicBtn')?.addEventListener('click', () => {
-  launchGeminiNotebook();
-});
+// The "Gemini Notebook" toolbar button and its launchGeminiNotebook()
+// handler were removed by explicit request — there is no separate NotebookLM
+// entry point any more. The user just asks AION for a presentation, podcast,
+// report, mind map etc. in the normal chat; isNotebookLMTask() picks it up in
+// runAgentTask and the [NOTEBOOKLM TASK] block tells the model to decide the
+// output type and gather sources itself.
 
 document.getElementById('closeMagicModal')?.addEventListener('click', () => {
   editingMagicIndex = null;
