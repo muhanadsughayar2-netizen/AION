@@ -280,10 +280,25 @@
    * (Internal bookkeeping keys that use the action for loop/fail-count
    * tracking are a different, legitimate use of selector and are untouched —
    * this is only for strings a person actually has to read.)
+   *
+   * url and index are also safe, genuinely readable fallbacks — added after
+   * a second AI reviewer proposed also "cleaning up" selector into readable
+   * text by stripping punctuation (e.g. "#contents > ytd-post-renderer:nth-
+   * child(1) a.yt-simple-endpoint..." -> "the contents  ytd post renderer
+   * nth child element"). Tested that transform against the real selector
+   * from the original bug report before adopting anything: it produces
+   * "the  contents > ytd post renderer:nth chil element" — still full of
+   * punctuation, still cut off mid-word, arguably worse than the plain
+   * 'that step' fallback it was meant to replace. Selector stays excluded;
+   * only the two additions that actually read as real words were kept.
    */
   function pickStuckTargetLabel(args, fallback) {
     const a = args || {};
-    return a.text || a.description || fallback || 'that step';
+    if (a.text) return a.text;
+    if (a.description) return a.description;
+    if (a.url) return `open ${a.url}`;
+    if (a.index !== undefined && a.index !== null) return `element [${a.index}] on the page`;
+    return fallback || 'that step';
   }
 
   /**

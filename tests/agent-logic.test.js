@@ -376,6 +376,24 @@ describe('pickStuckTargetLabel', () => {
   test('a caller-supplied fallback still loses to real text/description', () => {
     expect(pickStuckTargetLabel({ text: 'Continue' }, 'custom fallback')).toBe('Continue');
   });
+
+  test('falls back to url when text/description are missing — a URL is genuinely readable', () => {
+    const args = { url: 'https://example.com/page', selector: '.some-fragile-class' };
+    expect(pickStuckTargetLabel(args, '')).toBe('open https://example.com/page');
+  });
+
+  test('falls back to index when only index is present — still more useful than "that step"', () => {
+    expect(pickStuckTargetLabel({ index: 7 }, '')).toBe('element [7] on the page');
+    expect(pickStuckTargetLabel({ index: 0 }, '')).toBe('element [0] on the page'); // index 0 must not be treated as falsy
+  });
+
+  test('a selector-cleanup attempt was tested against the real reported selector and rejected — ' +
+       'stripping punctuation still leaves unreadable, mid-word-truncated text', () => {
+    const args = { selector: '#contents > ytd-post-renderer:nth-child(1) a.yt-simple-endpoint.style-scope.yt-formatted-string' };
+    const result = pickStuckTargetLabel(args, '');
+    expect(result).toBe('that step'); // not a "cleaned up" version of the selector
+    expect(result).not.toMatch(/contents|renderer|endpoint/); // never leaks selector fragments either
+  });
 });
 
 // ===========================================================================
