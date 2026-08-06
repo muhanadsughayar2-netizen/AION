@@ -10698,7 +10698,7 @@ const AGENT_TOOLS = [{
           placeholder: { type: 'string', description: 'Placeholder text of the input, if known' },
           cell: { type: 'string', description: 'Spreadsheet cell address to navigate to before typing, e.g. "A1", "B3", "C10". Use this in Excel Online and Google Sheets to target a specific starting cell.' },
           clearFirst: { type: 'boolean', description: 'If true, select-all and delete any existing content in the field before typing new text. Use when replacing an existing value (e.g. clearing a search box before typing something new).' },
-          pressEnter: { type: 'boolean', description: 'Whether to press Enter after typing (e.g. to submit a search)' }
+          pressEnter: { type: 'boolean', description: 'Whether to press Enter after typing, to submit it immediately in the SAME call. ALWAYS set this true when typing a message into an AI chat site (Gemini, ChatGPT, Claude, Grok, Perplexity, Copilot) or any search box — do not type first and separately go hunting for a Send/Search button afterward; that wastes several turns confirming the box is empty or the wrong thing before you find it. If a response still has not started after a normal wait, THEN look for an explicit send button (commonly aria-label "Send message" or "Send prompt") as a one-time fallback, not the default plan.' }
         },
         required: ['text']
       }
