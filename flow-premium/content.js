@@ -4060,8 +4060,20 @@
   }
 
   function _aionLabel(el) {
-    return (
-      el.getAttribute('aria-label') ||
+    // For text inputs (e.g. Google Docs' title field, "#docs-title-input")
+    // the visible text is the LIVE .value DOM property, set by JavaScript —
+    // it has no matching HTML attribute for a CSS/attribute-based search to
+    // find, and no textContent either. Without this, the title field showed
+    // up in the element list with no readable label at all, so the agent had
+    // no way to recognise it as "the box that currently says Untitled
+    // document" and kept guessing at labels like "Rename" that don't exist.
+    const tag = el.tagName ? el.tagName.toLowerCase() : '';
+    const liveValue = (tag === 'input' || tag === 'textarea') && typeof el.value === 'string'
+      ? el.value.trim().slice(0, 60)
+      : '';
+    const aria = el.getAttribute('aria-label') || '';
+    const base = (
+      aria ||
       el.getAttribute('title') ||
       el.getAttribute('placeholder') ||
       el.getAttribute('alt') ||
@@ -4069,6 +4081,10 @@
       el.getAttribute('name') ||
       el.id || ''
     ).trim();
+    if (liveValue && liveValue !== base) {
+      return (base ? `${base} = "${liveValue}"` : `"${liveValue}"`).trim();
+    }
+    return base;
   }
 
   function _aionType(el) {

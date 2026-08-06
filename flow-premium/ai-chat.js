@@ -1105,13 +1105,38 @@ function agentSpeak(text) {
         if (url) try { URL.revokeObjectURL(url); } catch (_) {}
         continue;
       }
+      // audio.play() can be REJECTED by the browser's autoplay policy — most
+      // commonly here because the agent runs many async steps between the
+      // user's last click and this moment, so "user activation" has expired
+      // by the time the network fetch above finishes. That used to be
+      // swallowed by .catch(resolve): the promise resolved as if the chunk had
+      // played, the loop moved on to "play" the next chunk the same broken
+      // way, and the whole poem/story finished "successfully" in total
+      // silence — matching exactly what was reported ("you did not read it")
+      // across an entire session. Now a blocked chunk falls back to the
+      // browser's own voice for the rest of the text, which is governed by a
+      // much more lenient autoplay policy than <audio> playback.
+      let _chunkBlocked = false;
       await new Promise(resolve => {
         const audio = new Audio(url);
         _agentVoice.audio = audio;
         audio.onended = () => { try { URL.revokeObjectURL(url); } catch (_) {} _agentVoice.audio = null; resolve(); };
         audio.onerror  = () => { try { URL.revokeObjectURL(url); } catch (_) {} _agentVoice.audio = null; resolve(); };
-        audio.play().catch(resolve);
+        audio.play().catch(err => {
+          console.warn('[SnapToAI] agentSpeak: audio.play() blocked, falling back to browser voice:', err?.name || err);
+          _chunkBlocked = true;
+          try { URL.revokeObjectURL(url); } catch (_) {}
+          _agentVoice.audio = null;
+          resolve();
+        });
       });
+      if (_chunkBlocked && _agentSpeakGen === myGen) {
+        // Speak everything from this chunk onward via the browser voice, then stop —
+        // no point re-attempting network audio that will hit the same block again.
+        const remaining = chunks.slice(i).join(' ');
+        speakFallback(remaining);
+        break;
+      }
       // After playing, check again — the next chunk belongs to this gen only
       if (_agentSpeakGen !== myGen) break;
     }
@@ -10778,11 +10803,11 @@ const AGENT_TOOLS = [{
     },
     {
       name: 'writeChunk',
-      description: 'Append a chunk of text to the currently focused input, textarea, or document editor WITHOUT clearing what is already there. Use this for long writing tasks — call it multiple times in sequence to build up a full article, report, or document that exceeds a single response limit. Works in Google Docs, Notion, textareas, and any contenteditable element.',
+      description: 'Append a chunk of text to the currently focused input, textarea, or document editor WITHOUT clearing what is already there. Inserts EXACTLY the characters you send, at the current cursor position — it does NOT add a line break for you. If this chunk should start a new paragraph or verse below what is already there, put "\\n\\n" at the START of your text yourself, or it will run directly onto the end of the previous line. Use this for long writing tasks — call it multiple times in sequence to build up a full article, report, or document that exceeds a single response limit. Works in Google Docs, Notion, textareas, and any contenteditable element.',
       parameters: {
         type: 'object',
         properties: {
-          text: { type: 'string', description: 'The chunk of text to insert at the current cursor position. Can be a paragraph, a section, or any length of content.' },
+          text: { type: 'string', description: 'The chunk of text to insert at the current cursor position. Include a leading "\\n\\n" yourself if this should appear as a new paragraph rather than a continuation of the last line.' },
           selector: { type: 'string', description: 'CSS selector of the element to focus before inserting, e.g. "textarea", ".ql-editor". Leave blank if the correct element is already focused.' }
         },
         required: ['text']
@@ -11964,6 +11989,10 @@ Rules:
 
 - TOOL / PLATFORM LIMITATIONS: If the user asks for something a website cannot natively do, do NOT loop trying to click a button that does not exist. Immediately call askUser to explain the limitation and offer concrete alternatives. This turns a dead-end into a collaborative decision instead of a crash loop.
 - GOOGLE SLIDES TYPING: Google Slides uses a WebGL/canvas renderer for text boxes — there are no standard DOM input elements. If you receive a CANVAS_TYPING_LIMITATION error after trying to type, STOP immediately. Do NOT call type() again. Call requestUserIntervention() asking the user to click the text box and type the text manually. Clicking buttons and navigating menus in Slides works fine via normal click() — only typing into text boxes is limited.
+
+- RETYPING INTO A DOCUMENT/EDITOR: if a previous click or type into a document body did not clearly succeed, do NOT just type the text again with fresh wording and hope. That has caused real damage: repeated blind retypes landed in different places or over each other and destroyed the user's content. Instead: (1) call readDocContent or snapshotPage FIRST to see what is actually in the document right now, (2) only if it is genuinely empty or wrong, click precisely into the body (by index if the element list shows one) before typing again, (3) after two failed attempts, stop and use requestUserIntervention rather than trying a third time with different wording.
+
+- RENAMING A GOOGLE DOC: clicking "Untitled document" or "Rename" by exact text often fails because the title field only exists once the doc has fully loaded, and its accessible name is frequently something else entirely (e.g. an unlabeled text field near the Docs logo). If clicking the title/Rename by text fails ONCE, call snapshotPage and look for a text-input-type element near the top-left of the page rather than guessing the same label again — click that by index. If it STILL cannot be found after that one retry, STOP — do not type the new name into whatever currently has focus. Typing a filename into the document body instead of the title field has actually happened and corrupted the document content it was supposed to just be renaming. Use requestUserIntervention and ask the user to rename it themselves instead.
 
 - NOTEBOOKLM ROUTING: Google NotebookLM (notebooklm.google.com) is the best tool for turning source material (links, PDFs, text) into polished outputs. When the user's request matches any trigger below, run this EXACT 3-step protocol before touching the browser:
 
@@ -13245,6 +13274,15 @@ async function runAgentTask(prompt, thread) {
   let _agentLastFailedCall = null; // tracks the most recently failed call for accurate intervention messages
   let agentPlan = null;        // [{step, done, note}] set by planTask tool
   const recentActions = [];    // loop detection: last 12 "action:arg" strings
+  let _speakCallsThisTask = 0; // counts real speak() calls — checkPlan cross-checks this
+                                // against "read"/"speak" steps below, since the model
+                                // once marked "Read the poem out loud" done via checkPlan
+                                // without ever having called speak, and the user was told
+                                // it had been read aloud when nothing was ever spoken.
+  let _speakCountAtLastReadCheck = 0; // a plan with TWO read steps ("read the poem",
+                                // later "read the extended poem") needs a FRESH speak
+                                // call for each one, not just "spoke once, ever" — this
+                                // remembers the count as of the last accepted read step.
 
   // ── Stateful Agent State (LangGraph-style checkpointer) ──────────────────
   // Tracks high-level plan, action history, and which locators have failed.
@@ -13546,6 +13584,7 @@ async function runAgentTask(prompt, thread) {
       if (speechText.trim()) {
         if (alsoShow !== false) addBubble(speechText, 'ai', thread);
         agentSpeak(speechText);
+        _speakCallsThisTask++;
       }
       clientSideResponses.push({ functionResponse: { name: 'speak',
         response: { success: true, data: speechText.trim()
@@ -13556,13 +13595,29 @@ async function runAgentTask(prompt, thread) {
     const checkCall = fnCallParts.find(p => p.functionCall.name === 'checkPlan');
     if (checkCall) {
       const { stepIndex = 0, note = '' } = checkCall.functionCall.args || {};
-      if (agentPlan?.[stepIndex]) { agentPlan[stepIndex].done = true; agentPlan[stepIndex].note = note; }
-      const done = agentPlan?.filter(s => s.done).length ?? 0;
-      const total = agentPlan?.length ?? 0;
-      const next = agentPlan?.find(s => !s.done);
-      addAgentStepBubble(thread, `✅ Step ${stepIndex + 1} done (${done}/${total})${next ? ` — Next: ${next.step}` : ' — All done!'}`);
-      clientSideResponses.push({ functionResponse: { name: 'checkPlan',
-        response: { success: true, data: next ? `Next step: ${next.step}` : 'All steps complete — call finish.' } } });
+      const _targetStep = agentPlan?.[stepIndex];
+      // checkPlan is entirely self-reported — nothing previously checked that a
+      // step claiming to read/speak something had actually called speak() first.
+      // Real damage this caused: the model marked "Read the poem out loud" done
+      // via checkPlan without ever calling speak in that turn or any prior one,
+      // the user was told the poem had been read, and nothing was ever spoken.
+      // If the step text is about reading/speaking and speak() has not been
+      // called even once yet this task, reject the claim instead of trusting it.
+      const _claimsToSpeak = /\b(read|speak|spoken|aloud|say it|narrate)\b/i.test(_targetStep?.step || '');
+      if (_targetStep && _claimsToSpeak && _speakCallsThisTask <= _speakCountAtLastReadCheck) {
+        clientSideResponses.push({ functionResponse: { name: 'checkPlan',
+          response: { success: false,
+            error: `Step ${stepIndex + 1} ("${_targetStep.step}") cannot be marked done — you have not called speak since the last reading step, so this text has not actually been read aloud. Call speak with the (current) text now, THEN call checkPlan.` } } });
+      } else {
+        if (_claimsToSpeak) _speakCountAtLastReadCheck = _speakCallsThisTask;
+        if (_targetStep) { _targetStep.done = true; _targetStep.note = note; }
+        const done = agentPlan?.filter(s => s.done).length ?? 0;
+        const total = agentPlan?.length ?? 0;
+        const next = agentPlan?.find(s => !s.done);
+        addAgentStepBubble(thread, `✅ Step ${stepIndex + 1} done (${done}/${total})${next ? ` — Next: ${next.step}` : ' — All done!'}`);
+        clientSideResponses.push({ functionResponse: { name: 'checkPlan',
+          response: { success: true, data: next ? `Next step: ${next.step}` : 'All steps complete — call finish.' } } });
+      }
     }
 
     // ── Council Mode — parallel multi-model verification ─────────────────────
@@ -14312,7 +14367,21 @@ async function runAgentTask(prompt, thread) {
     // Pattern C catches 3-action cycles (ABCABCABC) — the NotebookLM failure mode.
     for (const part of executableCalls) {
       const { name, args } = part.functionCall;
-      const sig = `${name}:${args?.index !== undefined ? `#${args.index}` : String(args?.text || args?.selector || args?.url || args?.description || args?.direction || '').slice(0, 60)}`;
+      // 'type' used to fingerprint on the literal text being typed. When the
+      // model retries a failed type by writing fresh wording each time (a new
+      // poem, not the same one) every attempt got a different signature, so
+      // this detector never recognised "typing into the same probably-broken
+      // target, repeatedly" as a loop — it only catches VERBATIM repeats. Real
+      // damage this caused: 5+ blind retypes into an unconfirmed Google Docs
+      // target, scattering/overwriting the poem, with zero loop warnings fired.
+      // Fix: for 'type' with no index/selector (i.e. "type into whatever is
+      // currently focused" — the ambiguous, failure-prone case), fingerprint
+      // on the TARGET, not the content, so repeated blind typing groups
+      // together regardless of what text varies between attempts.
+      const isBlindType = name === 'type' && args?.index === undefined && !args?.selector;
+      const sig = isBlindType
+        ? 'type:#blind-target'
+        : `${name}:${args?.index !== undefined ? `#${args.index}` : String(args?.text || args?.selector || args?.url || args?.description || args?.direction || '').slice(0, 60)}`;
       recentActions.push(sig);
       if (recentActions.length > 16) recentActions.shift();
     }

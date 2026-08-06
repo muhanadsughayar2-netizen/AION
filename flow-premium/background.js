@@ -1882,9 +1882,36 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
             } else if (isDocs) {
               // ── GOOGLE DOCS ──────────────────────────────────────────────────
-              // Focus the hidden texteventtarget-iframe body via Runtime.evaluate
-              // so CDP char events land in Docs' own keyboard router.
+              // This used to ONLY call iframe.contentDocument.body.focus() via JS
+              // before typing — no real click. That's the one thing every other
+              // canvas app here (Sheets, Excel) does differently: they fire a
+              // genuine CDP mouse click first, because a JS .focus() moves the DOM
+              // active element but does not reliably grant the renderer-level
+              // input focus that Input.dispatchKeyEvent needs to route into an
+              // iframe — especially once any time has passed since the user's
+              // last real click (a round trip to Gemini between actions is enough).
+              // That is why this worked once right after the doc loaded and then
+              // failed on every later type: nothing was re-establishing real
+              // focus. Fix: locate the visible editor tile and click it for real
+              // via CDP first, THEN focus the iframe, THEN type.
               await send('Runtime.enable', {});
+              const editorLoc = await sendR('Runtime.evaluate', {
+                expression: `(function() {
+                  const tile = document.querySelector('.kix-canvas-tile-content')
+                             || document.querySelector('.kix-appview-editor')
+                             || document.querySelector('#docs-editor');
+                  if (!tile) return null;
+                  const r = tile.getBoundingClientRect();
+                  return { x: r.left + Math.min(150, r.width * 0.2), y: r.top + Math.min(100, r.height * 0.15) };
+                })()`,
+                returnByValue: true
+              }).catch(() => null);
+              const ex = editorLoc?.result?.value;
+              if (ex && typeof ex.x === 'number' && typeof ex.y === 'number') {
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed',  x: ex.x, y: ex.y, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: ex.x, y: ex.y, button: 'left', buttons: 1, clickCount: 1 });
+                await new Promise(r => setTimeout(r, 150));
+              }
               await sendR('Runtime.evaluate', {
                 expression: `(async () => {
                   const sleep = ms => new Promise(r => setTimeout(r, ms));
