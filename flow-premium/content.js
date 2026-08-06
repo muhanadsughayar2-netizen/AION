@@ -4680,6 +4680,11 @@
              'ms-autosize-textarea textarea',
              'ms-prompt-input textarea',
              'textarea[aria-label*="Prompt" i]',
+             // Real failure: after switching models mid-session, the recovery
+             // element list showed the real box as textarea "Enter a prompt" —
+             // that text is very plausibly its placeholder, not its aria-label,
+             // and the aria-label selector above only ever checked aria-label.
+             'textarea[placeholder*="prompt" i]',
              '[contenteditable="true"][aria-multiline="true"]',
              '[contenteditable="true"][role="textbox"]',
              '[contenteditable="true"]',
@@ -4693,14 +4698,21 @@
            // Same root cause and same fix already proven for gemini.google.com just
            // above (also in this file): retry briefly instead of accepting
            // "not found yet" as "not there."
+           //
+           // Also seen live after switching models mid-session specifically
+           // (not just a fresh page load): the original 6×200ms (~1.2s) window
+           // still weren't enough — a model switch closes/reopens the model
+           // picker, scrolls, and re-renders more of the panel than initial
+           // load does. Widened to 10×250ms (~2.5s), matching the more generous
+           // window NotebookLM's own retries already use for the same reason.
            let aiInput = null;
-           for (let _attempt = 0; _attempt < 6 && !aiInput; _attempt++) {
+           for (let _attempt = 0; _attempt < 10 && !aiInput; _attempt++) {
              for (const sel of AIS_SELS) {
                const hits = [];
                aisDeepAll(document, sel, hits);
                if (hits.length > 0) { aiInput = hits[hits.length - 1]; break; }
              }
-             if (!aiInput) await new Promise(r => setTimeout(r, 200));
+             if (!aiInput) await new Promise(r => setTimeout(r, 250));
            }
            let x, y;
            if (aiInput) {
