@@ -161,6 +161,33 @@ function evaluateOpenedResultClaim(stepText, liveHostname) {
   return { blocked: SEARCH_ENGINE_HOSTS.test(liveHostname || ''), isOpenResultStep: true };
 }
 
+/**
+ * Recognise a search-engine bot-detection / CAPTCHA interstitial for what it
+ * is, instead of letting the agent treat it as a normal "can't find the
+ * button" failure and retry blindly forever.
+ *
+ * Real failure: asked to open Google search results, the agent got Google's
+ * "Our systems have detected unusual traffic from your computer network"
+ * block page instead. That page's only real link is "Why did this happen?" —
+ * everything else in the element list (Account, Drive, Gmail, Maps...) is
+ * just Google's persistent header, which still renders on the block page.
+ * No selector fix can find search results that were never actually served;
+ * the honest answer is "Google blocked this as automated traffic," not
+ * another guess at a button label.
+ */
+function detectBlockPage(pageText) {
+  const t = (pageText || '').toLowerCase();
+  const patterns = [
+    'unusual traffic from your computer network',
+    'our systems have detected unusual traffic',
+    'verify you are human',
+    "confirm you're not a robot",
+    'complete the security check',
+    'detected unusual activity',
+  ];
+  return patterns.some(p => t.includes(p));
+}
+
 if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     SEARCH_ENGINE_HOSTS,
@@ -171,5 +198,6 @@ if (typeof module !== 'undefined' && module.exports) {
     formatElementLabel,
     evaluateReadClaim,
     evaluateOpenedResultClaim,
+    detectBlockPage,
   };
 }

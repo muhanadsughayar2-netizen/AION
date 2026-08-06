@@ -4208,6 +4208,17 @@
   async function describeAvailableElements(wantedRaw) {
     const wanted = (wantedRaw || '').toLowerCase().trim();
     try {
+      // Recognise a bot-detection/CAPTCHA interstitial for what it is instead
+      // of reporting it as a normal "element not found" and inviting another
+      // blind retry. Real failure: asked to open Google search results, the
+      // page was actually Google's "unusual traffic" block page — its only
+      // real content is a "Why did this happen?" link; everything else in
+      // the element list (Account, Drive, Gmail, Maps...) is just Google's
+      // persistent header, which still renders on the block page. No
+      // selector fix can find results that were never actually served.
+      if (detectBlockPage(document.body ? document.body.innerText : '')) {
+        return '\n⚠️ THIS IS NOT THE REAL PAGE — it is a bot-detection / "unusual traffic" block page from the site. The task cannot proceed by clicking around it; none of its elements are the content you were asked to find. Call requestUserIntervention and tell the user honestly that the site blocked this as automated traffic and ask them to solve it manually (or say the task cannot continue). Do NOT keep guessing at buttons on this page.';
+      }
       let { indexText, count } = buildElementIndex();
       // A page can genuinely still be mid-render at the exact instant a click
       // fails right after navigate() — Google's results, for one, paint

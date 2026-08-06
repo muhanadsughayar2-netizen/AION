@@ -27,6 +27,7 @@ const {
   formatElementLabel,
   evaluateReadClaim,
   evaluateOpenedResultClaim,
+  detectBlockPage,
 } = require('../flow-premium/agent-logic-core.js');
 
 // ===========================================================================
@@ -219,5 +220,33 @@ describe('evaluateOpenedResultClaim', () => {
   test('other search engines are covered too, not just google.com', () => {
     expect(evaluateOpenedResultClaim('Open the third result', 'www.bing.com').blocked).toBe(true);
     expect(evaluateOpenedResultClaim('Open the third result', 'duckduckgo.com').blocked).toBe(true);
+  });
+});
+
+// ===========================================================================
+// detectBlockPage — Google's "unusual traffic" interstitial mistaken for a
+// real page with a missing button, twice in the same session
+// ===========================================================================
+describe('detectBlockPage', () => {
+  test('recognises the real Google block-page text verified live', () => {
+    // Verified by actually navigating to google.com/search and reading the
+    // real page — this is the literal text Google returned instead of
+    // search results.
+    const realBlockPageText = `About this page\n\nOur systems have detected unusual traffic from your computer network. This page checks to see if it's really you sending the requests, and not a robot. Why did this happen?\n\nIP address: 176.28.246.39\nTime: 2026-08-06T06:44:43Z`;
+    expect(detectBlockPage(realBlockPageText)).toBe(true);
+  });
+
+  test('a normal page of content is not flagged', () => {
+    expect(detectBlockPage('The 4 Best Noise-Cancelling Headphones of 2026 — our top picks for every budget.')).toBe(false);
+  });
+
+  test('empty/undefined text is not flagged', () => {
+    expect(detectBlockPage('')).toBe(false);
+    expect(detectBlockPage(undefined)).toBe(false);
+  });
+
+  test('catches a few common phrasing variants', () => {
+    expect(detectBlockPage('Please verify you are human before continuing.')).toBe(true);
+    expect(detectBlockPage("Confirm you're not a robot to proceed.")).toBe(true);
   });
 });
