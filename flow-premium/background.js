@@ -2140,7 +2140,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                     // has already been wrong once (a textarea when only inputs were
                     // expected); this is a real last resort against the NEXT wording
                     // change, not a guess dressed up as a fix.
-                    const fallbackEl = dSQV(document, 'textarea, div[contenteditable="true"]');
+                    //
+                    // Real failure, seen live via screenshot: this broad fallback
+                    // matched NotebookLM's own persistent chat/query box at the
+                    // bottom of the page instead of the actual source dialog — the
+                    // comment above even names this exact risk ("instead of typing
+                    // into the query box") but never actually excluded it. The
+                    // query box is a real, known, always-present element
+                    // (aria-label="Query box", see NL_FULL above) sitting outside
+                    // any dialog, so it's excluded here by name rather than left to
+                    // lose an arbitrary DOM-order race against the real target.
+                    const fallbackEl = dSQV(document,
+                      'textarea:not([aria-label="Query box" i]), div[contenteditable="true"]:not([aria-label="Query box" i])');
                     if (fallbackEl) {
                       fallbackEl.focus();
                       const r = fallbackEl.getBoundingClientRect();
