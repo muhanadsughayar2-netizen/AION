@@ -11537,14 +11537,13 @@ HOME PAGE:
   ❌ "Create new notebook"   ← WRONG — this label does not exist
 
 SOURCE DIALOG (after clicking "Add sources"):
-  ✅ "Website"               ← singular, adds a URL (NOT "Websites")
+  ✅ "Website"               ← adds URL(s) — try "Websites" too if this exact label isn't found, the live label has varied
   ✅ "Google Drive"
   ✅ "Google Docs"
   ✅ "YouTube"
   ✅ "Audio"
   ✅ "Copied text"
   ✅ "Upload"
-  ❌ "Websites"              ← WRONG plural — does not exist
 
 URL INPUT CONFIRM BUTTON (after typing a URL):
   ✅ "Insert"                ← the button to submit the URL
@@ -11555,15 +11554,14 @@ URL INPUT CONFIRM BUTTON (after typing a URL):
 
 Sources panel is on the LEFT side of the page.
 
-- WEBSITE / URL (add ONE URL at a time — do NOT paste multiple URLs in one call):
+- WEBSITE / YOUTUBE URLs (add them ALL IN ONE CALL — this box is built for it, do not add them one at a time):
   1. click("Add sources") — the sources panel opens or a modal appears.
   2. snapshotPage() — find the source-type option's exact accessible name in the AX tree.
-  3. click("Website") — EXACT label, singular. A URL input dialog opens.
-  4. snapshotPage() — find the text input (look for role="textbox" or a text input element). Note its accessible name or coordinates.
-  5. click the input by its accessible name or coordinates, then type({text:"https://example.com"}) — one URL only, no newlines.
-  6. click("Insert") — EXACT label. This submits the URL. Do NOT use "Submit", "Add", or "Done".
-  7. waitForElement({text:"Ready", timeout:60}) OR watch for the source to appear in the left panel.
-  8. Repeat from step 1 for each additional URL.
+  3. click("Website") — EXACT label, singular (the UI may also render as "Websites" — try that too if "Website" is not found). This opens a box titled "Website and YouTube URLs" whose own on-screen text says "To add multiple URLs, separate with a space or new line" — it is DESIGNED for a whole batch of links, not one at a time. Adding one URL per round trip when the box explicitly supports pasting all of them together just wastes turns for no reason.
+  4. snapshotPage() — find the text input (look for role="textbox", or a placeholder like "Paste any links" — note this is very often a <textarea>, not a single-line input, precisely because it expects multiple URLs).
+  5. click the input by its accessible name or coordinates, then type ALL of your gathered URLs in ONE type() call, each on its own line (use \n between them) or separated by spaces — exactly like the box's own instructions say. Do not call type() once per URL for this box.
+  6. click("Insert") — EXACT label, same confirm button as the single-URL case. Do NOT click "Add sources" here — that reopens the source-type picker and does not submit what you just typed. Do NOT use "Submit", "Add", or "Done" either — the button says "Insert".
+  7. waitForElement({text:"Ready", timeout:60}) OR watch for ALL of the sources to appear in the left panel before moving on.
 
 - PDF UPLOAD: requestUserIntervention("Please click 'Add sources' → 'Upload' to upload your PDF, then let me know when it appears in the sources list.")
 
