@@ -13284,6 +13284,19 @@ async function runAgentTask(prompt, thread) {
   let _speakCountAtLastReadCheck = 0; // a plan with TWO read steps ("read the poem",
                                 // later "read the extended poem") needs a FRESH speak
                                 // call for each one, not just "spoke once, ever" — this
+  // ── "Opened the result" verification ─────────────────────────────────────
+  // A real, serious failure: given "open the first result, then the third",
+  // a targetless fallback click landed on Google's own apps menu (Gmail,
+  // Maps, Calendar icons — visible in the element list at the time), the
+  // task never actually left google.com, and yet checkPlan/finish reported
+  // "Opened the first result ('...' by Everyday Parisian)... Opened the
+  // third result ('...' by Wheatless Wanderlust)" — specific site names it
+  // invented, describing a visit that never happened. This is worse than a
+  // failed click: it's a confidently fabricated success report. Guard the
+  // same way as the read/speak check — a step that claims to have "opened"
+  // a search result must be backed by the tab ACTUALLY being on a
+  // non-search-engine domain right now, checked live, not self-reported.
+  const _SEARCH_ENGINE_HOSTS = /(^|\.)google\.\w+$|(^|\.)bing\.com$|(^|\.)duckduckgo\.com$|(^|\.)yahoo\.com$/i;
                                 // remembers the count as of the last accepted read step.
 
   // ── Stateful Agent State (LangGraph-style checkpointer) ──────────────────
@@ -13606,10 +13619,28 @@ async function runAgentTask(prompt, thread) {
       // If the step text is about reading/speaking and speak() has not been
       // called even once yet this task, reject the claim instead of trusting it.
       const _claimsToSpeak = /\b(read|speak|spoken|aloud|say it|narrate)\b/i.test(_targetStep?.step || '');
+      // "Open the Nth result/link" claims are checked LIVE against the actual
+      // tab, not trusted — this is what would have caught the fabricated
+      // "Opened the first result (Everyday Parisian)... Opened the third
+      // result (Wheatless Wanderlust)" report, when the tab was still
+      // literally sitting on google.com the entire time.
+      const _claimsOpenedResult = /\b(open|opened|visit|visited|click(ed)?)\b.*\b(result|link)\b/i.test(_targetStep?.step || '');
+      let _stillOnSearchEngine = false;
+      if (_targetStep && _claimsOpenedResult) {
+        try {
+          const _liveTab = await chrome.tabs.get(tab.id);
+          _stillOnSearchEngine = _SEARCH_ENGINE_HOSTS.test(hostnameOf(_liveTab?.url || ''));
+        } catch (_) { /* if we can't check, don't block on it */ }
+      }
+
       if (_targetStep && _claimsToSpeak && _speakCallsThisTask <= _speakCountAtLastReadCheck) {
         clientSideResponses.push({ functionResponse: { name: 'checkPlan',
           response: { success: false,
             error: `Step ${stepIndex + 1} ("${_targetStep.step}") cannot be marked done — you have not called speak since the last reading step, so this text has not actually been read aloud. Call speak with the (current) text now, THEN call checkPlan.` } } });
+      } else if (_targetStep && _claimsOpenedResult && _stillOnSearchEngine) {
+        clientSideResponses.push({ functionResponse: { name: 'checkPlan',
+          response: { success: false,
+            error: `Step ${stepIndex + 1} ("${_targetStep.step}") cannot be marked done — the browser tab is still on the search engine's own page right now, so this result was NOT actually opened. Call snapshotPage to see the real current state, find the correct link (by index, not by guessing text), click it, and confirm you actually navigated to a different site before calling checkPlan again. Do not report this as done or describe it in finish until the tab has genuinely left the search engine.` } } });
       } else {
         if (_claimsToSpeak) _speakCountAtLastReadCheck = _speakCallsThisTask;
         if (_targetStep) { _targetStep.done = true; _targetStep.note = note; }
