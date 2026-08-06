@@ -2264,6 +2264,58 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 }
               }
 
+              // Auto-click "Insert" for the URL box — do NOT leave this to the
+              // model's next turn. It was told, in writing, in the system
+              // prompt, "click Insert, not Add sources" — and clicked
+              // "Add sources" anyway, live, twice in a row, discarding the
+              // URLs it had just correctly typed both times. Remembering one
+              // exact button name several turns after reading it is not
+              // reliable enough to depend on here. Since this code already
+              // knows for certain it just typed into the real URL box
+              // (nlRes.urlInput), it finds and clicks "Insert" itself, in the
+              // same action, instead of hoping the next model turn gets it
+              // right. Only runs for the URL box — the chat query box and
+              // Studio textareas below use params.run/Enter instead, which
+              // already works and is left alone.
+              if (nlRes?.urlInput) {
+                await new Promise(r => setTimeout(r, 250)); // let the Insert button's disabled state update
+                const insertLoc = await chrome.scripting.executeScript({
+                  target: { tabId },
+                  func: () => {
+                    function findInsertBtn(root) {
+                      if (!root) return null;
+                      try {
+                        for (const el of root.querySelectorAll('button, [role="button"]')) {
+                          const label = (el.getAttribute('aria-label') || el.textContent || '').trim();
+                          if (/^insert$/i.test(label) && !el.disabled && el.getAttribute('aria-disabled') !== 'true') {
+                            const r = el.getBoundingClientRect();
+                            if (r.width > 0 && r.height > 0) return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
+                          }
+                        }
+                      } catch (_) {}
+                      for (const el of root.querySelectorAll('*')) {
+                        if (el.shadowRoot) { const f = findInsertBtn(el.shadowRoot); if (f) return f; }
+                      }
+                      return null;
+                    }
+                    return findInsertBtn(document);
+                  }
+                }).catch(() => [{ result: null }]);
+                const insertXY = insertLoc?.[0]?.result;
+                if (insertXY) {
+                  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: insertXY.x, y: insertXY.y, button: 'left', buttons: 1, clickCount: 1 });
+                  await new Promise(r => setTimeout(r, 60));
+                  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: insertXY.x, y: insertXY.y, button: 'left', buttons: 1, clickCount: 1 });
+                  sendResponse({ success: true, data: `NotebookLM URL(s) typed and Insert clicked automatically` });
+                  return;
+                }
+                // Insert button not found/enabled — text is still safely typed
+                // (verified above), just tell the model plainly instead of
+                // silently leaving it unsubmitted.
+                sendResponse({ success: true, data: `URL(s) typed into NotebookLM's source box but the "Insert" button could not be found or is still disabled — call snapshotPage to find it and click it by index. Do NOT click "Add sources" to submit this, that reopens the source-type picker instead.` });
+                return;
+              }
+
               // Submit if requested: Enter sends the query in the chat box;
               // for Studio modal textareas use params.run to also click Generate.
               if (params.run) {
