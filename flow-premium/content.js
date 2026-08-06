@@ -4737,7 +4737,22 @@
             }
             return null;
           }
-          const input = geminiShadowFind(document);
+          // Real failure: right after navigate() to a fresh gemini.google.com
+          // tab, this ran once, immediately, found nothing (the SPA hadn't
+          // mounted <rich-textarea> yet), and fell back to a blind coordinate
+          // guess that landed on nothing clickable — "No focused element
+          // found after typing — document.body has focus." The model then
+          // had to recover by explicitly clicking the box itself (by its
+          // accessible name, "Enter a prompt for Gemini") before a retry
+          // succeeded, costing several turns for something the code should
+          // have just waited out. NotebookLM's own searches already retry
+          // for exactly this reason; this one never did. Now retries briefly
+          // instead of accepting "not found yet" as "not there."
+          let input = null;
+          for (let _attempt = 0; _attempt < 6 && !input; _attempt++) {
+            input = geminiShadowFind(document);
+            if (!input) await new Promise(r => setTimeout(r, 200));
+          }
           let x, y;
           if (input) {
             const r = input.getBoundingClientRect();
