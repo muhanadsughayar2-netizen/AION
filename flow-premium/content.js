@@ -4212,10 +4212,21 @@
   // guesses in a row, then gave up and asked the user. Hand back what is
   // ACTUALLY on the page, closest matches first, so the next turn can pick a
   // real target by index instead of guessing.
-  function describeAvailableElements(wantedRaw) {
+  async function describeAvailableElements(wantedRaw) {
     const wanted = (wantedRaw || '').toLowerCase().trim();
     try {
-      const { indexText, count } = buildElementIndex();
+      let { indexText, count } = buildElementIndex();
+      // A page can genuinely still be mid-render at the exact instant a click
+      // fails right after navigate() — Google's results, for one, paint
+      // progressively. The old code reported "nothing visible" as a final
+      // answer in that case with no retry, which reads to the model as "this
+      // page has no links" when it may just need another quarter-second.
+      // One short wait-and-rebuild before giving up costs nothing when the
+      // page WAS ready, and rescues the case when it wasn't.
+      if (count === 0) {
+        await new Promise(r => setTimeout(r, 400));
+        ({ indexText, count } = buildElementIndex());
+      }
       const lines = indexText.split('\n').filter(Boolean);
       if (!lines.length) return '\nNothing interactive is visible on the page right now — it may still be loading, or the content sits inside an iframe.';
 
@@ -4348,7 +4359,7 @@
           const wanted = params.text || params.description || '';
           throw new Error(
             `Element not found for "${wanted || '(no label given)'}". Tried: ${attemptedMethods.join(', ')}.` +
-            describeAvailableElements(wanted) +
+            (await describeAvailableElements(wanted)) +
             `\nNEXT STEP: pick one of the numbered elements above with click({index:N}) — do not guess another label blindly. If what you want genuinely is not listed, it is probably hidden behind a hover menu or a "…" overflow button: hover the relevant row/message first, then look again.`
           );
         }
@@ -5306,7 +5317,7 @@
         if (!element) {
           throw new Error(
             `Input not found. Tried: ${attemptedSelectors.slice(0, 5).join(', ')}.` +
-            describeAvailableElements(params.description || params.selector || '') +
+            (await describeAvailableElements(params.description || params.selector || '')) +
             `\nNEXT STEP: target the field by index with type({text:"…", index:N}) using the list above.`
           );
         }
