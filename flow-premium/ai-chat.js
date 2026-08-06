@@ -12020,20 +12020,16 @@ Rules:
 
   TRIGGERS — use the NotebookLM protocol whenever the user's task involves: podcast, audio overview, deep dive, presentation, slide deck, PPT, PowerPoint, video explainer, mind map, concept map, report, infographic, flashcard, quiz, data table, notebook, notebooklm, or creating content from source material.
 
-  IMPORTANT: The user was already shown an interactive multi-select picker BEFORE this task started. Their confirmed Studio output selections are injected into the task prompt as a [USER STUDIO SELECTION] block. READ THAT BLOCK first — it tells you exactly which outputs to build. Do NOT decide the output type yourself. Do NOT build anything that is not listed there.
+  IMPORTANT: There is NO picker and NO menu. The user is not shown a list of output types to choose from, and you must not show them one either. YOU decide which single Studio output best fits what they asked for, and you gather the sources yourself. The task prompt will carry a [NOTEBOOKLM TASK] block spelling this out — read it and follow it. If a task prompt instead carries an older [USER STUDIO SELECTION] block (a pre-confirmed choice), honour that block exactly as written and don't second-guess it.
 
-  STEP 1 — SOURCE MATERIAL (already resolved before you started):
-  The pre-flight conversation ALSO asked the user about sources. The [USER STUDIO SELECTION] block tells you which of these applies — follow it exactly:
-  → "User-provided source material" — add EXACTLY those URLs/text as sources in NotebookLM, then generate. Do not search for anything else.
-  → "you must search the web" — find 2–4 relevant, high-quality URLs on the topic first, then add them as sources.
-  → "The user will add sources manually" — navigate to NotebookLM, open/create the notebook, then call requestUserIntervention("Please add your sources in the left panel, then click Continue.") and verify the sources panel is populated before generating.
-  Do NOT re-ask the user for sources — that conversation already happened.
+  STEP 1 — SOURCE MATERIAL (gather it yourself, before opening NotebookLM):
+  → If the user gave you URLs or named specific videos/articles, use exactly those.
+  → Otherwise, go find real sources: search YouTube for the topic and collect real watch URLs via snapshotPage(), search again with a second phrasing for more, then find a few solid web articles. Aim for 5+ real sources. Never open an empty notebook, and never paste your own written-from-memory summary in place of real sources.
+  → Only if the user said they have a file to upload: requestUserIntervention("Please click 'Add sources' → 'Upload' and add your file, then hit Continue.")
 
-  STEP 2 — PLAN AND EXECUTE ALL CHOSEN OUTPUTS:
-  Read the [USER STUDIO SELECTION] block and build ONLY those outputs, in the order listed.
-  If more than one output was selected, call planTask FIRST to list every output as a numbered step (e.g. "1. Add sources, 2. Slide Deck, 3. Audio Overview"). Then navigate("https://notebooklm.google.com/"), add sources ONCE, and run through each Studio tool in sequence — checking off each plan step with checkPlan as it completes. Do NOT stop and ask after each one; complete the full list unless the user says stop.
-
-  REMINDER — never pick a Studio tool the user didn't select. If the [USER STUDIO SELECTION] says "Slide Deck, Flashcards", build those two only. Not Data Table, not Audio Overview.`;
+  STEP 2 — BUILD THE OUTPUT YOU CHOSE:
+  navigate("https://notebooklm.google.com/"), create the notebook, add ALL gathered sources in one go, wait for them to be Ready, then generate the single output you decided on. Say which one you picked and why in one short sentence before you start.
+  If the user genuinely asked for several outputs at once ("a deck AND a podcast"), call planTask first to list them, add sources ONCE, then run each Studio tool in sequence, checking off each with checkPlan. Do not stop and ask between them.`;
 
 // ── Autopilot mini mode ────────────────────────────────────────────────
 // While Autopilot runs, the chat window is its own real OS popup window
@@ -12565,6 +12561,11 @@ function awaitUserIntervention(thread, verbalRequest, expectedOutcome) {
 // Shown BEFORE the agent loop starts whenever a task is heading to NotebookLM.
 // Returns { tools: string[], details: string } — tools is the confirmed list of
 // Studio outputs to build; details is any extra instruction the user typed.
+// ⚠️ NO LONGER CALLED — the 9-button Studio picker was removed by explicit
+// request; AION now decides the output type itself from the user's words.
+// Kept only so the flow can be restored if that decision is ever reversed.
+// Do not wire this back up without removing the [NOTEBOOKLM TASK] block in
+// runAgentTask, or the model will be told two contradicting things.
 function awaitStudioPicker(thread, taskDescription) {
   return new Promise((resolve, reject) => {
     // Reject immediately if stop was requested before this card rendered
@@ -12742,6 +12743,7 @@ function awaitStudioPicker(thread, taskDescription) {
 
 // ── NotebookLM warm greeting bubble ──────────────────────────────────────────
 // Renders a conversational intro card in the thread before the picker appears.
+// ⚠️ NO LONGER CALLED — see the note on awaitStudioPicker above.
 function addStudioGreetingBubble(thread) {
   const bubble = document.createElement('div');
   bubble.className = 'chat-bubble ai';
@@ -12775,6 +12777,10 @@ function addStudioGreetingBubble(thread) {
 // ── Sources conversation step ─────────────────────────────────────────────────
 // After the user picks their Studio outputs, this asks them for source material
 // in a warm, conversational way. Returns { sources, mode }.
+// ⚠️ NO LONGER CALLED — see the note on awaitStudioPicker above. The
+// _pendingSourcesStepInput redirect in handleSend() is therefore dormant too
+// (the flag is never set), which is harmless: it stays null and the check
+// falls straight through.
 async function awaitSourcesStep(thread, tools, originalPrompt) {
   return new Promise(async (resolve, reject) => {
     // If a stop was already requested before this step rendered, abort at once —
@@ -13167,68 +13173,45 @@ async function runAgentTask(prompt, thread) {
   // Guard: if the prompt was already pre-processed by launchGeminiNotebook() or a
   // previous pre-flight pass (contains [USER STUDIO SELECTION]), skip pre-flight.
   if (isNotebookLMTask(prompt) && !prompt.includes('[USER STUDIO SELECTION')) {
-    try {
-      // Step 1 — warm greeting (voice fires async; bubble appears immediately)
-      agentSpeak("Hey! I'm so excited to help you create something with Google NotebookLM! Here's everything I can build for free — just pick what you'd like.");
-      addStudioGreetingBubble(thread);
+    // No picker card, no sources card — AION works it out from the request.
+    //
+    // This used to stop and show TWO interactive cards before the task even
+    // started: a 9-button "pick what you'd like me to create" grid, then a
+    // separate "what's the topic?" sources card with four more buttons. Both
+    // are gone by explicit request — the user's words: "I don't want that
+    // button, just make it disappear... AION when asked for a presentation
+    // can go directly to NotebookLM... you decide on the best for the user."
+    // Everything those cards used to collect (which output, where sources
+    // come from) is now inferred by the model from what was actually asked.
+    // The cards also caused a real bug of their own: their inputs were
+    // separate from the main chat box, so a topic typed in the normal place
+    // went nowhere (see _pendingSourcesStepInput). Removing them removes
+    // that whole class of problem too.
+    prompt = `${prompt}
 
-      // Step 2 — multi-select Studio picker
-      const pickerResult = await awaitStudioPicker(thread, prompt);
-      if (pickerResult.tools.length === 0) {
-        stopBtn.remove();
-        return;
-      }
+[NOTEBOOKLM TASK — DECIDE EVERYTHING YOURSELF. DO NOT ASK THE USER TO PICK.
 
-      // Step 3 — conversational sources step
-      const sourcesResult = await awaitSourcesStep(thread, pickerResult.tools, prompt);
+1. CHOOSE THE OUTPUT. Read what the user actually asked for and pick the single NotebookLM Studio output that genuinely fits it best. Do not present a menu, do not ask them to choose, do not build several and let them sort it out. Map their words to the right tool:
+   - "presentation", "slides", "slide deck", "PowerPoint", "PPT", "deck" → Slide Deck
+   - "podcast", "audio", "listen", "deep dive", "discussion" → Audio Overview
+   - "video", "explainer", "whiteboard" → Video Overview
+   - "mind map", "concept map", "how it connects", "visual map" → Mind Map
+   - "report", "write-up", "summary document", "roadmap", "primer", "brief" → Report
+   - "infographic", "poster", "visual summary" → Infographic
+   - "flashcards", "help me memorise", "study cards" → Flashcards
+   - "quiz", "test me", "questions" → Quiz
+   - "table", "compare", "side by side", "structured data" → Data Table
+   If the request is genuinely ambiguous ("make me something about X"), pick the one that best serves the intent rather than stalling — a Report is a sensible default for research/knowledge, a Slide Deck for anything presented to other people. Say which one you chose and why, in one short sentence, then get on with it. Only ask the user if the request is so unclear you cannot reasonably infer intent at all.
 
-      // Build the enriched prompt from all confirmed choices
-      const toolList = pickerResult.tools.join(', ');
-      const extraDetail = pickerResult.details
-        ? ` Style / focus instructions: "${pickerResult.details}".`
-        : '';
+2. GATHER REAL SOURCES YOURSELF, BEFORE opening NotebookLM. Do not ask the user for links unless they already gave some.
+   - If the user supplied URLs or named specific videos/articles, use exactly those.
+   - Otherwise: agentSpeak something warm about going hunting, then navigate to YouTube search for the topic and collect real watch URLs via snapshotPage(), then search again with a second phrasing (e.g. topic + " explained") for more, then search the web for a few high-quality articles. Aim for 5+ real sources; more is better for a richer output. Never open an empty notebook.
+   - ⚠️ Rule Zero (write it yourself instead of browsing) does NOT apply here. Do NOT write your own summary of what you already know and paste it in as a source. The entire point of NotebookLM is that outputs are grounded in real, verifiable material — your own recollection, however accurate it reads, is not a source and defeats the purpose.
+   - If the user says they have a file to upload, that is the one case to pause: requestUserIntervention("Please click 'Add sources' → 'Upload' and add your file, then hit Continue.")
 
-      let sourcesBlock = '';
-      if (sourcesResult.mode === 'youtube') {
-        const ytTopic = sourcesResult.sources || pickerResult.details || prompt.slice(0, 120);
-        sourcesBlock = ` SOURCE GATHERING REQUIRED — do this BEFORE opening NotebookLM:
-1. agentSpeak("I'm on the hunt for the best YouTube videos and web articles on '${ytTopic}'! 🕵️ Give me a moment!")
-2. navigate("https://www.youtube.com/results?search_query=${encodeURIComponent(ytTopic).replace(/%20/g,'+')}") — collect at least 5 real video URLs (youtube.com/watch?v=...) from the results page using snapshotPage(). Pick videos with high views or "explained", "guide", "tutorial", "deep dive" in the title.
-3. navigate("https://www.youtube.com/results?search_query=${encodeURIComponent(ytTopic + ' explained').replace(/%20/g,'+')}") — grab 3–5 more video URLs.
-4. navigate("https://www.google.com/search?q=${encodeURIComponent(ytTopic + ' site:medium.com OR site:wikipedia.org OR site:towardsdatascience.com').replace(/%20/g,'+')}") — grab 3–5 web article URLs from the results.
-5. agentSpeak("Found some great stuff! Let me load it all into your notebook now. 🚀")
-6. NOW open NotebookLM and add ALL gathered YouTube URLs plus web article URLs as sources. Never start with fewer than 5 sources.
-7. agentSpeak once all sources are loaded and confirmed Ready.`;
-      } else if (sourcesResult.mode === 'provided' && sourcesResult.sources) {
-        sourcesBlock = ` User-provided source material (add these as sources in NotebookLM before generating): "${sourcesResult.sources}". If any entry looks like a topic description rather than a URL, search YouTube and the web for it first and add the real links instead.`;
-      } else if (sourcesResult.mode === 'find') {
-        sourcesBlock = ` The user has no sources — search YouTube AND the web for relevant content on the topic, collect at least 5 URLs, then add them as sources in NotebookLM before generating. Do NOT start with an empty notebook.`;
-      } else if (sourcesResult.mode === 'file') {
-        sourcesBlock = ` The user has a local file to upload. Navigate to NotebookLM, create or open a notebook, then requestUserIntervention("Please click 'Add sources' → 'Upload' in the left panel and upload your file, then click Continue when it shows as Ready."). Wait for at least one source to be Ready before generating.`;
-      } else if (sourcesResult.mode === 'manual') {
-        sourcesBlock = ` The user will add sources manually inside NotebookLM. Navigate there, open or create a notebook, and wait for them to add sources — check the sources panel before generating.`;
-      }
+3. BUILD IT. Open NotebookLM, create the notebook, paste ALL gathered URLs in one go (the URL box explicitly supports multiple links — see the NOTEBOOKLM ROUTING protocol for exact button labels), wait for sources to be Ready, then generate the output you chose in step 1.
 
-      // Real failure: told to gather sources on "Dr. William Li's food and
-      // health findings," the agent never once visited YouTube or Google —
-      // it wrote a detailed, accurate-READING paragraph entirely from its
-      // own training knowledge, then tried to paste that as if it were a
-      // gathered source. This is Rule Zero (added earlier this session:
-      // "if you can write it yourself, don't browse for it") applied where
-      // it does not belong. Rule Zero is right for a poem or a plain
-      // question; it is wrong here, because the entire point of NotebookLM
-      // is that its outputs are grounded in real, verifiable sources — your
-      // own recollection, however accurate-sounding, is not a source and
-      // defeats the purpose of using NotebookLM at all.
-      sourcesBlock += ` ⚠️ Rule Zero (write it yourself instead of browsing) does NOT apply to gathering NotebookLM sources. Do not write your own summary of what you already know about the topic and paste it in as if it were a source — you must actually navigate to real pages/videos and add their REAL URLs. A notebook fed your own recollection instead of real sources produces outputs that are not actually grounded in anything, which defeats the entire reason to use NotebookLM.`;
-
-      prompt = `${prompt}\n\n[USER STUDIO SELECTION — build EXACTLY these NotebookLM outputs in this order: ${toolList}.${extraDetail}${sourcesBlock} Do NOT build any other output type. Follow the NOTEBOOKLM ROUTING protocol.]`;
-
-    } catch (err) {
-      // Stopped or dismissed — abort cleanly
-      stopBtn.remove();
-      return;
-    }
+4. TALK TO THEM LIKE A FRIEND THE WHOLE WAY THROUGH. agentSpeak at each real milestone — what you picked and why, when you're off hunting sources, what you found, when it's generating, when it's done. Some outputs (especially Audio and Video Overview) take Google's servers several minutes — say so plainly and stay warm while it works rather than going silent. Never make this feel like a form being processed.]`;
   }
 
   // Shrink into a corner strip so the page Autopilot is controlling isn't
@@ -20860,51 +20843,37 @@ async function launchGeminiNotebook() {
     const onboardBubble = document.createElement('div');
     onboardBubble.className = 'chat-bubble ai';
     onboardBubble.style.cssText = 'background:rgba(66,133,244,0.07);border:1px solid rgba(66,133,244,0.22);padding:10px 14px;border-radius:12px;margin:6px 0;font-size:13px;color:rgba(226,232,240,0.85);line-height:1.5';
-    onboardBubble.textContent = '👋 First time? I\'ll open NotebookLM in your browser and build everything automatically — completely free. Just pick what you want below!';
+    onboardBubble.textContent = '👋 First time? Just tell me what you want — a presentation, a podcast, a report, flashcards — and I\'ll go find the sources and build it in NotebookLM for you. Completely free.';
     thread.appendChild(onboardBubble);
     thread.scrollTop = thread.scrollHeight;
     await chrome.storage.local.set({ notebookOnboarded: true });
     await new Promise(r => setTimeout(r, 400));
   }
 
-  // 4. Warm greeting + studio picker + sources step
-  //    (same pre-flight flow as when the user types a NL task, but invoked directly)
+  // 4. Just start a conversation — no picker, no menu, no cards.
+  //    This used to show the same 9-button Studio picker and 4-button sources
+  //    card as the typed-task path. Both are gone by explicit request: the user
+  //    wants to say what they want in plain words and have AION work out which
+  //    NotebookLM output fits and where the sources come from. So this button
+  //    now only opens the conversation; whatever the user types next flows
+  //    through the normal agent path, where isNotebookLMTask() picks it up and
+  //    the [NOTEBOOKLM TASK] block tells the model to decide everything itself.
   const userName = (await chrome.storage.local.get(['aionUserName'])).aionUserName || '';
-  const greeting = userName
-    ? `Hey ${userName}! 🎉 I'm SO excited to help you create something amazing with Gemini Notebook — it's completely free! Pick what you'd like to build and I'll do the rest!`
-    : `Hey! 🎉 I'm SO excited to help you create something amazing with Gemini Notebook — it's completely free! Pick what you'd like to build and I'll do the rest!`;
+  const namePart = userName ? ` ${userName}` : '';
+  const greeting = `Hey${namePart}! Tell me what you'd like and I'll build it in Gemini Notebook — a presentation, a podcast, a report, a mind map, flashcards, a quiz, whatever fits. Just say it in your own words and I'll go find the sources and put it together. What are we making?`;
   agentSpeak(greeting);
-  addStudioGreetingBubble(thread);
 
-  let pickerResult, sourcesResult;
-  try {
-    pickerResult = await awaitStudioPicker(thread, '');
-    if (!pickerResult.tools || pickerResult.tools.length === 0) return;
-    sourcesResult = await awaitSourcesStep(thread, pickerResult.tools, '');
-  } catch (_) { return; } // user cancelled / stopped
+  const bubble = document.createElement('div');
+  bubble.className = 'chat-bubble ai';
+  bubble.style.cssText = 'background:rgba(16,185,129,0.06);border:1px solid rgba(16,185,129,0.25);padding:14px 16px;border-radius:14px;margin:8px 0;font-size:13px;color:rgba(226,232,240,0.9);line-height:1.6';
+  bubble.textContent = greeting;
+  thread.appendChild(bubble);
+  thread.scrollTop = thread.scrollHeight;
 
-  // 4. Build the enriched prompt and hand off to runAgentTask
-  const toolList = pickerResult.tools.join(', ');
-  const extraDetail = pickerResult.details ? ` Style / focus instructions: "${pickerResult.details}".` : '';
-  let sourcesBlock = '';
-  if (sourcesResult.mode === 'provided' && sourcesResult.sources) {
-    sourcesBlock = ` User-provided source material (add these as sources in NotebookLM before generating): "${sourcesResult.sources}".`;
-  } else if (sourcesResult.mode === 'find') {
-    sourcesBlock = ` The user has no sources — search the web for 2–4 high-quality relevant URLs, then add them as sources in NotebookLM before generating.`;
-  } else if (sourcesResult.mode === 'file') {
-    sourcesBlock = ` The user has a local file to upload. Navigate to NotebookLM, create or open a notebook, then requestUserIntervention("Please click 'Add sources' → 'Upload' in the left panel and upload your file, then click Continue when it shows as Ready."). Wait for at least one source to be Ready before generating.`;
-  } else {
-    sourcesBlock = ` The user will add sources manually inside NotebookLM. Navigate there, create or open a notebook, then waitForElement and verify sources are Ready before generating.`;
-  }
-  // See the matching comment on the other awaitSourcesStep call site — Rule
-  // Zero must not apply to gathering NotebookLM sources. Writing a summary
-  // from memory and pasting it in as if it were a source defeats the entire
-  // point of NotebookLM, which is grounding output in real material.
-  sourcesBlock += ` ⚠️ Rule Zero (write it yourself instead of browsing) does NOT apply to gathering NotebookLM sources. Do not write your own summary of what you already know and paste it in as if it were a source — actually navigate to real pages/videos and add their REAL URLs.`;
-
-  const enrichedPrompt = `Open Google NotebookLM and create the following content.\n\n[USER STUDIO SELECTION — build EXACTLY these NotebookLM outputs in this order: ${toolList}.${extraDetail}${sourcesBlock} Do NOT build any other output type. Follow the NOTEBOOKLM ROUTING protocol.]`;
-
-  await runAgentTask(enrichedPrompt, thread);
+  // Focus the MAIN chat input so the user answers in the one box they always
+  // use — the old cards had their own separate inputs, which is exactly how a
+  // typed topic once went nowhere at all.
+  document.getElementById('chatInput')?.focus();
 }
 
 document.getElementById('addMagicBtn')?.addEventListener('click', () => {
