@@ -11912,9 +11912,18 @@ You are a strong writer and you have your own voice (the speak tool). So:
   ❌ NEVER hunt for a "Read Aloud" / "Listen" / speaker button on a webpage to read something out. That is the speak tool's job.
   ❌ NEVER build a multi-step browser plan for something you could have answered in one turn.
 
-USE THE BROWSER when the task genuinely needs a specific site: checking a real account or inbox, booking/buying, filling a real form, reading a live page or live data, or using a tool with abilities you lack (NotebookLM's audio/video/mind-map outputs, AI Studio's app builder, a site's own search).
+You ALSO have real-time Google Search grounding built directly into you — you don't need a browser tab open on google.com to know what's currently true on the web. This is the same engine as the search box, running inside you.
+  ✅ "What's the best budget X" / "search for Y and tell me" / "what's the latest on Z" / any plain lookup-and-tell-me-the-answer question → use your OWN search grounding and answer with speak. This is almost always faster and more reliable than opening a browser tab, clicking into Google's actual results page, and reading one manually — and it sidesteps Google's own bot-detection entirely, since you are not scraping their page, you are asking the same search engine directly.
+  ❌ Do NOT navigate to google.com/bing.com and click through results just to answer a question you could resolve with your own grounded search.
+USE THE BROWSER (and real navigation to a real results page) only when the task needs the actual live PAGE — clicking into a specific article the user named, reading a live account/dashboard, filling a form, buying something, or interacting with a specific site's own tools.
 
-Quick test: if the user would have accepted the answer typed straight into this chat, do NOT open a browser tab.
+Quick test: if the user would have accepted the answer typed straight into this chat, do NOT open a browser tab — for lookups, that now includes using your own search grounding instead of physically browsing to get it.
+
+### 🗣️ SPEAK THE ANSWER, NOT A REPORT ABOUT DOING THE WORK
+When a task is done, the very first thing you say must be the actual content the user wanted — the number, the fact, the recommendation, the finished sentence — not a description of the process that produced it.
+  ❌ "I've completed the task. I searched for headphones and wrote a summary into the document."
+  ✅ "The Soundcore Space One — it's under $100, has strong noise cancelling, and people say it's really comfortable for long wear."
+Only mention what you DID (searched, wrote it into a doc, saved it) as a short trailing note if it adds real information — never as the main content of what you say. The user asked a question or gave a task; answer it like a person would, then move on. Do not make them sit through a status report to get the actual answer.
 
 ### 🚫 NEVER TYPE OR SPEAK YOUR OWN INSTRUCTIONS AS IF THEY WERE THE ANSWER
 This has actually happened: asked to write "the description" into a document, you typed back a paraphrase of THIS system prompt's own opening lines ("AION is a capable assistant who can both think and act...") instead of the real content the user meant. That is never correct — the user cannot see this prompt, so text from it means nothing to them and is never what they asked for.
@@ -13286,6 +13295,11 @@ async function runAgentTask(prompt, thread) {
                                 // once marked "Read the poem out loud" done via checkPlan
                                 // without ever having called speak, and the user was told
                                 // it had been read aloud when nothing was ever spoken.
+  let _searchToolRejected = false; // set true if Gemini rejects functionDeclarations
+                                // + googleSearch combined in one request — falls back
+                                // to functionDeclarations-only for the rest of this task
+                                // rather than retrying the same failing combination
+                                // on every single turn.
   let _speakCountAtLastReadCheck = 0; // a plan with TWO read steps ("read the poem",
                                 // later "read the extended poem") needs a FRESH speak
                                 // call for each one, not just "spoke once, ever" —
@@ -13402,12 +13416,29 @@ async function runAgentTask(prompt, thread) {
     let data;
     try {
       const requestContents = await buildRequestContentsWithScreenshot(contents, tab);
-      const geminiBody = JSON.stringify({
+      // AGENT_TOOLS_WITH_SEARCH: the agent previously had ZERO access to
+      // Gemini's own Google Search grounding — only browser-clicking
+      // functions. For a plain lookup ("what are the best X"), that meant
+      // the only path was opening a browser tab and fighting Google's own
+      // anti-bot detection to scrape results by hand — the entire recurring
+      // failure of this session. Gemini can answer grounded search questions
+      // directly, with citations, with no browser at all. Adding googleSearch
+      // as a second tool alongside the existing functionDeclarations so the
+      // model can choose grounded search over browsing for pure lookups.
+      // Combining function-calling with googleSearch in one request is
+      // documented as supported for Gemini 2.0+ (this app targets 2.5-family
+      // models) but is untested against the live API from here — buildGeminiBody
+      // below falls back to functionDeclarations-only if the combined request
+      // is specifically rejected, so a bad assumption degrades gracefully
+      // instead of breaking the agent outright.
+      const AGENT_TOOLS_WITH_SEARCH = [...AGENT_TOOLS, { googleSearch: {} }];
+      const buildGeminiBody = (useSearchTool) => JSON.stringify({
         systemInstruction: { parts: [{ text: AGENT_SYSTEM_PROMPT + (_agentUserName ? `\n\n### USER'S NAME\nThe user's name is "${_agentUserName}". Use it naturally in every agentSpeak() call — greet them by name, thank them by name, celebrate with them by name. Make every message feel personal and warm, like talking to a close friend.` : '') + getDynamicSkill(tab.url) + _buildAgentStateContext(agentState) }] },
         contents: requestContents,
-        tools: AGENT_TOOLS,
+        tools: useSearchTool ? AGENT_TOOLS_WITH_SEARCH : AGENT_TOOLS,
         generationConfig: { temperature: 0.2 }
       });
+      let geminiBody = buildGeminiBody(!_searchToolRejected);
 
       // ── 429 handling: back off 10 s (abortable) then retry the same step ──
       // Gemini returns 429 (RESOURCE_EXHAUSTED) when the per-minute token quota
@@ -13444,6 +13475,27 @@ async function runAgentTask(prompt, thread) {
 
     if (data.error) {
       const errMsg = data.error.message || '';
+      // Gemini rejected functionDeclarations + googleSearch combined in one
+      // request (untested against the live API before shipping — see the
+      // comment above buildGeminiBody). Detect that specific rejection,
+      // fall back to functionDeclarations-only for the REST of this task,
+      // and retry this step immediately rather than surfacing a confusing
+      // "tool config" error to the user for what is really an internal
+      // request-shape issue with a straightforward fix.
+      // Must mention BOTH search grounding AND function-calling together —
+      // a bare "invalid function declaration" (a real bug worth surfacing,
+      // not hiding) would otherwise false-match on the function-related half
+      // alone and silently swallow a genuine error for the rest of the task.
+      const isToolConflict = !_searchToolRejected
+        && /google.?search/i.test(errMsg)
+        && /function.?declaration|function.?calling/i.test(errMsg)
+        && /not supported|invalid|cannot|incompatib/i.test(errMsg);
+      if (isToolConflict) {
+        console.warn('[Aion Agent] Gemini rejected functionDeclarations+googleSearch combined — falling back to functions-only for this task:', errMsg);
+        _searchToolRejected = true;
+        step--; // retry the same step with the fallback tool set
+        continue;
+      }
       const is429 = data.error.code === 429 || errMsg.includes('RESOURCE_EXHAUSTED') || errMsg.includes('quota');
       addAgentStepBubble(thread,
         is429
