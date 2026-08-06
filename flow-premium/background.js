@@ -2229,58 +2229,49 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                 returnByValue: true
               }).catch(() => {});
 
-              // Repeated, real user report, reproduced twice: the FIRST URL in a
-              // multi-URL paste always lands, every URL after it silently vanishes.
-              // Root cause: Input.insertText writes the whole space-joined blob as
-              // ONE atomic value change — it does not fire a real clipboard 'paste'
-              // event, which is what a chip/tag-style "add multiple links" input
-              // (the common pattern for exactly this kind of box) listens for to
-              // split a paste into separate entries. Without that event, the field
-              // likely just holds one long unparseable string, and whatever
-              // NotebookLM does with it on submit only recovers the first
-              // URL-shaped substring. Typing each URL individually and pressing
-              // Enter after each one commits it as its own entry before the next
-              // is typed, instead of gambling on one bulk insert being auto-split
-              // correctly.
+              // Repeated, real user report, reproduced across THREE live tests: the
+              // FIRST URL in a multi-URL paste lands, every URL after it silently
+              // vanishes. A prior fix here tried typing each URL individually and
+              // pressing Enter between them, on the theory that this was a
+              // chip-input needing a per-entry commit keystroke — that did NOT fix
+              // it (still only 1 of 5 landed on the next live test), which rules
+              // that theory out. The real answer was already sitting in this
+              // file's own NotebookLM instructions (SKILL_LIBRARY.notebooklm,
+              // "ADDING SOURCES" section): the box's own on-screen text literally
+              // says "To add multiple URLs, separate with a space or new line" —
+              // it's a plain textarea that parses whitespace/newlines in a SINGLE
+              // paste, not a chip input. Pressing Enter after the first URL very
+              // plausibly triggered the dialog's default-submit action (a common
+              // web pattern: Enter in a form field activates whichever button
+              // currently holds default-submit status — here, "Insert") — closing
+              // the box after just one source, before Input.insertText for URL #2
+              // had anywhere real left to land. Back to a single insert, joined by
+              // real newlines (not whatever separator the model happened to type)
+              // to match the box's own documented parsing — and no Enter presses
+              // anywhere in this path.
               const _multiUrlTokens = nlRes?.urlInput
                 ? text.split(/\s+/).map(t => t.trim()).filter(t => /^https?:\/\//i.test(t))
                 : [];
+              const _insertText = _multiUrlTokens.length > 1 ? _multiUrlTokens.join('\n') : text;
 
-              if (nlRes?.urlInput && _multiUrlTokens.length > 1) {
-                for (let ui = 0; ui < _multiUrlTokens.length; ui++) {
-                  await send('Input.insertText', { text: _multiUrlTokens[ui] });
-                  await _fireNlEvents(['input', 'change']);
-                  await new Promise(r => setTimeout(r, 150));
-                  await send('Input.dispatchKeyEvent', { type: 'rawKeyDown', key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-                  await send('Input.dispatchKeyEvent', { type: 'keyUp',     key: 'Enter', code: 'Enter', windowsVirtualKeyCode: 13 });
-                  await new Promise(r => setTimeout(r, 200));
-                }
-                await _fireNlEvents(['blur']);
-                // Not verifying via a text substring here — after N Enter commits
-                // the field's own content is whatever NotebookLM's chip UI leaves
-                // behind (often cleared), so a "does this text still appear"
-                // check would be checking the wrong thing. The Insert-button step
-                // right below still guards this honestly: if nothing actually
-                // registered, Insert stays disabled and that's reported plainly
-                // instead of assumed successful.
-              } else {
-                await send('Input.insertText', { text });
+              await send('Input.insertText', { text: _insertText });
+              await _fireNlEvents(['input', 'change', 'blur']);
+
+              // Verify text actually landed — NotebookLM's Shadow DOM focus can
+              // silently fail if a modal just opened and focus hasn't settled yet.
+              // For the multi-URL case, check the FIRST url specifically rather
+              // than an arbitrary 20-char slice of a much longer joined string.
+              const nlSample = _multiUrlTokens.length > 1 ? _multiUrlTokens[0] : _insertText.slice(0, 20);
+              if (nlSample && !(await verifyTextInPage(tabId, nlSample))) {
+                // Retry: coordinate click to force focus then re-insert
+                await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
+                await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
+                await new Promise(r => setTimeout(r, 300));
+                await send('Input.insertText', { text: _insertText });
                 await _fireNlEvents(['input', 'change', 'blur']);
-
-                // Verify text actually landed — NotebookLM's Shadow DOM focus can
-                // silently fail if a modal just opened and focus hasn't settled yet.
-                const nlSample = text.slice(0, 20);
-                if (nlSample && !(await verifyTextInPage(tabId, nlSample))) {
-                  // Retry: coordinate click to force focus then re-insert
-                  await send('Input.dispatchMouseEvent', { type: 'mousePressed', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
-                  await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: nlX, y: nlY, button: 'left', buttons: 1, clickCount: 1 });
-                  await new Promise(r => setTimeout(r, 300));
-                  await send('Input.insertText', { text });
-                  await _fireNlEvents(['input', 'change', 'blur']);
-                  if (!(await verifyTextInPage(tabId, nlSample))) {
-                    sendResponse({ success: false, error: 'Text did not appear in NotebookLM input after two attempts. The target input may not be open yet — try clicking the button that opens it first.' });
-                    return;
-                  }
+                if (!(await verifyTextInPage(tabId, nlSample))) {
+                  sendResponse({ success: false, error: 'Text did not appear in NotebookLM input after two attempts. The target input may not be open yet — try clicking the button that opens it first.' });
+                  return;
                 }
               }
 
@@ -2327,7 +2318,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
                   await new Promise(r => setTimeout(r, 60));
                   await send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: insertXY.x, y: insertXY.y, button: 'left', buttons: 1, clickCount: 1 });
                   sendResponse({ success: true, data: _multiUrlTokens.length > 1
-                    ? `${_multiUrlTokens.length} NotebookLM URLs typed individually (one at a time, Enter after each) and Insert clicked automatically`
+                    ? `${_multiUrlTokens.length} NotebookLM URLs typed as one newline-separated paste and Insert clicked automatically`
                     : `NotebookLM URL(s) typed and Insert clicked automatically` });
                   return;
                 }
