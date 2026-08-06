@@ -10668,13 +10668,13 @@ const AGENT_TOOLS = [{
     },
     {
       name: 'waitForElement',
-      description: 'Wait until specific text appears on the page OR a CSS selector matches a visible element, before continuing. Use after clicking something that triggers a page load, AJAX request, or animation — prevents acting on elements that have not loaded yet.',
+      description: 'Wait until specific text appears on the page OR a CSS selector matches a visible element, before continuing. ONLY use this immediately AFTER an action that actually triggers the thing you are waiting for (a click that submits, a navigation, an upload). Waiting for something that cannot appear yet just stalls the task for the full timeout and teaches you nothing — if you have not performed the triggering step yet, do that step first. If you are unsure whether an element exists, call snapshotPage instead: it returns instantly with what is really on the page.',
       parameters: {
         type: 'object',
         properties: {
           text: { type: 'string', description: 'Text to wait for on the page, e.g. "Results" or "Saved"' },
           selector: { type: 'string', description: 'CSS selector to wait for, e.g. ".results-list"' },
-          timeout: { type: 'number', description: 'Max seconds to wait (default 10, max 30)' }
+          timeout: { type: 'number', description: 'Max seconds to wait (default 8, max 30). Keep it short — a long wait on a wrong guess is dead time the user sits through.' }
         }
       }
     },
@@ -12388,26 +12388,18 @@ function awaitUserInterventionClean(thread, verbalRequest, expectedOutcome, abor
       .replace(/\s{2,}/g, ' ').trim();
 
     const _n = _agentUserName || '';
-    // Rotate through playful "I need your magic hands" openers
-    const _funnyLines = [
-      `I'm basically a very enthusiastic semi-bot — I can do SO much, but I still need your magic hands for this one! 🪄`,
-      `Okay, real talk${_n ? ' ' + _n : ''} — I'm incredibly capable but I am NOT able to physically reach through the screen. Yet. 😅`,
-      `Plot twist: the most powerful AI in your browser needs a human for 10 seconds. That human is you. You're the chosen one. 🧙`,
-      `I've automated 47 steps and this is the one that requires actual fingers. Yours. Right now. Let's go! 👆`,
-      `This is our teamwork moment${_n ? ', ' + _n : ''}! You do this one thing, I do everything else. Deal? 🤝`,
-    ];
-    const _funnyLine = _funnyLines[Math.floor(Date.now() / 1000) % _funnyLines.length];
-    const _nameSuffix = _n ? ` — you're the best, ${_n}! 🙌` : ' 🙌';
+    // This card appears at the worst possible moment — the user is already
+    // waiting and something just failed. Five lines of jokes and a rotating
+    // "enthusiastic semi-bot" bit made a stall feel longer and more annoying
+    // than it was. Say what is needed, show the button, get out of the way.
     card.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;font-weight:700;color:#fbbf24;margin-bottom:8px;font-size:13.5px;">
-        🪄 I need your magic hands${_n ? ', ' + _n : ''}!
+        🪄 Can you do this one${_n ? ', ' + _n : ''}?
       </div>
-      <p style="font-size:12.5px;color:rgba(251,191,36,0.8);margin:0 0 8px;line-height:1.5;font-style:italic">${_funnyLine}</p>
       <p style="font-size:13px;line-height:1.6;margin:0 0 12px;color:#f1f5f9">${cleanMsg}</p>
       ${expectedOutcome ? `<p style="font-size:11.5px;color:rgba(251,191,36,0.7);margin:0 0 12px;line-height:1.5">✅ When done: ${expectedOutcome}</p>` : ''}
-      <p style="font-size:12px;color:rgba(251,191,36,0.50);margin:0 0 12px">Hit the button when you're done and I'll jump right back in${_nameSuffix}</p>
       <div style="display:flex;gap:8px;flex-wrap:wrap;">
-        <button class="intv-done-btn" style="flex:1;padding:10px 16px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;min-width:140px;">✓ Done! Let's keep going →</button>
+        <button class="intv-done-btn" style="flex:1;padding:10px 16px;background:linear-gradient(135deg,#f59e0b,#d97706);color:#000;border:none;border-radius:10px;font-weight:700;font-size:13px;cursor:pointer;min-width:140px;">✓ Done — keep going</button>
         <button class="intv-speak-btn" style="padding:10px 12px;background:rgba(251,191,36,0.10);color:#fbbf24;border:1px solid rgba(251,191,36,0.3);border-radius:10px;font-size:12px;cursor:pointer;">🔊 Say it again</button>
       </div>`;
 
@@ -13525,11 +13517,23 @@ async function runAgentTask(prompt, thread) {
     const planCall = fnCallParts.find(p => p.functionCall.name === 'planTask');
     if (planCall) {
       const { steps = [], summary = '' } = planCall.functionCall.args || {};
-      agentPlan = steps.map(s => ({ step: s, done: false, note: '' }));
-      const planLines = steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
-      addAgentStepBubble(thread, `📋 Plan${summary ? ': ' + summary : ''}:\n${planLines}`);
-      clientSideResponses.push({ functionResponse: { name: 'planTask',
-        response: { success: true, data: `Plan recorded (${steps.length} steps). Begin executing step 1 now.` } } });
+      // Re-planning used to silently overwrite the existing plan and print a
+      // second "📋 Plan:" bubble, so the user saw two different plans for one
+      // task and every checkPlan index pointed at the wrong step. Keep the
+      // first plan and send the model back to executing it.
+      if (agentPlan?.length) {
+        clientSideResponses.push({ functionResponse: { name: 'planTask',
+          response: { success: false,
+            error: `A plan is already active for this task — you cannot re-plan. Current plan:\n${
+              agentPlan.map((s, i) => `${i + 1}. ${s.step}${s.done ? ' (done)' : ''}`).join('\n')
+            }\nContinue from the first step that is not done, and use checkPlan to mark progress.` } } });
+      } else {
+        agentPlan = steps.map(s => ({ step: s, done: false, note: '' }));
+        const planLines = steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
+        addAgentStepBubble(thread, `📋 Plan${summary ? ': ' + summary : ''}:\n${planLines}`);
+        clientSideResponses.push({ functionResponse: { name: 'planTask',
+          response: { success: true, data: `Plan recorded (${steps.length} steps). Begin executing step 1 now.` } } });
+      }
     }
 
     // ── speak — the agent delivers its OWN writing, out loud ──────────────────
@@ -13545,7 +13549,7 @@ async function runAgentTask(prompt, thread) {
       }
       clientSideResponses.push({ functionResponse: { name: 'speak',
         response: { success: true, data: speechText.trim()
-          ? 'Spoken aloud to the user in your own voice and shown in the chat. If this delivered what they asked for, call finish now — do not open any website for it.'
+          ? 'Spoken aloud in your own voice and already shown in the chat. The user has SEEN and HEARD this text — do NOT repeat it in your finish summary; just confirm in one short sentence. If this delivered what they asked for, call finish now and do not open any website for it.'
           : 'No text supplied, nothing spoken.' } } });
     }
 
@@ -13758,8 +13762,13 @@ async function runAgentTask(prompt, thread) {
     }
 
     // ── Filter to executable CDP/tab tools only ───────────────────────────────
+    // 'speak' belongs here with the other client-side tools: it is handled above
+    // by agentSpeak() in this page, not by the CDP layer. Leaving it out meant
+    // every speak call ALSO went to background.js as a browser action, which
+    // answered "Unknown action: speak" — so the story was delivered correctly
+    // and the model was told it had failed.
     const executableCalls = fnCallParts.filter(p =>
-      !['finish', 'planTask', 'checkPlan', 'invokeCouncil'].includes(p.functionCall.name)
+      !['finish', 'planTask', 'checkPlan', 'invokeCouncil', 'speak'].includes(p.functionCall.name)
     );
 
     // If only client-side calls this turn, push their responses and loop
@@ -14148,19 +14157,13 @@ async function runAgentTask(prompt, thread) {
         await addAgentMemoryNote(hostnameOf(tab.url || ''),
           `"${_stuckCall.name}"${stuckDesc ? ` targeting "${stuckDesc}"` : ''} repeatedly failed here — try snapshotPage or a different approach before retrying it directly.`).catch(() => {});
       }
-      // Build a fun, friendly message describing WHAT specifically failed
+      // Say what failed, plainly. The user is already waiting on a stalled task;
+      // a rotating joke ("this step is laughing at me 😂") spends their patience
+      // before telling them what to actually do.
       const stuckTarget = _stuckCall?.args?.text || _stuckCall?.args?.description || _stuckCall?.args?.selector || 'that step';
       const nameTag = _agentUserName ? `, ${_agentUserName}` : '';
-      const _stuckFunnyLines = [
-        `I've tried it twice and this step is laughing at me 😂 — I need your magic hands!`,
-        `Okay${nameTag}, I'm going to be honest: this step is outsmarting me. You've got this though!`,
-        `Two attempts, zero luck. I'm a semi-bot and I still need a human for the tricky bits! 🪄`,
-        `I could try a third time… or I could ask the expert (you). I'm going with the expert.`,
-        `Plot twist: the AI needs backup${nameTag}. This is our collab moment! 🤝`,
-      ];
-      const _stuckFunny = _stuckFunnyLines[Math.floor(Date.now() / 1000) % _stuckFunnyLines.length];
-      const verbalMsg = `Hey${nameTag}! ${_stuckFunny} I'm stuck on "${stuckTarget}" — could you do this one step for me?`;
-      const cardMsg   = `${_stuckFunny}\n\nI'm stuck on: "${stuckTarget}"\n\nDo this one step and hit Continue — I'll pick up right where we left off!`;
+      const verbalMsg = `I couldn't do "${stuckTarget}"${nameTag}. Could you do that one step for me?`;
+      const cardMsg   = `I tried twice and couldn't do: "${stuckTarget}"\n\nDo that one step, then hit Continue and I'll carry on from there.`;
       agentSpeak(verbalMsg);
       exitAutopilotMiniMode().catch(() => {});
       try {

@@ -1410,6 +1410,33 @@ try:
 except Exception as e:
     print(f'⚠️ Could not pre-load index.html: {e}')
 
+def _safe_join(base_dir, *parts):
+    """
+    Join path parts under base_dir and refuse anything that resolves outside it.
+
+    SECURITY: language_page/language_assets built file paths with plain
+    os.path.join(BASE_DIR, subpath), with no traversal check — unlike the
+    sibling /static/<path:filename> route, which is safe only because
+    send_from_directory does this check internally. A raw HTTP request (which,
+    unlike a browser, does not collapse "..") such as
+    GET /en/../../app.py or GET /en/../app.py resolved outside BASE_DIR
+    (landing-page/) and let anyone read arbitrary files the process can read —
+    including app.py itself, which at the time contained the hardcoded admin
+    password and session-signing secret. Returns None if the resolved path
+    escapes base_dir or contains a null byte; callers must check for None
+    before touching the filesystem.
+    """
+    if any('\x00' in p for p in parts):
+        return None
+    try:
+        base_real = os.path.realpath(base_dir)
+        target_real = os.path.realpath(os.path.join(base_dir, *parts))
+    except (ValueError, TypeError):
+        return None
+    if target_real != base_real and not target_real.startswith(base_real + os.sep):
+        return None
+    return target_real
+
 def serve_file(filepath):
     """Read file from disk and serve directly to bypass caching"""
     try:
@@ -1507,9 +1534,32 @@ def db_status():
 import hashlib
 import secrets
 
-ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'snaptoai2024')
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID', '')
-ADMIN_SESSION_SECRET = os.environ.get('ADMIN_SESSION_SECRET', 'sn4pt0a1_s3cr3t_k3y_2024_pr0d')
+
+# SECURITY: these used to fall back to a fixed password ('snaptoai2024') and a
+# fixed signing key ('sn4pt0a1_s3cr3t_k3y_2024_pr0d') checked into this public
+# repo. If ADMIN_PASSWORD/ADMIN_SESSION_SECRET were ever unset on the server,
+# anyone who read the source had the super-admin password AND could forge a
+# valid institution-admin session cookie for any slug (the cookie's HMAC uses
+# this same secret, see _gen_admin_token below), with no expiry. Now: if the
+# real env var is missing, generate a random one-time value at startup instead
+# of using a known one, so a misconfigured deploy fails to a locked door
+# rather than an open one. The generated admin password is printed once to
+# the server log (never to any HTTP response) so the operator can retrieve it.
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD')
+if not ADMIN_PASSWORD:
+    ADMIN_PASSWORD = secrets.token_urlsafe(18)
+    print(f"[SECURITY WARNING] ADMIN_PASSWORD is not set — generated a random "
+          f"one-time password for this process: {ADMIN_PASSWORD}\n"
+          f"Set ADMIN_PASSWORD in your environment to persist it across restarts.")
+
+ADMIN_SESSION_SECRET = os.environ.get('ADMIN_SESSION_SECRET')
+if not ADMIN_SESSION_SECRET:
+    ADMIN_SESSION_SECRET = secrets.token_hex(32)
+    print("[SECURITY WARNING] ADMIN_SESSION_SECRET is not set — generated a "
+          "random one-time signing key for this process. Every admin/institution "
+          "session will be invalidated on restart until you set this in your "
+          "environment.")
 
 def generate_admin_token(password):
     """Generate a secure session token"""
@@ -2454,9 +2504,17 @@ TRIAL_DAYS = 30
 @app.route('/api/fix-trial-dates')
 def fix_trial_dates():
     """Fix user_trials trial_start_date to match ip_trials (anti-cheat sync)"""
+    # SECURITY: this performs a bulk UPDATE and previously had no auth check at
+    # all — anyone who found the URL could rewrite every user's trial start
+    # date. Its sibling diagnostic route (/api/admin/diag/member) was already
+    # gated; this one and debug_ip_trials below were not. _require_super_admin
+    # is defined later in this file but Python resolves the name at call time,
+    # not at def time, so this is safe to call from here.
+    if not _require_super_admin():
+        return jsonify({'error': 'Unauthorized'}), 401
     if not ensure_db():
         return jsonify({'error': 'Database not available'}), 503
-    
+
     try:
         conn = get_db()
         cur = conn.cursor()
@@ -2487,9 +2545,13 @@ def fix_trial_dates():
 @app.route('/api/debug-ip-trials')
 def debug_ip_trials():
     """Debug endpoint to check ip_trials table"""
+    # SECURITY: previously unauthenticated — returned every visitor's raw IP
+    # address and trial timestamps to anyone who requested this URL.
+    if not _require_super_admin():
+        return jsonify({'error': 'Unauthorized'}), 401
     if not ensure_db():
         return jsonify({'error': 'Database not available'}), 503
-    
+
     try:
         conn = get_db()
         cur = conn.cursor()
@@ -3252,16 +3314,16 @@ def language_page(lang_code):
     """Serve language-specific page"""
     # Only handle known language codes - let other routes handle everything else
     if lang_code in SUPPORTED_LANGUAGES:
-        lang_file = os.path.join(BASE_DIR, lang_code, 'index.html')
-        if os.path.exists(lang_file):
+        lang_file = _safe_join(BASE_DIR, lang_code, 'index.html')
+        if lang_file and os.path.exists(lang_file):
             return serve_file(lang_file)
         return serve_file(os.path.join(BASE_DIR, 'index.html'))
-    
+
     # Check if it's a static file (like style.css)
-    file_path = os.path.join(BASE_DIR, lang_code)
-    if os.path.exists(file_path) and os.path.isfile(file_path):
+    file_path = _safe_join(BASE_DIR, lang_code)
+    if file_path and os.path.exists(file_path) and os.path.isfile(file_path):
         return serve_file(file_path)
-    
+
     # Not a language or static file - return 404 to let other routes handle
     return Response("Not found", status=404)
 
@@ -3269,12 +3331,12 @@ def language_page(lang_code):
 def language_assets(lang_code, subpath):
     """Serve static assets for language pages"""
     if lang_code in SUPPORTED_LANGUAGES:
-        lang_file = os.path.join(BASE_DIR, lang_code, subpath)
-        if os.path.exists(lang_file):
+        lang_file = _safe_join(BASE_DIR, lang_code, subpath)
+        if lang_file and os.path.exists(lang_file):
             return serve_file(lang_file)
     # Fallback to root static folder
-    root_file = os.path.join(BASE_DIR, subpath)
-    if os.path.exists(root_file):
+    root_file = _safe_join(BASE_DIR, subpath)
+    if root_file and os.path.exists(root_file):
         return serve_file(root_file)
     return Response("Not found", status=404)
 
