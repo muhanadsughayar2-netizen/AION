@@ -11959,6 +11959,18 @@ USE THE BROWSER (and real navigation to a real results page) only when the task 
 
 Quick test: if the user would have accepted the answer typed straight into this chat, do NOT open a browser tab — for lookups, that now includes using your own search grounding instead of physically browsing to get it.
 
+### 🎯 WHEN A REAL SITE IS ACTUALLY NEEDED — AI STUDIO ONLY. NOT GEMINI CHAT. NOT NOTEBOOKLM.
+When a task genuinely needs a real website — generating an image, video, or music, or the user explicitly asks you to use an AI tool rather than answer directly — the ONLY site to use is Google AI Studio (aistudio.google.com). Two sites are permanently retired for this agent, standing decision, after repeated real failures across many live tests:
+  ❌ gemini.google.com (Gemini's own chat) — never navigate here, for any reason.
+  ❌ notebooklm.google.com / notebook.google.com (NotebookLM) — never navigate here, for any reason, even for "make me a presentation/report/podcast from these sources" requests. If a task specifically needs that exact capability, tell the user plainly it isn't available right now instead of trying anyway.
+
+Inside Google AI Studio, ALWAYS pick the right mode BEFORE typing the prompt — do not type into whatever happens to be on screen and hope it works:
+  🖼️ Image request ("draw", "generate an image", "create a picture of...") → first switch the model to the image-generation model (labelled something like "Nano Banana") using the model selector, THEN type the prompt.
+  🎬 Video request ("make a video", "generate a clip/animation") → first switch to the video-generation model (Veo), THEN type the prompt.
+  🎵 Music request ("make music", "generate a song/audio track") → first switch to the music-generation model (Lyria) — note this one has two different prompt surfaces (a simple box and a richer "Composer" mode); use whichever is actually on screen, call snapshotPage if unsure which.
+  💬 Everything else (questions, research, general chat) → the default Playground chat, no model switch needed. Turn on "Grounding with Google Search" first if the question needs current/factual information.
+If the model selector or mode tab isn't where you expect, call snapshotPage first and pick the real option from what's actually listed — never guess a label blind, and never click an unlabeled element just because nothing else worked.
+
 ### 🗣️ SPEAK THE ANSWER, NOT A REPORT ABOUT DOING THE WORK
 When a task is done, the very first thing you say must be the actual content the user wanted — the number, the fact, the recommendation, the finished sentence — not a description of the process that produced it.
   ❌ "I've completed the task. I searched for headphones and wrote a summary into the document."
@@ -12990,7 +13002,15 @@ const NOTEBOOKLM_TRIGGER_RE = /\b(notebooklm|google\s+notebook|notebook\s+lm|aud
 const NOTEBOOKLM_TOOL_RE = /\b(slide deck|audio overview|video overview|mind map|report|infographic|flashcard|quiz|data table)\b/i;
 
 function isNotebookLMTask(prompt) {
-  return NOTEBOOKLM_TRIGGER_RE.test(prompt);
+  // NotebookLM is retired — standing product decision after repeated real
+  // failures across many live tests this session, and an explicit,
+  // repeated instruction: never navigate there again, for any reason, not
+  // even for presentation/report/podcast requests (see the "AI STUDIO
+  // ONLY" rule in AGENT_SYSTEM_PROMPT). Always false rather than deleting
+  // the detection/pre-flight code below it — keeps this reversible with a
+  // one-line change if that decision ever changes, instead of having to
+  // reconstruct the whole flow from scratch.
+  return false; // was: NOTEBOOKLM_TRIGGER_RE.test(prompt);
 }
 function taskAlreadySpecifiesTools(prompt) {
   // Only skip the picker if they clearly named a specific tool AND gave enough context
