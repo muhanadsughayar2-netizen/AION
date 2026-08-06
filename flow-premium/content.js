@@ -4060,31 +4060,24 @@
   }
 
   function _aionLabel(el) {
-    // For text inputs (e.g. Google Docs' title field, "#docs-title-input")
-    // the visible text is the LIVE .value DOM property, set by JavaScript —
-    // it has no matching HTML attribute for a CSS/attribute-based search to
-    // find, and no textContent either. Without this, the title field showed
-    // up in the element list with no readable label at all, so the agent had
-    // no way to recognise it as "the box that currently says Untitled
-    // document" and kept guessing at labels like "Rename" that don't exist.
-    const tag = el.tagName ? el.tagName.toLowerCase() : '';
-    const liveValue = (tag === 'input' || tag === 'textarea') && typeof el.value === 'string'
-      ? el.value.trim().slice(0, 60)
-      : '';
-    const aria = el.getAttribute('aria-label') || '';
-    const base = (
-      aria ||
-      el.getAttribute('title') ||
-      el.getAttribute('placeholder') ||
-      el.getAttribute('alt') ||
-      (el.textContent || '').replace(/\s+/g, ' ').trim().slice(0, 60) ||
-      el.getAttribute('name') ||
-      el.id || ''
-    ).trim();
-    if (liveValue && liveValue !== base) {
-      return (base ? `${base} = "${liveValue}"` : `"${liveValue}"`).trim();
-    }
-    return base;
+    // Formatting rule (why the title field needs its live .value read, not
+    // just static attributes) lives in agent-logic-core.js as
+    // formatElementLabel — see there, and tests/agent-logic.test.js for the
+    // check. This just converts the real DOM element to the plain-object
+    // shape that pure function expects.
+    return formatElementLabel({
+      tag: el.tagName || '',
+      value: el.value,
+      id: el.id || '',
+      text: el.textContent || '',
+      attrs: {
+        'aria-label': el.getAttribute('aria-label') || '',
+        title: el.getAttribute('title') || '',
+        placeholder: el.getAttribute('placeholder') || '',
+        alt: el.getAttribute('alt') || '',
+        name: el.getAttribute('name') || '',
+      },
+    });
   }
 
   function _aionType(el) {
@@ -4230,23 +4223,12 @@
       const lines = indexText.split('\n').filter(Boolean);
       if (!lines.length) return '\nNothing interactive is visible on the page right now — it may still be loading, or the content sits inside an iframe.';
 
-      if (wanted) {
-        const words = wanted.split(/\s+/).filter(w => w.length > 2);
-        const score = (line) => {
-          const l = line.toLowerCase();
-          if (l.includes(wanted)) return 100;
-          if (!words.length) return 0;
-          const hits = words.filter(w => l.includes(w)).length;
-          return hits ? hits / words.length : 0;
-        };
-        const close = lines.map(l => ({ l, s: score(l) }))
-                           .filter(r => r.s > 0)
-                           .sort((a, b) => b.s - a.s)
-                           .slice(0, 15)
-                           .map(r => r.l);
-        if (close.length) {
-          return `\nCLOSE MATCHES already on the page (click by index — the label may differ in wording or capitalisation):\n${close.join('\n')}`;
-        }
+      // Ranking rule lives in agent-logic-core.js as rankElementMatches —
+      // see tests/agent-logic.test.js for the check (including the exact
+      // "Read Aloud" vs "Read aloud" case that motivated it).
+      const close = rankElementMatches(lines, wanted, 15);
+      if (close.length) {
+        return `\nCLOSE MATCHES already on the page (click by index — the label may differ in wording or capitalisation):\n${close.join('\n')}`;
       }
       return `\nWhat IS clickable on the page right now (${count} total, showing first 30) — click by index:\n${lines.slice(0, 30).join('\n')}`;
     } catch (_) {

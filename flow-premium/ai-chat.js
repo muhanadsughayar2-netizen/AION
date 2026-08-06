@@ -13283,21 +13283,12 @@ async function runAgentTask(prompt, thread) {
                                 // it had been read aloud when nothing was ever spoken.
   let _speakCountAtLastReadCheck = 0; // a plan with TWO read steps ("read the poem",
                                 // later "read the extended poem") needs a FRESH speak
-                                // call for each one, not just "spoke once, ever" — this
-  // ── "Opened the result" verification ─────────────────────────────────────
-  // A real, serious failure: given "open the first result, then the third",
-  // a targetless fallback click landed on Google's own apps menu (Gmail,
-  // Maps, Calendar icons — visible in the element list at the time), the
-  // task never actually left google.com, and yet checkPlan/finish reported
-  // "Opened the first result ('...' by Everyday Parisian)... Opened the
-  // third result ('...' by Wheatless Wanderlust)" — specific site names it
-  // invented, describing a visit that never happened. This is worse than a
-  // failed click: it's a confidently fabricated success report. Guard the
-  // same way as the read/speak check — a step that claims to have "opened"
-  // a search result must be backed by the tab ACTUALLY being on a
-  // non-search-engine domain right now, checked live, not self-reported.
-  const _SEARCH_ENGINE_HOSTS = /(^|\.)google\.\w+$|(^|\.)bing\.com$|(^|\.)duckduckgo\.com$|(^|\.)yahoo\.com$/i;
+                                // call for each one, not just "spoke once, ever" —
                                 // remembers the count as of the last accepted read step.
+  // "Read"/"speak" claims and "opened the result" claims made via checkPlan
+  // are verified for real, not trusted — see evaluateReadClaim /
+  // evaluateOpenedResultClaim in agent-logic-core.js (loaded before this
+  // file) for the actual rules and why each one exists.
 
   // ── Stateful Agent State (LangGraph-style checkpointer) ──────────────────
   // Tracks high-level plan, action history, and which locators have failed.
@@ -13611,38 +13602,32 @@ async function runAgentTask(prompt, thread) {
     if (checkCall) {
       const { stepIndex = 0, note = '' } = checkCall.functionCall.args || {};
       const _targetStep = agentPlan?.[stepIndex];
-      // checkPlan is entirely self-reported — nothing previously checked that a
-      // step claiming to read/speak something had actually called speak() first.
-      // Real damage this caused: the model marked "Read the poem out loud" done
-      // via checkPlan without ever calling speak in that turn or any prior one,
-      // the user was told the poem had been read, and nothing was ever spoken.
-      // If the step text is about reading/speaking and speak() has not been
-      // called even once yet this task, reject the claim instead of trusting it.
-      const _claimsToSpeak = /\b(read|speak|spoken|aloud|say it|narrate)\b/i.test(_targetStep?.step || '');
-      // "Open the Nth result/link" claims are checked LIVE against the actual
-      // tab, not trusted — this is what would have caught the fabricated
-      // "Opened the first result (Everyday Parisian)... Opened the third
-      // result (Wheatless Wanderlust)" report, when the tab was still
-      // literally sitting on google.com the entire time.
-      const _claimsOpenedResult = /\b(open|opened|visit|visited|click(ed)?)\b.*\b(result|link)\b/i.test(_targetStep?.step || '');
-      let _stillOnSearchEngine = false;
-      if (_targetStep && _claimsOpenedResult) {
-        try {
-          const _liveTab = await chrome.tabs.get(tab.id);
-          _stillOnSearchEngine = _SEARCH_ENGINE_HOSTS.test(hostnameOf(_liveTab?.url || ''));
-        } catch (_) { /* if we can't check, don't block on it */ }
+      // checkPlan is entirely self-reported. Verification of "was this claim
+      // actually true" lives in agent-logic-core.js (evaluateReadClaim /
+      // evaluateOpenedResultClaim) so it's covered by tests/agent-logic.test.js
+      // instead of only being checked by hand-running the real extension.
+      const _readCheck = evaluateReadClaim(_targetStep?.step || '', _speakCallsThisTask, _speakCountAtLastReadCheck);
+      let _openCheck = { blocked: false, isOpenResultStep: false };
+      if (_targetStep) {
+        const _isOpenResultStep = evaluateOpenedResultClaim(_targetStep.step || '', '').isOpenResultStep;
+        if (_isOpenResultStep) {
+          try {
+            const _liveTab = await chrome.tabs.get(tab.id);
+            _openCheck = evaluateOpenedResultClaim(_targetStep.step || '', hostnameOf(_liveTab?.url || ''));
+          } catch (_) { /* if we can't check, don't block on it */ }
+        }
       }
 
-      if (_targetStep && _claimsToSpeak && _speakCallsThisTask <= _speakCountAtLastReadCheck) {
+      if (_targetStep && _readCheck.blocked) {
         clientSideResponses.push({ functionResponse: { name: 'checkPlan',
           response: { success: false,
             error: `Step ${stepIndex + 1} ("${_targetStep.step}") cannot be marked done — you have not called speak since the last reading step, so this text has not actually been read aloud. Call speak with the (current) text now, THEN call checkPlan.` } } });
-      } else if (_targetStep && _claimsOpenedResult && _stillOnSearchEngine) {
+      } else if (_targetStep && _openCheck.blocked) {
         clientSideResponses.push({ functionResponse: { name: 'checkPlan',
           response: { success: false,
             error: `Step ${stepIndex + 1} ("${_targetStep.step}") cannot be marked done — the browser tab is still on the search engine's own page right now, so this result was NOT actually opened. Call snapshotPage to see the real current state, find the correct link (by index, not by guessing text), click it, and confirm you actually navigated to a different site before calling checkPlan again. Do not report this as done or describe it in finish until the tab has genuinely left the search engine.` } } });
       } else {
-        if (_claimsToSpeak) _speakCountAtLastReadCheck = _speakCallsThisTask;
+        if (_readCheck.isReadStep) _speakCountAtLastReadCheck = _speakCallsThisTask;
         if (_targetStep) { _targetStep.done = true; _targetStep.note = note; }
         const done = agentPlan?.filter(s => s.done).length ?? 0;
         const total = agentPlan?.length ?? 0;
@@ -13979,18 +13964,9 @@ async function runAgentTask(prompt, thread) {
     // in the document body on top of the sonnet that had just been written
     // there — destroying it. Read-only inspection calls can still run together
     // (that's the legitimate speed win); anything that touches page state runs
-    // in order and stops the moment one fails.
-    const READ_ONLY_ACTIONS = new Set([
-      'snapshotPage', 'readText', 'readDocContent', 'findElement', 'getComputedStyle',
-      'getCookies', 'readStorage', 'readDOMStorage', 'readIndexedDB', 'readCache',
-      'getPerformance', 'auditPage', 'getEventListeners', 'readBrowserLog',
-      'getSecurityInfo', 'listTargets', 'getSystemInfo', 'getAnimations',
-      'getMemoryInfo', 'trackWebVitals', 'getPreloadRules', 'getPWAInfo',
-      'getCDPSchema', 'inspectMedia', 'getFileSystem', 'getLayerTree',
-      'getFedCmInfo', 'highlightElement', 'readNetworkResponse', 'captureConsole',
-      'readBackgroundEvents', 'inspectWebAudio'
-    ]);
-
+    // in order and stops the moment one fails. The actual read-only/sequential
+    // rule lives in agent-logic-core.js (shouldRunSequentially) so it's tested
+    // directly rather than only checked by hand-running the real extension.
     const _runOne = (part) => chrome.runtime.sendMessage({
       action: 'agentExecute',
       tabId: tab.id,
@@ -13998,10 +13974,10 @@ async function runAgentTask(prompt, thread) {
       params: part.functionCall.args || {}
     }).catch(e => ({ success: false, error: e.message }));
 
-    const _allReadOnly = executableCalls.every(p => READ_ONLY_ACTIONS.has(p.functionCall.name));
+    const _runSequentially = shouldRunSequentially(executableCalls.map(p => p.functionCall.name));
 
     let settledResults;
-    if (executableCalls.length <= 1 || _allReadOnly) {
+    if (!_runSequentially) {
       settledResults = await Promise.allSettled(executableCalls.map(_runOne));
     } else {
       settledResults = [];
@@ -14398,24 +14374,12 @@ async function runAgentTask(prompt, thread) {
     // Pattern B now uses a sliding window (i+=1) instead of stride (i+=2) so
     // interleaved cycles like A→B→snapshot→A→B→snapshot are caught correctly.
     // Pattern C catches 3-action cycles (ABCABCABC) — the NotebookLM failure mode.
+    // Fingerprint logic (why blind 'type' groups by target, not content) lives
+    // in agent-logic-core.js as buildActionSignature — see there for the real
+    // damage that motivated it, and tests/agent-logic.test.js for the check.
     for (const part of executableCalls) {
       const { name, args } = part.functionCall;
-      // 'type' used to fingerprint on the literal text being typed. When the
-      // model retries a failed type by writing fresh wording each time (a new
-      // poem, not the same one) every attempt got a different signature, so
-      // this detector never recognised "typing into the same probably-broken
-      // target, repeatedly" as a loop — it only catches VERBATIM repeats. Real
-      // damage this caused: 5+ blind retypes into an unconfirmed Google Docs
-      // target, scattering/overwriting the poem, with zero loop warnings fired.
-      // Fix: for 'type' with no index/selector (i.e. "type into whatever is
-      // currently focused" — the ambiguous, failure-prone case), fingerprint
-      // on the TARGET, not the content, so repeated blind typing groups
-      // together regardless of what text varies between attempts.
-      const isBlindType = name === 'type' && args?.index === undefined && !args?.selector;
-      const sig = isBlindType
-        ? 'type:#blind-target'
-        : `${name}:${args?.index !== undefined ? `#${args.index}` : String(args?.text || args?.selector || args?.url || args?.description || args?.direction || '').slice(0, 60)}`;
-      recentActions.push(sig);
+      recentActions.push(buildActionSignature(name, args));
       if (recentActions.length > 16) recentActions.shift();
     }
 

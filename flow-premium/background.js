@@ -252,7 +252,13 @@ const clearAndInject = async (tid, allFrames = true) => {
   }).catch(() => {});
   await chrome.scripting.executeScript({
     target: { tabId: tid, allFrames },
-    files: ['content.js']
+    // agent-logic-core.js first: it's plain global function declarations (no
+    // module wrapper in a browser context), so loading it before content.js
+    // in the same isolated-world injection puts buildActionSignature/
+    // rankElementMatches/formatElementLabel etc. directly in scope for
+    // content.js to call — same shared logic the Jest tests in
+    // tests/agent-logic.test.js exercise, not a separate copy that could drift.
+    files: ['agent-logic-core.js', 'content.js']
   });
 };
 

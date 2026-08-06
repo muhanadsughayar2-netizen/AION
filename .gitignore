@@ -16,6 +16,7 @@ attached_assets/
 /_locales/
 /icons/
 /utils/
+/agent-logic-core.js
 /ai-chat.html
 /ai-chat.js
 /annotate.css

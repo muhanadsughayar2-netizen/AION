@@ -84,7 +84,7 @@
         "https://www.perplexity.ai/*",
         "https://x.com/*"
       ],
-      "js": ["content.js"],
+      "js": ["agent-logic-core.js", "content.js"],
       "run_at": "document_start",
       "all_frames": true
     }
