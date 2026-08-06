@@ -161,6 +161,35 @@ describe('formatElementLabel', () => {
     });
     expect(label).toBe('Real content');
   });
+
+  // Real failure: asked to "collect 5 YouTube video links", the model had no
+  // way to learn a link's real URL anywhere in the toolset — text/labels
+  // only. This appends the real destination so a whole results page of links
+  // can be read in one pass instead of clicking through them one at a time.
+  test('a real link appends its resolved URL', () => {
+    const label = formatElementLabel({
+      tag: 'a', text: 'Dr. William Li — How the food you eat affects cancer',
+      attrs: { href: 'https://www.youtube.com/watch?v=abc123XYZ' },
+    });
+    expect(label).toBe('Dr. William Li — How the food you eat affects cancer → https://www.youtube.com/watch?v=abc123XYZ');
+  });
+
+  test('a link with no readable text still surfaces the URL', () => {
+    const label = formatElementLabel({ tag: 'a', text: '', attrs: { href: 'https://example.com/x' } });
+    expect(label).toBe('link → https://example.com/x');
+  });
+
+  test('javascript:, mailto:, tel:, and bare # links are never appended', () => {
+    expect(formatElementLabel({ tag: 'a', text: 'Menu', attrs: { href: 'javascript:void(0)' } })).toBe('Menu');
+    expect(formatElementLabel({ tag: 'a', text: 'Email us', attrs: { href: 'mailto:hi@example.com' } })).toBe('Email us');
+    expect(formatElementLabel({ tag: 'a', text: 'Call', attrs: { href: 'tel:+1234567890' } })).toBe('Call');
+    expect(formatElementLabel({ tag: 'a', text: 'Top', attrs: { href: '#' } })).toBe('Top');
+  });
+
+  test('non-anchor elements never get a URL appended even if href is present on the object', () => {
+    const label = formatElementLabel({ tag: 'button', text: 'Submit', attrs: { href: 'https://example.com' } });
+    expect(label).toBe('Submit');
+  });
 });
 
 // ===========================================================================

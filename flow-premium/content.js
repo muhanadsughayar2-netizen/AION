@@ -4089,6 +4089,12 @@
         placeholder: el.getAttribute('placeholder') || '',
         alt: el.getAttribute('alt') || '',
         name: el.getAttribute('name') || '',
+        // el.href (the IDL property) is ALWAYS the browser-resolved absolute
+        // URL, even when the raw href="" HTML attribute is relative
+        // ("/watch?v=x") or protocol-relative — exactly what's needed for
+        // the model to read a real, pasteable URL directly off the page
+        // instead of clicking through each link just to learn where it goes.
+        href: (el.tagName === 'A' && typeof el.href === 'string') ? el.href : '',
       },
     });
   }

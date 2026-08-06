@@ -129,10 +129,32 @@
       attrs.name ||
       el.id || ''
     ).trim();
+    let label = base;
     if (liveValue && liveValue !== base) {
-      return (base ? `${base} = "${liveValue}"` : `"${liveValue}"`).trim();
+      label = (base ? `${base} = "${liveValue}"` : `"${liveValue}"`).trim();
     }
-    return base;
+    // Real link target — asked to "collect 5 YouTube video links", the model
+    // had no way to learn a link's actual URL anywhere in the toolset: this
+    // index showed text/labels only, readText returns visible text, and
+    // findElement had the href in hand (CDP hands back every attribute) but
+    // never included it in what it reported back. The only URL ever visible
+    // to the model was the CURRENT PAGE line for wherever it had actually
+    // navigated — nothing for a link it hadn't clicked yet. So a step asking
+    // it to gather multiple links from one results page was never actually
+    // achievable with the tools it had; it ended up guessing a CSS selector
+    // instead of admitting that. This appends the real, resolved destination
+    // URL (must be an absolute http(s) URL already resolved by the caller —
+    // see content.js's use of the `.href` DOM property, not the possibly-
+    // relative `href` HTML attribute) so a whole page of links can be read
+    // in one pass instead of clicking through them one at a time.
+    // `#`-only and javascript:/mailto:/tel: links go nowhere real worth
+    // reporting and would just add noise.
+    const href = (tag === 'a' ? (attrs.href || '') : '').trim();
+    const isRealHref = !!href && href !== '#' && !/^\s*(javascript:|mailto:|tel:)/i.test(href);
+    if (isRealHref) {
+      label = label ? `${label} → ${href}` : `link → ${href}`;
+    }
+    return label;
   }
 
   /**
