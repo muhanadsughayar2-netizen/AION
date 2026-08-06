@@ -34,6 +34,7 @@ const {
   extractUrls,
   isYouTubeWatchUrl,
   isFabricatedYouTubeUrl,
+  detectStudioQuotaLimit,
 } = require('../flow-premium/agent-logic-core.js');
 
 // ===========================================================================
@@ -341,6 +342,25 @@ describe('isTextRepeatedTooOften', () => {
 
   test('empty text is never flagged', () => {
     expect(isTextRepeatedTooOften(['a', 'a', 'a'], '').blocked).toBe(false);
+  });
+});
+
+// ===========================================================================
+// detectStudioQuotaLimit — NotebookLM's own daily quota vs. a missing button
+// ===========================================================================
+describe('detectStudioQuotaLimit', () => {
+  test('the exact real message, seen live', () => {
+    expect(detectStudioQuotaLimit('You have reached your daily Slides limits, come back later. Or upgrade.')).toBe(true);
+  });
+
+  test('a differently-worded quota message still matches', () => {
+    expect(detectStudioQuotaLimit('You have reached your current generation quota for today.')).toBe(true);
+  });
+
+  test('ordinary page text is never flagged', () => {
+    expect(detectStudioQuotaLimit('Generating Slide Deck... based on 4 sources')).toBe(false);
+    expect(detectStudioQuotaLimit('')).toBe(false);
+    expect(detectStudioQuotaLimit(undefined)).toBe(false);
   });
 });
 

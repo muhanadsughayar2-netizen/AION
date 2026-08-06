@@ -4238,6 +4238,15 @@
       if (detectBlockPage(document.body ? document.body.innerText : '')) {
         return '\n⚠️ THIS IS NOT THE REAL PAGE — it is a bot-detection / "unusual traffic" block page from the site. The task cannot proceed by clicking around it; none of its elements are the content you were asked to find. Call requestUserIntervention and tell the user honestly that the site blocked this as automated traffic and ask them to solve it manually (or say the task cannot continue). Do NOT keep guessing at buttons on this page.';
       }
+      // Real failure: after successfully adding 5 sources, NotebookLM showed
+      // "You have reached your daily Slides limits, come back later. Or
+      // upgrade." and the agent kept retrying anyway, leaving three separate
+      // "Generating..." entries stacked up in the Studio panel. This is
+      // Google's own daily quota, not a missing button — no retry finds a
+      // way around it today.
+      if (detectStudioQuotaLimit(document.body ? document.body.innerText : '')) {
+        return '\n⚠️ NOTEBOOKLM HAS HIT ITS DAILY GENERATION QUOTA for this Studio output ("reached your daily limit"). This is Google\'s own server-side limit for today — clicking Generate again will not work, and no different button or approach gets around it. Call requestUserIntervention or finish() and tell the user honestly: the sources were added successfully, but generation is blocked until the quota resets (or they upgrade). Do NOT keep retrying the click.';
+      }
       let { indexText, count } = buildElementIndex();
       // A page can genuinely still be mid-render at the exact instant a click
       // fails right after navigate() — Google's results, for one, paint

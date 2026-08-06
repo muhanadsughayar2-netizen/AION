@@ -241,6 +241,25 @@
   }
 
   /**
+   * Recognise NotebookLM's own daily Studio-generation quota message for
+   * what it is, instead of letting the agent keep retrying a "Generate"
+   * click that will never succeed today.
+   *
+   * Real failure, seen live: after successfully adding 5 sources, NotebookLM
+   * showed "You have reached your daily Slides limits, come back later. Or
+   * upgrade." in the Studio panel — and the agent kept going, leaving THREE
+   * separate "Generating Slide Deck..." entries stacked up in the Studio
+   * panel instead of stopping at the first one and telling the user. This
+   * is not a missing button or a bad click — Google's own server is
+   * refusing every request today, no amount of retrying finds a way around
+   * that, and the honest answer is to tell the user plainly instead of
+   * burning more turns hammering on it.
+   */
+  function detectStudioQuotaLimit(pageText) {
+    return /reached your (daily|current)[^.]{0,40}(limit|quota)/i.test(pageText || '');
+  }
+
+  /**
    * Has this exact text been typed too many times already, regardless of
    * WHERE each attempt targeted?
    *
@@ -361,6 +380,7 @@
     extractUrls,
     isYouTubeWatchUrl,
     isFabricatedYouTubeUrl,
+    detectStudioQuotaLimit,
   };
 
   if (typeof module !== 'undefined' && module.exports) {
