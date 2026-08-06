@@ -938,6 +938,27 @@ function stopOtherAudio(selfStopFn) {
   }
 }
 
+// Chrome has a long-standing bug where speechSynthesis silently stalls —
+// stops firing events, stops speaking, no error thrown — when the document
+// using it isn't the focused window, or after continuous speech runs past
+// roughly 15 seconds in some Chrome versions. AION's own chat window is
+// routinely NOT the focused window while Autopilot is busy controlling a
+// DIFFERENT tab, which is exactly the trigger condition. The documented
+// community workaround is a periodic pause()+resume() to keep the engine
+// alive. Without this, the ONE fallback that's supposed to catch a blocked
+// agentSpeak() chunk (see speakFallback below) could itself go silent, with
+// nothing in the console to explain why.
+let _synthKeepAliveTimer = null;
+function _startSynthKeepAlive() {
+  _stopSynthKeepAlive();
+  _synthKeepAliveTimer = setInterval(() => {
+    try { if (synth.speaking) { synth.pause(); synth.resume(); } } catch (_) {}
+  }, 5000);
+}
+function _stopSynthKeepAlive() {
+  if (_synthKeepAliveTimer) { clearInterval(_synthKeepAliveTimer); _synthKeepAliveTimer = null; }
+}
+
 // Tear down whatever agentSpeak() currently has playing. Registered below so the
 // Read-aloud button can silence the agent, and vice versa.
 function stopAgentVoice() {
@@ -952,6 +973,7 @@ function stopAgentVoice() {
   }
   try { synth.cancel(); } catch (_) {}
   activeUtterance = null;
+  _stopSynthKeepAlive(); // otherwise the interval above outlives the speech it was keeping alive
 }
 registerAudioStopper(stopAgentVoice);
 
@@ -968,9 +990,10 @@ function speakFallback(text) {
     u.rate = 0.95;
     u.pitch = 1.05;
     activeUtterance = u;
-    u.onend   = () => { if (activeUtterance === u) activeUtterance = null; };
-    u.onerror = () => { if (activeUtterance === u) activeUtterance = null; };
+    u.onend   = () => { if (activeUtterance === u) activeUtterance = null; _stopSynthKeepAlive(); };
+    u.onerror = () => { if (activeUtterance === u) activeUtterance = null; _stopSynthKeepAlive(); };
     synth.speak(u);
+    _startSynthKeepAlive();
   } catch (e) {
     console.warn('[SnapToAI] speakFallback failed:', e);
   }
@@ -1123,7 +1146,20 @@ function agentSpeak(text) {
         audio.onended = () => { try { URL.revokeObjectURL(url); } catch (_) {} _agentVoice.audio = null; resolve(); };
         audio.onerror  = () => { try { URL.revokeObjectURL(url); } catch (_) {} _agentVoice.audio = null; resolve(); };
         audio.play().catch(err => {
-          console.warn('[SnapToAI] agentSpeak: audio.play() blocked, falling back to browser voice:', err?.name || err);
+          // AbortError specifically means THIS play() request got interrupted —
+          // almost always because a newer agentSpeak() call paused/cleared this
+          // exact audio element to start its own (two messages firing close
+          // together). That's expected, not a failure: the _agentSpeakGen check
+          // right below already skips the fallback for this now-stale call, so
+          // the newer call's own audio plays instead. Logging it at 'warn' next
+          // to genuine autoplay blocks (NotAllowedError) made normal fast-fire
+          // speech look broken when it wasn't — kept as 'log' here so a real
+          // block still stands out.
+          if (err?.name === 'AbortError') {
+            console.log('[SnapToAI] agentSpeak: chunk audio superseded by a newer message (expected, not an error)');
+          } else {
+            console.warn('[SnapToAI] agentSpeak: audio.play() blocked, falling back to browser voice:', err?.name || err);
+          }
           _chunkBlocked = true;
           try { URL.revokeObjectURL(url); } catch (_) {}
           _agentVoice.audio = null;
