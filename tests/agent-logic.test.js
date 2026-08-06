@@ -30,6 +30,7 @@ const {
   detectBlockPage,
   hasSearchTarget,
   isTextRepeatedTooOften,
+  pickStuckTargetLabel,
 } = require('../flow-premium/agent-logic-core.js');
 
 // ===========================================================================
@@ -308,5 +309,39 @@ describe('isTextRepeatedTooOften', () => {
 
   test('empty text is never flagged', () => {
     expect(isTextRepeatedTooOften(['a', 'a', 'a'], '').blocked).toBe(false);
+  });
+});
+
+// ===========================================================================
+// pickStuckTargetLabel — never show the user a raw CSS selector
+// ===========================================================================
+describe('pickStuckTargetLabel', () => {
+  test('the exact real failure: only a guessed CSS selector, no text/description', () => {
+    // Real transcript: gathering YouTube video links, a click call had only
+    // a guessed selector. The old chain (text || description || selector ||
+    // fallback) would still have picked this up as a last resort — this
+    // guards specifically against the broken ORDER that put selector before
+    // description, and against selector ever being chosen at all.
+    const args = { selector: '#contents > ytd-post-renderer:nth-child(1) a.yt-simple-endpoint.style-scope.yt-formatted-string' };
+    expect(pickStuckTargetLabel(args, '')).toBe('that step');
+  });
+
+  test('prefers text over description and selector', () => {
+    const args = { text: 'Sign up', description: 'the signup button', selector: '.btn-primary' };
+    expect(pickStuckTargetLabel(args, '')).toBe('Sign up');
+  });
+
+  test('falls back to description when text is missing, never selector', () => {
+    const args = { description: 'the first video result', selector: '.some-fragile-class' };
+    expect(pickStuckTargetLabel(args, '')).toBe('the first video result');
+  });
+
+  test('uses the generic fallback when nothing readable is present', () => {
+    expect(pickStuckTargetLabel({}, '')).toBe('that step');
+    expect(pickStuckTargetLabel(null, '')).toBe('that step');
+  });
+
+  test('a caller-supplied fallback still loses to real text/description', () => {
+    expect(pickStuckTargetLabel({ text: 'Continue' }, 'custom fallback')).toBe('Continue');
   });
 });

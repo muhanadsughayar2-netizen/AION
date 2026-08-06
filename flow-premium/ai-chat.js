@@ -10614,7 +10614,7 @@ const AGENT_TOOLS = [{
         properties: {
           index: { type: 'number', description: 'Element index from the INTERACTIVE ELEMENTS list at the top of the page snapshot (e.g. 0, 5, 23). Most reliable — use this whenever the list is present.' },
           text: { type: 'string', description: 'Visible text on the element to click, e.g. "Sign up" or "Buy"' },
-          selector: { type: 'string', description: 'CSS selector, only if known precisely' },
+          selector: { type: 'string', description: 'CSS selector — ONLY a real one copied from snapshotPage/findElement output, never a guess at how a site is "usually" built (sites like YouTube restructure their internal DOM often, so guessed selectors almost always fail silently). If you use this, also fill in "description" in plain words, so the user can still help if it fails.' },
           description: { type: 'string', description: 'Fallback description of the element if text/selector are unknown' },
           x: { type: 'number', description: 'X pixel coordinate on the current screenshot — last resort if index/text/selector cannot find the element' },
           y: { type: 'number', description: 'Y pixel coordinate on the current screenshot — last resort if index/text/selector cannot find the element' }
@@ -10628,7 +10628,7 @@ const AGENT_TOOLS = [{
         type: 'object',
         properties: {
           text: { type: 'string', description: 'Visible text/label on the element to double-click, e.g. a file name' },
-          selector: { type: 'string', description: 'CSS selector, only if known precisely' },
+          selector: { type: 'string', description: 'CSS selector — ONLY a real one copied from snapshotPage/findElement output, never a guess at how a site is "usually" built (sites like YouTube restructure their internal DOM often, so guessed selectors almost always fail silently). If you use this, also fill in "description" in plain words, so the user can still help if it fails.' },
           description: { type: 'string', description: 'Fallback description of the element if text/selector are unknown' }
         }
       }
@@ -14365,7 +14365,7 @@ async function runAgentTask(prompt, thread) {
       // Say what failed, plainly. The user is already waiting on a stalled task;
       // a rotating joke ("this step is laughing at me 😂") spends their patience
       // before telling them what to actually do.
-      const stuckTarget = _stuckCall?.args?.text || _stuckCall?.args?.description || _stuckCall?.args?.selector || 'that step';
+      const stuckTarget = pickStuckTargetLabel(_stuckCall?.args, '');
       const nameTag = _agentUserName ? `, ${_agentUserName}` : '';
       const verbalMsg = `I couldn't do "${stuckTarget}"${nameTag}. Could you do that one step for me?`;
       const cardMsg   = `I tried twice and couldn't do: "${stuckTarget}"\n\nDo that one step, then hit Continue and I'll carry on from there.`;

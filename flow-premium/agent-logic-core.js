@@ -240,6 +240,30 @@
     return { blocked: count >= limit, count };
   }
 
+  /**
+   * Choose the human-facing label for a stuck/failed action — the text read
+   * aloud and shown on an intervention card asking the user to do one step
+   * themselves.
+   *
+   * Real failure: asked to gather YouTube video links, a click call had no
+   * 'text' and no 'description', only a raw CSS selector the model had
+   * guessed at: "#contents > ytd-post-renderer:nth-child(1) a.yt-simple-
+   * endpoint.style-scope.yt-formatted-string". The old fallback chain was
+   * text || description || selector || fallback, so that exact string got
+   * spoken and shown on the intervention card — asking the user to
+   * personally go find and click a CSS selector, which is meaningless to
+   * read. A selector is an internal targeting detail, never something meant
+   * for a person; this drops it from the user-facing chain entirely so only
+   * plain text/description (or the generic fallback) ever reach the user.
+   * (Internal bookkeeping keys that use the action for loop/fail-count
+   * tracking are a different, legitimate use of selector and are untouched —
+   * this is only for strings a person actually has to read.)
+   */
+  function pickStuckTargetLabel(args, fallback) {
+    const a = args || {};
+    return a.text || a.description || fallback || 'that step';
+  }
+
   const AionLogic = {
     SEARCH_ENGINE_HOSTS,
     READ_ONLY_ACTIONS,
@@ -252,6 +276,7 @@
     detectBlockPage,
     hasSearchTarget,
     isTextRepeatedTooOften,
+    pickStuckTargetLabel,
   };
 
   if (typeof module !== 'undefined' && module.exports) {
