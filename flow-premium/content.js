@@ -4222,14 +4222,21 @@
       let { indexText, count } = buildElementIndex();
       // A page can genuinely still be mid-render at the exact instant a click
       // fails right after navigate() — Google's results, for one, paint
-      // progressively. The old code reported "nothing visible" as a final
-      // answer in that case with no retry, which reads to the model as "this
-      // page has no links" when it may just need another quarter-second.
-      // One short wait-and-rebuild before giving up costs nothing when the
-      // page WAS ready, and rescues the case when it wasn't.
-      if (count === 0) {
-        await new Promise(r => setTimeout(r, 400));
+      // progressively, and a persistent header (Google's "apps grid" — Gmail,
+      // Maps, Calendar...) can already be fully interactive while the actual
+      // content underneath is still loading. The old retry only fired when
+      // count===0, so it NEVER triggered here: the header alone counts as
+      // 9-10 elements, never zero — the exact case that kept failing lived
+      // entirely outside this retry's trigger condition. Now retries
+      // repeatedly, with growing waits, as long as the count stays
+      // suspiciously low (a real results page has 30+ interactive elements;
+      // ~10 is just chrome, not content) and up to ~2.4s total — enough for
+      // slower real-world renders without stalling every ordinary click.
+      let _settleAttempts = 0;
+      while (count < 15 && _settleAttempts < 4) {
+        await new Promise(r => setTimeout(r, 400 + _settleAttempts * 300));
         ({ indexText, count } = buildElementIndex());
+        _settleAttempts++;
       }
       const lines = indexText.split('\n').filter(Boolean);
       if (!lines.length) return '\nNothing interactive is visible on the page right now — it may still be loading, or the content sits inside an iframe.';
