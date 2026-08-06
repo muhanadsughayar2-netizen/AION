@@ -12313,6 +12313,7 @@ async function getActiveTabPageText(tabId) {
         new Promise(resolve =>
           chrome.tabs.sendMessage(tabId,
             { action: 'agentExecute', executeAction: 'buildElementIndex', params: {} },
+            { frameId: 0 }, // top frame only — content.js also self-guards this, this is belt-and-suspenders against the same-origin-iframe response race
             r => resolve(chrome.runtime.lastError ? null : r)
           )
         ),

@@ -403,6 +403,19 @@
         return;
       } else if (request.action === 'agentExecute') {
         // Agent automation commands
+        // manifest.json runs this script with all_frames:true, so every
+        // same-origin/cross-origin iframe on the page (ad slots, OAuth
+        // buttons, embeds) has its own independent copy of this listener.
+        // buildElementIndex/resolveByIndex read and write a per-frame
+        // window.__aionElementIndex map; without frameId, chrome.tabs.sendMessage
+        // resolves to whichever frame's sendResponse() lands first, which can
+        // be a near-empty child iframe beating the top frame's real, complete
+        // answer (or, worse, resolveByIndex reading a stale/foreign map and
+        // returning coordinates for the wrong element). Same guard pattern as
+        // the window.self !== window.top check above for startFullPageCapture.
+        if ((request.executeAction === 'buildElementIndex' || request.executeAction === 'resolveByIndex') && window.self !== window.top) {
+          return;
+        }
         handleAgentAction(request.executeAction, request.params)
           .then(result => sendResponse(result))
           .catch(err => sendResponse({ success: false, error: err.message }));

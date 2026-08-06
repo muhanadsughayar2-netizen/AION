@@ -2631,7 +2631,7 @@ If the element is not visible in the screenshot, return:
               action: 'agentExecute',
               executeAction: 'resolveByIndex',
               params: { index: params.index }
-            }, r => resolve(chrome.runtime.lastError ? null : r));
+            }, { frameId: 0 }, r => resolve(chrome.runtime.lastError ? null : r)); // top frame only — see content.js's same-origin-iframe guard; a stale/foreign frame's index map would otherwise resolve this to the wrong element's coordinates
           }).catch(() => null);
 
           if (idxLoc?.success && typeof idxLoc.x === 'number') {
