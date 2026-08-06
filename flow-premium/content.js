@@ -4797,13 +4797,23 @@
           const _nlText = String(params.text || '');
           const _nlIsUrl = /^https?:\/\//i.test(_nlText.trim());
 
+          // Same bug, same fix as background.js's NL_URL_ONLY (already patched
+          // there) — this is a SEPARATE, independent copy of the same selector
+          // list that got missed at the time. NotebookLM's real multi-URL box
+          // is a <textarea placeholder="Paste any links">, not an <input>;
+          // every clause here only ever matched input tags.
           const NL_URL_SELECTORS =
             "input[type='url'], " +
             "input[placeholder*='links' i], input[placeholder*='url' i], " +
             "input[placeholder*='https' i], input[placeholder*='Enter URL' i], " +
             "input[placeholder*='website' i], input[placeholder*='link' i], " +
             "input[aria-label*='URL' i], input[aria-label*='website' i], " +
-            "input[aria-label*='link' i]";
+            "input[aria-label*='link' i], " +
+            "textarea[placeholder*='links' i], textarea[placeholder*='url' i], " +
+            "textarea[placeholder*='https' i], textarea[placeholder*='website' i], " +
+            "textarea[placeholder*='link' i], " +
+            "textarea[aria-label*='URL' i], textarea[aria-label*='website' i], " +
+            "textarea[aria-label*='link' i]";
 
           const input = deepShadowQueryVisible(document, _nlIsUrl ? NL_URL_SELECTORS : NL_SELECTORS);
 
