@@ -974,6 +974,15 @@ function stopAgentVoice() {
   try { synth.cancel(); } catch (_) {}
   activeUtterance = null;
   _stopSynthKeepAlive(); // otherwise the interval above outlives the speech it was keeping alive
+  // Clear the speech queue directly here (not just letting the current
+  // chunk's onDone fire naturally) — a real Stop must stop everything,
+  // not stop the current chunk and then continue on to whatever was
+  // queued up next. _agentSpeakQueue/_agentSpeakBusy are declared further
+  // down this file but already exist by the time this ever actually runs
+  // (this only fires from user interaction, well after the whole script
+  // has finished its initial top-to-bottom pass).
+  _agentSpeakQueue = [];
+  _agentSpeakBusy = false;
 }
 registerAudioStopper(stopAgentVoice);
 
@@ -982,24 +991,64 @@ registerAudioStopper(stopAgentVoice);
 // in a string literal, never as runnable code — so agentSpeak()'s no-key branch
 // threw ReferenceError into an unhandled rejection and the agent stayed silent
 // for every free-tier user, which is the exact failure its comment claims to fix.
-function speakFallback(text) {
-  if (!text || !synth) return;
+function speakFallback(text, onDone) {
+  if (!text || !synth) { if (onDone) onDone(); return; }
   try {
     synth.cancel();
     const u = new SpeechSynthesisUtterance(text);
     u.rate = 0.95;
     u.pitch = 1.05;
     activeUtterance = u;
-    u.onend   = () => { if (activeUtterance === u) activeUtterance = null; _stopSynthKeepAlive(); };
-    u.onerror = () => { if (activeUtterance === u) activeUtterance = null; _stopSynthKeepAlive(); };
+    // onDone matters here specifically for the speech-queue fix in
+    // agentSpeak below: this fires "fire and forget" (synth.speak doesn't
+    // return a promise), so without a real completion signal the queue
+    // would have no way to know this utterance is still talking and would
+    // advance to the next queued message immediately — which would then
+    // cancel THIS fallback voice mid-sentence the moment it starts, via
+    // its own synth.cancel() above. onDone only fires once this utterance
+    // genuinely ends.
+    u.onend   = () => { if (activeUtterance === u) activeUtterance = null; _stopSynthKeepAlive(); if (onDone) onDone(); };
+    u.onerror = () => { if (activeUtterance === u) activeUtterance = null; _stopSynthKeepAlive(); if (onDone) onDone(); };
     synth.speak(u);
     _startSynthKeepAlive();
   } catch (e) {
     console.warn('[SnapToAI] speakFallback failed:', e);
+    if (onDone) onDone();
   }
 }
 
+// ── Speech queue ─────────────────────────────────────────────────────────
+// Real, direct complaint: a longer answer got cut off after 2-3 lines and
+// never continued. Root cause: every call to agentSpeak() unconditionally
+// killed whatever was still playing and started fresh immediately — by
+// design, so two DIFFERENT messages firing close together never overlap.
+// But the system prompt also explicitly tells the model to speak "at each
+// real milestone" during a task, meaning it legitimately calls this
+// several times to narrate ONE growing answer piece by piece — and each
+// of those calls was hard-cutting the previous one's still-unfinished
+// audio instead of letting it finish naturally, matching exactly "speaks
+// a couple lines then cuts, doesn't continue." Now queues: a new call
+// while something is already speaking waits its turn instead of
+// interrupting it. A genuine interruption (Stop button) still goes
+// through stopAgentVoice() directly, which clears this queue too, so
+// stopping still stops everything, not just the current chunk.
+let _agentSpeakQueue = [];
+let _agentSpeakBusy = false;
+
 function agentSpeak(text) {
+  if (!text || !text.trim()) return;
+  _agentSpeakQueue.push(text);
+  if (!_agentSpeakBusy) _agentSpeakDrainQueue();
+}
+
+function _agentSpeakDrainQueue() {
+  const next = _agentSpeakQueue.shift();
+  if (next === undefined) { _agentSpeakBusy = false; return; }
+  _agentSpeakBusy = true;
+  _agentSpeakNow(next, () => _agentSpeakDrainQueue());
+}
+
+function _agentSpeakNow(text, onDone) {
   // 0. Silence any other player first (Read-aloud button, another bubble) —
   //    without this both keep playing and you hear two overlapping voices.
   stopOtherAudio(stopAgentVoice);
@@ -1031,7 +1080,7 @@ function agentSpeak(text) {
     // plays, so long passages stream fine; this cap is just a runaway guard.
     .slice(0, 8000);
 
-  if (!cleanSpeechText) return;
+  if (!cleanSpeechText) { if (onDone) onDone(); return; }
 
   // 4. Chunked Gemini-only TTS (Aoede voice — no browser TTS bridge)
   // Split text into sentence-boundary chunks (~280 chars each). Chunk 0 is
@@ -1041,12 +1090,17 @@ function agentSpeak(text) {
   (async () => {
     let apiKey = '';
     try { const r = await chrome.storage.sync.get(['geminiApiKey']); apiKey = r.geminiApiKey || ''; } catch (_) {}
-    // Bail if a newer agentSpeak() fired while we were awaiting storage
-    if (_agentSpeakGen !== myGen) return;
+    // Bail if a newer agentSpeak() fired while we were awaiting storage.
+    // Calling onDone() here is safe even though this call was genuinely
+    // superseded: if that happened via stopAgentVoice() (a real Stop), the
+    // queue's already been cleared directly there, so this just confirms
+    // an already-empty queue stays empty rather than resuming anything.
+    if (_agentSpeakGen !== myGen) { if (onDone) onDone(); return; }
     // No personal API key — fall back to browser TTS so free-tier users still
     // hear the Autopilot speak (previously this returned silently with nothing).
-    if (!apiKey) { speakFallback(cleanSpeechText); return; }
+    if (!apiKey) { speakFallback(cleanSpeechText, onDone); return; }
 
+    let _handedOffToFallback = false;
     const controller = new AbortController();
     _agentVoice.controller = controller;
 
@@ -1170,7 +1224,11 @@ function agentSpeak(text) {
         // Speak everything from this chunk onward via the browser voice, then stop —
         // no point re-attempting network audio that will hit the same block again.
         const remaining = chunks.slice(i).join(' ');
-        speakFallback(remaining);
+        _handedOffToFallback = true;
+        // onDone passed through here, not called separately below — the
+        // queue must wait for THIS fallback narration to actually finish,
+        // not advance the moment it's merely triggered.
+        speakFallback(remaining, onDone);
         break;
       }
       // After playing, check again — the next chunk belongs to this gen only
@@ -1178,6 +1236,12 @@ function agentSpeak(text) {
     }
 
     if (_agentSpeakGen === myGen) _agentVoice.controller = null;
+    // Only call onDone() here for the normal, all-chunks-via-Gemini-audio
+    // path. If we handed off to speakFallback above, IT calls onDone once
+    // the fallback voice truly finishes — calling it again here too would
+    // fire it twice, advancing the queue while that fallback audio is
+    // still actively speaking.
+    if (!_handedOffToFallback && onDone) onDone();
   })();
 }
 
@@ -13850,6 +13914,22 @@ async function runAgentTask(prompt, thread) {
         agentPlan = steps.map(s => ({ step: s, done: false, note: '' }));
         const planLines = steps.map((s, i) => `${i + 1}. ${s}`).join('\n');
         addAgentStepBubble(thread, `📋 Plan${summary ? ': ' + summary : ''}:\n${planLines}`);
+        // Real, direct complaint: a longer task (search, open several real
+        // pages, compare them) ran ~14 silent steps before saying anything
+        // at all — a good 30+ seconds of dead air, then the whole answer
+        // dumped at once. The existing "talk throughout" guidance only ever
+        // lived inside the NotebookLM-specific prompt block; nothing made
+        // EVERY longer task acknowledge up front, and relying on the model
+        // to remember to do this on its own wasn't reliable enough (same
+        // reasoning as every other "move it from the prompt into code"
+        // fix this session). Speaking a short, immediate acknowledgment
+        // here — deterministically, the moment a real multi-step plan is
+        // recorded — means there's never dead silence at the start of a
+        // longer task, regardless of whether the model remembers to speak
+        // early on its own.
+        if (steps.length > 2) {
+          agentSpeak(`Okay, on it${_agentUserName ? ' ' + _agentUserName : ''} — give me a moment.`);
+        }
         clientSideResponses.push({ functionResponse: { name: 'planTask',
           response: { success: true, data: `Plan recorded (${steps.length} steps). Begin executing step 1 now.` } } });
       }
