@@ -15397,6 +15397,39 @@ function _setLiveConvUI(active) {
   btn.title = active ? 'Stop live conversation' : 'Start live conversation — talk back and forth, hands-free';
 }
 
+// Mints a short-lived Live API session token via a normal HTTPS call.
+// Confirmed via a live test (real console evidence, not a guess): connecting
+// to the BidiGenerateContent WebSocket with the raw API key directly on the
+// URL (?key=...) gets rejected with HTTP 403 on the handshake itself, before
+// any model is even chosen — meaning it's the connection/auth method being
+// refused, not a bad key (the same key works fine on every other call in
+// this file) and not a wrong model name. Google's own docs describe this
+// exact "auth_tokens" mint-then-connect flow as how client-side/browser code
+// is meant to authenticate to the Live API, as opposed to putting a
+// long-lived key straight on a WebSocket URL. Verified directly against
+// ai.google.dev/gemini-api/docs/ephemeral-tokens before writing this, not
+// guessed at.
+async function _liveConvMintEphemeralToken(apiKey) {
+  const now = Date.now();
+  const iso = (ms) => new Date(ms).toISOString().replace(/\.\d{3}Z$/, 'Z');
+  const resp = await fetch('https://generativelanguage.googleapis.com/v1beta/auth_tokens', {
+    method: 'POST',
+    headers: { 'x-goog-api-key': apiKey, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      uses: 1,
+      expireTime: iso(now + 30 * 60 * 1000),        // token itself dies in 30 min
+      newSessionExpireTime: iso(now + 2 * 60 * 1000)  // must START the session within 2 min
+    })
+  });
+  if (!resp.ok) {
+    const errBody = await resp.text().catch(() => '');
+    throw new Error(`${resp.status}${errBody ? ' — ' + errBody.slice(0, 200) : ''}`);
+  }
+  const data = await resp.json();
+  if (!data.name) throw new Error('no token in response');
+  return data.name;
+}
+
 function _liveConvStartMicStreaming() {
   const AudioCtx = window.AudioContext || window.webkitAudioContext;
   _liveConvAudioCtx = new AudioCtx();
@@ -15436,6 +15469,17 @@ async function startLiveConversation() {
     return;
   }
 
+  // Mint the session token BEFORE asking for the microphone — no point
+  // interrupting the user with a permission prompt if the connection itself
+  // is about to be refused.
+  let ephemeralToken;
+  try {
+    ephemeralToken = await _liveConvMintEphemeralToken(geminiApiKey);
+  } catch (e) {
+    addBubble(`Live Conversation couldn't start a session (${e.message}). Your API key may not have Live API access yet.`, 'error');
+    return;
+  }
+
   try {
     _liveConvStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch (e) {
@@ -15443,7 +15487,7 @@ async function startLiveConversation() {
     return;
   }
 
-  const WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${geminiApiKey}`;
+  const WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?access_token=${ephemeralToken}`;
   const socket = new WebSocket(WS_URL);
   _liveConvSocket = socket;
   _liveConvActive = true;
