@@ -13753,10 +13753,29 @@ async function runAgentTask(prompt, thread) {
       }}]});
       const finishSummary = finishCall.functionCall.args?.summary || 'Task finished.';
       addAgentStepBubble(thread, finishSummary, 'done');
-      try {
-        const spokenFinish = finishSummary.replace(/[#*`>_~\[\]()]/g, '').replace(/\s+/g, ' ').trim().slice(0, 220);
-        agentSpeak(spokenFinish.length > 5 ? spokenFinish : `All done${_agentUserName ? ' ' + _agentUserName : ''}!`);
-      } catch (_) {}
+      // Real, repeated complaint: a plain conversational exchange ("hi, how
+      // are you... also, quick question about X") produced TWO spoken
+      // responses back to back — the model's own natural speak() answer,
+      // immediately followed by this code unconditionally re-speaking the
+      // finish() summary too, which restated the same thing in a flatter,
+      // more robotic voice ("I've explained that you can..."). This fired
+      // every single time finish() was called, regardless of whether speak()
+      // had already said essentially the same thing moments earlier — it
+      // wasn't a prompt-wording problem, the code itself always double-spoke.
+      // Only auto-speak the finish summary when the model genuinely never
+      // spoke anything this task — checked both for a speak() call already
+      // completed in an earlier turn (_speakCallsThisTask) and one riding
+      // along in this exact same turn (fnCallParts), since finish() breaks
+      // the loop immediately and would otherwise run before this turn's own
+      // speak() had a chance to increment that counter.
+      const _alreadySpokeThisTask = _speakCallsThisTask > 0 ||
+        fnCallParts.some(p => p.functionCall.name === 'speak');
+      if (!_alreadySpokeThisTask) {
+        try {
+          const spokenFinish = finishSummary.replace(/[#*`>_~\[\]()]/g, '').replace(/\s+/g, ' ').trim().slice(0, 220);
+          agentSpeak(spokenFinish.length > 5 ? spokenFinish : `All done${_agentUserName ? ' ' + _agentUserName : ''}!`);
+        } catch (_) {}
+      }
       break;
     }
 
