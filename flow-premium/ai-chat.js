@@ -15482,11 +15482,29 @@ async function startLiveConversation() {
     }
   };
 
+  // Track whether we ever got a real connection so onclose can tell an
+  // instant-fail (bad key, blocked connection, CSP, network) apart from a
+  // normal hang-up after a working session — and so the user sees WHY it
+  // stopped instead of the button just going quiet again.
+  let _liveConvDidOpen = false;
+  socket.addEventListener('open', () => { _liveConvDidOpen = true; }, { once: true });
+
   socket.onerror = (e) => {
     console.warn('[SnapToAI] Live Conversation WebSocket error:', e);
   };
 
-  socket.onclose = () => {
+  socket.onclose = (e) => {
+    if (!_liveConvDidOpen) {
+      // Never successfully connected — surface a real reason instead of
+      // silently going back to idle. Common causes: invalid/expired API
+      // key (code 1006/1008), or the request never leaving the browser at
+      // all (also 1006, e.g. a Content-Security-Policy block).
+      const reason = e && e.reason ? ` (${e.reason})` : '';
+      addBubble(
+        `Live Conversation couldn't connect${reason}. Check that your Gemini API key is valid and has Live API access.`,
+        'error'
+      );
+    }
     stopLiveConversation();
   };
 }
