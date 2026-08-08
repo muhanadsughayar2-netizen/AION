@@ -15213,6 +15213,229 @@ function initVoiceInput() {
   });
 }
 
+// ── Live Conversation Mode (Gemini Live API) ────────────────────────────────
+// Real-time, continuous, hands-free voice conversation — talk, get a spoken
+// answer back, keep talking, no clicking Send and no separate press-mic /
+// stop-mic / click-send steps. Direct client-to-server WebSocket connection
+// to Gemini's Live API, built against Google's own official protocol
+// reference (ai.google.dev/gemini-api/docs/live-api/get-started-websocket),
+// read and verified directly before writing any of this, not guessed at.
+//
+// Scope of this first version, deliberately: voice conversation only. No
+// tool/function calling is wired in yet — the setup message below sends no
+// 'tools' field, so the model won't attempt to call any. Making this ALSO
+// drive Autopilot's real browser actions (click, type, navigate...) is a
+// substantial, separate piece of work on top of a working conversation
+// loop, not bundled into this first, as-yet-unproven pass.
+//
+// Known, deliberate simplification: connects with the user's own stored API
+// key directly in the WebSocket URL, matching how every other call in this
+// file already authenticates. Google's docs recommend short-lived
+// "ephemeral tokens" instead for client-to-server production apps, to avoid
+// a long-lived key ever reaching client code — worth doing later, not
+// blocking a first working version on it, since this is the user's own key
+// in their own browser extension, not a multi-tenant product exposing other
+// people's keys to each other.
+//
+// Honest limit: this is new, unproven code. There is no microphone or
+// speaker available to test this the way every other fix this session was
+// tested — it needs a real, live run to actually confirm audio round-trips
+// correctly before calling it done.
+let _liveConvSocket = null;
+let _liveConvAudioCtx = null;
+let _liveConvStream = null;
+let _liveConvProcessor = null;
+let _liveConvActive = false;
+let _liveConvPlaybackQueue = [];
+let _liveConvPlaying = false;
+
+function _liveConvPcmToWav(rawBytes, sampleRate) {
+  const ch = 1, bps = 16;
+  const hdr = new ArrayBuffer(44);
+  const dv = new DataView(hdr);
+  const ws = (o, s) => { for (let i = 0; i < s.length; i++) dv.setUint8(o + i, s.charCodeAt(i)); };
+  ws(0, 'RIFF'); dv.setUint32(4, 36 + rawBytes.byteLength, true);
+  ws(8, 'WAVE'); ws(12, 'fmt ');
+  dv.setUint32(16, 16, true); dv.setUint16(20, 1, true); dv.setUint16(22, ch, true);
+  dv.setUint32(24, sampleRate, true); dv.setUint32(28, sampleRate * ch * bps / 8, true);
+  dv.setUint16(32, ch * bps / 8, true); dv.setUint16(34, bps, true);
+  ws(36, 'data'); dv.setUint32(40, rawBytes.byteLength, true);
+  return new Blob([hdr, rawBytes], { type: 'audio/wav' });
+}
+
+// Play queued response-audio chunks back to back, in order, without
+// overlapping — chunks can arrive faster than they play, so playing each
+// one the instant it arrives would garble overlapping speech.
+function _liveConvEnqueueAudio(base64Data) {
+  _liveConvPlaybackQueue.push(base64Data);
+  if (!_liveConvPlaying) _liveConvPlayNext();
+}
+function _liveConvPlayNext() {
+  const next = _liveConvPlaybackQueue.shift();
+  if (!next) { _liveConvPlaying = false; return; }
+  _liveConvPlaying = true;
+  try {
+    const raw = Uint8Array.from(atob(next), c => c.charCodeAt(0));
+    const blob = _liveConvPcmToWav(raw, 24000); // Live API audio OUTPUT is always 24kHz per the docs
+    const url = URL.createObjectURL(blob);
+    const audio = new Audio(url);
+    audio.onended = () => { URL.revokeObjectURL(url); _liveConvPlayNext(); };
+    audio.onerror = () => { URL.revokeObjectURL(url); _liveConvPlayNext(); };
+    audio.play().catch(() => { URL.revokeObjectURL(url); _liveConvPlayNext(); });
+  } catch (_) {
+    _liveConvPlayNext();
+  }
+}
+
+// Downsample the mic's native audio (typically 44.1kHz or 48kHz) to 16kHz,
+// then convert to 16-bit PCM — the exact input format the Live API requires
+// (raw 16-bit PCM, 16kHz, little-endian).
+function _liveConvFloat32To16kPcm(float32Data, inputSampleRate) {
+  const targetRate = 16000;
+  const ratio = inputSampleRate / targetRate;
+  const outLength = Math.floor(float32Data.length / ratio);
+  const pcm16 = new Int16Array(outLength);
+  for (let i = 0; i < outLength; i++) {
+    const srcIndex = Math.floor(i * ratio);
+    const s = Math.max(-1, Math.min(1, float32Data[srcIndex]));
+    pcm16[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+  }
+  return pcm16;
+}
+
+function _liveConvBase64FromInt16(int16Data) {
+  const bytes = new Uint8Array(int16Data.buffer);
+  let binary = '';
+  for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary);
+}
+
+function _setLiveConvUI(active) {
+  const btn = document.getElementById('liveConvBtn');
+  if (!btn) return;
+  btn.classList.toggle('active', active);
+  btn.title = active ? 'Stop live conversation' : 'Start live conversation — talk back and forth, hands-free';
+}
+
+function _liveConvStartMicStreaming() {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  _liveConvAudioCtx = new AudioCtx();
+  const source = _liveConvAudioCtx.createMediaStreamSource(_liveConvStream);
+  // ScriptProcessorNode is deprecated in favour of AudioWorklet, but needs no
+  // separate module file to load — kept simple for this first version; the
+  // output buffer is never written to, so nothing audible loops back to the
+  // speakers even though it's connected to destination (required for Chrome
+  // to actually fire onaudioprocess at all).
+  const bufferSize = 4096;
+  _liveConvProcessor = _liveConvAudioCtx.createScriptProcessor(bufferSize, 1, 1);
+  source.connect(_liveConvProcessor);
+  _liveConvProcessor.connect(_liveConvAudioCtx.destination);
+
+  _liveConvProcessor.onaudioprocess = (e) => {
+    if (!_liveConvActive || !_liveConvSocket || _liveConvSocket.readyState !== WebSocket.OPEN) return;
+    const input = e.inputBuffer.getChannelData(0);
+    const pcm16 = _liveConvFloat32To16kPcm(input, _liveConvAudioCtx.sampleRate);
+    const base64Audio = _liveConvBase64FromInt16(pcm16);
+    _liveConvSocket.send(JSON.stringify({
+      realtimeInput: { audio: { data: base64Audio, mimeType: 'audio/pcm;rate=16000' } }
+    }));
+  };
+}
+
+async function startLiveConversation() {
+  if (_liveConvActive) return;
+  const { geminiApiKey } = await chrome.storage.sync.get(['geminiApiKey']);
+  if (!geminiApiKey) {
+    // showGeminiModal is defined in popup.js, which this page (ai-chat.html)
+    // never loads — calling it unguarded (as a couple of pre-existing call
+    // sites elsewhere in this file already do) would throw. Guarded here so
+    // this new feature fails safely with a real message instead of a silent
+    // ReferenceError if that's ever actually true in this context.
+    if (typeof showGeminiModal === 'function') showGeminiModal();
+    else addBubble('Add your Gemini API key in Settings first to use Live Conversation.', 'error');
+    return;
+  }
+
+  try {
+    _liveConvStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (e) {
+    addBubble('Microphone access was blocked. Allow microphone permission for this extension to use Live Conversation.', 'error');
+    return;
+  }
+
+  const WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${geminiApiKey}`;
+  const socket = new WebSocket(WS_URL);
+  _liveConvSocket = socket;
+  _liveConvActive = true;
+
+  socket.onopen = () => {
+    const setupMessage = {
+      setup: {
+        model: 'models/gemini-3.1-flash-live-preview',
+        responseModalities: ['AUDIO'],
+        systemInstruction: {
+          parts: [{ text: 'You are AION, a warm, direct, helpful voice assistant. Keep responses conversational and reasonably short — this is a spoken back-and-forth, not a written report.' }]
+        }
+      }
+    };
+    socket.send(JSON.stringify(setupMessage));
+    _liveConvStartMicStreaming();
+    _setLiveConvUI(true);
+  };
+
+  socket.onmessage = (event) => {
+    try {
+      const response = JSON.parse(event.data);
+      const parts = response?.serverContent?.modelTurn?.parts;
+      if (parts) {
+        for (const part of parts) {
+          if (part.inlineData?.data) _liveConvEnqueueAudio(part.inlineData.data);
+        }
+      }
+      // Plain text log alongside the spoken audio — lets the user (and us,
+      // debugging) see what was actually said, not just hear it.
+      if (response?.serverContent?.outputTranscription?.text) {
+        addBubble(response.serverContent.outputTranscription.text, 'ai');
+      }
+    } catch (e) {
+      console.warn('[SnapToAI] Live Conversation: bad message', e);
+    }
+  };
+
+  socket.onerror = (e) => {
+    console.warn('[SnapToAI] Live Conversation WebSocket error:', e);
+  };
+
+  socket.onclose = () => {
+    stopLiveConversation();
+  };
+}
+
+function stopLiveConversation() {
+  _liveConvActive = false;
+  if (_liveConvProcessor) { try { _liveConvProcessor.disconnect(); } catch (_) {} _liveConvProcessor = null; }
+  if (_liveConvAudioCtx) { try { _liveConvAudioCtx.close(); } catch (_) {} _liveConvAudioCtx = null; }
+  if (_liveConvStream) { try { _liveConvStream.getTracks().forEach(t => t.stop()); } catch (_) {} _liveConvStream = null; }
+  if (_liveConvSocket) { try { _liveConvSocket.close(); } catch (_) {} _liveConvSocket = null; }
+  _liveConvPlaybackQueue = [];
+  _liveConvPlaying = false;
+  _setLiveConvUI(false);
+}
+
+function initLiveConversation() {
+  const btn = document.getElementById('liveConvBtn');
+  if (!btn) return;
+  if (!(window.AudioContext || window.webkitAudioContext) || !navigator.mediaDevices?.getUserMedia) {
+    // Not supported in this context — hide rather than leave a dead control.
+    btn.style.display = 'none';
+    return;
+  }
+  btn.addEventListener('click', () => {
+    if (_liveConvActive) stopLiveConversation();
+    else startLiveConversation();
+  });
+}
+
 // ── Auto-generate AI images for fresh Build Mode sites ────────────────────────
 // Silently derives 3 cinematic image prompts from the build request, generates
 // them via Gemini image models, and returns an array of base64 data-URLs.
@@ -19098,6 +19321,7 @@ document.getElementById('closeBtn')?.addEventListener('click', () => window.clos
 document.getElementById('clearStagedBtn')?.addEventListener('click', clearStagedMedia);
 document.getElementById('sendBtn')?.addEventListener('click', handleSend);
 initVoiceInput();
+initLiveConversation();
 
 const chatInput = document.getElementById('chatInput');
 chatInput.addEventListener('keydown', (e) => {
